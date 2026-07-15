@@ -232,6 +232,10 @@ body {
     text-decoration: none;
 }
 
+.index-actions .login-button {
+    margin-top: 0;
+}
+
 .index-sub-action {
     min-height: 46px;
     display: grid;
