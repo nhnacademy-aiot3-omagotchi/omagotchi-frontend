@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org" xmlns="http://www.w3.org/1999/html">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Omagotchi</title>
+    <link rel="stylesheet" th:href="@{/css/common.css}">
+    <script defer th:src="@{/js/app.js}"></script>
+</head>
+<body>
+<header th:replace="~{fragments/header :: siteHeader}"></header>
+
+<main class="page-content">
+    <section class="hero" aria-labelledby="page-title">
+        <p class="eyebrow">Learning Environment Management</p>
+        <h1 id="page-title">Omagotchi</h1>
+        <p>팀 기능 화면을 연결하기 위한 Spring MVC·Thymeleaf 기본 골격입니다.</p>
+        <p>아직 아무것도 없습니다...</p>
+        <p>CI/CD 확인용 수정 사항입니다.</p>
+    </section>
+</main>
+</body>
+</html>
