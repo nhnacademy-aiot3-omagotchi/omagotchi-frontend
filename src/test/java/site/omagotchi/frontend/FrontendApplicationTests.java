@@ -25,11 +25,11 @@ class FrontendApplicationTests {
 	}
 
 	@Test
-	void homePageIsRendered() throws Exception {
+	void landingPageIsRendered() throws Exception {
 		mockMvc.perform(get("/"))
 				.andExpect(status().isOk())
 				.andExpect(view().name("index"))
-				.andExpect(content().string(containsString("Omagotchi")));
+				.andExpect(content().string(containsString("시작하기")));
 	}
 
 	@Test
