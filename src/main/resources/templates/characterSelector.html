@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Omagotchi Character Selector</title>
+
+    <link rel="stylesheet" href="/css/auth.css" />
+    <link rel="stylesheet" href="/css/characterSelector.css" />
+</head>
+<body>
+<main class="selector-page">
+    <section class="selector-shell" aria-labelledby="selector-title">
+        <header class="selector-header">
+            <div class="selector-brand">
+                <h1 id="selector-title" class="selector-logo-title">
+                    <img
+                            class="selector-logo"
+                            src="/images/logo.png"
+                            alt="Omagotchi"
+                    />
+                </h1>
+                <p>오늘부터 함께 공부할 오마고치를 선택하세요</p>
+            </div>
+        </header>
+
+        <div class="selector-content">
+            <aside class="selected-panel" aria-live="polite">
+                <h2 style = "padding-left: 5px; padding-top:10px">선택한 캐릭터</h2>
+
+                <div class="selected-stage">
+                    <div class="selected-bubble" data-selected-bubble>말풍선</div>
+
+                    <div class="selected-character-frame" data-selected-frame>
+                        <img
+                                class="selected-character"
+                                data-selected-image
+                                src="/images/characters/study/study.png"
+                                alt="선택한 캐릭터 이미지"
+                        />
+                    </div>
+
+                    <div class="selected-shadow" aria-hidden="true"></div>
+                </div>
+
+                <div class="selected-name">
+                    <span>캐릭터 이름</span>
+                    <strong data-selected-name>[공부쟁이]</strong>
+                </div>
+            </aside>
+
+            <section class="choice-panel" aria-label="캐릭터와 색상 선택">
+                <div class="character-grid" data-character-grid></div>
+
+                <div class="color-row" data-color-row aria-label="캐릭터 색상 선택"></div>
+
+                <button class="enter-button" type="button" data-enter-button>
+                    이 캐릭터로 선택하기
+                </button>
+            </section>
+        </div>
+    </section>
+</main>
+
+<script src="/js/characterSelector.js"></script>
+</body>
+</html>

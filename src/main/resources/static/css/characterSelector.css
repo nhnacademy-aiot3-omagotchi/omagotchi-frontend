@@ -1,0 +1,374 @@
+.selector-page {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 48px;
+    background:
+            radial-gradient(circle at top left, rgba(143, 209, 106, 0.1), transparent 35%),
+            radial-gradient(circle at bottom right, rgba(255, 255, 255, 0.06), transparent 30%),
+            var(--bg);
+}
+
+.selector-shell {
+    width: min(920px, 100%);
+    height: 560px;
+    display: grid;
+    grid-template-rows: 86px 1fr;
+    border: 4px solid #101010;
+    border-radius: 22px;
+    overflow: hidden;
+    background: var(--panel-dark);
+    box-shadow:
+            0 24px 60px var(--shadow),
+            inset 0 0 0 3px rgba(255, 255, 255, 0.08);
+    animation: cardPop 0.45s ease-out;
+}
+
+.selector-header {
+    padding: 10px 28px;
+    display: flex;
+    align-items: center;
+    background:
+            linear-gradient(135deg, rgba(143, 209, 106, 0.13), transparent 52%),
+            #454545;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.selector-brand {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.selector-logo-title {
+    flex: 0 0 auto;
+    margin: 0;
+    line-height: 0;
+}
+
+.selector-logo {
+    display: block;
+    width: 190px;
+    height: auto;
+    object-fit: contain;
+}
+
+.selector-header p {
+    margin: 0;
+    padding-left: 20px;
+    color: var(--white);
+    border-left: 2px solid rgba(255, 255, 255, 0.24);
+    font-size: 15px;
+    font-weight: 900;
+    line-height: 1.35;
+}
+
+.selector-content {
+    min-height: 0;
+    display: grid;
+    grid-template-columns: 1.04fr 0.96fr;
+}
+
+.selected-panel {
+    position: relative;
+    min-height: 0;
+    padding: 20px 28px 22px;
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    background:
+            linear-gradient(135deg, rgba(143, 209, 106, 0.1), transparent 48%),
+            var(--panel-brand);
+    overflow: hidden;
+}
+
+.selected-panel::before {
+    content: "";
+    position: absolute;
+    inset: 17px;
+    border: 2px dashed rgba(255, 255, 255, 0.26);
+    border-radius: 16px;
+    pointer-events: none;
+}
+
+.selected-panel h2 {
+    position: relative;
+    z-index: 1;
+    margin: 0;
+    color: var(--white);
+    font-size: 18px;
+    font-weight: 900;
+}
+
+.selected-stage {
+    position: relative;
+    z-index: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+.selected-bubble {
+    position: relative;
+    min-width: 102px;
+    padding: 10px 16px;
+    background: var(--white);
+    color: var(--text-dark);
+    border: 3px solid var(--border-dark);
+    border-radius: 14px;
+    font-size: 14px;
+    font-weight: 900;
+    text-align: center;
+    box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.24);
+    animation: bubbleFloat 2.2s ease-in-out infinite;
+}
+
+.selected-bubble::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    bottom: -10px;
+    width: 16px;
+    height: 16px;
+    background: inherit;
+    border-right: 3px solid var(--border-dark);
+    border-bottom: 3px solid var(--border-dark);
+    transform: translateX(-50%) rotate(45deg);
+}
+
+.selected-character-frame {
+    width: 180px;
+    height: 180px;
+    display: grid;
+    place-items: center;
+}
+
+.selected-character {
+    width: 166px;
+    max-height: 176px;
+    object-fit: contain;
+    image-rendering: pixelated;
+    filter: drop-shadow(0 8px 0 rgba(0, 0, 0, 0.12));
+    animation: characterBounce 1.6s infinite;
+}
+
+.selected-shadow {
+    width: 230px;
+    height: 22px;
+    border-radius: 50%;
+    background: rgba(238, 238, 238, 0.9);
+}
+
+.selected-name {
+    position: relative;
+    z-index: 1;
+    width: fit-content;
+    min-width: 150px;
+    padding: 9px 13px;
+    background: rgba(0, 0, 0, 0.28);
+    border-radius: 12px;
+}
+
+.selected-name span,
+.selected-name strong {
+    display: block;
+    color: var(--white);
+    font-size: 13px;
+    font-weight: 900;
+    line-height: 1.3;
+}
+
+.choice-panel {
+    min-height: 0;
+    padding: 18px 24px 20px;
+    display: grid;
+    grid-template-rows: minmax(0, 1fr) auto auto;
+    gap: 14px;
+    align-items: center;
+    background:
+            linear-gradient(90deg, rgba(0, 0, 0, 0.18), transparent 18px),
+            linear-gradient(180deg, rgba(255, 255, 255, 0.1), transparent),
+            #777777;
+    border-left: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.character-grid {
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(54px, 1fr));
+    grid-template-rows: repeat(2, minmax(82px, 1fr));
+    gap: 10px;
+    padding: 13px;
+    border: 9px solid rgba(72, 72, 72, 0.72);
+    border-radius: 30px;
+    background: rgba(255, 255, 255, 0.12);
+}
+
+.character-option {
+    min-width: 0;
+    min-height: 0;
+    display: grid;
+    place-items: center;
+    border: 3px solid transparent;
+    border-radius: 7px;
+    background: #dddddd;
+    cursor: pointer;
+    box-shadow: inset 0 -8px 0 rgba(0, 0, 0, 0.06);
+    transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.character-option:hover,
+.character-option.is-selected {
+    transform: translateY(-2px);
+    border-color: var(--selected-color, var(--accent));
+    box-shadow:
+            inset 0 -8px 0 rgba(0, 0, 0, 0.06),
+            0 0 0 2px rgba(255, 255, 255, 0.38);
+}
+
+.character-option img {
+    width: 75%;
+    max-height: 82%;
+    object-fit: contain;
+    image-rendering: pixelated;
+}
+
+.color-row {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(8, minmax(28px, 1fr));
+    gap: 7px;
+    padding: 6px;
+    border: 3px solid #1499f5;
+    border-radius: 4px;
+    background: #e8e8e8;
+}
+/* --swatch-color Js에서 색상 값을 넣어주는 CSS 변수 */
+.color-option {
+    height: 40px;
+    border: 0;
+    border-right: 5px solid rgba(0, 0, 0, 0.22);
+    background: var(--swatch-color);
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.color-option.is-original {
+    background:
+            linear-gradient(135deg, transparent calc(50% - 2px), #ff0000 calc(50% - 2px), #ff6868 calc(50% + 2px), transparent calc(50% + 2px)),
+            #eeeeee;
+}
+
+.color-option:hover,
+.color-option.is-selected {
+    transform: translateY(-2px);
+    box-shadow: inset 0 0 0 3px var(--white);
+}
+
+.enter-button {
+    width: min(300px, 100%);
+    height: 50px;
+    justify-self: center;
+    border: 3px solid var(--border-dark);
+    border-radius: 15px;
+    background: #050505;
+    color: var(--white);
+    font-size: 14px;
+    font-weight: 900;
+    cursor: pointer;
+    box-shadow: 4px 4px 0 var(--accent-dark);
+    transition: transform 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+}
+
+.enter-button:hover {
+    transform: translate(-2px, -2px);
+    background: var(--border-dark);
+    box-shadow: 6px 6px 0 var(--accent);
+}
+
+.enter-button:active {
+    transform: translate(2px, 2px);
+    box-shadow: 1px 1px 0 var(--accent-dark);
+}
+
+.character-option:focus-visible,
+.color-option:focus-visible,
+.enter-button:focus-visible {
+    outline: 3px solid var(--selected-color, var(--accent));
+    outline-offset: 3px;
+}
+
+@media (max-width: 760px) {
+    .selector-page {
+        padding: 24px;
+    }
+
+    .selector-shell {
+        height: auto;
+        min-height: 560px;
+        grid-template-rows: auto 1fr;
+    }
+
+    .selector-header {
+        min-height: 86px;
+    }
+
+    .selector-brand {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 6px;
+    }
+
+    .selector-header p {
+        padding-left: 0;
+        border-left: 0;
+        font-size: 14px;
+    }
+
+    .selector-content {
+        grid-template-columns: 1fr;
+    }
+
+    .selected-panel {
+        min-height: 450px;
+    }
+
+    .choice-panel {
+        min-height: 450px;
+        border-top: 1px solid rgba(255, 255, 255, 0.12);
+        border-left: 0;
+    }
+}
+
+@media (max-width: 480px) {
+    .selector-page {
+        padding: 14px;
+    }
+
+    .selector-logo {
+        width: 170px;
+    }
+
+    .selector-header,
+    .selected-panel,
+    .choice-panel {
+        padding-right: 18px;
+        padding-left: 18px;
+    }
+
+    .character-grid {
+        gap: 7px;
+        padding: 9px;
+        border-width: 7px;
+        border-radius: 22px;
+    }
+
+    .color-row {
+        gap: 4px;
+    }
+}

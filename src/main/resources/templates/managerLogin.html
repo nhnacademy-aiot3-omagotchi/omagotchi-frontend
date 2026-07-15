@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Omagotchi Login</title>
+
+    <link rel="stylesheet" href="/css/auth.css" />
+</head>
+<body>
+<main class="login-page">
+    <section class="login-card manager-card">
+
+        <div class="brand-panel manager-brand-panel">
+            <header class="brand-header">
+                <img class="logo-image"
+                     src="/images/logo.png"
+                     alt="Omagotchi Logo">
+            </header>
+
+            <div class="character-zone">
+                <div class="speech-bubble manager-bubble">
+                    이거 코드 AI<br />돌리시는거 아니죠?
+                </div>
+
+                <img class="manager-character-img"
+                     src="/images/manager_character.gif"
+                     alt="관리자 캐릭터">
+            </div>
+
+
+            <p class="brand-message">
+                실습실에서 성장하는 나의 오마고치
+            </p>
+        </div>
+
+        <div class="form-panel manager-form-panel">
+            <form class="login-form manager-login-form" action="#" method="post">
+                <h2>Manager<br />Login</h2>
+
+                <label class="input-group">
+                    <span>아이디</span>
+                    <input type="text" name="loginId" placeholder="아이디를 입력하세요" />
+                </label>
+
+                <label class="input-group">
+                    <span>비밀번호</span>
+                    <input type="password" name="password" placeholder="비밀번호를 입력하세요" />
+                </label>
+
+                <button class="login-button" type="submit">
+                    로그인
+                </button>
+
+                <div class="auth-links back-link">
+                    <a href="/login">뒤로 가기</a>
+                </div>
+            </form>
+        </div>
+
+    </section>
+</main>
+
+<script src="/js/managerLogin.js"></script>
+</body>
+</html>

@@ -1,0 +1,511 @@
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+:root {
+    --bg: #171717;
+    --panel-dark: #303030;
+    --panel-brand: #5b5b5b;
+    --panel-manager: #686875;
+    --white: #ffffff;
+    --input: #eeeeee;
+    --text-dark: #222222;
+    --text-muted: #dcdcdc;
+    --border-dark: #111111;
+    --accent: #8fd16a;
+    --accent-dark: #4f9d3a;
+    --manager-accent: #f4f1ff;
+    --shadow: rgba(0, 0, 0, 0.35);
+}
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    background:
+            radial-gradient(circle at top left, rgba(143, 209, 106, 0.08), transparent 35%),
+            radial-gradient(circle at bottom right, rgba(255, 255, 255, 0.05), transparent 30%),
+            var(--bg);
+    color: var(--white);
+    font-family: "DNFBitBitv2", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.login-page {
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 48px;
+}
+
+.login-card {
+    width: min(920px, 100%);
+    min-height: 560px;
+    display: grid;
+    grid-template-columns: 1.15fr 0.85fr;
+    border: 4px solid #101010;
+    border-radius: 22px;
+    overflow: hidden;
+    background: var(--panel-dark);
+    box-shadow:
+            0 24px 60px var(--shadow),
+            inset 0 0 0 3px rgba(255, 255, 255, 0.08);
+    animation: cardPop 0.45s ease-out;
+}
+
+.brand-panel {
+    position: relative;
+    padding: 36px;
+    background:
+            linear-gradient(135deg, rgba(143, 209, 106, 0.1), transparent 45%),
+            var(--panel-brand);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    overflow: hidden;
+}
+
+.brand-panel::before {
+    content: "";
+    position: absolute;
+    inset: 24px;
+    border: 2px dashed rgba(255, 255, 255, 0.32);
+    border-radius: 18px;
+    pointer-events: none;
+}
+
+.brand-header {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    justify-content: center;
+}
+
+.brand-header h1 {
+    margin: 0;
+    font-size: 34px;
+    font-weight: 900;
+    letter-spacing: -0.03em;
+    text-shadow: 3px 3px 0 rgba(0, 0, 0, 0.25);
+}
+
+.brand-header p {
+    margin: 4px 0 0;
+    font-size: 14px;
+    font-weight: 700;
+    opacity: 0.9;
+}
+
+.logo-image {
+    width: 320px;
+    max-width: 100%;
+    height: auto;
+    object-fit: contain;
+}
+
+.character-zone {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+.omagotchi-character {
+    width: 170px;
+    height: auto;
+    image-rendering: pixelated;
+    animation: characterBounce 1.6s infinite;
+}
+
+.manager-character-img {
+    width: 220px;
+    height: auto;
+    image-rendering: pixelated;
+    animation: characterBounce 1.6s infinite;
+}
+
+.speech-bubble {
+    position: relative;
+    padding: 16px 20px;
+    background: var(--white);
+    color: #333333;
+    border: 3px solid var(--text-dark);
+    border-radius: 18px;
+    font-size: 15px;
+    font-weight: 800;
+    line-height: 1.45;
+    box-shadow: 6px 6px 0 rgba(0, 0, 0, 0.22);
+    animation: bubbleFloat 2.2s ease-in-out infinite;
+}
+
+.speech-bubble::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    bottom: -13px;
+    width: 20px;
+    height: 20px;
+    background: inherit;
+    border-right: 3px solid var(--text-dark);
+    border-bottom: 3px solid var(--text-dark);
+    transform: translateX(-50%) rotate(45deg);
+}
+
+.brand-message {
+    position: relative;
+    z-index: 1;
+    margin: 0;
+    text-align: center;
+    font-size: 14px;
+    font-weight: 800;
+    opacity: 0.95;
+}
+
+.form-panel {
+    position: relative;
+    padding: 48px;
+    background:
+            linear-gradient(90deg, rgba(0, 0, 0, 0.22), transparent 18px),
+            linear-gradient(180deg, rgba(255, 255, 255, 0.08), transparent),
+            var(--panel-dark);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-left: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.login-form,
+.auth-form {
+    width: 100%;
+    max-width: 300px;
+}
+
+.password-step {
+    display: none;
+}
+
+.password-step.is-active {
+    display: block;
+}
+
+.login-form h2,
+.auth-form h2 {
+    margin: 0 0 28px;
+    text-align: center;
+    font-size: 30px;
+    font-weight: 900;
+}
+
+.input-group {
+    display: block;
+    margin-bottom: 14px;
+}
+
+.input-group span {
+    display: block;
+    margin: 0 0 8px 4px;
+    color: var(--text-muted);
+    font-size: 13px;
+    font-weight: 800;
+}
+
+.input-group input {
+    width: 100%;
+    height: 52px;
+    border: 3px solid var(--border-dark);
+    border-radius: 16px;
+    background: var(--input);
+    padding: 0 16px;
+    color: var(--text-dark);
+    font-weight: 800;
+    outline: none;
+    box-shadow: 4px 4px 0 var(--border-dark);
+    transition:
+            transform 0.15s ease,
+            box-shadow 0.15s ease,
+            border-color 0.15s ease;
+}
+
+.input-group input:focus {
+    transform: translate(-2px, -2px);
+    border-color: var(--accent);
+    box-shadow: 6px 6px 0 var(--border-dark);
+}
+
+.gender-group {
+    margin: 0 0 14px;
+    padding: 0;
+    border: 0;
+}
+
+.gender-group legend {
+    display: block;
+    margin: 0 0 8px 4px;
+    color: var(--text-muted);
+    font-size: 13px;
+    font-weight: 800;
+}
+
+.gender-options {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.gender-options button {
+    height: 48px;
+    border: 3px solid var(--border-dark);
+    border-radius: 16px;
+    background: var(--input);
+    color: var(--text-dark);
+    font: inherit;
+    font-size: 13px;
+    font-weight: 900;
+    cursor: pointer;
+    box-shadow: 4px 4px 0 var(--border-dark);
+    transition:
+            transform 0.15s ease,
+            box-shadow 0.15s ease,
+            border-color 0.15s ease,
+            background 0.15s ease;
+}
+
+.gender-options button:hover,
+.gender-options button.is-selected {
+    transform: translate(-2px, -2px);
+    border-color: var(--accent);
+    background: #ffffff;
+    box-shadow: 6px 6px 0 var(--border-dark);
+}
+
+.input-group input:focus-visible,
+.gender-options button:focus-visible,
+.login-button:focus-visible,
+.auth-button:focus-visible,
+.login-links a:focus-visible,
+.auth-links a:focus-visible {
+    outline: 3px solid var(--accent);
+    outline-offset: 4px;
+}
+
+.login-button,
+.auth-button {
+    width: 100%;
+    height: 54px;
+    margin-top: 12px;
+    border: 3px solid var(--border-dark);
+    border-radius: 16px;
+    background: #050505;
+    color: var(--white);
+    font-size: 15px;
+    font-weight: 900;
+    cursor: pointer;
+    box-shadow: 4px 4px 0 var(--accent-dark);
+    transition:
+            transform 0.15s ease,
+            box-shadow 0.15s ease,
+            background 0.15s ease;
+}
+
+.login-button:hover,
+.auth-button:hover {
+    transform: translate(-2px, -2px);
+    background: var(--border-dark);
+    box-shadow: 6px 6px 0 var(--accent);
+}
+
+.login-button:active,
+.auth-button:active {
+    transform: translate(2px, 2px);
+    box-shadow: 1px 1px 0 var(--accent-dark);
+}
+
+.login-links,
+.auth-links {
+    margin-top: 20px;
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.login-link-group {
+    display: flex;
+    gap: 10px;
+}
+
+.login-links a,
+.auth-links a {
+    color: #f5f5f5;
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 800;
+    opacity: 0.9;
+}
+
+.login-links a:hover,
+.auth-links a:hover {
+    color: var(--accent);
+}
+
+.login-card.shake {
+    animation: shake 0.35s ease-in-out;
+}
+
+.character.happy,
+.omagotchi-character.happy,
+.manager-character-img.happy {
+    animation: happyJump 0.6s ease-in-out;
+}
+
+.manager-card {
+    border-color: #1f1f2e;
+}
+
+.manager-card .brand-panel {
+    background:
+            linear-gradient(135deg, rgba(120, 100, 255, 0.18), transparent),
+            var(--panel-manager);
+}
+
+.manager-bubble {
+    background: var(--manager-accent);
+    color: #252235;
+}
+
+@keyframes cardPop {
+    from {
+        opacity: 0;
+        transform: translateY(24px) scale(0.97);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+@keyframes bubbleFloat {
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-6px);
+    }
+}
+
+@keyframes characterBounce {
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-8px);
+    }
+}
+
+@keyframes happyJump {
+    0%,
+    100% {
+        transform: translateY(0) scale(1);
+    }
+
+    40% {
+        transform: translateY(-18px) scale(1.04);
+    }
+}
+
+@keyframes shake {
+    0%,
+    100% {
+        transform: translateX(0);
+    }
+
+    25% {
+        transform: translateX(-8px);
+    }
+
+    50% {
+        transform: translateX(8px);
+    }
+
+    75% {
+        transform: translateX(-5px);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation: none !important;
+        transition: none !important;
+    }
+}
+
+@media (max-width: 900px) {
+    .login-page {
+        padding: 32px;
+    }
+
+    .login-card {
+        grid-template-columns: 1fr;
+        max-width: 520px;
+    }
+
+    .brand-panel {
+        min-height: 360px;
+    }
+
+    .form-panel {
+        padding: 36px;
+        border-left: 0;
+        border-top: 1px solid rgba(255, 255, 255, 0.12);
+        background:
+                linear-gradient(180deg, rgba(0, 0, 0, 0.22), transparent 18px),
+                linear-gradient(180deg, rgba(255, 255, 255, 0.08), transparent),
+                var(--panel-dark);
+    }
+}
+
+@media (max-width: 520px) {
+    .login-page {
+        padding: 18px;
+    }
+
+    .login-card {
+        border-radius: 16px;
+    }
+
+    .brand-panel {
+        padding: 26px 20px;
+        min-height: 330px;
+    }
+
+    .brand-header h1 {
+        font-size: 28px;
+    }
+
+    .logo-image {
+        width: 260px;
+    }
+
+    .omagotchi-character {
+        width: 145px;
+    }
+
+    .manager-character-img {
+        width: 180px;
+    }
+
+    .form-panel {
+        padding: 28px 22px 34px;
+    }
+}

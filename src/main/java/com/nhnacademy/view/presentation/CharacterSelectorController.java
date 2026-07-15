@@ -1,0 +1,12 @@
+package com.nhnacademy.view.presentation;
+
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.GetMapping;
+
+@Controller
+public class CharacterSelectorController {
+    @GetMapping("/characterSelector")
+    public String characterSelector() {
+        return "characterSelector";
+    }
+}
