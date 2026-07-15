@@ -3,7 +3,6 @@ const card = document.querySelector(".login-card");
 const character = document.querySelector(".omagotchi-character");
 const bubble = document.querySelector(".speech-bubble");
 const inputs = document.querySelectorAll(".input-group input");
-const genderButtons = document.querySelectorAll("[data-gender]");
 
 inputs.forEach((input) => {
     input.addEventListener("focus", () => {
@@ -19,32 +18,12 @@ inputs.forEach((input) => {
     });
 });
 
-genderButtons.forEach((button) => {
-    button.addEventListener("click", () => {
-        form.gender.value = button.dataset.gender;
-
-        genderButtons.forEach((genderButton) => {
-            genderButton.classList.toggle("is-selected", genderButton === button);
-            genderButton.setAttribute("aria-pressed", String(genderButton === button));
-        });
-
-        character.classList.add("happy");
-        bubble.innerHTML = "성별 정보를<br />선택했어요.";
-
-        setTimeout(() => {
-            character.classList.remove("happy");
-        }, 600);
-    });
-});
-
 form.addEventListener("submit", (event) => {
     const loginId = form.loginId.value.trim();
     const password = form.password.value.trim();
     const username = form.username.value.trim();
-    const birthDate = form.birthDate.value;
-    const gender = form.gender.value;
 
-    if (!loginId || !password || !username || !birthDate || !gender) {
+    if (!loginId || !password || !username) {
         event.preventDefault();
         bubble.innerHTML = "아직 입력하지 않은<br />정보가 있어요!";
         shakeCard();
@@ -66,12 +45,6 @@ form.addEventListener("submit", (event) => {
     if (username.length < 2) {
         event.preventDefault();
         bubble.innerHTML = "사용자 이름은 2자 이상으로<br />입력해주세요.";
-        shakeCard();
-        return;
-    }
-    if (new Date(birthDate) > new Date()) {
-        event.preventDefault();
-        bubble.innerHTML = "생년월일을<br />다시 확인해주세요.";
         shakeCard();
         return;
     }

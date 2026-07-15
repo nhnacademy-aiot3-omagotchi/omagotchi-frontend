@@ -306,54 +306,7 @@ body {
     box-shadow: 6px 6px 0 var(--border-dark);
 }
 
-.gender-group {
-    margin: 0 0 14px;
-    padding: 0;
-    border: 0;
-}
-
-.gender-group legend {
-    display: block;
-    margin: 0 0 8px 4px;
-    color: var(--text-muted);
-    font-size: 13px;
-    font-weight: 800;
-}
-
-.gender-options {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 10px;
-}
-
-.gender-options button {
-    height: 48px;
-    border: 3px solid var(--border-dark);
-    border-radius: 16px;
-    background: var(--input);
-    color: var(--text-dark);
-    font: inherit;
-    font-size: 13px;
-    font-weight: 900;
-    cursor: pointer;
-    box-shadow: 4px 4px 0 var(--border-dark);
-    transition:
-            transform 0.15s ease,
-            box-shadow 0.15s ease,
-            border-color 0.15s ease,
-            background 0.15s ease;
-}
-
-.gender-options button:hover,
-.gender-options button.is-selected {
-    transform: translate(-2px, -2px);
-    border-color: var(--accent);
-    background: #ffffff;
-    box-shadow: 6px 6px 0 var(--border-dark);
-}
-
 .input-group input:focus-visible,
-.gender-options button:focus-visible,
 .login-button:focus-visible,
 .auth-button:focus-visible,
 .index-sub-action:focus-visible,
