@@ -222,8 +222,11 @@ body {
 }
 
 .index-primary-action {
+    width: 100%;
+    min-height: 58px;
     display: grid;
     place-items: center;
+    padding: 0 24px;
     text-decoration: none;
 }
 
