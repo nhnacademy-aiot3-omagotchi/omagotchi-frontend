@@ -42,6 +42,17 @@ class FrontendApplicationTests {
 	}
 
 	@Test
+	void managerRegisterPageIsRendered() throws Exception {
+		mockMvc.perform(get("/managerRegister"))
+				.andExpect(status().isOk())
+				.andExpect(view().name("managerRegister"))
+				.andExpect(content().string(containsString("소속 기관")));
+
+		mockMvc.perform(get("/js/managerRegister.js"))
+				.andExpect(status().isOk());
+	}
+
+	@Test
 	void actuatorHealthIsUp() throws Exception {
 		mockMvc.perform(get("/actuator/health"))
 				.andExpect(status().isOk())

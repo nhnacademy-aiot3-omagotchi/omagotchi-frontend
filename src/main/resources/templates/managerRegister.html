@@ -3,15 +3,15 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Omagotchi Register</title>
+    <title>Omagotchi Manager Register</title>
 
     <link rel="stylesheet" href="/css/auth.css" />
 </head>
 <body>
 <main class="login-page">
-    <section class="login-card">
+    <section class="login-card manager-card manager-register-card">
 
-        <div class="brand-panel">
+        <div class="brand-panel manager-brand-panel">
             <header class="brand-header">
                 <img class="logo-image"
                      src="/images/logo.png"
@@ -19,13 +19,13 @@
             </header>
 
             <div class="character-zone">
-                <div class="speech-bubble">
-                    오늘도 실습실에서<br />
-                    성장해볼까요?
+                <div class="speech-bubble manager-bubble">
+                    안 보는 것 같아도<br />
+                    다 보입니다!
                 </div>
-                <img class="omagotchi-character"
-                     src="/images/normal_character.png"
-                     alt="Omagotchi">
+                <img class="manager-character-img"
+                     src="/images/manager_character.gif"
+                     alt="관리자 캐릭터">
             </div>
 
             <p class="brand-message">
@@ -33,9 +33,9 @@
             </p>
         </div>
 
-        <div class="form-panel">
-            <form class="auth-form register-form" action="#" method="post">
-                <h2>Register</h2>
+        <div class="form-panel manager-form-panel">
+            <form class="auth-form manager-register-form" action="#" method="post">
+                <h2>Manager<br />Register</h2>
 
                 <label class="input-group">
                     <span>아이디</span>
@@ -52,12 +52,17 @@
                     <input type="text" name="username" placeholder="사용자 이름을 입력하세요" />
                 </label>
 
+                <label class="input-group">
+                    <span>소속 기관</span>
+                    <input type="text" name="organ" placeholder="소속 기관을 입력하세요" />
+                </label>
+
                 <button class="auth-button register-button" type="submit">
-                    회원가입
+                    관리자 등록
                 </button>
 
                 <div class="auth-links">
-                    <a href="/login">로그인으로 돌아가기</a>
+                    <a href="/managerLogin">관리자 로그인으로 돌아가기</a>
                 </div>
             </form>
         </div>
@@ -65,6 +70,6 @@
     </section>
 </main>
 
-<script src="/js/register.js"></script>
+<script src="/js/managerRegister.js"></script>
 </body>
 </html>

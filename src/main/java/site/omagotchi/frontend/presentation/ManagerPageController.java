@@ -9,4 +9,9 @@ public class ManagerPageController {
     public String managerLoginPage() {
         return "managerLogin";
     }
+
+    @GetMapping("/managerRegister")
+    public String managerRegisterPage() {
+        return "managerRegister";
+    }
 }

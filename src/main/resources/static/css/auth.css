@@ -395,6 +395,10 @@ body {
     border-color: #1f1f2e;
 }
 
+.manager-register-card {
+    min-height: 620px;
+}
+
 .manager-card .brand-panel {
     background:
             linear-gradient(135deg, rgba(120, 100, 255, 0.18), transparent),
