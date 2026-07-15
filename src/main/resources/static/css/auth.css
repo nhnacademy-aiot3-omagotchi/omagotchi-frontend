@@ -185,6 +185,72 @@ body {
     max-width: 300px;
 }
 
+.index-entry {
+    width: 100%;
+    max-width: 330px;
+    text-align: center;
+}
+
+.index-eyebrow {
+    margin: 0 0 12px;
+    color: var(--accent);
+    font-size: 12px;
+    font-weight: 900;
+    letter-spacing: 0;
+}
+
+.index-entry h1 {
+    margin: 0 0 18px;
+    color: var(--white);
+    font-size: 42px;
+    font-weight: 900;
+    line-height: 1;
+    text-shadow: 3px 3px 0 rgba(0, 0, 0, 0.28);
+}
+
+.index-description {
+    margin: 0 0 28px;
+    color: var(--text-muted);
+    font-size: 14px;
+    font-weight: 800;
+    line-height: 1.65;
+}
+
+.index-actions {
+    display: grid;
+    gap: 13px;
+}
+
+.index-primary-action {
+    display: grid;
+    place-items: center;
+    text-decoration: none;
+}
+
+.index-sub-action {
+    min-height: 46px;
+    display: grid;
+    place-items: center;
+    border: 3px solid var(--border-dark);
+    border-radius: 14px;
+    background: var(--input);
+    color: var(--text-dark);
+    font-size: 13px;
+    font-weight: 900;
+    text-decoration: none;
+    box-shadow: 4px 4px 0 var(--border-dark);
+    transition:
+            transform 0.15s ease,
+            box-shadow 0.15s ease,
+            background 0.15s ease;
+}
+
+.index-sub-action:hover {
+    transform: translate(-2px, -2px);
+    background: #ffffff;
+    box-shadow: 6px 6px 0 var(--border-dark);
+}
+
 .password-step {
     display: none;
 }
@@ -287,6 +353,7 @@ body {
 .gender-options button:focus-visible,
 .login-button:focus-visible,
 .auth-button:focus-visible,
+.index-sub-action:focus-visible,
 .login-links a:focus-visible,
 .auth-links a:focus-visible {
     outline: 3px solid var(--accent);
