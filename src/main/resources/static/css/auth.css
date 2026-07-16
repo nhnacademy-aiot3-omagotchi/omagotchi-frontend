@@ -362,6 +362,19 @@ body {
     gap: 12px;
 }
 
+.manager-login-links {
+    align-items: flex-start;
+}
+
+.manager-register-guide {
+    display: grid;
+    gap: 6px;
+    color: var(--text-muted);
+    font-size: 12px;
+    font-weight: 800;
+    line-height: 1.35;
+}
+
 .login-link-group {
     display: flex;
     gap: 10px;
@@ -397,6 +410,10 @@ body {
 
 .manager-register-card {
     min-height: 620px;
+}
+
+.manager-register-card .manager-character-img {
+    cursor: pointer;
 }
 
 .manager-card .brand-panel {

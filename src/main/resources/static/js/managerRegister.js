@@ -32,6 +32,17 @@ inputs.forEach((input) => {
     });
 });
 
+character.addEventListener("click", () => {
+    const organization = form.organ.value.trim() || sessionStorage.getItem("omagotchiManagerOrganization");
+
+    if (!organization) {
+        showMessage("소속 기관을 입력하면<br />여기에 보여드릴게요.");
+        return;
+    }
+
+    showMessage(`관리자 소속은<br />${organization} 입니다.`);
+});
+
 form.addEventListener("submit", (event) => {
     const loginId = form.loginId.value.trim();
     const password = form.password.value.trim();
@@ -74,6 +85,9 @@ form.addEventListener("submit", (event) => {
     }
 
     event.preventDefault();
+    sessionStorage.setItem("omagotchiManagerLoginId", loginId);
+    sessionStorage.setItem("omagotchiManagerName", username);
+    sessionStorage.setItem("omagotchiManagerOrganization", organization);
     showMessage(managerRegisterMessages.success);
     setTimeout(() => {
         window.location.href = "/managerLogin";

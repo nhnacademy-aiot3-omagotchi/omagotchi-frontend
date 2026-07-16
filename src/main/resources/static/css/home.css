@@ -253,104 +253,7 @@
     background: rgba(25, 25, 25, 0.24);
 }
 
-.hamburger-button {
-    position: absolute;
-    top: 28px;
-    right: 28px;
-    z-index: 4;
-    width: 54px;
-    height: 54px;
-    display: grid;
-    place-content: center;
-    gap: 6px;
-    border: 0;
-    border-radius: 50%;
-    background: #eeeeee;
-    cursor: pointer;
-}
-
-.hamburger-button span {
-    width: 28px;
-    height: 4px;
-    border-radius: 999px;
-    background: #101010;
-}
-
-.lab-link {
-    position: absolute;
-    right: 28px;
-    bottom: 20px;
-    z-index: 2;
-    width: 178px;
-    min-height: 64px;
-    display: grid;
-    place-items: center;
-    padding: 14px;
-    border: 0;
-    border-radius: 12px;
-    background: #454545;
-    color: var(--white);
-    font-size: 16px;
-    font-weight: 900;
-    text-align: center;
-    text-decoration: none;
-}
-
-.menu-overlay {
-    position: absolute;
-    top: 18px;
-    right: 38px;
-    z-index: 3;
-    width: 286px;
-    min-height: 438px;
-    padding: 52px 34px 30px;
-    border-radius: 16px;
-    background: #eeeeee;
-    opacity: 0;
-    pointer-events: none;
-    transform: translateX(18px);
-    transition: opacity 0.18s ease, transform 0.18s ease;
-}
-
-.menu-overlay.is-open {
-    opacity: 1;
-    pointer-events: auto;
-    transform: translateX(0);
-}
-
-.menu-grid {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 34px 30px;
-}
-
-.menu-grid button {
-    min-height: 86px;
-    display: grid;
-    place-items: center;
-    gap: 8px;
-    border: 0;
-    background: transparent;
-    color: #101010;
-    font: inherit;
-    font-size: 20px;
-    font-weight: 900;
-    cursor: pointer;
-}
-
-.menu-icon {
-    display: block;
-    color: #101010;
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    font-size: 48px;
-    font-weight: 900;
-    line-height: 1;
-}
-
-.profile-icon:focus-visible,
-.hamburger-button:focus-visible,
-.lab-link:focus-visible,
-.menu-grid button:focus-visible {
+.profile-icon:focus-visible {
     outline: 3px solid #1499f5;
     outline-offset: 3px;
 }
@@ -364,15 +267,12 @@
         height: auto;
         min-height: calc(100vh - 28px);
         display: grid;
-        grid-template-rows: auto minmax(300px, 1fr) auto;
+        grid-template-rows: auto minmax(300px, 1fr);
         padding: 18px;
     }
 
     .profile-panel,
-    .character-stage,
-    .hamburger-button,
-    .lab-link,
-    .menu-overlay {
+    .character-stage {
         position: static;
     }
 
@@ -383,25 +283,5 @@
     .character-stage {
         inset: auto;
         min-height: 330px;
-    }
-
-    .hamburger-button {
-        position: absolute;
-        top: 18px;
-        right: 18px;
-    }
-
-    .lab-link {
-        width: 100%;
-        margin-top: 16px;
-    }
-
-    .menu-overlay {
-        position: absolute;
-        top: 82px;
-        right: 18px;
-        left: 18px;
-        width: auto;
-        min-height: 0;
     }
 }

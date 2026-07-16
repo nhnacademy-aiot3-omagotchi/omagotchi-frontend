@@ -35,7 +35,7 @@
         </div>
 
         <div class="form-panel manager-form-panel">
-            <form class="login-form manager-login-form" action="#" method="post">
+            <form class="login-form manager-login-form" action="/managerDashboard" method="get">
                 <h2>Manager<br />Login</h2>
 
                 <label class="input-group">
@@ -52,8 +52,11 @@
                     로그인
                 </button>
 
-                <div class="auth-links back-link">
-                    <a href="/managerRegister">관리자 등록</a>
+                <div class="auth-links manager-login-links">
+                    <span class="manager-register-guide">
+                        아직 가입을 하지 않았다면?
+                        <a href="/managerRegister">관리자 회원가입</a>
+                    </span>
                     <a href="/login">뒤로 가기</a>
                 </div>
             </form>
