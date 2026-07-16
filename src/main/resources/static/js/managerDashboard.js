@@ -1,19 +1,46 @@
 const cohortForm = document.querySelector("[data-cohort-form]");
+const cohortFormTitle = document.querySelector("[data-cohort-form-title]");
+const cohortSubmit = document.querySelector("[data-cohort-submit]");
+const cohortCancel = document.querySelector("[data-cohort-cancel]");
+const cohortEditor = document.querySelector("[data-cohort-editor]");
+const openCohortFormButton = document.querySelector("[data-open-cohort-form]");
 const previewName = document.querySelector("[data-preview-name]");
 const previewPeriod = document.querySelector("[data-preview-period]");
 const previewCode = document.querySelector("[data-preview-code]");
 const issueCodeButtons = document.querySelectorAll("[data-issue-code]");
 const cohortList = document.querySelector("[data-cohort-list]");
 const codeList = document.querySelector("[data-code-list]");
+const memberList = document.querySelector("[data-member-list]");
+const memberSearch = document.querySelector("[data-member-search]");
+const seedMembersButton = document.querySelector("[data-seed-members]");
 const auditList = document.querySelector("[data-audit-list]");
-const tabButtons = document.querySelectorAll("[data-dashboard-tab]");
+const navTabButtons = document.querySelectorAll(".manager-dashboard-nav [data-dashboard-tab]");
+const tabTriggers = document.querySelectorAll("[data-dashboard-tab]");
 const panels = document.querySelectorAll("[data-dashboard-panel]");
 const panelStatus = document.querySelector(".panel-status");
 const dashboardBubble = document.querySelector("[data-dashboard-bubble]");
+const cohortDetail = document.querySelector("[data-cohort-detail]");
+const managerOrganization = document.querySelector("[data-manager-organization]");
+const managerName = document.querySelector("[data-manager-name]");
+const managerLoginId = document.querySelector("[data-manager-login-id]");
 
-const cohortsStorageKey = "omagotchiManagerCohorts";
-const auditsStorageKey = "omagotchiManagerAuditLogs";
+const currentManager = {
+    loginId: sessionStorage.getItem("omagotchiManagerLoginId") || "manager",
+    name: sessionStorage.getItem("omagotchiManagerName") || "관리자",
+    organization: sessionStorage.getItem("omagotchiManagerOrganization") || "소속기관 미등록"
+};
+const managerStorageScope = `${currentManager.organization}:${currentManager.loginId}`.replaceAll(/\s+/g, "_");
+const cohortsStorageKey = `omagotchiManagerCohorts:${managerStorageScope}`;
+const auditsStorageKey = `omagotchiManagerAuditLogs:${managerStorageScope}`;
 let selectedCohortId = null;
+let editingCohortId = null;
+
+const sampleMembers = [
+    { id: "user-01", name: "손재민", loginId: "jaemin.son", status: "ACTIVE", role: "USER" },
+    { id: "user-02", name: "문재민", loginId: "jaemin.mun", status: "ACTIVE", role: "COHORT_MANAGER" },
+    { id: "user-03", name: "박지우", loginId: "jioo.park", status: "PENDING", role: "USER" },
+    { id: "user-04", name: "박상민", loginId: "sangmin.park", status: "ACTIVE", role: "USER" }
+];
 
 const readJson = (key, fallbackValue) => {
     try {
@@ -27,8 +54,29 @@ const writeJson = (key, value) => {
     sessionStorage.setItem(key, JSON.stringify(value));
 };
 
-const getCohorts = () => readJson(cohortsStorageKey, []);
-const saveCohorts = (cohorts) => writeJson(cohortsStorageKey, cohorts);
+const renderManagerSession = () => {
+    managerOrganization.textContent = currentManager.organization;
+    managerName.textContent = `${currentManager.name} 관리자`;
+    managerLoginId.textContent = currentManager.loginId;
+};
+
+const normalizeCohort = (cohort) => ({
+    id: cohort.id || `cohort-${Date.now()}`,
+    name: cohort.name || "이름 없는 기수",
+    description: cohort.description || "",
+    startDate: cohort.startDate || "",
+    endDate: cohort.endDate || "",
+    status: cohort.status || "READY",
+    capacity: cohort.capacity || "",
+    memberCount: Number(cohort.memberCount || cohort.members?.length || 0),
+    joinCode: cohort.joinCode || "",
+    codeStatus: cohort.codeStatus || (cohort.joinCode ? "ACTIVE" : "미발급"),
+    expiresAt: cohort.expiresAt || cohort.endDate || "",
+    members: Array.isArray(cohort.members) ? cohort.members : []
+});
+
+const getCohorts = () => readJson(cohortsStorageKey, []).map(normalizeCohort);
+const saveCohorts = (cohorts) => writeJson(cohortsStorageKey, cohorts.map(normalizeCohort));
 const getAudits = () => readJson(auditsStorageKey, []);
 const saveAudits = (audits) => writeJson(auditsStorageKey, audits);
 
@@ -38,6 +86,14 @@ const formatDate = (dateValue) => {
     }
 
     return dateValue.replaceAll("-", ".");
+};
+
+const getPeriod = (cohort) => {
+    if (cohort.startDate && cohort.endDate) {
+        return `${formatDate(cohort.startDate)} - ${formatDate(cohort.endDate)}`;
+    }
+
+    return "기간 미정";
 };
 
 const getStatusLabel = (status) => {
@@ -50,6 +106,32 @@ const getStatusLabel = (status) => {
     return labels[status] || status || "준비";
 };
 
+const getMemberStatusLabel = (status) => {
+    const labels = {
+        ACTIVE: "활성",
+        PENDING: "대기",
+        ENDED: "종료"
+    };
+
+    return labels[status] || status || "활성";
+};
+
+const getRoleLabel = (role) => {
+    if (role === "COHORT_MANAGER") {
+        return "기수 관리자";
+    }
+
+    return "일반";
+};
+
+const getCodeStatusLabel = (cohort) => {
+    if (!cohort.joinCode) {
+        return "미발급";
+    }
+
+    return cohort.codeStatus === "INACTIVE" ? "비활성" : "활성";
+};
+
 const addAudit = (action, target, detail) => {
     const audits = getAudits();
     audits.unshift({
@@ -59,7 +141,26 @@ const addAudit = (action, target, detail) => {
         target,
         detail
     });
-    saveAudits(audits.slice(0, 12));
+    saveAudits(audits.slice(0, 20));
+};
+
+const showBubble = (message) => {
+    dashboardBubble.innerHTML = message;
+};
+
+const flashButton = (button, text) => {
+    if (!button) {
+        return;
+    }
+
+    const originalText = button.textContent;
+    button.textContent = text;
+    button.classList.add("is-feedback");
+
+    window.setTimeout(() => {
+        button.textContent = originalText;
+        button.classList.remove("is-feedback");
+    }, 1200);
 };
 
 const generateCode = () => {
@@ -94,35 +195,120 @@ const updatePreview = () => {
     }
 };
 
+const openCohortEditor = () => {
+    cohortEditor.classList.add("is-editor-open");
+};
+
+const closeCohortEditor = () => {
+    cohortEditor.classList.remove("is-editor-open");
+};
+
+const setFormMode = (mode, cohort = null, shouldOpen = true) => {
+    if (shouldOpen) {
+        openCohortEditor();
+    } else {
+        closeCohortEditor();
+    }
+
+    if (mode === "edit" && cohort) {
+        editingCohortId = cohort.id;
+        cohortFormTitle.textContent = "기수 수정";
+        cohortSubmit.textContent = "기수 저장";
+        cohortCancel.hidden = false;
+        cohortForm.cohortName.value = cohort.name;
+        cohortForm.description.value = cohort.description;
+        cohortForm.startDate.value = cohort.startDate;
+        cohortForm.endDate.value = cohort.endDate;
+        cohortForm.status.value = cohort.status;
+        cohortForm.capacity.value = cohort.capacity;
+        panelStatus.textContent = "수정중";
+        showBubble("기수 정보를 고친 뒤<br />저장하면 됩니다.");
+        updatePreview();
+        return;
+    }
+
+    editingCohortId = null;
+    cohortFormTitle.textContent = "기수 만들기";
+    cohortSubmit.textContent = "기수 만들기";
+    cohortCancel.hidden = !shouldOpen;
+    cohortForm.reset();
+    panelStatus.textContent = "준비중";
+    updatePreview();
+};
+
 const renderCohorts = () => {
     const cohorts = getCohorts();
 
     if (cohorts.length === 0) {
         cohortList.innerHTML = `
             <tr>
-                <td colspan="5">아직 생성된 기수가 없습니다.</td>
+                <td colspan="6">아직 생성된 기수가 없습니다.</td>
             </tr>
         `;
         return;
     }
 
     cohortList.innerHTML = cohorts.map((cohort) => {
-        const period = cohort.startDate && cohort.endDate
-            ? `${formatDate(cohort.startDate)} - ${formatDate(cohort.endDate)}`
-            : "기간 미정";
-        const codeLabel = cohort.joinCode || cohort.codeStatus || "미발급";
+        const codeLabel = cohort.joinCode || "미발급";
         const codeClass = cohort.joinCode ? "" : " is-muted";
 
         return `
             <tr data-cohort-id="${cohort.id}">
                 <td>${cohort.name}</td>
                 <td><span class="table-badge">${getStatusLabel(cohort.status)}</span></td>
-                <td>${period}</td>
-                <td>${cohort.memberCount || 0}명</td>
+                <td>${getPeriod(cohort)}</td>
+                <td>${cohort.memberCount || cohort.members.length}명</td>
                 <td><span class="table-badge${codeClass}">${codeLabel}</span></td>
+                <td>
+                    <div class="manager-action-group">
+                        <button class="manager-action-button" type="button" data-action="detail" data-cohort-id="${cohort.id}">상세</button>
+                        <button class="manager-action-button" type="button" data-action="edit" data-cohort-id="${cohort.id}">수정</button>
+                        <button class="manager-action-button" type="button" data-action="issue" data-cohort-id="${cohort.id}">코드</button>
+                    </div>
+                </td>
             </tr>
         `;
     }).join("");
+};
+
+const renderDetail = () => {
+    const selected = getCohorts().find((cohort) => cohort.id === selectedCohortId);
+
+    if (!selected) {
+        cohortDetail.dataset.expanded = "false";
+        cohortDetail.innerHTML = `
+            <span class="panel-kicker">기수 상세</span>
+            <strong>기수를 선택하면 상세 정보가 표시됩니다.</strong>
+            <p>상세, 수정, 코드 발급, 소속 사용자 관리 흐름을 이 영역에서 확인합니다.</p>
+        `;
+        return;
+    }
+
+    cohortDetail.dataset.expanded = "true";
+
+    cohortDetail.innerHTML = `
+        <span class="panel-kicker">기수 상세</span>
+        <strong>${selected.name}</strong>
+        <p>${selected.description || "등록된 설명이 없습니다."}</p>
+        <div class="cohort-detail-grid">
+            <div class="cohort-detail-item">
+                <span>운영 상태</span>
+                <strong>${getStatusLabel(selected.status)}</strong>
+            </div>
+            <div class="cohort-detail-item">
+                <span>운영 기간</span>
+                <strong>${getPeriod(selected)}</strong>
+            </div>
+            <div class="cohort-detail-item">
+                <span>정원</span>
+                <strong>${selected.capacity || "-"}명</strong>
+            </div>
+            <div class="cohort-detail-item">
+                <span>가입 코드</span>
+                <strong>${selected.joinCode || "미발급"}</strong>
+            </div>
+        </div>
+    `;
 };
 
 const renderCodes = () => {
@@ -131,7 +317,7 @@ const renderCodes = () => {
     if (cohorts.length === 0) {
         codeList.innerHTML = `
             <tr>
-                <td colspan="5">기수를 만든 뒤 가입 코드를 발급할 수 있습니다.</td>
+                <td colspan="6">기수를 만든 뒤 가입 코드를 발급할 수 있습니다.</td>
             </tr>
         `;
         return;
@@ -139,9 +325,10 @@ const renderCodes = () => {
 
     codeList.innerHTML = cohorts.map((cohort) => {
         const codeLabel = cohort.joinCode || "미발급";
-        const status = cohort.joinCode ? "활성" : "대기";
+        const status = getCodeStatusLabel(cohort);
         const expiresAt = cohort.expiresAt ? formatDate(cohort.expiresAt) : "기수 종료일 기준";
-        const used = cohort.joinCode ? `${cohort.memberCount || 0}/${cohort.capacity || "-"}명` : "-";
+        const used = cohort.joinCode ? `${cohort.members.length || cohort.memberCount || 0}/${cohort.capacity || "-"}명` : "-";
+        const toggleLabel = cohort.codeStatus === "INACTIVE" ? "활성화" : "비활성화";
 
         return `
             <tr data-cohort-id="${cohort.id}">
@@ -150,6 +337,62 @@ const renderCodes = () => {
                 <td>${status}</td>
                 <td>${expiresAt}</td>
                 <td>${used}</td>
+                <td>
+                    <div class="manager-action-group">
+                        <button class="manager-action-button" type="button" data-action="copy-code" data-cohort-id="${cohort.id}" ${cohort.joinCode ? "" : "disabled"}>복사</button>
+                        <button class="manager-action-button" type="button" data-action="toggle-code" data-cohort-id="${cohort.id}" ${cohort.joinCode ? "" : "disabled"}>${toggleLabel}</button>
+                        <button class="manager-action-button" type="button" data-action="issue" data-cohort-id="${cohort.id}">발급</button>
+                    </div>
+                </td>
+            </tr>
+        `;
+    }).join("");
+};
+
+const renderMembers = () => {
+    const selected = getCohorts().find((cohort) => cohort.id === selectedCohortId);
+
+    if (!selected) {
+        memberList.innerHTML = `
+            <tr>
+                <td colspan="5">기수를 선택하면 소속 사용자 목록을 확인할 수 있습니다.</td>
+            </tr>
+        `;
+        return;
+    }
+
+    const keyword = memberSearch.value.trim().toLowerCase();
+    const members = selected.members.filter((member) => {
+        if (!keyword) {
+            return true;
+        }
+
+        return member.name.toLowerCase().includes(keyword) || member.loginId.toLowerCase().includes(keyword);
+    });
+
+    if (members.length === 0) {
+        memberList.innerHTML = `
+            <tr>
+                <td colspan="5">표시할 사용자가 없습니다.</td>
+            </tr>
+        `;
+        return;
+    }
+
+    memberList.innerHTML = members.map((member) => {
+        const isManager = member.role === "COHORT_MANAGER";
+
+        return `
+            <tr data-member-id="${member.id}">
+                <td>${member.name}</td>
+                <td>${member.loginId}</td>
+                <td>${getMemberStatusLabel(member.status)}</td>
+                <td><span class="table-badge${isManager ? "" : " is-muted"}">${getRoleLabel(member.role)}</span></td>
+                <td>
+                    <button class="manager-action-button${isManager ? " is-danger" : " is-active"}" type="button" data-action="toggle-manager" data-member-id="${member.id}">
+                        ${isManager ? "관리자 해제" : "관리자 지정"}
+                    </button>
+                </td>
             </tr>
         `;
     }).join("");
@@ -177,13 +420,8 @@ const renderAudits = () => {
     `).join("");
 };
 
-const renderAll = () => {
-    renderCohorts();
-    renderCodes();
-    renderAudits();
-
-    const cohorts = getCohorts();
-    const selected = cohorts.find((cohort) => cohort.id === selectedCohortId);
+const updateSelectionState = () => {
+    const selected = getCohorts().find((cohort) => cohort.id === selectedCohortId);
 
     if (selected) {
         previewCode.textContent = selected.joinCode || "기수 생성 후 발급";
@@ -200,8 +438,21 @@ const renderAll = () => {
     });
 };
 
+const renderAll = () => {
+    renderCohorts();
+    renderDetail();
+    renderCodes();
+    renderMembers();
+    renderAudits();
+    updateSelectionState();
+};
+
 const activatePanel = (panelName) => {
-    tabButtons.forEach((button) => {
+    if (panelName !== "cohorts") {
+        closeCohortEditor();
+    }
+
+    navTabButtons.forEach((button) => {
         button.classList.toggle("is-active", button.dataset.dashboardTab === panelName);
     });
 
@@ -212,71 +463,202 @@ const activatePanel = (panelName) => {
     sessionStorage.setItem("omagotchiManagerDashboardTab", panelName);
 };
 
-const createCohort = () => {
-    const name = cohortForm.cohortName.value.trim();
+const getFormPayload = () => ({
+    name: cohortForm.cohortName.value.trim(),
+    description: cohortForm.description.value.trim(),
+    startDate: cohortForm.startDate.value,
+    endDate: cohortForm.endDate.value,
+    status: cohortForm.status.value,
+    capacity: cohortForm.capacity.value.trim()
+});
 
-    if (!name) {
+const saveCohortFromForm = () => {
+    const payload = getFormPayload();
+
+    if (!payload.name) {
         panelStatus.textContent = "이름 필요";
-        dashboardBubble.innerHTML = "일단 만들어봐요<br />기수 이름부터 적어주세요.";
+        showBubble("일단 만들어봐요<br />기수 이름부터 적어주세요.");
         cohortForm.cohortName.focus();
         return;
     }
 
-    const cohort = {
+    const cohorts = getCohorts();
+
+    if (editingCohortId) {
+        const index = cohorts.findIndex((cohort) => cohort.id === editingCohortId);
+
+        if (index < 0) {
+            setFormMode("create", null, false);
+            return;
+        }
+
+        cohorts[index] = normalizeCohort({
+            ...cohorts[index],
+            ...payload,
+            expiresAt: payload.endDate || cohorts[index].expiresAt
+        });
+        saveCohorts(cohorts);
+        selectedCohortId = cohorts[index].id;
+        panelStatus.textContent = "수정됨";
+        showBubble("기수 수정 완료!<br />목록과 상세에 반영했습니다.");
+        addAudit("기수 수정", cohorts[index].name, "기본 정보 수정");
+        setFormMode("create", null, false);
+        renderAll();
+        activatePanel("cohorts");
+        return;
+    }
+
+    const cohort = normalizeCohort({
         id: `cohort-${Date.now()}`,
-        name,
-        description: cohortForm.description.value.trim(),
-        startDate: cohortForm.startDate.value,
-        endDate: cohortForm.endDate.value,
-        status: cohortForm.status.value,
-        capacity: cohortForm.capacity.value.trim(),
+        ...payload,
         memberCount: 0,
         joinCode: "",
         codeStatus: "미발급",
-        expiresAt: cohortForm.endDate.value
-    };
-    const cohorts = getCohorts();
+        expiresAt: payload.endDate,
+        members: []
+    });
 
     cohorts.unshift(cohort);
     saveCohorts(cohorts);
     selectedCohortId = cohort.id;
     panelStatus.textContent = "생성됨";
-    dashboardBubble.innerHTML = "기수 생성 완료!<br />이제 가입 코드를 발급하세요.";
+    showBubble("기수 생성 완료!<br />이제 가입 코드를 발급하세요.");
     addAudit("기수 생성", cohort.name, `${getStatusLabel(cohort.status)} 상태로 생성`);
+    setFormMode("create", null, false);
     renderAll();
     activatePanel("cohorts");
 };
 
-const issueJoinCode = () => {
+const issueJoinCode = (cohortId = selectedCohortId, feedbackButton = null) => {
     const cohorts = getCohorts();
-    const selectedIndex = cohorts.findIndex((cohort) => cohort.id === selectedCohortId);
+    const selectedIndex = cohorts.findIndex((cohort) => cohort.id === cohortId);
 
     if (selectedIndex < 0) {
         panelStatus.textContent = "기수 필요";
+        showBubble("코드를 발급할<br />기수를 먼저 선택해주세요.");
         return;
     }
 
     const selected = cohorts[selectedIndex];
+    selectedCohortId = selected.id;
+
     if (selected.joinCode) {
         previewCode.textContent = selected.joinCode;
         panelStatus.textContent = "발급 완료";
-        dashboardBubble.innerHTML = "이미 발급 되었습니다.<br />기존 코드를 사용하세요.";
-        renderAll();
-        activatePanel("codes");
+        flashButton(feedbackButton, "발급됨");
+        window.setTimeout(() => {
+            renderAll();
+            activatePanel("codes");
+        }, 900);
         return;
     }
 
-    selected.joinCode = selected.joinCode || generateCode();
-    selected.codeStatus = "활성";
+    selected.joinCode = generateCode();
+    selected.codeStatus = "ACTIVE";
     selected.expiresAt = selected.endDate;
     cohorts[selectedIndex] = selected;
     saveCohorts(cohorts);
     previewCode.textContent = selected.joinCode;
     panelStatus.textContent = "코드 발급";
-    dashboardBubble.innerHTML = "가입 코드 발급 완료!<br />이 코드를 참가자에게 공유하세요.";
+    flashButton(feedbackButton, "발급됨");
     addAudit("가입 코드 발급", selected.name, selected.joinCode);
+    window.setTimeout(() => {
+        renderAll();
+        activatePanel("codes");
+    }, 900);
+};
+
+const copyText = async (text) => {
+    if (navigator.clipboard) {
+        await navigator.clipboard.writeText(text);
+        return;
+    }
+
+    const textarea = document.createElement("textarea");
+    textarea.value = text;
+    document.body.appendChild(textarea);
+    textarea.select();
+    document.execCommand("copy");
+    textarea.remove();
+};
+
+const copyCode = async (cohortId, feedbackButton = null) => {
+    const cohort = getCohorts().find((item) => item.id === cohortId);
+
+    if (!cohort?.joinCode) {
+        return;
+    }
+
+    try {
+        await copyText(cohort.joinCode);
+    } catch {
+        flashButton(feedbackButton, "실패");
+        return;
+    }
+
+    selectedCohortId = cohort.id;
+    flashButton(feedbackButton, "복사됨");
+    addAudit("가입 코드 복사", cohort.name, cohort.joinCode);
+};
+
+const toggleCodeStatus = (cohortId, feedbackButton = null) => {
+    const cohorts = getCohorts();
+    const index = cohorts.findIndex((cohort) => cohort.id === cohortId);
+
+    if (index < 0 || !cohorts[index].joinCode) {
+        return;
+    }
+
+    cohorts[index].codeStatus = cohorts[index].codeStatus === "INACTIVE" ? "ACTIVE" : "INACTIVE";
+    saveCohorts(cohorts);
+    selectedCohortId = cohorts[index].id;
+    const label = getCodeStatusLabel(cohorts[index]);
+    flashButton(feedbackButton, label === "활성" ? "활성됨" : "비활성됨");
+    addAudit("가입 코드 상태 변경", cohorts[index].name, label);
+    window.setTimeout(renderAll, 900);
+};
+
+const seedMembers = () => {
+    const cohorts = getCohorts();
+    const index = cohorts.findIndex((cohort) => cohort.id === selectedCohortId);
+
+    if (index < 0) {
+        showBubble("소속 사용자를 넣을<br />기수를 먼저 선택해주세요.");
+        return;
+    }
+
+    if (cohorts[index].members.length > 0) {
+        showBubble("이미 목업 사용자가<br />등록되어 있습니다.");
+        return;
+    }
+
+    cohorts[index].members = sampleMembers;
+    cohorts[index].memberCount = sampleMembers.length;
+    saveCohorts(cohorts);
+    addAudit("소속 사용자 목업 추가", cohorts[index].name, `${sampleMembers.length}명 추가`);
+    showBubble("소속 사용자 목업을<br />추가했습니다.");
     renderAll();
-    activatePanel("codes");
+};
+
+const toggleManagerRole = (memberId) => {
+    const cohorts = getCohorts();
+    const index = cohorts.findIndex((cohort) => cohort.id === selectedCohortId);
+
+    if (index < 0) {
+        return;
+    }
+
+    const member = cohorts[index].members.find((item) => item.id === memberId);
+
+    if (!member) {
+        return;
+    }
+
+    member.role = member.role === "COHORT_MANAGER" ? "USER" : "COHORT_MANAGER";
+    saveCohorts(cohorts);
+    showBubble(`${member.name} 님을<br />${getRoleLabel(member.role)}로 변경했습니다.`);
+    addAudit("기수 관리자 변경", cohorts[index].name, `${member.name}: ${getRoleLabel(member.role)}`);
+    renderAll();
 };
 
 cohortForm.addEventListener("input", updatePreview);
@@ -284,18 +666,29 @@ cohortForm.addEventListener("input", updatePreview);
 cohortForm.addEventListener("submit", (event) => {
     event.preventDefault();
     updatePreview();
-    createCohort();
+    saveCohortFromForm();
+});
+
+cohortCancel.addEventListener("click", () => {
+    setFormMode("create", null, false);
+    showBubble("기수 작업을 닫았습니다.<br />목록에서 다시 시작하세요.");
+});
+
+openCohortFormButton.addEventListener("click", () => {
+    setFormMode("create", null, true);
+    showBubble("새 기수 정보를<br />입력해주세요.");
 });
 
 issueCodeButtons.forEach((button) => {
-    button.addEventListener("click", issueJoinCode);
+    button.addEventListener("click", () => issueJoinCode(selectedCohortId, button));
 });
 
-tabButtons.forEach((button) => {
+tabTriggers.forEach((button) => {
     button.addEventListener("click", () => activatePanel(button.dataset.dashboardTab));
 });
 
 cohortList.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-action]");
     const row = event.target.closest("[data-cohort-id]");
 
     if (!row) {
@@ -303,9 +696,78 @@ cohortList.addEventListener("click", (event) => {
     }
 
     selectedCohortId = row.dataset.cohortId;
-    renderAll();
+    const cohort = getCohorts().find((item) => item.id === selectedCohortId);
+
+    if (!button) {
+        renderAll();
+        return;
+    }
+
+    if (button.dataset.action === "detail") {
+        if (selectedCohortId === row.dataset.cohortId && cohortDetail.dataset.expanded === "true") {
+            selectedCohortId = null;
+            cohortDetail.dataset.expanded = "false";
+            renderAll();
+            return;
+        }
+
+        cohortDetail.dataset.expanded = "true";
+        showBubble("기수 상세를<br />아래에 표시했습니다.");
+        renderAll();
+        return;
+    }
+
+    if (button.dataset.action === "edit") {
+        setFormMode("edit", cohort);
+        renderAll();
+        return;
+    }
+
+    if (button.dataset.action === "issue") {
+        issueJoinCode(selectedCohortId, button);
+    }
 });
 
-updatePreview();
+codeList.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-action]");
+
+    if (!button) {
+        return;
+    }
+
+    const cohortId = button.dataset.cohortId;
+    selectedCohortId = cohortId;
+
+    if (button.dataset.action === "copy-code") {
+        copyCode(cohortId, button);
+        return;
+    }
+
+    if (button.dataset.action === "toggle-code") {
+        toggleCodeStatus(cohortId, button);
+        return;
+    }
+
+    if (button.dataset.action === "issue") {
+        issueJoinCode(cohortId, button);
+    }
+});
+
+seedMembersButton.addEventListener("click", seedMembers);
+
+memberSearch.addEventListener("input", renderMembers);
+
+memberList.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-action='toggle-manager']");
+
+    if (!button) {
+        return;
+    }
+
+    toggleManagerRole(button.dataset.memberId);
+});
+
+renderManagerSession();
+setFormMode("create", null, false);
 renderAll();
 activatePanel(sessionStorage.getItem("omagotchiManagerDashboardTab") || "cohorts");

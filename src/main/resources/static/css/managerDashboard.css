@@ -1,6 +1,6 @@
 .manager-dashboard-page {
     min-height: 100vh;
-    padding: 28px;
+    padding: 28px 28px 28px 118px;
     background:
             radial-gradient(circle at 16% 10%, rgba(143, 209, 106, 0.1), transparent 30%),
             radial-gradient(circle at 86% 18%, rgba(244, 241, 255, 0.12), transparent 28%),
@@ -8,10 +8,11 @@
 }
 
 .manager-dashboard-shell {
+    position: relative;
     width: min(1120px, 100%);
     min-height: calc(100vh - 56px);
     margin: 0 auto;
-    overflow: hidden;
+    overflow: visible;
     border: 4px solid var(--border-dark);
     border-radius: 18px;
     background:
@@ -43,36 +44,74 @@
     height: auto;
 }
 
+.manager-session-card {
+    min-width: 220px;
+    display: grid;
+    justify-items: end;
+    gap: 4px;
+    padding: 12px 16px;
+    border: 3px solid var(--border-dark);
+    border-radius: 14px;
+    background: rgba(238, 238, 238, 0.94);
+    color: var(--text-dark);
+    box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.28);
+}
+
+.manager-session-card span,
+.manager-session-card small {
+    font-size: 11px;
+    font-weight: 900;
+    opacity: 0.72;
+}
+
+.manager-session-card strong {
+    font-size: 14px;
+    font-weight: 900;
+}
+
 .manager-dashboard-nav {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: flex-end;
-    gap: 10px;
+    position: absolute;
+    top: 124px;
+    left: -92px;
+    z-index: 3;
+    display: grid;
+    width: 92px;
+    gap: 11px;
+    justify-items: end;
 }
 
 .manager-dashboard-nav button {
-    min-height: 40px;
+    width: 92px;
+    min-height: 48px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    padding: 0 16px;
+    padding: 0 10px;
     border: 3px solid var(--border-dark);
-    border-radius: 14px;
+    border-right-width: 0;
+    border-radius: 14px 0 0 14px;
     background: #eeeeee;
     color: var(--text-dark);
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 900;
     text-decoration: none;
     cursor: pointer;
-    box-shadow: 3px 3px 0 var(--border-dark);
+    box-shadow: -4px 4px 0 rgba(0, 0, 0, 0.34);
+    transition:
+            transform 0.15s ease,
+            box-shadow 0.15s ease,
+            background 0.15s ease;
 }
 
 .manager-dashboard-nav button.is-active {
     background: var(--accent);
+    width: 104px;
+    transform: translateX(-2px);
+    box-shadow: -5px 5px 0 rgba(0, 0, 0, 0.36);
 }
 
 .manager-hero {
-    display: grid;
+    display: none;
     grid-template-columns: minmax(0, 1fr) 300px;
     gap: 28px;
     align-items: center;
@@ -116,10 +155,14 @@
 }
 
 .manager-workspace {
-    display: grid;
+    display: none;
     grid-template-columns: minmax(0, 1fr) 310px;
     gap: 22px;
     padding: 18px 38px 38px;
+}
+
+.manager-workspace.is-editor-open {
+    display: grid;
 }
 
 .cohort-create-panel,
@@ -142,6 +185,13 @@
     justify-content: space-between;
     gap: 18px;
     margin-bottom: 22px;
+}
+
+.panel-title-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 10px;
 }
 
 .panel-title-row h2 {
@@ -188,6 +238,17 @@
 
 .cohort-create-button {
     max-width: 220px;
+}
+
+.cohort-form-actions {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-top: 12px;
+}
+
+.cohort-form-actions .cohort-create-button {
+    margin-top: 0;
 }
 
 .cohort-preview-panel {
@@ -255,7 +316,7 @@
 
 .manager-table-panel {
     display: none;
-    margin: 0 38px 38px;
+    margin: 32px 38px 38px;
     padding: 24px;
     border: 3px solid var(--border-dark);
     border-radius: 16px;
@@ -278,8 +339,12 @@
     color: var(--text-dark);
     font-size: 12px;
     font-weight: 900;
+    cursor: pointer;
     box-shadow: 3px 3px 0 var(--border-dark);
-    opacity: 0.68;
+    transition:
+            transform 0.12s ease,
+            box-shadow 0.12s ease,
+            background 0.12s ease;
 }
 
 .manager-inline-button {
@@ -302,8 +367,107 @@
     opacity: 0.58;
 }
 
+.manager-outline-button:not(:disabled):hover,
+.manager-inline-button:not(:disabled):hover,
+.manager-secondary-button:not(:disabled):hover,
+.manager-action-button:not(:disabled):hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 5px 5px 0 var(--border-dark);
+}
+
+.manager-outline-button:not(:disabled):active,
+.manager-inline-button:not(:disabled):active,
+.manager-secondary-button:not(:disabled):active,
+.manager-action-button:not(:disabled):active {
+    transform: translate(2px, 2px);
+    box-shadow: 1px 1px 0 var(--border-dark);
+    background: var(--accent);
+}
+
+.manager-secondary-button {
+    min-width: 128px;
+    height: 54px;
+    border: 3px solid var(--border-dark);
+    border-radius: 16px;
+    background: var(--manager-accent);
+    color: #252235;
+    font-size: 13px;
+    font-weight: 900;
+    cursor: pointer;
+    box-shadow: 4px 4px 0 var(--border-dark);
+    transition:
+            transform 0.15s ease,
+            box-shadow 0.15s ease,
+            background 0.15s ease;
+}
+
+.manager-secondary-button:hover {
+    transform: translate(-2px, -2px);
+    background: #ffffff;
+    box-shadow: 6px 6px 0 var(--border-dark);
+}
+
+.manager-action-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.manager-action-button {
+    min-height: 32px;
+    padding: 0 10px;
+    border: 3px solid var(--border-dark);
+    border-radius: 999px;
+    background: #eeeeee;
+    color: var(--text-dark);
+    font-size: 11px;
+    font-weight: 900;
+    cursor: pointer;
+    box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.34);
+    transition:
+            transform 0.12s ease,
+            box-shadow 0.12s ease,
+            background 0.12s ease;
+}
+
+.manager-action-button.is-danger {
+    background: #ffb0c0;
+}
+
+.manager-action-button.is-active {
+    background: var(--accent);
+}
+
+.manager-action-button.is-feedback {
+    background: var(--accent);
+    transform: translate(1px, 1px);
+    box-shadow: 1px 1px 0 rgba(0, 0, 0, 0.34);
+}
+
+.manager-action-button:disabled {
+    cursor: default;
+    opacity: 0.56;
+}
+
 .manager-table-wrap {
-    overflow-x: auto;
+    max-height: min(620px, calc(100vh - 270px));
+    overflow: auto;
+    border-bottom: 2px solid rgba(255, 255, 255, 0.14);
+}
+
+.audit-table-wrap {
+    max-height: min(620px, calc(100vh - 220px));
+}
+
+.audit-table-wrap .manager-table {
+    min-width: 760px;
+}
+
+.manager-table-wrap thead th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: var(--panel-dark);
 }
 
 .manager-table {
@@ -326,6 +490,74 @@
     color: var(--accent);
     font-size: 12px;
     font-weight: 900;
+}
+
+.cohort-detail-panel,
+.member-search-panel {
+    display: grid;
+    gap: 10px;
+    margin-top: 22px;
+    padding: 20px;
+    border: 3px solid var(--border-dark);
+    border-radius: 14px;
+    background: rgba(0, 0, 0, 0.18);
+}
+
+.cohort-detail-panel strong {
+    color: var(--white);
+    font-size: 22px;
+    font-weight: 900;
+    line-height: 1.3;
+}
+
+.cohort-detail-panel p,
+.member-search-panel p {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: 13px;
+    font-weight: 800;
+    line-height: 1.6;
+}
+
+.cohort-detail-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px;
+    margin-top: 4px;
+}
+
+.cohort-detail-item {
+    display: grid;
+    gap: 7px;
+    padding: 14px;
+    border: 3px solid var(--border-dark);
+    border-radius: 12px;
+    background: #eeeeee;
+    color: var(--text-dark);
+}
+
+.cohort-detail-item span {
+    font-size: 11px;
+    font-weight: 900;
+    opacity: 0.72;
+}
+
+.cohort-detail-item strong {
+    color: var(--text-dark);
+    font-size: 14px;
+}
+
+.member-search-panel {
+    margin-top: 0;
+    margin-bottom: 18px;
+}
+
+.member-search-panel .input-group {
+    margin-bottom: 0;
+}
+
+.access-preview-panel {
+    margin-top: 18px;
 }
 
 .manager-empty-panel {
@@ -384,6 +616,10 @@
 }
 
 @media (max-width: 900px) {
+    .manager-dashboard-page {
+        padding: 28px;
+    }
+
     .manager-dashboard-header,
     .manager-hero,
     .manager-workspace {
@@ -396,6 +632,34 @@
         grid-template-columns: 1fr;
     }
 
+    .manager-dashboard-header {
+        justify-content: space-between;
+    }
+
+    .manager-dashboard-nav {
+        position: static;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        width: auto;
+        gap: 10px;
+    }
+
+    .manager-dashboard-nav button {
+        width: auto;
+        min-height: 40px;
+        padding: 0 16px;
+        border-right-width: 3px;
+        border-radius: 14px;
+        box-shadow: 3px 3px 0 var(--border-dark);
+    }
+
+    .manager-dashboard-nav button.is-active {
+        width: auto;
+        transform: none;
+        box-shadow: 3px 3px 0 var(--border-dark);
+    }
+
     .manager-character-panel {
         display: none;
     }
@@ -404,12 +668,29 @@
         max-width: none;
     }
 
+    .cohort-form-actions {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .manager-secondary-button {
+        width: 100%;
+    }
+
     .manager-table-panel {
         margin-left: 24px;
         margin-right: 24px;
     }
 
+    .manager-table-wrap {
+        max-height: 520px;
+    }
+
     .sensor-summary-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .cohort-detail-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 }
@@ -427,6 +708,11 @@
     .manager-dashboard-header {
         align-items: flex-start;
         flex-direction: column;
+    }
+
+    .manager-session-card {
+        width: 100%;
+        justify-items: start;
     }
 
     .manager-dashboard-nav {
@@ -457,7 +743,15 @@
         padding: 18px;
     }
 
+    .manager-table-wrap {
+        max-height: 460px;
+    }
+
     .sensor-summary-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .cohort-detail-grid {
         grid-template-columns: 1fr;
     }
 }
