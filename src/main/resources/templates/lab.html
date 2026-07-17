@@ -1,83 +1,79 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Omagotchi Home</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Omagotchi Lab</title>
 
-  <link rel="stylesheet" href="/css/auth.css" />
-  <link rel="stylesheet" href="/css/home.css" />
+    <link rel="stylesheet" href="/css/lab.css" />
 </head>
 <body>
-<main class="home-page">
-  <section class="home-shell" aria-label="오마고치 홈">
-    <aside class="profile-panel">
-      <div class="profile-summary">
-        <button class="profile-icon" type="button" aria-label="캐릭터 정보 보기">
-          <img
-                  data-home-profile-image
-                  src="/images/characters/study/study.png"
-                  alt=""
-          />
-        </button>
+<main class="lab-page">
+    <section class="lab-shell" data-lab-shell aria-label="오마고치 실습실">
+        <section class="lab-workspace" data-workspace>
+            <div class="lab-overlay-root" data-overlay-root></div>
 
-        <div class="profile-copy">
-          <span class="badge-label">뱃지</span>
-          <strong data-home-user-name>유저 이름</strong>
-          <span>Lv.1</span>
-        </div>
-      </div>
+            <aside class="room-widget" data-room-widget>
+                <p class="room-title" data-room-name>실습실</p>
+                <div class="room-actions">
+                    <button type="button" data-room-target="lab">실습실</button>
+                    <button type="button" data-room-target="meeting">회의실</button>
+                    <button type="button" data-room-target="library">도서관</button>
+                </div>
+            </aside>
 
-      <div class="exp-status">
-        <div class="exp-bar" aria-label="경험치">
-          <span style="width: 0%"></span>
-        </div>
-        <strong>0 / 1000 exp</strong>
-      </div>
+            <section class="character-stage" aria-live="polite">
+                <div class="lab-speech" data-lab-speech>실습실에서 성장하는<br /> 나의 오마고치</div>
+                <img
+                        class="lab-character"
+                        data-lab-character
+                        src="/images/normal_character.png"
+                        alt="선택한 오마고치"
+                />
+            </section>
+        </section>
 
-      <section class="quest-panel" aria-labelledby="today-quest-title">
-        <h2 id="today-quest-title">오늘의 퀘스트</h2>
-
-        <ul class="quest-list">
-          <li>
-            <span class="reward-icon">보상<br />icon</span>
-            <div>
-              <strong>퀘스트 명</strong>
-              <span>+ 보상이름</span>
-            </div>
-          </li>
-          <li>
-            <span class="reward-icon">보상<br />icon</span>
-            <div>
-              <strong>퀘스트 명</strong>
-              <span>+ 보상이름</span>
-            </div>
-          </li>
-          <li>
-            <span class="reward-icon">보상<br />icon</span>
-            <div>
-              <strong>퀘스트 명</strong>
-              <span>+ 보상이름</span>
-            </div>
-          </li>
-        </ul>
-      </section>
-    </aside>
-
-    <section class="character-stage" aria-live="polite">
-      <div class="home-bubble" data-home-bubble>준비 완료!<br />실습을 시작해요.</div>
-      <img
-              class="home-character"
-              data-home-character
-              src="/images/characters/study/study.png"
-              alt="선택한 오마고치"
-      />
-      <div class="room-shadow" aria-hidden="true"></div>
+        <nav class="lab-dock" aria-label="실습실 앱">
+            <button class="dock-button" type="button" data-app="finder" aria-label="Finder">
+                <img src="/images/app/Finder.png" alt="" />
+            </button>
+            <button class="dock-button" type="button" data-app="setting" aria-label="설정">
+                <img src="/images/app/setting.png" alt="" />
+            </button>
+            <button class="dock-button" type="button" data-app="terminal" aria-label="터미널">
+                <img src="/images/app/terminal.png" alt="" />
+            </button>
+            <button class="dock-button" type="button" data-app="vscode" aria-label="VS Code">
+                <img src="/images/app/vsCode.png" alt="" />
+            </button>
+            <button class="dock-button" type="button" data-app="intellij" aria-label="IntelliJ">
+                <img src="/images/app/intelliJ.png" alt="" />
+            </button>
+            <button class="dock-button is-passive" type="button" data-app="github" aria-label="GitHub">
+                <img src="/images/app/github.png" alt="" />
+            </button>
+            <button class="dock-button" type="button" data-app="timer" aria-label="타이머">
+                <img src="/images/app/timer.png" alt="" />
+            </button>
+            <button class="dock-button" type="button" data-app="note" aria-label="노트">
+                <img src="/images/app/note.png" alt="" />
+            </button>
+            <button class="dock-button" type="button" data-app="quest" aria-label="퀘스트">
+                <img src="/images/app/quest.png" alt="" />
+            </button>
+            <button class="dock-button" type="button" data-app="cohart" aria-label="기수">
+                <img src="/images/app/cohart.png" alt="" />
+            </button>
+            <button class="dock-button" type="button" data-app="userList" aria-label="사용자 리스트">
+                <img src="/images/app/userList.png" alt="" />
+            </button>
+            <button class="dock-button" type="button" data-app="folder" aria-label="폴더">
+                <img src="/images/app/folder.png" alt="" />
+            </button>
+        </nav>
     </section>
-
-  </section>
 </main>
 
-<script src="/js/home.js"></script>
+<script src="/js/lab.js"></script>
 </body>
 </html>

@@ -38,8 +38,16 @@ form.addEventListener("submit", (event) => {
 
     event.preventDefault();
     bubble.innerHTML = "좋아요!<br />실습실로 이동할게요.";
+    sessionStorage.setItem("omagotchiLoginId", loginId);
+    sessionStorage.setItem("omagotchiLoginPassword", password);
+    localStorage.setItem("omagotchiLastLoginId", loginId);
+
+    if (!localStorage.getItem(`omagotchiPassword:${loginId}`)) {
+        localStorage.setItem(`omagotchiPassword:${loginId}`, password);
+    }
 
     setTimeout(() => {
-        window.location.href = "/characterSelector";
+        const hasSelectedCharacter = localStorage.getItem(`omagotchiHasCharacter:${loginId}`) === "true";
+        window.location.href = hasSelectedCharacter ? "/lab" : "/characterSelector";
     }, 700);
 });

@@ -161,6 +161,7 @@ colorRow.addEventListener("click", (event) => {
 
 enterButton.addEventListener("click", () => {
     const selectedImagePath = getSelectedImagePath();
+    const loginId = sessionStorage.getItem("omagotchiLoginId") || localStorage.getItem("omagotchiLastLoginId") || "user01";
 
     sessionStorage.setItem("omagotchiCharacterId", selectedCharacter.id);
     sessionStorage.setItem("omagotchiCharacterName", selectedCharacter.name);
@@ -169,13 +170,21 @@ enterButton.addEventListener("click", () => {
     sessionStorage.setItem("omagotchiCharacterColorId", selectedColor.id);
     sessionStorage.setItem("omagotchiCharacterColorName", selectedColor.name);
     sessionStorage.setItem("omagotchiCharacterColor", selectedColor.value || "");
+    localStorage.setItem(`omagotchiHasCharacter:${loginId}`, "true");
+    localStorage.setItem(`omagotchiCharacterId:${loginId}`, selectedCharacter.id);
+    localStorage.setItem(`omagotchiCharacterName:${loginId}`, selectedCharacter.name);
+    localStorage.setItem(`omagotchiCharacterImage:${loginId}`, selectedImagePath);
+    localStorage.setItem(`omagotchiCharacterBaseImage:${loginId}`, selectedCharacter.baseImage);
+    localStorage.setItem(`omagotchiCharacterColorId:${loginId}`, selectedColor.id);
+    localStorage.setItem(`omagotchiCharacterColorName:${loginId}`, selectedColor.name);
+    localStorage.setItem(`omagotchiCharacterColor:${loginId}`, selectedColor.value || "");
 
     selectedBubble.textContent = "입장!";
     selectedImage.classList.add("happy");
 
     setTimeout(() => {
         selectedImage.classList.remove("happy");
-        window.location.href = "/home";
+        window.location.href = "/lab";
     }, 600);
 });
 

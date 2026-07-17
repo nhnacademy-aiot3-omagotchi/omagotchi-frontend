@@ -35,6 +35,7 @@ const auditsStorageKey = `omagotchiManagerAuditLogs:${managerStorageScope}`;
 let selectedCohortId = null;
 let editingCohortId = null;
 
+// 대시보드 목업 관리자 추가 지정에 사용
 const sampleMembers = [
     { id: "user-01", name: "손재민", loginId: "jaemin.son", status: "ACTIVE", role: "USER" },
     { id: "user-02", name: "문재민", loginId: "jaemin.mun", status: "ACTIVE", role: "COHORT_MANAGER" },
