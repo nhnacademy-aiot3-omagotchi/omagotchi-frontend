@@ -1,9 +1,11 @@
+// 관리자 회원가입 화면 요소
 const form = document.querySelector(".manager-register-form");
 const card = document.querySelector(".login-card");
 const character = document.querySelector(".manager-character-img");
 const bubble = document.querySelector(".speech-bubble");
 const inputs = document.querySelectorAll(".input-group input");
 
+// 관리자 회원가입 메시지
 const managerRegisterMessages = {
     focus: "관리자 정보는<br />정확히 입력해주세요.",
     empty: "아직 입력하지 않은<br />관리자 정보가 있어요!",
@@ -14,10 +16,12 @@ const managerRegisterMessages = {
     success: "관리자 로그인 화면으로<br />이동중입니다."
 };
 
+// 말풍선 메시지 변경
 const showMessage = (message) => {
     bubble.innerHTML = message;
 };
 
+// 입력 중 캐릭터 반응
 inputs.forEach((input) => {
     input.addEventListener("focus", () => {
         showMessage(managerRegisterMessages.focus);
@@ -32,6 +36,7 @@ inputs.forEach((input) => {
     });
 });
 
+// 캐릭터 클릭 시 소속 안내
 character.addEventListener("click", () => {
     const organization = form.organ.value.trim() || sessionStorage.getItem("omagotchiManagerOrganization");
 
@@ -43,6 +48,7 @@ character.addEventListener("click", () => {
     showMessage(`관리자 소속은<br />${organization} 입니다.`);
 });
 
+// 관리자 회원가입 목업 검증
 form.addEventListener("submit", (event) => {
     const loginId = form.loginId.value.trim();
     const password = form.password.value.trim();
@@ -94,6 +100,7 @@ form.addEventListener("submit", (event) => {
     }, 800);
 });
 
+// 카드 흔들림 피드백
 function shakeCard() {
     card.classList.add("shake");
     setTimeout(() => {

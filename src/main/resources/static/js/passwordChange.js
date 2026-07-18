@@ -1,3 +1,4 @@
+// 비밀번호 변경 화면 요소
 const form = document.querySelector(".password-change-form");
 const card = document.querySelector(".login-card");
 const character = document.querySelector(".omagotchi-character");
@@ -7,6 +8,7 @@ const checkUserButton = document.querySelector("[data-check-user-button]");
 const lookupStep = document.querySelector("[data-password-step='lookup']");
 const changeStep = document.querySelector("[data-password-step='change']");
 
+// 입력 중 캐릭터 반응
 inputs.forEach((input) => {
     input.addEventListener("focus", () => {
         bubble.innerHTML = "얼마주고<br />까먹었어요?";
@@ -21,6 +23,7 @@ inputs.forEach((input) => {
     });
 });
 
+// 사용자 확인 단계
 checkUserButton.addEventListener("click", () => {
     const loginId = form.loginId.value.trim();
 
@@ -44,6 +47,7 @@ checkUserButton.addEventListener("click", () => {
     form.newPassword.focus();
 });
 
+// 새 비밀번호 변경 단계
 form.addEventListener("submit", (event) => {
     event.preventDefault();
 
@@ -76,6 +80,7 @@ form.addEventListener("submit", (event) => {
     }, 800);
 });
 
+// 카드 흔들림 피드백
 function shakeCard() {
     card.classList.add("shake");
 

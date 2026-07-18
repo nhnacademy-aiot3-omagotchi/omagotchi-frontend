@@ -19,6 +19,7 @@
     --violet-room: #251d38;
 }
 
+/* 기본 화면 */
 body {
     margin: 0;
     min-height: 100vh;
@@ -42,6 +43,7 @@ input {
     padding: 28px;
 }
 
+/* 실습실 외곽 화면 */
 .lab-shell {
     position: relative;
     width: min(1180px, calc(100vw - 56px));
@@ -56,6 +58,7 @@ input {
             0 28px 60px rgba(0, 0, 0, 0.42);
 }
 
+/* 실습실 배경 */
 .lab-workspace {
     position: absolute;
     inset: 44px 30px 94px;
@@ -90,6 +93,7 @@ input {
             var(--violet-room);
 }
 
+/* 오버레이 영역 */
 .lab-overlay-root {
     position: absolute;
     inset: 0;
@@ -101,40 +105,41 @@ input {
     pointer-events: auto;
 }
 
+/* 캐릭터 영역 */
 .character-stage {
     position: absolute;
-    right: 22px;
-    top: 96px;
+    right: 48px;
+    top: 112px;
     z-index: 2;
-    width: 430px;
-    min-height: 520px;
+    width: 380px;
+    min-height: 460px;
     display: grid;
     justify-items: center;
     align-content: start;
 }
-
+/* 실습실 캐릭터*/
 .lab-character {
-    width: 400px;
-    height: 400px;
+    width: 350px;
+    height: 350px;
     object-fit: contain;
     image-rendering: pixelated;
     animation: characterBounce 1.8s ease-in-out infinite;
 }
-
+/* 말풍선 */
 .lab-speech {
     position: relative;
-    min-width: 260px;
-    max-width: 340px;
-    min-height: 100px;
-    margin: 0 0 34px 20px;
-    padding: 20px 26px;
+    min-width: 240px;
+    max-width: 320px;
+    min-height: 90px;
+    margin: 0 0 30px 18px;
+    padding: 18px 24px;
     display: grid;
     place-items: center;
     background: #ffffff;
     color: #101010;
     border: 4px solid #2b2b2b;
     border-radius: 20px;
-    font-size: 22px;
+    font-size: 20px;
     font-weight: 900;
     line-height: 1.35;
     text-align: center;
@@ -154,6 +159,7 @@ input {
     transform: translateX(-50%) rotate(45deg);
 }
 
+/* 방 이동 위젯 */
 .room-widget {
     position: absolute;
     top: 30px;
@@ -183,6 +189,7 @@ input {
     gap: 8px;
 }
 
+/* 공통 버튼 피드백 */
 .room-actions button,
 .terminal-actions button,
 .timer-controls button,
@@ -230,51 +237,72 @@ input {
     font-size: 12px;
 }
 
+/* 하단 인벤토리 메뉴 */
 .lab-dock {
     position: absolute;
-    left: 24px;
+    left: 50%;
     right: auto;
-    bottom: 30px;
+    bottom: 12px;
     z-index: 5;
-    width: min(1080px, calc(100% - 48px));
-    height: 72px;
+    width: auto;
+    height: 64px;
     display: grid;
-    grid-template-columns: repeat(12, minmax(42px, 1fr));
+    grid-template-columns: repeat(12, 64px);
     align-items: center;
-    gap: 8px;
-    padding: 10px 24px;
-    border-radius: 22px;
-    background: var(--dock);
-    box-shadow: 0 8px 0 rgba(0, 0, 0, 0.45);
+    justify-content: center;
+    gap: 0;
+    padding: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    transform: translateX(-50%);
 }
 
+/* 경험치 바 */
+.lab-exp-bar {
+    position: absolute;
+    left: 50%;
+    bottom: 78px;
+    z-index: 5;
+    width: 760px;
+    height: 12px;
+    padding: 3px;
+    border: 3px solid #050505;
+    background: #2a2a2a;
+    transform: translateX(-50%);
+}
+
+.lab-exp-fill {
+    width: var(--exp-progress, 0%);
+    height: 100%;
+    background: #83d957;
+    box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.35);
+}
+
+/* 인벤토리 버튼 */
 .dock-button {
-    width: 48px;
-    height: 48px;
+    width: 64px;
+    height: 64px;
     margin: 0 auto;
-    padding: 0;
+    padding: 12px;
     border: 0;
-    background: transparent;
+    background: url("/images/app/inventory.png") center / 100% 100% no-repeat;
     cursor: pointer;
     image-rendering: pixelated;
-    border-radius: 10px;
+    border-radius: 0;
     transition:
             transform 0.12s ease,
-            background 0.12s ease,
-            box-shadow 0.12s ease,
             filter 0.12s ease;
 }
 
 .dock-button:hover {
-    background: rgba(255, 255, 255, 0.12);
-    box-shadow: 0 5px 0 rgba(0, 0, 0, 0.34);
-    transform: translateY(-5px);
+    filter: brightness(1.18);
+    transform: translateY(-4px);
 }
 
 .dock-button:active {
     filter: brightness(0.85);
     transform: translateY(2px) scale(0.95);
-    box-shadow: inset 0 3px 0 rgba(0, 0, 0, 0.45);
 }
 
 .dock-button.is-passive {
@@ -292,6 +320,7 @@ input {
     image-rendering: pixelated;
 }
 
+/* 오버레이 닫기 버튼 */
 .overlay-close {
     position: absolute;
     top: 12px;
@@ -315,12 +344,13 @@ input {
             filter 0.12s ease;
 }
 
+/* 설정/비밀번호 변경 창 */
 .settings-overlay,
 .password-overlay {
     position: relative;
     width: 580px;
     height: 494px;
-    margin: 44px 0 0 138px;
+    margin: 22px 0 0 118px;
     display: grid;
     grid-template-columns: 180px 1fr;
     gap: 8px;
@@ -388,6 +418,7 @@ input {
     font-weight: 900;
 }
 
+/* 공통 오버레이 카드 */
 .settings-card,
 .password-card,
 .terminal-card,
@@ -406,6 +437,7 @@ input {
     padding: 54px 45px;
 }
 
+/* 설정 사용자 정보 */
 .user-info {
     display: grid;
     gap: 22px;
@@ -448,6 +480,7 @@ input {
     cursor: pointer;
 }
 
+/* 비밀번호 변경 폼 */
 .password-card {
     padding: 48px 22px 34px;
 }
@@ -483,10 +516,11 @@ input {
     font-weight: 900;
 }
 
+/* 출석 터미널 */
 .terminal-card {
     position: absolute;
     left: 56px;
-    top: 174px;
+    top: 138px;
     width: 430px;
     min-height: 348px;
     padding: 22px 24px 24px;
@@ -608,6 +642,7 @@ input {
     line-height: 1.4;
 }
 
+/* 출석 완료 카드 */
 .checkin-card {
     position: absolute;
     left: 18px;
@@ -629,10 +664,11 @@ input {
     margin: 0;
 }
 
+/* 학습 타이머 */
 .timer-card {
     position: absolute;
     left: 50%;
-    top: 28px;
+    top: 8px;
     width: 430px;
     height: 530px;
     padding: 0;
@@ -857,10 +893,11 @@ input {
     left: 80px;
 }
 
+/* 폴더 창 */
 .folder-card {
     position: absolute;
     left: 18px;
-    top: 0;
+    top: 18px;
     width: 704px;
     height: 354px;
     padding: 58px 66px;
@@ -881,13 +918,14 @@ input {
     image-rendering: pixelated;
 }
 
+/* 노트/퀘스트 창 */
 .note-card,
 .quest-card {
     position: absolute;
     left: 58px;
-    top: 72px;
+    top: 42px;
     width: 430px;
-    height: 500px;
+    height: 430px;
     padding: 28px;
     display: grid;
     grid-template-rows: auto minmax(0, 1fr);
@@ -981,12 +1019,13 @@ input {
     text-align: center;
 }
 
+/* 기수 가입 창 */
 .cohart-card {
     position: absolute;
     left: 46px;
-    top: 46px;
+    top: 22px;
     width: 680px;
-    height: 520px;
+    height: 444px;
     padding: 28px;
     display: grid;
     grid-template-rows: auto minmax(0, 1fr);
@@ -1026,6 +1065,7 @@ input {
     font-weight: 900;
 }
 
+/* 기수 목록 */
 .cohart-layout {
     min-height: 0;
     display: grid;
@@ -1120,9 +1160,10 @@ input {
     font-size: 12px;
 }
 
+/* 기수 코드 입력 */
 .cohart-detail-panel {
     display: grid;
-    grid-template-rows: auto auto auto auto;
+    grid-template-rows: auto auto auto;
     gap: 14px;
 }
 
@@ -1205,17 +1246,24 @@ input {
     font-weight: 900;
 }
 
+/* 기수 참여자 보기 버튼 */
 .cohart-user-list-button {
-    min-height: 72px;
+    position: absolute;
+    top: 12px;
+    right: 92px;
+    z-index: 4;
+    width: 112px;
+    height: 48px;
     display: grid;
-    grid-template-columns: 44px 1fr auto;
+    grid-template-columns: 32px 1fr;
     align-items: center;
-    gap: 12px;
-    padding: 12px 14px;
+    gap: 8px;
+    padding: 6px 10px;
     border: 3px solid #151515;
-    border-radius: 14px;
+    border-radius: 12px;
     background: #eeeeee;
     color: #111111;
+    font-size: 13px;
     font-weight: 900;
     cursor: pointer;
     box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.55);
@@ -1232,26 +1280,19 @@ input {
 }
 
 .cohart-user-list-button img {
-    width: 40px;
-    height: 40px;
+    width: 30px;
+    height: 30px;
     object-fit: contain;
     image-rendering: pixelated;
 }
 
-.cohart-user-list-button strong {
-    padding: 8px 10px;
-    border-radius: 10px;
-    background: #252525;
-    color: #ffffff;
-    font-size: 13px;
-}
-
+/* 참여자 목록 창 */
 .user-list-card {
     position: absolute;
     left: 58px;
-    top: 72px;
+    top: 42px;
     width: 430px;
-    height: 500px;
+    height: 430px;
     padding: 28px;
     display: grid;
     grid-template-rows: auto minmax(0, 1fr) auto;

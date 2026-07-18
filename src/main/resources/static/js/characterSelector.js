@@ -62,6 +62,7 @@ const colors = [
 ];
 
 const root = document.documentElement;
+// DOM 요소
 const characterGrid = document.querySelector("[data-character-grid]");
 const colorRow = document.querySelector("[data-color-row]");
 const selectedName = document.querySelector("[data-selected-name]");
@@ -72,6 +73,7 @@ const enterButton = document.querySelector("[data-enter-button]");
 let selectedCharacter = characters[0];
 let selectedColor = colors[0];
 
+// 선택 이미지 경로
 function getCharacterImage(characterId, colorId) {
     return `/images/characters/${characterId}/${colorId}.png`;
 }
@@ -82,6 +84,7 @@ function getSelectedImagePath() {
         : getCharacterImage(selectedCharacter.id, selectedColor.id);
 }
 
+// 캐릭터 목록 렌더링
 function renderCharacters() {
     characterGrid.innerHTML = characters
         .map((character) => `
@@ -97,6 +100,7 @@ function renderCharacters() {
         .join("");
 }
 
+// 색상 목록 렌더링
 function renderColors() {
     colorRow.innerHTML = colors
         .map((color) => `
@@ -111,6 +115,7 @@ function renderColors() {
         .join("");
 }
 
+// 선택 미리보기 갱신
 function updateSelectedView() {
     const selectedImagePath = getSelectedImagePath();
 
@@ -137,6 +142,7 @@ function updateSelectedView() {
     });
 }
 
+// 캐릭터 선택
 characterGrid.addEventListener("click", (event) => {
     const button = event.target.closest(".character-option");
 
@@ -148,6 +154,7 @@ characterGrid.addEventListener("click", (event) => {
     updateSelectedView();
 });
 
+// 색상 선택
 colorRow.addEventListener("click", (event) => {
     const button = event.target.closest(".color-option");
 
@@ -159,6 +166,7 @@ colorRow.addEventListener("click", (event) => {
     updateSelectedView();
 });
 
+// 캐릭터 선택 완료
 enterButton.addEventListener("click", () => {
     const selectedImagePath = getSelectedImagePath();
     const loginId = sessionStorage.getItem("omagotchiLoginId") || localStorage.getItem("omagotchiLastLoginId") || "user01";

@@ -1,9 +1,11 @@
+// 로그인 화면 요소
 const form = document.querySelector(".login-form");
 const card = document.querySelector(".login-card");
 const character = document.querySelector(".omagotchi-character");
 const bubble = document.querySelector(".speech-bubble");
 const inputs = document.querySelectorAll(".input-group input");
 
+// 입력 중 캐릭터 반응
 inputs.forEach((input) => {
     input.addEventListener("focus", () => {
         bubble.innerHTML = "입력 중이에요!<br />천천히 해도 괜찮아요.";
@@ -18,6 +20,7 @@ inputs.forEach((input) => {
     });
 });
 
+// 로그인 목업 처리
 form.addEventListener("submit", (event) => {
     const loginId = form.loginId.value.trim();
     const password = form.password.value.trim();

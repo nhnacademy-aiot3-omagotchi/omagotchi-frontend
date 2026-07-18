@@ -1,3 +1,4 @@
+// 실습실 화면 요소
 const overlayRoot = document.querySelector("[data-overlay-root]");
 const workspace = document.querySelector("[data-workspace]");
 const speech = document.querySelector("[data-lab-speech]");
@@ -5,6 +6,7 @@ const characterImage = document.querySelector("[data-lab-character]");
 const roomWidget = document.querySelector("[data-room-widget]");
 const roomName = document.querySelector("[data-room-name]");
 
+// 현재 사용자 목업 상태
 const user = {
     id: sessionStorage.getItem("omagotchiLoginId") || localStorage.getItem("omagotchiLastLoginId") || "user01",
     cohort: "AIot 3기",
@@ -12,6 +14,7 @@ const user = {
     status: "WAITING"
 };
 
+// 선택된 캐릭터 정보
 const selectedCharacter = {
     name: sessionStorage.getItem("omagotchiCharacterName") || localStorage.getItem(`omagotchiCharacterName:${user.id}`) || "오마고치",
     image: sessionStorage.getItem("omagotchiCharacterImage") || localStorage.getItem(`omagotchiCharacterImage:${user.id}`) || "/images/normal_character.png"
@@ -29,6 +32,7 @@ const roomParticles = {
     library: "으로"
 };
 
+// 기수 가입 목업 데이터
 const cohorts = [
     {
         id: "aiot-3",
@@ -72,6 +76,7 @@ const cohorts = [
     }
 ];
 
+// 타이머/기수 선택 상태
 let timerState = "idle";
 let timerStartedAt = 0;
 let timerElapsedBeforeStart = 0;
@@ -79,19 +84,23 @@ let timerTickId = null;
 let memoRecords = [];
 let selectedCohortId = cohorts[0].id;
 
+// 말풍선 메시지 변경
 function setSpeech(message) {
     speech.innerHTML = message;
 }
 
+// 오버레이 교체
 function setOverlay(html) {
     overlayRoot.innerHTML = html;
     overlayRoot.classList.toggle("has-overlay", Boolean(html));
 }
 
+// 오버레이 닫기
 function closeOverlay() {
     setOverlay("");
 }
 
+// 방 이동 처리
 function setRoom(roomKey, statusMessage) {
     const room = roomLabels[roomKey] || roomLabels.lab;
 
@@ -106,10 +115,12 @@ function setRoom(roomKey, statusMessage) {
     }
 }
 
+// 방 이름에서 키 찾기
 function getRoomKeyByLabel(label) {
     return Object.entries(roomLabels).find((entry) => entry[1] === label)?.[0] || "lab";
 }
 
+// 비밀번호 목업 저장소 보장
 function ensureUserPassword() {
     const key = `omagotchiPassword:${user.id}`;
 
@@ -120,6 +131,7 @@ function ensureUserPassword() {
     return key;
 }
 
+// 설정 창 렌더링
 function renderSettingsOverlay() {
     setOverlay(`
         <section class="settings-overlay" aria-label="설정">
@@ -159,6 +171,7 @@ function renderSettingsOverlay() {
     `);
 }
 
+// 비밀번호 변경 창 렌더링
 function renderPasswordOverlay() {
     setOverlay(`
         <section class="password-overlay" aria-label="비밀번호 변경">
@@ -185,6 +198,7 @@ function renderPasswordOverlay() {
     `);
 }
 
+// 터미널 창 렌더링
 function renderTerminalOverlay() {
     const terminalStatus = user.status === "PRESENT"
         ? "입실 완료"
@@ -234,6 +248,7 @@ function renderTerminalOverlay() {
     `);
 }
 
+// 입실 처리
 function handleCheckin() {
     user.status = "PRESENT";
     roomWidget.classList.add("is-visible");
@@ -251,6 +266,7 @@ function handleCheckin() {
     }
 }
 
+// 퇴실 처리
 function handleCheckout() {
     user.status = "OUT";
     stopTimer();
@@ -274,6 +290,7 @@ function handleCheckout() {
     }
 }
 
+// 타이머 표시 형식
 function formatTime(milliseconds) {
     const totalSeconds = Math.floor(milliseconds / 1000);
     const hours = String(Math.floor(totalSeconds / 3600)).padStart(2, "0");
@@ -283,6 +300,7 @@ function formatTime(milliseconds) {
     return `${hours}: ${minutes}: ${seconds}`;
 }
 
+// 현재 타이머 시간 계산
 function getTimerElapsed() {
     if (timerState !== "running") {
         return timerElapsedBeforeStart;
@@ -291,6 +309,7 @@ function getTimerElapsed() {
     return timerElapsedBeforeStart + Date.now() - timerStartedAt;
 }
 
+// 타이머 화면 갱신
 function updateTimerDisplay() {
     const display = document.querySelector("[data-timer-display]");
 
@@ -299,6 +318,7 @@ function updateTimerDisplay() {
     }
 }
 
+// 타이머 정지
 function stopTimer() {
     if (timerTickId) {
         clearInterval(timerTickId);
@@ -306,6 +326,7 @@ function stopTimer() {
     }
 }
 
+// 타이머 시작/재개
 function startTimer() {
     if (timerState === "running") {
         return;
@@ -321,6 +342,7 @@ function startTimer() {
     renderTimerOverlay();
 }
 
+// 타이머 일시정지
 function pauseTimer() {
     if (timerState !== "running") {
         return;
@@ -335,6 +357,7 @@ function pauseTimer() {
     renderTimerOverlay();
 }
 
+// 타이머 초기화
 function resetTimer() {
     timerState = "idle";
     timerElapsedBeforeStart = 0;
@@ -343,6 +366,7 @@ function resetTimer() {
     renderTimerOverlay();
 }
 
+// 학습 기록 추가
 function addMemoRecord() {
     const recordedAt = new Date().toLocaleTimeString("ko-KR", {
         hour12: false,
@@ -363,6 +387,7 @@ function addMemoRecord() {
     }
 }
 
+// 타이머 창 렌더링
 function renderTimerOverlay() {
     const isRunning = timerState === "running";
     const isPaused = timerState === "paused";
@@ -411,6 +436,7 @@ function renderTimerOverlay() {
     }
 }
 
+// 노트 창 렌더링
 function renderNoteOverlay() {
     const items = memoRecords.length
         ? memoRecords.map((record, index) => `
@@ -433,6 +459,7 @@ function renderNoteOverlay() {
     `);
 }
 
+// 퀘스트 창 렌더링
 function renderQuestOverlay() {
     setOverlay(`
         <section class="quest-card" aria-label="퀘스트">
@@ -450,6 +477,7 @@ function renderQuestOverlay() {
     `);
 }
 
+// 가입한 기수 읽기
 function getJoinedCohortIds() {
     const stored = localStorage.getItem(`omagotchiJoinedCohorts:${user.id}`);
 
@@ -460,10 +488,12 @@ function getJoinedCohortIds() {
     }
 }
 
+// 가입한 기수 저장
 function setJoinedCohortIds(cohortIds) {
     localStorage.setItem(`omagotchiJoinedCohorts:${user.id}`, JSON.stringify(cohortIds));
 }
 
+// 기수 상태 라벨
 function getCohortStatusLabel(cohort) {
     const joinedIds = getJoinedCohortIds();
 
@@ -482,6 +512,7 @@ function getCohortStatusLabel(cohort) {
     return "신청 가능";
 }
 
+// 기수 참여자 목록
 function getCohortMembers(cohort) {
     const joinedIds = getJoinedCohortIds();
 
@@ -492,12 +523,17 @@ function getCohortMembers(cohort) {
     return cohort.members;
 }
 
+// 기수 가입 창 렌더링
 function renderCohartOverlay(message = "참가할 기수를 선택하세요") {
     const selectedCohort = cohorts.find((cohort) => cohort.id === selectedCohortId) || cohorts[0];
     const selectedMembers = getCohortMembers(selectedCohort);
 
     setOverlay(`
         <section class="cohart-card" aria-label="기수 가입">
+            <button class="cohart-user-list-button" type="button" data-user-list aria-label="참여자 보기">
+                <img src="/images/app/userList.png" alt="" />
+                <span>${selectedMembers.length}/${selectedCohort.capacity}</span>
+            </button>
             <button class="overlay-close" type="button" data-close-overlay>닫기</button>
             <header class="cohart-header">
                 <img src="/images/app/cohart.png" alt="" />
@@ -537,17 +573,13 @@ function renderCohartOverlay(message = "참가할 기수를 선택하세요") {
                         <button type="submit">참가 신청</button>
                     </form>
                     <p class="cohart-message" data-cohart-message>${message}</p>
-                    <button class="cohart-user-list-button" type="button" data-user-list>
-                        <img src="/images/app/userList.png" alt="" />
-                        <span>참여자 보기</span>
-                        <strong>${selectedMembers.length}/${selectedCohort.capacity}</strong>
-                    </button>
                 </section>
             </div>
         </section>
     `);
 }
 
+// 참여자 목록 창 렌더링
 function renderUserListOverlay() {
     const selectedCohort = cohorts.find((cohort) => cohort.id === selectedCohortId) || cohorts[0];
     const selectedMembers = getCohortMembers(selectedCohort);
@@ -576,6 +608,7 @@ function renderUserListOverlay() {
     `);
 }
 
+// 기수 가입 처리
 function joinSelectedCohort(code) {
     const selectedCohort = cohorts.find((cohort) => cohort.id === selectedCohortId);
     const joinedIds = getJoinedCohortIds();
@@ -616,6 +649,7 @@ function joinSelectedCohort(code) {
     setSpeech(`${selectedCohort.name} 참가 완료`);
 }
 
+// 폴더 창 렌더링
 function renderFolderOverlay() {
     setOverlay(`
         <section class="folder-card" aria-label="폴더">
@@ -625,11 +659,13 @@ function renderFolderOverlay() {
                 <img src="/images/app/message.png" alt="Message" />
                 <img src="/images/app/mySQL.png" alt="MySQL" />
                 <img src="/images/app/postgreSQL.png" alt="PostgreSQL" />
+                <img src="/images/app/steam.png" alt="Steam">
             </div>
         </section>
     `);
 }
 
+// 하단 앱 버튼 처리
 document.querySelector(".lab-dock").addEventListener("click", (event) => {
     const button = event.target.closest(".dock-button");
 
@@ -653,6 +689,10 @@ document.querySelector(".lab-dock").addEventListener("click", (event) => {
 
     if (app === "intellij") {
         setSpeech('System.out.println<br />("Omagotchi");');
+    }
+
+    if (app === "github") {
+        setSpeech("냐용!");
     }
 
     if (app === "finder") {
@@ -684,6 +724,7 @@ document.querySelector(".lab-dock").addEventListener("click", (event) => {
     }
 });
 
+// 오버레이 내부 클릭 처리
 overlayRoot.addEventListener("click", (event) => {
     if (event.target.matches("[data-close-overlay]")) {
         closeOverlay();
@@ -748,6 +789,7 @@ overlayRoot.addEventListener("click", (event) => {
     }
 });
 
+// 오버레이 폼 제출 처리
 overlayRoot.addEventListener("submit", (event) => {
     if (event.target.matches("[data-cohart-form]")) {
         event.preventDefault();
@@ -793,6 +835,7 @@ overlayRoot.addEventListener("submit", (event) => {
     setSpeech("비밀번호가 변경되었습니다");
 });
 
+// 키보드 단축 처리
 document.addEventListener("keydown", (event) => {
     if (event.key === "Escape") {
         closeOverlay();
@@ -803,6 +846,7 @@ document.addEventListener("keydown", (event) => {
     }
 });
 
+// 방 이동 버튼 처리
 document.querySelectorAll("[data-room-target]").forEach((button) => {
     button.addEventListener("click", () => {
         const roomKey = button.dataset.roomTarget;
@@ -810,6 +854,7 @@ document.querySelectorAll("[data-room-target]").forEach((button) => {
     });
 });
 
+// 실습실 초기화
 characterImage.src = selectedCharacter.image;
 characterImage.alt = `${selectedCharacter.name} 캐릭터`;
 roomName.textContent = user.space;

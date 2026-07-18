@@ -1,3 +1,4 @@
+// 관리자 대시보드 DOM 요소
 const cohortForm = document.querySelector("[data-cohort-form]");
 const cohortFormTitle = document.querySelector("[data-cohort-form-title]");
 const cohortSubmit = document.querySelector("[data-cohort-submit]");
@@ -24,6 +25,7 @@ const managerOrganization = document.querySelector("[data-manager-organization]"
 const managerName = document.querySelector("[data-manager-name]");
 const managerLoginId = document.querySelector("[data-manager-login-id]");
 
+// 현재 관리자 목업 세션
 const currentManager = {
     loginId: sessionStorage.getItem("omagotchiManagerLoginId") || "manager",
     name: sessionStorage.getItem("omagotchiManagerName") || "관리자",
@@ -43,6 +45,7 @@ const sampleMembers = [
     { id: "user-04", name: "박상민", loginId: "sangmin.park", status: "ACTIVE", role: "USER" }
 ];
 
+// 세션 저장소 JSON 유틸
 const readJson = (key, fallbackValue) => {
     try {
         return JSON.parse(sessionStorage.getItem(key)) || fallbackValue;
@@ -55,12 +58,14 @@ const writeJson = (key, value) => {
     sessionStorage.setItem(key, JSON.stringify(value));
 };
 
+// 관리자 세션 표시
 const renderManagerSession = () => {
     managerOrganization.textContent = currentManager.organization;
     managerName.textContent = `${currentManager.name} 관리자`;
     managerLoginId.textContent = currentManager.loginId;
 };
 
+// 기수 데이터 정규화
 const normalizeCohort = (cohort) => ({
     id: cohort.id || `cohort-${Date.now()}`,
     name: cohort.name || "이름 없는 기수",
@@ -76,11 +81,13 @@ const normalizeCohort = (cohort) => ({
     members: Array.isArray(cohort.members) ? cohort.members : []
 });
 
+// 기수/감사 로그 저장소 접근
 const getCohorts = () => readJson(cohortsStorageKey, []).map(normalizeCohort);
 const saveCohorts = (cohorts) => writeJson(cohortsStorageKey, cohorts.map(normalizeCohort));
 const getAudits = () => readJson(auditsStorageKey, []);
 const saveAudits = (audits) => writeJson(auditsStorageKey, audits);
 
+// 표시용 포맷 변환
 const formatDate = (dateValue) => {
     if (!dateValue) {
         return "";
@@ -133,6 +140,7 @@ const getCodeStatusLabel = (cohort) => {
     return cohort.codeStatus === "INACTIVE" ? "비활성" : "활성";
 };
 
+// 감사 로그 추가
 const addAudit = (action, target, detail) => {
     const audits = getAudits();
     audits.unshift({
@@ -145,10 +153,12 @@ const addAudit = (action, target, detail) => {
     saveAudits(audits.slice(0, 20));
 };
 
+// 대시보드 말풍선
 const showBubble = (message) => {
     dashboardBubble.innerHTML = message;
 };
 
+// 버튼 피드백
 const flashButton = (button, text) => {
     if (!button) {
         return;
@@ -164,6 +174,7 @@ const flashButton = (button, text) => {
     }, 1200);
 };
 
+// 가입 코드 생성
 const generateCode = () => {
     const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
     let code = "COH-";
@@ -175,6 +186,7 @@ const generateCode = () => {
     return code;
 };
 
+// 기수 생성 미리보기 갱신
 const updatePreview = () => {
     const cohortName = cohortForm.cohortName.value.trim();
     const startDate = formatDate(cohortForm.startDate.value);
@@ -196,6 +208,7 @@ const updatePreview = () => {
     }
 };
 
+// 기수 편집기 열기/닫기
 const openCohortEditor = () => {
     cohortEditor.classList.add("is-editor-open");
 };
@@ -204,6 +217,7 @@ const closeCohortEditor = () => {
     cohortEditor.classList.remove("is-editor-open");
 };
 
+// 기수 폼 모드 변경
 const setFormMode = (mode, cohort = null, shouldOpen = true) => {
     if (shouldOpen) {
         openCohortEditor();
@@ -237,6 +251,7 @@ const setFormMode = (mode, cohort = null, shouldOpen = true) => {
     updatePreview();
 };
 
+// 기수 목록 렌더링
 const renderCohorts = () => {
     const cohorts = getCohorts();
 
@@ -272,6 +287,7 @@ const renderCohorts = () => {
     }).join("");
 };
 
+// 기수 상세 렌더링
 const renderDetail = () => {
     const selected = getCohorts().find((cohort) => cohort.id === selectedCohortId);
 
@@ -312,6 +328,7 @@ const renderDetail = () => {
     `;
 };
 
+// 가입 코드 목록 렌더링
 const renderCodes = () => {
     const cohorts = getCohorts();
 
@@ -350,6 +367,7 @@ const renderCodes = () => {
     }).join("");
 };
 
+// 소속 사용자 목록 렌더링
 const renderMembers = () => {
     const selected = getCohorts().find((cohort) => cohort.id === selectedCohortId);
 
@@ -399,6 +417,7 @@ const renderMembers = () => {
     }).join("");
 };
 
+// 감사 로그 렌더링
 const renderAudits = () => {
     const audits = getAudits();
 
@@ -421,6 +440,7 @@ const renderAudits = () => {
     `).join("");
 };
 
+// 선택 상태 갱신
 const updateSelectionState = () => {
     const selected = getCohorts().find((cohort) => cohort.id === selectedCohortId);
 
@@ -439,6 +459,7 @@ const updateSelectionState = () => {
     });
 };
 
+// 전체 렌더링
 const renderAll = () => {
     renderCohorts();
     renderDetail();
@@ -448,6 +469,7 @@ const renderAll = () => {
     updateSelectionState();
 };
 
+// 탭 전환
 const activatePanel = (panelName) => {
     if (panelName !== "cohorts") {
         closeCohortEditor();
@@ -464,6 +486,7 @@ const activatePanel = (panelName) => {
     sessionStorage.setItem("omagotchiManagerDashboardTab", panelName);
 };
 
+// 기수 폼 값 수집
 const getFormPayload = () => ({
     name: cohortForm.cohortName.value.trim(),
     description: cohortForm.description.value.trim(),
@@ -473,6 +496,7 @@ const getFormPayload = () => ({
     capacity: cohortForm.capacity.value.trim()
 });
 
+// 기수 생성/수정 저장
 const saveCohortFromForm = () => {
     const payload = getFormPayload();
 
@@ -530,6 +554,7 @@ const saveCohortFromForm = () => {
     activatePanel("cohorts");
 };
 
+// 가입 코드 발급
 const issueJoinCode = (cohortId = selectedCohortId, feedbackButton = null) => {
     const cohorts = getCohorts();
     const selectedIndex = cohorts.findIndex((cohort) => cohort.id === cohortId);
@@ -569,6 +594,7 @@ const issueJoinCode = (cohortId = selectedCohortId, feedbackButton = null) => {
     }, 900);
 };
 
+// 클립보드 복사
 const copyText = async (text) => {
     if (navigator.clipboard) {
         await navigator.clipboard.writeText(text);
@@ -583,6 +609,7 @@ const copyText = async (text) => {
     textarea.remove();
 };
 
+// 가입 코드 복사
 const copyCode = async (cohortId, feedbackButton = null) => {
     const cohort = getCohorts().find((item) => item.id === cohortId);
 
@@ -602,6 +629,7 @@ const copyCode = async (cohortId, feedbackButton = null) => {
     addAudit("가입 코드 복사", cohort.name, cohort.joinCode);
 };
 
+// 가입 코드 활성/비활성 전환
 const toggleCodeStatus = (cohortId, feedbackButton = null) => {
     const cohorts = getCohorts();
     const index = cohorts.findIndex((cohort) => cohort.id === cohortId);
@@ -619,6 +647,7 @@ const toggleCodeStatus = (cohortId, feedbackButton = null) => {
     window.setTimeout(renderAll, 900);
 };
 
+// 소속 사용자 목업 추가
 const seedMembers = () => {
     const cohorts = getCohorts();
     const index = cohorts.findIndex((cohort) => cohort.id === selectedCohortId);
@@ -641,6 +670,7 @@ const seedMembers = () => {
     renderAll();
 };
 
+// 기수 관리자 역할 변경
 const toggleManagerRole = (memberId) => {
     const cohorts = getCohorts();
     const index = cohorts.findIndex((cohort) => cohort.id === selectedCohortId);
@@ -662,6 +692,7 @@ const toggleManagerRole = (memberId) => {
     renderAll();
 };
 
+// 기수 폼 이벤트
 cohortForm.addEventListener("input", updatePreview);
 
 cohortForm.addEventListener("submit", (event) => {
@@ -680,14 +711,17 @@ openCohortFormButton.addEventListener("click", () => {
     showBubble("새 기수 정보를<br />입력해주세요.");
 });
 
+// 가입 코드 발급 버튼 이벤트
 issueCodeButtons.forEach((button) => {
     button.addEventListener("click", () => issueJoinCode(selectedCohortId, button));
 });
 
+// 탭 버튼 이벤트
 tabTriggers.forEach((button) => {
     button.addEventListener("click", () => activatePanel(button.dataset.dashboardTab));
 });
 
+// 기수 목록 액션 이벤트
 cohortList.addEventListener("click", (event) => {
     const button = event.target.closest("[data-action]");
     const row = event.target.closest("[data-cohort-id]");
@@ -729,6 +763,7 @@ cohortList.addEventListener("click", (event) => {
     }
 });
 
+// 가입 코드 목록 액션 이벤트
 codeList.addEventListener("click", (event) => {
     const button = event.target.closest("[data-action]");
 
@@ -754,6 +789,7 @@ codeList.addEventListener("click", (event) => {
     }
 });
 
+// 소속 사용자 이벤트
 seedMembersButton.addEventListener("click", seedMembers);
 
 memberSearch.addEventListener("input", renderMembers);
@@ -768,6 +804,7 @@ memberList.addEventListener("click", (event) => {
     toggleManagerRole(button.dataset.memberId);
 });
 
+// 관리자 대시보드 초기화
 renderManagerSession();
 setFormMode("create", null, false);
 renderAll();

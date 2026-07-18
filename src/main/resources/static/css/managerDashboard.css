@@ -1,3 +1,4 @@
+/* 관리자 대시보드 기본 화면 */
 .manager-dashboard-page {
     min-height: 100vh;
     padding: 28px 28px 28px 118px;
@@ -7,6 +8,7 @@
             var(--bg);
 }
 
+/* 관리자 대시보드 외곽 */
 .manager-dashboard-shell {
     position: relative;
     width: min(1120px, 100%);
@@ -23,6 +25,7 @@
             inset 0 0 0 3px rgba(255, 255, 255, 0.08);
 }
 
+/* 관리자 헤더 */
 .manager-dashboard-header {
     display: flex;
     align-items: center;
@@ -44,6 +47,7 @@
     height: auto;
 }
 
+/* 관리자 세션 카드 */
 .manager-session-card {
     min-width: 220px;
     display: grid;
@@ -69,6 +73,7 @@
     font-weight: 900;
 }
 
+/* 관리자 사이드 네비게이션 */
 .manager-dashboard-nav {
     position: absolute;
     top: 124px;
@@ -110,6 +115,7 @@
     box-shadow: -5px 5px 0 rgba(0, 0, 0, 0.36);
 }
 
+/* 관리자 히어로 */
 .manager-hero {
     display: none;
     grid-template-columns: minmax(0, 1fr) 300px;
@@ -154,6 +160,7 @@
     gap: 10px;
 }
 
+/* 관리자 작업 영역 */
 .manager-workspace {
     display: none;
     grid-template-columns: minmax(0, 1fr) 310px;
@@ -165,6 +172,7 @@
     display: grid;
 }
 
+/* 기수 생성/미리보기 패널 */
 .cohort-create-panel,
 .cohort-preview-panel {
     border: 3px solid var(--border-dark);
@@ -212,6 +220,7 @@
     font-weight: 900;
 }
 
+/* 기수 생성 폼 */
 .cohort-form {
     max-width: 680px;
 }
@@ -251,6 +260,7 @@
     margin-top: 0;
 }
 
+/* 기수 코드 미리보기 */
 .cohort-preview-panel {
     align-self: stretch;
     display: flex;
@@ -295,6 +305,7 @@
     font-size: 17px;
 }
 
+/* 테이블 상태 배지 */
 .table-badge {
     width: fit-content;
     min-height: 28px;
@@ -314,6 +325,7 @@
     background: var(--manager-accent);
 }
 
+/* 관리자 테이블 패널 */
 .manager-table-panel {
     display: none;
     margin: 32px 38px 38px;
@@ -330,6 +342,7 @@
     display: block;
 }
 
+/* 관리자 공통 버튼 */
 .manager-outline-button {
     min-height: 42px;
     padding: 0 16px;
@@ -449,6 +462,7 @@
     opacity: 0.56;
 }
 
+/* 테이블 스크롤 영역 */
 .manager-table-wrap {
     max-height: min(620px, calc(100vh - 270px));
     overflow: auto;
@@ -470,6 +484,7 @@
     background: var(--panel-dark);
 }
 
+/* 관리자 테이블 */
 .manager-table {
     width: 100%;
     min-width: 720px;
@@ -492,6 +507,7 @@
     font-weight: 900;
 }
 
+/* 기수 상세/멤버 검색 패널 */
 .cohort-detail-panel,
 .member-search-panel {
     display: grid;
@@ -519,6 +535,7 @@
     line-height: 1.6;
 }
 
+/* 기수 상세 정보 */
 .cohort-detail-grid {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -560,6 +577,7 @@
     margin-top: 18px;
 }
 
+/* 빈 상태 안내 */
 .manager-empty-panel {
     display: grid;
     gap: 10px;
@@ -583,6 +601,7 @@
     line-height: 1.6;
 }
 
+/* 센서 요약 */
 .sensor-summary-grid {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -615,6 +634,7 @@
     font-weight: 900;
 }
 
+/* 태블릿 관리자 화면 */
 @media (max-width: 900px) {
     .manager-dashboard-page {
         padding: 28px;
@@ -695,6 +715,7 @@
     }
 }
 
+/* 모바일 관리자 화면 */
 @media (max-width: 620px) {
     .manager-dashboard-page {
         padding: 14px;

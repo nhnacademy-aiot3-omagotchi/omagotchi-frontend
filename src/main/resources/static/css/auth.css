@@ -20,6 +20,7 @@
     --shadow: rgba(0, 0, 0, 0.35);
 }
 
+/* 인증 화면 기본 */
 body {
     margin: 0;
     min-height: 100vh;
@@ -31,6 +32,7 @@ body {
     font-family: "DNFBitBitv2", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
+/* 로그인/인증 카드 */
 .login-page {
     min-height: 100vh;
     display: flex;
@@ -54,6 +56,7 @@ body {
     animation: cardPop 0.45s ease-out;
 }
 
+/* 브랜드 패널 */
 .brand-panel {
     position: relative;
     padding: 36px;
@@ -75,6 +78,7 @@ body {
     pointer-events: none;
 }
 
+/* 로고 영역 */
 .brand-header {
     position: relative;
     z-index: 1;
@@ -104,6 +108,7 @@ body {
     object-fit: contain;
 }
 
+/* 캐릭터와 말풍선 */
 .character-zone {
     position: relative;
     z-index: 1;
@@ -156,6 +161,7 @@ body {
     transform: translateX(-50%) rotate(45deg);
 }
 
+/* 브랜드 하단 문구 */
 .brand-message {
     position: relative;
     z-index: 1;
@@ -166,6 +172,7 @@ body {
     opacity: 0.95;
 }
 
+/* 입력 폼 패널 */
 .form-panel {
     position: relative;
     padding: 48px;
@@ -185,6 +192,7 @@ body {
     max-width: 300px;
 }
 
+/* 시작/인덱스 화면 */
 .index-entry {
     width: 100%;
     max-width: 330px;
@@ -260,6 +268,7 @@ body {
     box-shadow: 6px 6px 0 var(--border-dark);
 }
 
+/* 비밀번호 단계 화면 */
 .password-step {
     display: none;
 }
@@ -268,6 +277,7 @@ body {
     display: block;
 }
 
+/* 입력 필드 */
 .login-form h2,
 .auth-form h2 {
     margin: 0 0 28px;
@@ -322,6 +332,7 @@ body {
     outline-offset: 4px;
 }
 
+/* 주요 버튼 */
 .login-button,
 .auth-button {
     width: 100%;
@@ -354,6 +365,7 @@ body {
     box-shadow: 1px 1px 0 var(--accent-dark);
 }
 
+/* 하단 링크 */
 .login-links,
 .auth-links {
     margin-top: 20px;
@@ -404,6 +416,7 @@ body {
     animation: happyJump 0.6s ease-in-out;
 }
 
+/* 관리자 화면 변형 */
 .manager-card {
     border-color: #1f1f2e;
 }
@@ -427,6 +440,7 @@ body {
     color: #252235;
 }
 
+/* 인증 애니메이션 */
 @keyframes cardPop {
     from {
         opacity: 0;
@@ -491,6 +505,7 @@ body {
     }
 }
 
+/* 접근성 모션 제한 */
 @media (prefers-reduced-motion: reduce) {
     *,
     *::before,
@@ -500,6 +515,7 @@ body {
     }
 }
 
+/* 태블릿 이하 인증 화면 */
 @media (max-width: 900px) {
     .login-page {
         padding: 32px;
@@ -525,6 +541,7 @@ body {
     }
 }
 
+/* 모바일 인증 화면 */
 @media (max-width: 520px) {
     .login-page {
         padding: 18px;
