@@ -25,6 +25,7 @@
             <nav class="manager-dashboard-nav" aria-label="관리자 메뉴">
                 <button class="is-active" type="button" data-dashboard-tab="cohorts">기수 관리</button>
                 <button type="button" data-dashboard-tab="codes">가입 코드</button>
+                <button type="button" data-dashboard-tab="applications">참가 신청</button>
                 <button type="button" data-dashboard-tab="memberships">소속/역할</button>
                 <button type="button" data-dashboard-tab="sensors">센서 현황</button>
                 <button type="button" data-dashboard-tab="audits">감사 이력</button>
@@ -180,6 +181,34 @@
                     </tr>
                     </thead>
                     <tbody data-code-list>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="manager-table-panel" aria-labelledby="application-list-title" data-dashboard-panel="applications">
+            <div class="panel-title-row">
+                <div>
+                    <span class="panel-kicker">참가 신청</span>
+                    <h2 id="application-list-title">대기 신청</h2>
+                </div>
+                <button class="manager-outline-button" type="button" data-seed-applications>목업 신청 추가</button>
+            </div>
+
+            <div class="manager-table-wrap">
+                <table class="manager-table">
+                    <thead>
+                    <tr>
+                        <th>신청자</th>
+                        <th>로그인 ID</th>
+                        <th>기수명</th>
+                        <th>상태</th>
+                        <th>신청일</th>
+                        <th>거절 사유</th>
+                        <th>관리</th>
+                    </tr>
+                    </thead>
+                    <tbody data-application-list>
                     </tbody>
                 </table>
             </div>

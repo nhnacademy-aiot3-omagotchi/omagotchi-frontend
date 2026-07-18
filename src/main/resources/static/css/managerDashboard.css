@@ -325,6 +325,10 @@
     background: var(--manager-accent);
 }
 
+.table-badge.is-danger {
+    background: #ffb0c0;
+}
+
 /* 관리자 테이블 패널 */
 .manager-table-panel {
     display: none;
@@ -475,6 +479,10 @@
 
 .audit-table-wrap .manager-table {
     min-width: 760px;
+}
+
+[data-dashboard-panel="applications"] .manager-table {
+    min-width: 920px;
 }
 
 .manager-table-wrap thead th {

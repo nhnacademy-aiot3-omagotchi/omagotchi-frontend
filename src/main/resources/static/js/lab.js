@@ -493,12 +493,33 @@ function setJoinedCohortIds(cohortIds) {
     localStorage.setItem(`omagotchiJoinedCohorts:${user.id}`, JSON.stringify(cohortIds));
 }
 
+// 신청한 기수 읽기
+function getRequestedCohortIds() {
+    const stored = localStorage.getItem(`omagotchiRequestedCohorts:${user.id}`);
+
+    try {
+        return stored ? JSON.parse(stored) : [];
+    } catch {
+        return [];
+    }
+}
+
+// 신청한 기수 저장
+function setRequestedCohortIds(cohortIds) {
+    localStorage.setItem(`omagotchiRequestedCohorts:${user.id}`, JSON.stringify(cohortIds));
+}
+
 // 기수 상태 라벨
 function getCohortStatusLabel(cohort) {
     const joinedIds = getJoinedCohortIds();
+    const requestedIds = getRequestedCohortIds();
 
     if (joinedIds.includes(cohort.id) || cohort.members.includes(user.id)) {
         return "참가중";
+    }
+
+    if (requestedIds.includes(cohort.id)) {
+        return "승인 대기";
     }
 
     if (cohort.status === "expired") {
@@ -612,6 +633,7 @@ function renderUserListOverlay() {
 function joinSelectedCohort(code) {
     const selectedCohort = cohorts.find((cohort) => cohort.id === selectedCohortId);
     const joinedIds = getJoinedCohortIds();
+    const requestedIds = getRequestedCohortIds();
 
     if (!selectedCohort) {
         renderCohartOverlay("선택한 기수를 찾을 수 없습니다");
@@ -621,6 +643,12 @@ function joinSelectedCohort(code) {
     if (joinedIds.includes(selectedCohort.id) || selectedCohort.members.includes(user.id)) {
         renderCohartOverlay("중복 가입은 불가능입니다");
         setSpeech("이미 참가한 기수야");
+        return;
+    }
+
+    if (requestedIds.includes(selectedCohort.id)) {
+        renderCohartOverlay("이미 참가 신청한 기수입니다");
+        setSpeech("관리자 승인을 기다리는 중이야");
         return;
     }
 
@@ -642,11 +670,9 @@ function joinSelectedCohort(code) {
         return;
     }
 
-    selectedCohort.members.push(user.id);
-    setJoinedCohortIds([...joinedIds, selectedCohort.id]);
-    user.cohort = selectedCohort.name;
-    renderCohartOverlay("참가 신청 완료");
-    setSpeech(`${selectedCohort.name} 참가 완료`);
+    setRequestedCohortIds([...requestedIds, selectedCohort.id]);
+    renderCohartOverlay("참가 신청 완료 - 승인 대기");
+    setSpeech("관리자 승인을 기다려줘");
 }
 
 // 폴더 창 렌더링
