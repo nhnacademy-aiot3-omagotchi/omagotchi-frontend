@@ -50,9 +50,10 @@ const sampleMembers = [
 
 // 참가 신청 목업 사용자
 const sampleApplicants = [
-    { id: "apply-user-01", name: "김민지", loginId: "minji.kim" },
-    { id: "apply-user-02", name: "이현우", loginId: "hyeonwoo.lee" },
-    { id: "apply-user-03", name: "최지수", loginId: "jisu.choi" }
+    { id: "apply-user-01", name: "권세윤", loginId: "seyoon.gwun" },
+    { id: "apply-user-02", name: "강영진", loginId: "yungjin.kang" },
+    { id: "apply-user-03", name: "박찬주", loginId: "chanju.park" },
+    { id: "apply-user-04", name: "장재혁", loginId: "jaehyuk.jang" }
 ];
 
 // 세션 저장소 JSON 유틸

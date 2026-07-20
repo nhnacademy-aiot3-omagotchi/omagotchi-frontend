@@ -94,6 +94,8 @@ form.addEventListener("submit", (event) => {
     sessionStorage.setItem("omagotchiManagerLoginId", loginId);
     sessionStorage.setItem("omagotchiManagerName", username);
     sessionStorage.setItem("omagotchiManagerOrganization", organization);
+    sessionStorage.removeItem("omagotchiManagerRole");
+    sessionStorage.removeItem("omagotchiManagerCohort");
     showMessage(managerRegisterMessages.success);
     setTimeout(() => {
         window.location.href = "/managerLogin";
