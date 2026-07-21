@@ -25,15 +25,15 @@ const dashboardBubble = document.querySelector("[data-dashboard-bubble]");
 const cohortDetail = document.querySelector("[data-cohort-detail]");
 const managerOrganization = document.querySelector("[data-manager-organization]");
 const managerName = document.querySelector("[data-manager-name]");
-const managerLoginId = document.querySelector("[data-manager-login-id]");
+const managerEmail = document.querySelector("[data-manager-email]");
 
 // 현재 관리자 목업 세션
 const currentManager = {
-    loginId: sessionStorage.getItem("omagotchiManagerLoginId") || "manager",
+    email: sessionStorage.getItem("omagotchiManagerEmail") || "manager@example.com",
     name: sessionStorage.getItem("omagotchiManagerName") || "관리자",
     organization: sessionStorage.getItem("omagotchiManagerOrganization") || "소속기관 미등록"
 };
-const managerStorageScope = `${currentManager.organization}:${currentManager.loginId}`.replaceAll(/\s+/g, "_");
+const managerStorageScope = `${currentManager.organization}:${currentManager.email}`.replaceAll(/\s+/g, "_");
 const cohortsStorageKey = `omagotchiManagerCohorts:${managerStorageScope}`;
 const applicationsStorageKey = `omagotchiManagerApplications:${managerStorageScope}`;
 const auditsStorageKey = `omagotchiManagerAuditLogs:${managerStorageScope}`;
@@ -42,18 +42,18 @@ let editingCohortId = null;
 
 // 대시보드 목업 관리자 추가 지정에 사용
 const sampleMembers = [
-    { id: "user-01", name: "손재민", loginId: "jaemin.son", status: "ACTIVE", role: "USER" },
-    { id: "user-02", name: "문재민", loginId: "jaemin.mun", status: "ACTIVE", role: "COHORT_MANAGER" },
-    { id: "user-03", name: "박지우", loginId: "jioo.park", status: "PENDING", role: "USER" },
-    { id: "user-04", name: "박상민", loginId: "sangmin.park", status: "ACTIVE", role: "USER" }
+    { id: "user-01", name: "손재민", email: "jaemin.son@example.com", status: "ACTIVE", role: "USER" },
+    { id: "user-02", name: "문재민", email: "jaemin.mun@example.com", status: "ACTIVE", role: "COHORT_MANAGER" },
+    { id: "user-03", name: "박지우", email: "jioo.park@example.com", status: "PENDING", role: "USER" },
+    { id: "user-04", name: "박상민", email: "sangmin.park@example.com", status: "ACTIVE", role: "USER" }
 ];
 
 // 참가 신청 목업 사용자
 const sampleApplicants = [
-    { id: "apply-user-01", name: "권세윤", loginId: "seyoon.gwun" },
-    { id: "apply-user-02", name: "강영진", loginId: "yungjin.kang" },
-    { id: "apply-user-03", name: "박찬주", loginId: "chanju.park" },
-    { id: "apply-user-04", name: "장재혁", loginId: "jaehyuk.jang" }
+    { id: "apply-user-01", name: "권세윤", email: "seyoon.gwun@example.com" },
+    { id: "apply-user-02", name: "강영진", email: "yungjin.kang@example.com" },
+    { id: "apply-user-03", name: "박찬주", email: "chanju.park@example.com" },
+    { id: "apply-user-04", name: "장재혁", email: "jaehyuk.jang@example.com" }
 ];
 
 // 세션 저장소 JSON 유틸
@@ -73,7 +73,7 @@ const writeJson = (key, value) => {
 const renderManagerSession = () => {
     managerOrganization.textContent = currentManager.organization;
     managerName.textContent = `${currentManager.name} 관리자`;
-    managerLoginId.textContent = currentManager.loginId;
+    managerEmail.textContent = currentManager.email;
 };
 
 // 기수 데이터 정규화
@@ -99,7 +99,7 @@ const normalizeApplication = (application) => ({
     cohortName: application.cohortName || "기수 미지정",
     userId: application.userId || "",
     name: application.name || "이름 없음",
-    loginId: application.loginId || "",
+    email: application.email || "",
     status: application.status || "PENDING",
     requestedAt: application.requestedAt || new Date().toLocaleString("ko-KR"),
     rejectReason: application.rejectReason || ""
@@ -431,7 +431,7 @@ const renderApplications = () => {
         return `
             <tr data-application-id="${application.id}">
                 <td>${application.name}</td>
-                <td>${application.loginId}</td>
+                <td>${application.email}</td>
                 <td>${application.cohortName}</td>
                 <td><span class="table-badge${badgeClass}">${getApplicationStatusLabel(application.status)}</span></td>
                 <td>${application.requestedAt}</td>
@@ -466,7 +466,7 @@ const renderMembers = () => {
             return true;
         }
 
-        return member.name.toLowerCase().includes(keyword) || member.loginId.toLowerCase().includes(keyword);
+        return member.name.toLowerCase().includes(keyword) || member.email.toLowerCase().includes(keyword);
     });
 
     if (members.length === 0) {
@@ -484,7 +484,7 @@ const renderMembers = () => {
         return `
             <tr data-member-id="${member.id}">
                 <td>${member.name}</td>
-                <td>${member.loginId}</td>
+                <td>${member.email}</td>
                 <td>${getMemberStatusLabel(member.status)}</td>
                 <td><span class="table-badge${isManager ? "" : " is-muted"}">${getRoleLabel(member.role)}</span></td>
                 <td>
@@ -749,7 +749,7 @@ const seedApplications = () => {
         cohortName: targetCohort.name,
         userId: applicant.id,
         name: applicant.name,
-        loginId: applicant.loginId,
+        email: applicant.email,
         status: "PENDING"
     }));
 
@@ -779,14 +779,14 @@ const approveApplication = (applicationId, feedbackButton = null) => {
         return;
     }
 
-    const duplicateMember = cohorts[cohortIndex].members.some((member) => member.loginId === application.loginId);
+    const duplicateMember = cohorts[cohortIndex].members.some((member) => member.email === application.email);
 
     if (duplicateMember) {
         applications[applicationIndex].status = "REJECTED";
         applications[applicationIndex].rejectReason = "중복 소속";
         saveApplications(applications);
         showBubble("중복 가입은<br />불가능합니다.");
-        addAudit("참가 신청 거절", application.cohortName, `${application.loginId}: 중복 소속`);
+        addAudit("참가 신청 거절", application.cohortName, `${application.email}: 중복 소속`);
         renderAll();
         return;
     }
@@ -794,7 +794,7 @@ const approveApplication = (applicationId, feedbackButton = null) => {
     cohorts[cohortIndex].members.push({
         id: application.userId,
         name: application.name,
-        loginId: application.loginId,
+        email: application.email,
         status: "ACTIVE",
         role: "USER"
     });
@@ -806,7 +806,7 @@ const approveApplication = (applicationId, feedbackButton = null) => {
     selectedCohortId = cohorts[cohortIndex].id;
     flashButton(feedbackButton, "승인됨");
     showBubble(`${application.name} 님을<br />${application.cohortName}에 승인했습니다.`);
-    addAudit("참가 신청 승인", application.cohortName, application.loginId);
+    addAudit("참가 신청 승인", application.cohortName, application.email);
     renderAll();
 };
 
@@ -830,7 +830,7 @@ const rejectApplication = (applicationId, feedbackButton = null) => {
     saveApplications(applications);
     flashButton(feedbackButton, "거절됨");
     showBubble("참가 신청을<br />거절 처리했습니다.");
-    addAudit("참가 신청 거절", applications[index].cohortName, `${applications[index].loginId}: ${applications[index].rejectReason}`);
+    addAudit("참가 신청 거절", applications[index].cohortName, `${applications[index].email}: ${applications[index].rejectReason}`);
     renderAll();
 };
 
@@ -899,7 +899,7 @@ const toggleMemberStatus = (memberId) => {
     syncMemberCount(cohorts[index]);
     saveCohorts(cohorts);
     showBubble(`${member.name} 님의<br />소속 상태를 변경했습니다.`);
-    addAudit("소속 상태 변경", cohorts[index].name, `${member.loginId}: ${getMemberStatusLabel(member.status)}`);
+    addAudit("소속 상태 변경", cohorts[index].name, `${member.email}: ${getMemberStatusLabel(member.status)}`);
     renderAll();
 };
 
@@ -923,7 +923,7 @@ const endMember = (memberId) => {
     syncMemberCount(cohorts[index]);
     saveCohorts(cohorts);
     showBubble(`${member.name} 님의<br />소속을 종료했습니다.`);
-    addAudit("소속 종료", cohorts[index].name, member.loginId);
+    addAudit("소속 종료", cohorts[index].name, member.email);
     renderAll();
 };
 

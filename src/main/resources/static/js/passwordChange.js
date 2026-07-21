@@ -25,16 +25,16 @@ inputs.forEach((input) => {
 
 // 사용자 확인 단계
 checkUserButton.addEventListener("click", () => {
-    const loginId = form.loginId.value.trim();
+    const email = form.email.value.trim();
 
-    if (!loginId) {
-        bubble.innerHTML = "사용자 아이디를<br />입력해주세요.";
+    if (!email) {
+        bubble.innerHTML = "사용자 이메일을<br />입력해주세요.";
         shakeCard();
         return;
     }
 
-    if (loginId.length < 4) {
-        bubble.innerHTML = "아이디는 4자 이상으로<br />입력해주세요.";
+    if (!email.includes("@")) {
+        bubble.innerHTML = "이메일 형식을<br />확인해주세요.";
         shakeCard();
         return;
     }
@@ -43,7 +43,7 @@ checkUserButton.addEventListener("click", () => {
     lookupStep.classList.remove("is-active");
     changeStep.classList.add("is-active");
     changeStep.removeAttribute("aria-hidden");
-    bubble.innerHTML = "아이디를 확인했어요.<br />새 비밀번호를 입력해주세요.";
+    bubble.innerHTML = "이메일을 확인했어요.<br />새 비밀번호를 입력해주세요.";
     form.newPassword.focus();
 });
 

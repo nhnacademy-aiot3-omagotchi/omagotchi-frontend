@@ -22,20 +22,20 @@ inputs.forEach((input) => {
 
 // 회원가입 목업 검증
 form.addEventListener("submit", (event) => {
-    const loginId = form.loginId.value.trim();
+    const email = form.email.value.trim();
     const password = form.password.value.trim();
     const username = form.username.value.trim();
 
-    if (!loginId || !password || !username) {
+    if (!email || !password || !username) {
         event.preventDefault();
         bubble.innerHTML = "아직 입력하지 않은<br />정보가 있어요!";
         shakeCard();
         return;
 
     }
-    if (loginId.length < 4) {
+    if (!email.includes("@")) {
         event.preventDefault();
-        bubble.innerHTML = "아이디는 4자 이상으로<br />입력해주세요.";
+        bubble.innerHTML = "이메일 형식을<br />확인해주세요.";
         shakeCard();
         return;
     }

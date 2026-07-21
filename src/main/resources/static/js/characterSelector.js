@@ -169,7 +169,9 @@ colorRow.addEventListener("click", (event) => {
 // 캐릭터 선택 완료
 enterButton.addEventListener("click", () => {
     const selectedImagePath = getSelectedImagePath();
-    const loginId = sessionStorage.getItem("omagotchiLoginId") || localStorage.getItem("omagotchiLastLoginId") || "user01";
+    const email = sessionStorage.getItem("omagotchiEmail")
+        || localStorage.getItem("omagotchiLastEmail")
+        || "user@example.com";
 
     sessionStorage.setItem("omagotchiCharacterId", selectedCharacter.id);
     sessionStorage.setItem("omagotchiCharacterName", selectedCharacter.name);
@@ -178,14 +180,14 @@ enterButton.addEventListener("click", () => {
     sessionStorage.setItem("omagotchiCharacterColorId", selectedColor.id);
     sessionStorage.setItem("omagotchiCharacterColorName", selectedColor.name);
     sessionStorage.setItem("omagotchiCharacterColor", selectedColor.value || "");
-    localStorage.setItem(`omagotchiHasCharacter:${loginId}`, "true");
-    localStorage.setItem(`omagotchiCharacterId:${loginId}`, selectedCharacter.id);
-    localStorage.setItem(`omagotchiCharacterName:${loginId}`, selectedCharacter.name);
-    localStorage.setItem(`omagotchiCharacterImage:${loginId}`, selectedImagePath);
-    localStorage.setItem(`omagotchiCharacterBaseImage:${loginId}`, selectedCharacter.baseImage);
-    localStorage.setItem(`omagotchiCharacterColorId:${loginId}`, selectedColor.id);
-    localStorage.setItem(`omagotchiCharacterColorName:${loginId}`, selectedColor.name);
-    localStorage.setItem(`omagotchiCharacterColor:${loginId}`, selectedColor.value || "");
+    localStorage.setItem(`omagotchiHasCharacter:${email}`, "true");
+    localStorage.setItem(`omagotchiCharacterId:${email}`, selectedCharacter.id);
+    localStorage.setItem(`omagotchiCharacterName:${email}`, selectedCharacter.name);
+    localStorage.setItem(`omagotchiCharacterImage:${email}`, selectedImagePath);
+    localStorage.setItem(`omagotchiCharacterBaseImage:${email}`, selectedCharacter.baseImage);
+    localStorage.setItem(`omagotchiCharacterColorId:${email}`, selectedColor.id);
+    localStorage.setItem(`omagotchiCharacterColorName:${email}`, selectedColor.name);
+    localStorage.setItem(`omagotchiCharacterColor:${email}`, selectedColor.value || "");
 
     selectedBubble.textContent = "입장!";
     selectedImage.classList.add("happy");

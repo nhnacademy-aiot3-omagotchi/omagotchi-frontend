@@ -9,7 +9,7 @@ const inputs = document.querySelectorAll(".input-group input");
 const managerRegisterMessages = {
     focus: "관리자 정보는<br />정확히 입력해주세요.",
     empty: "아직 입력하지 않은<br />관리자 정보가 있어요!",
-    shortLoginId: "아이디는 4자 이상으로<br />입력해주세요.",
+    invalidEmail: "이메일 형식을<br />확인해주세요.",
     shortPassword: "비밀번호는 8자리 이상으로<br />입력해주세요.",
     shortUsername: "사용자 이름은 2자 이상으로<br />입력해주세요.",
     shortOrganization: "소속 기관은 2자 이상으로<br />입력해주세요.",
@@ -50,21 +50,21 @@ character.addEventListener("click", () => {
 
 // 관리자 회원가입 목업 검증
 form.addEventListener("submit", (event) => {
-    const loginId = form.loginId.value.trim();
+    const email = form.email.value.trim();
     const password = form.password.value.trim();
     const username = form.username.value.trim();
     const organization = form.organ.value.trim();
 
-    if (!loginId || !password || !username || !organization) {
+    if (!email || !password || !username || !organization) {
         event.preventDefault();
         showMessage(managerRegisterMessages.empty);
         shakeCard();
         return;
     }
 
-    if (loginId.length < 4) {
+    if (!email.includes("@")) {
         event.preventDefault();
-        showMessage(managerRegisterMessages.shortLoginId);
+        showMessage(managerRegisterMessages.invalidEmail);
         shakeCard();
         return;
     }
@@ -91,7 +91,7 @@ form.addEventListener("submit", (event) => {
     }
 
     event.preventDefault();
-    sessionStorage.setItem("omagotchiManagerLoginId", loginId);
+    sessionStorage.setItem("omagotchiManagerEmail", email);
     sessionStorage.setItem("omagotchiManagerName", username);
     sessionStorage.setItem("omagotchiManagerOrganization", organization);
     sessionStorage.removeItem("omagotchiManagerRole");

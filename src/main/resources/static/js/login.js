@@ -22,13 +22,13 @@ inputs.forEach((input) => {
 
 // 로그인 목업 처리
 form.addEventListener("submit", (event) => {
-    const loginId = form.loginId.value.trim();
+    const email = form.email.value.trim();
     const password = form.password.value.trim();
 
-    if (!loginId || !password) {
+    if (!email || !password) {
         event.preventDefault();
 
-        bubble.innerHTML = "아이디와 비밀번호를<br />다시 확인해주세요!";
+        bubble.innerHTML = "이메일과 비밀번호를<br />다시 확인해주세요!";
 
         card.classList.add("shake");
 
@@ -41,16 +41,16 @@ form.addEventListener("submit", (event) => {
 
     event.preventDefault();
     bubble.innerHTML = "좋아요!<br />실습실로 이동할게요.";
-    sessionStorage.setItem("omagotchiLoginId", loginId);
+    sessionStorage.setItem("omagotchiEmail", email);
     sessionStorage.setItem("omagotchiLoginPassword", password);
-    localStorage.setItem("omagotchiLastLoginId", loginId);
+    localStorage.setItem("omagotchiLastEmail", email);
 
-    if (!localStorage.getItem(`omagotchiPassword:${loginId}`)) {
-        localStorage.setItem(`omagotchiPassword:${loginId}`, password);
+    if (!localStorage.getItem(`omagotchiPassword:${email}`)) {
+        localStorage.setItem(`omagotchiPassword:${email}`, password);
     }
 
     setTimeout(() => {
-        const hasSelectedCharacter = localStorage.getItem(`omagotchiHasCharacter:${loginId}`) === "true";
+        const hasSelectedCharacter = localStorage.getItem(`omagotchiHasCharacter:${email}`) === "true";
         window.location.href = hasSelectedCharacter ? "/lab" : "/characterSelector";
     }, 700);
 });

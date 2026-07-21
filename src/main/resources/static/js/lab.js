@@ -8,7 +8,9 @@ const roomName = document.querySelector("[data-room-name]");
 
 // 현재 사용자 목업 상태
 const user = {
-    id: sessionStorage.getItem("omagotchiLoginId") || localStorage.getItem("omagotchiLastLoginId") || "user01",
+    id: sessionStorage.getItem("omagotchiEmail")
+        || localStorage.getItem("omagotchiLastEmail")
+        || "user@example.com",
     cohort: "AIot 3기",
     space: localStorage.getItem("omagotchiRoom") || "실습실",
     status: "WAITING"
@@ -757,7 +759,7 @@ overlayRoot.addEventListener("click", (event) => {
     }
 
     if (event.target.matches("[data-logout]")) {
-        sessionStorage.removeItem("omagotchiLoginId");
+        sessionStorage.removeItem("omagotchiEmail");
         sessionStorage.removeItem("omagotchiLoginPassword");
         window.location.href = "/login";
     }
