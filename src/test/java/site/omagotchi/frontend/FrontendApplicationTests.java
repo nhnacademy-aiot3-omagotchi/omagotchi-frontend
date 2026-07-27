@@ -30,6 +30,11 @@ class FrontendApplicationTests {
 				.andExpect(status().isOk())
 				.andExpect(view().name("index"))
 				.andExpect(content().string(containsString("시작하기")));
+
+		mockMvc.perform(get("/index"))
+				.andExpect(status().isOk())
+				.andExpect(view().name("index"))
+				.andExpect(content().string(containsString("시작하기")));
 	}
 
 	@Test
@@ -37,8 +42,81 @@ class FrontendApplicationTests {
 		mockMvc.perform(get("/css/common.css"))
 				.andExpect(status().isOk());
 
+		mockMvc.perform(get("/css/index.css"))
+				.andExpect(status().isOk());
+
+		mockMvc.perform(get("/css/home.css"))
+				.andExpect(status().isOk());
+
+		mockMvc.perform(get("/css/appPages.css"))
+				.andExpect(status().isOk());
+
+		mockMvc.perform(get("/css/progress.css"))
+				.andExpect(status().isOk());
+
+		mockMvc.perform(get("/css/space.css"))
+				.andExpect(status().isOk());
+
 		mockMvc.perform(get("/js/app.js"))
 				.andExpect(status().isOk());
+
+		mockMvc.perform(get("/js/home.js"))
+				.andExpect(status().isOk());
+
+		mockMvc.perform(get("/js/progress.js"))
+				.andExpect(status().isOk());
+
+		mockMvc.perform(get("/js/space.js"))
+				.andExpect(status().isOk());
+	}
+
+	@Test
+	void homePageIsRendered() throws Exception {
+		mockMvc.perform(get("/home"))
+				.andExpect(status().isOk())
+				.andExpect(view().name("home"))
+				.andExpect(content().string(containsString("오늘 출석")));
+	}
+
+	@Test
+	void homeMenuPagesAreRendered() throws Exception {
+		mockMvc.perform(get("/progress"))
+				.andExpect(status().isOk())
+				.andExpect(view().name("progress"))
+				.andExpect(content().string(containsString("보상 받기")));
+
+		mockMvc.perform(get("/personal"))
+				.andExpect(status().isOk())
+				.andExpect(view().name("personal"))
+				.andExpect(content().string(containsString("총 학습")));
+
+		mockMvc.perform(get("/cohort"))
+				.andExpect(status().isOk())
+				.andExpect(view().name("cohort"))
+				.andExpect(content().string(containsString("기수 현황")));
+
+		mockMvc.perform(get("/write"))
+				.andExpect(status().isOk())
+				.andExpect(view().name("write"))
+				.andExpect(content().string(containsString("오늘 공부한 내용")));
+
+		mockMvc.perform(get("/settings"))
+				.andExpect(status().isOk())
+				.andExpect(view().name("settings"))
+				.andExpect(content().string(containsString("화면 밝기")));
+
+		mockMvc.perform(get("/help"))
+				.andExpect(status().isOk())
+				.andExpect(view().name("help"))
+				.andExpect(content().string(containsString("기본 사용 흐름")));
+	}
+
+	@Test
+	void spacePageIsRendered() throws Exception {
+		mockMvc.perform(get("/space"))
+				.andExpect(status().isOk())
+				.andExpect(view().name("space"))
+				.andExpect(content().string(containsString("회의실 A")));
 	}
 
 	@Test
@@ -49,6 +127,23 @@ class FrontendApplicationTests {
 				.andExpect(content().string(containsString("소속 기관")));
 
 		mockMvc.perform(get("/js/managerRegister.js"))
+				.andExpect(status().isOk());
+	}
+
+	@Test
+	void managerDashboardIsRendered() throws Exception {
+		mockMvc.perform(get("/managerDashboard"))
+				.andExpect(status().isOk())
+				.andExpect(view().name("managerDashboard"))
+				.andExpect(content().string(containsString("배정받은 기수만 표시됩니다")));
+
+		mockMvc.perform(get("/css/managerDashboard.css"))
+				.andExpect(status().isOk());
+
+		mockMvc.perform(get("/css/managerAuth.css"))
+				.andExpect(status().isOk());
+
+		mockMvc.perform(get("/js/managerDashboard.js"))
 				.andExpect(status().isOk());
 	}
 

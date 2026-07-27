@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Omagotchi 사용자 이름</title>
+
+    <link rel="icon" type="image/png" sizes="48x48" href="/favicon.png" />
+    <link rel="stylesheet" href="/css/auth.css" />
+</head>
+<body>
+<main class="login-page auth-page">
+    <section class="login-card auth-card username-card" aria-labelledby="username-title">
+        <header class="auth-card-header username-header">
+            <p class="auth-brand" id="username-title">omagotchi</p>
+        </header>
+
+        <form class="auth-form username-form auth-panel" action="#" method="post">
+            <p class="auth-subtitle username-feedback" data-auth-feedback>사용자 이름을 입력하세요</p>
+
+            <label class="input-group auth-input-group username-input-group">
+                <span class="sr-only">사용자 이름</span>
+                <input type="text" name="username" placeholder="사용자 이름" autocomplete="nickname" />
+            </label>
+
+            <button class="auth-button auth-submit-button" type="submit">
+                입력하기
+            </button>
+        </form>
+    </section>
+</main>
+
+<script src="/js/username.js"></script>
+</body>
+</html>

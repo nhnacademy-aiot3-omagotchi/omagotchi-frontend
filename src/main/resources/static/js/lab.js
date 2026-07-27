@@ -35,7 +35,7 @@ const roomParticles = {
 };
 
 // 기수 가입 목업 데이터
-const cohorts = [
+const defaultCohorts = [
     {
         id: "aiot-3",
         name: "AIot 3기",
@@ -77,6 +77,65 @@ const cohorts = [
         members: ["sensor01", "edge02"]
     }
 ];
+
+// 관리자 화면에서 발급한 가입 코드와 기수 정보를 목업 저장소에서 반영
+function getManagedCohorts() {
+    try {
+        return JSON.parse(localStorage.getItem("omagotchiCohortOperations") || "[]");
+    } catch {
+        return [];
+    }
+}
+
+function resolveManagedStatus(managedCohort) {
+    if (managedCohort.status === "CLOSED") {
+        return "expired";
+    }
+
+    if (!managedCohort.joinCode || managedCohort.joinCode.status !== "ACTIVE") {
+        return "expired";
+    }
+
+    if (managedCohort.joinCode.expiresAt && managedCohort.joinCode.expiresAt < new Date().toISOString().slice(0, 10)) {
+        return "expired";
+    }
+
+    return "open";
+}
+
+const managedCohorts = getManagedCohorts();
+const cohorts = defaultCohorts.map((cohort) => {
+    const managed = managedCohorts.find((item) => item.id === cohort.id);
+
+    if (!managed) {
+        return cohort;
+    }
+
+    return {
+        ...cohort,
+        name: managed.name,
+        capacity: managed.capacity,
+        code: managed.joinCode?.value || "",
+        status: resolveManagedStatus(managed)
+    };
+});
+
+managedCohorts.forEach((managed) => {
+    if (cohorts.some((cohort) => cohort.id === managed.id)) {
+        return;
+    }
+
+    cohorts.push({
+        id: managed.id,
+        name: managed.name,
+        capacity: managed.capacity,
+        code: managed.joinCode?.value || "",
+        status: resolveManagedStatus(managed),
+        members: managed.members
+            .filter((member) => member.status === "ACTIVE")
+            .map((member) => member.email)
+    });
+});
 
 // 타이머/기수 선택 상태
 let timerState = "idle";
@@ -227,7 +286,7 @@ function renderTerminalOverlay() {
                         <dd>${user.id}</dd>
                     </div>
                     <div>
-                        <dt>COHART</dt>
+                        <dt>COHORT</dt>
                         <dd>${user.cohort}</dd>
                     </div>
                     <div>
@@ -314,10 +373,13 @@ function getTimerElapsed() {
 // 타이머 화면 갱신
 function updateTimerDisplay() {
     const display = document.querySelector("[data-timer-display]");
+    const formattedTime = formatTime(getTimerElapsed()).replaceAll(" ", "");
 
     if (display) {
-        display.textContent = formatTime(getTimerElapsed());
+        display.textContent = formattedTime;
     }
+
+    document.title = `${formattedTime} - Omagotchi`;
 }
 
 // 타이머 정지
@@ -366,6 +428,7 @@ function resetTimer() {
     stopTimer();
     setSpeech("타이머 초기화");
     renderTimerOverlay();
+    updateTimerDisplay();
 }
 
 // 학습 기록 추가
@@ -547,31 +610,31 @@ function getCohortMembers(cohort) {
 }
 
 // 기수 가입 창 렌더링
-function renderCohartOverlay(message = "참가할 기수를 선택하세요") {
+function renderCohortOverlay(message = "참가할 기수를 선택하세요") {
     const selectedCohort = cohorts.find((cohort) => cohort.id === selectedCohortId) || cohorts[0];
     const selectedMembers = getCohortMembers(selectedCohort);
 
     setOverlay(`
-        <section class="cohart-card" aria-label="기수 가입">
-            <button class="cohart-user-list-button" type="button" data-user-list aria-label="참여자 보기">
+        <section class="cohort-card" aria-label="기수 가입">
+            <button class="cohort-user-list-button" type="button" data-user-list aria-label="참여자 보기">
                 <img src="/images/app/userList.png" alt="" />
                 <span>${selectedMembers.length}/${selectedCohort.capacity}</span>
             </button>
             <button class="overlay-close" type="button" data-close-overlay>닫기</button>
-            <header class="cohart-header">
-                <img src="/images/app/cohart.png" alt="" />
+            <header class="cohort-header">
+                <img src="/images/app/cohort.png" alt="" />
                 <div>
                     <h2>기수 가입</h2>
                     <p>관리자가 등록한 기수 목록에서 참가 신청</p>
                 </div>
             </header>
-            <div class="cohart-layout">
-                <section class="cohart-list-panel" aria-label="참가할 기수 목록">
+            <div class="cohort-layout">
+                <section class="cohort-list-panel" aria-label="참가할 기수 목록">
                     <h3>참가할 기수</h3>
-                    <div class="cohart-list">
+                    <div class="cohort-list">
                         ${cohorts.map((cohort) => `
                             <button
-                                    class="cohart-item ${cohort.id === selectedCohort.id ? "is-selected" : ""}"
+                                    class="cohort-item ${cohort.id === selectedCohort.id ? "is-selected" : ""}"
                                     type="button"
                                 data-select-cohort="${cohort.id}"
                             >
@@ -582,20 +645,20 @@ function renderCohartOverlay(message = "참가할 기수를 선택하세요") {
                         `).join("")}
                     </div>
                 </section>
-                <section class="cohart-detail-panel" aria-label="기수 코드 입력">
-                    <div class="cohart-summary">
+                <section class="cohort-detail-panel" aria-label="기수 코드 입력">
+                    <div class="cohort-summary">
                         <h3>${selectedCohort.name}</h3>
                         <p>정원 ${selectedMembers.length}/${selectedCohort.capacity}</p>
                         <strong>${getCohortStatusLabel(selectedCohort)}</strong>
                     </div>
-                    <form class="cohart-form" data-cohart-form>
+                    <form class="cohort-form" data-cohort-form>
                         <label>
                             <span>가입 코드</span>
                             <input name="cohortCode" type="text" placeholder="코드를 입력하세요" autocomplete="off" />
                         </label>
                         <button type="submit">참가 신청</button>
                     </form>
-                    <p class="cohart-message" data-cohart-message>${message}</p>
+                    <p class="cohort-message" data-cohort-message>${message}</p>
                 </section>
             </div>
         </section>
@@ -626,7 +689,7 @@ function renderUserListOverlay() {
                     </li>
                 `).join("")}
             </ul>
-            <button class="user-list-back" type="button" data-cohart-view>기수 가입으로</button>
+            <button class="user-list-back" type="button" data-cohort-view>기수 가입으로</button>
         </section>
     `);
 }
@@ -638,42 +701,67 @@ function joinSelectedCohort(code) {
     const requestedIds = getRequestedCohortIds();
 
     if (!selectedCohort) {
-        renderCohartOverlay("선택한 기수를 찾을 수 없습니다");
+        renderCohortOverlay("선택한 기수를 찾을 수 없습니다");
         return;
     }
 
     if (joinedIds.includes(selectedCohort.id) || selectedCohort.members.includes(user.id)) {
-        renderCohartOverlay("중복 가입은 불가능입니다");
+        renderCohortOverlay("중복 가입은 불가능입니다");
         setSpeech("이미 참가한 기수야");
         return;
     }
 
     if (requestedIds.includes(selectedCohort.id)) {
-        renderCohartOverlay("이미 참가 신청한 기수입니다");
+        renderCohortOverlay("이미 참가 신청한 기수입니다");
         setSpeech("관리자 승인을 기다리는 중이야");
         return;
     }
 
     if (selectedCohort.status === "expired") {
-        renderCohartOverlay("만료된 코드입니다");
+        renderCohortOverlay("만료된 코드입니다");
         setSpeech("만료된 코드야");
         return;
     }
 
     if (getCohortMembers(selectedCohort).length >= selectedCohort.capacity || selectedCohort.status === "full") {
-        renderCohartOverlay("정원이 마감되었습니다");
+        renderCohortOverlay("정원이 마감되었습니다");
         setSpeech("정원이 다 찼어");
         return;
     }
 
     if (code.trim().toUpperCase() !== selectedCohort.code) {
-        renderCohartOverlay("잘못된 코드입니다");
+        renderCohortOverlay("잘못된 코드입니다");
         setSpeech("코드가 틀렸어");
         return;
     }
 
     setRequestedCohortIds([...requestedIds, selectedCohort.id]);
-    renderCohartOverlay("참가 신청 완료 - 승인 대기");
+    const applications = (() => {
+        try {
+            return JSON.parse(localStorage.getItem("omagotchiCohortApplications") || "[]");
+        } catch {
+            return [];
+        }
+    })();
+
+    if (!applications.some((application) => (
+        application.cohortId === selectedCohort.id
+        && application.userId === user.id
+        && application.status === "PENDING"
+    ))) {
+        applications.push({
+            id: `application-${Date.now()}`,
+            cohortId: selectedCohort.id,
+            userId: user.id,
+            name: sessionStorage.getItem("omagotchiUsername") || user.id.split("@")[0],
+            email: user.id,
+            requestedAt: new Date().toLocaleString("ko-KR", { hour12: false }),
+            status: "PENDING"
+        });
+        localStorage.setItem("omagotchiCohortApplications", JSON.stringify(applications));
+    }
+
+    renderCohortOverlay("참가 신청 완료 - 승인 대기");
     setSpeech("관리자 승인을 기다려줘");
 }
 
@@ -683,7 +771,7 @@ function renderFolderOverlay() {
         <section class="folder-card" aria-label="폴더">
             <button class="overlay-close" type="button" data-close-overlay>닫기</button>
             <div class="folder-grid">
-                <img src="/images/app/Codex.png" alt="Codex" />
+                <img src="/images/app/codex.png" alt="Codex" />
                 <img src="/images/app/message.png" alt="Message" />
                 <img src="/images/app/mySQL.png" alt="MySQL" />
                 <img src="/images/app/postgreSQL.png" alt="PostgreSQL" />
@@ -739,8 +827,8 @@ document.querySelector(".lab-dock").addEventListener("click", (event) => {
         renderQuestOverlay();
     }
 
-    if (app === "cohart") {
-        renderCohartOverlay();
+    if (app === "cohort") {
+        renderCohortOverlay();
     }
 
     if (app === "userList") {
@@ -805,21 +893,21 @@ overlayRoot.addEventListener("click", (event) => {
         renderUserListOverlay();
     }
 
-    if (event.target.closest("[data-cohart-view]")) {
-        renderCohartOverlay("코드를 입력하세요");
+    if (event.target.closest("[data-cohort-view]")) {
+        renderCohortOverlay("코드를 입력하세요");
     }
 
     const cohortButton = event.target.closest("[data-select-cohort]");
 
     if (cohortButton) {
         selectedCohortId = cohortButton.dataset.selectCohort;
-        renderCohartOverlay("코드를 입력하세요");
+        renderCohortOverlay("코드를 입력하세요");
     }
 });
 
 // 오버레이 폼 제출 처리
 overlayRoot.addEventListener("submit", (event) => {
-    if (event.target.matches("[data-cohart-form]")) {
+    if (event.target.matches("[data-cohort-form]")) {
         event.preventDefault();
         joinSelectedCohort(event.target.cohortCode.value);
         return;

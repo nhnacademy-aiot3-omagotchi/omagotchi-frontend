@@ -426,7 +426,7 @@ input {
 .folder-card,
 .note-card,
 .quest-card,
-.cohart-card,
+.cohort-card,
 .user-list-card {
     border-radius: 34px;
     background: var(--panel);
@@ -1020,7 +1020,7 @@ input {
 }
 
 /* 기수 가입 창 */
-.cohart-card {
+.cohort-card {
     position: absolute;
     left: 46px;
     top: 22px;
@@ -1034,31 +1034,31 @@ input {
     box-shadow: 8px 8px 0 rgba(0, 0, 0, 0.38);
 }
 
-.cohart-header {
+.cohort-header {
     display: flex;
     align-items: center;
     gap: 16px;
     padding-right: 78px;
 }
 
-.cohart-header img {
+.cohort-header img {
     width: 50px;
     height: 50px;
     object-fit: contain;
     image-rendering: pixelated;
 }
 
-.cohart-header h2,
-.cohart-header p {
+.cohort-header h2,
+.cohort-header p {
     margin: 0;
 }
 
-.cohart-header h2 {
+.cohort-header h2 {
     font-size: 28px;
     font-weight: 900;
 }
 
-.cohart-header p {
+.cohort-header p {
     margin-top: 6px;
     color: #d8d8d8;
     font-size: 13px;
@@ -1066,15 +1066,15 @@ input {
 }
 
 /* 기수 목록 */
-.cohart-layout {
+.cohort-layout {
     min-height: 0;
     display: grid;
     grid-template-columns: 0.95fr 1.05fr;
     gap: 18px;
 }
 
-.cohart-list-panel,
-.cohart-detail-panel {
+.cohort-list-panel,
+.cohort-detail-panel {
     min-height: 0;
     padding: 16px;
     border: 4px solid #1f1f1f;
@@ -1082,20 +1082,20 @@ input {
     background: #333333;
 }
 
-.cohart-list-panel {
+.cohort-list-panel {
     display: grid;
     grid-template-rows: auto minmax(0, 1fr);
     gap: 12px;
 }
 
-.cohart-list-panel h3,
-.cohart-summary h3 {
+.cohort-list-panel h3,
+.cohort-summary h3 {
     margin: 0;
     font-size: 18px;
     font-weight: 900;
 }
 
-.cohart-list {
+.cohort-list {
     min-height: 0;
     display: grid;
     gap: 10px;
@@ -1103,25 +1103,25 @@ input {
     padding-right: 6px;
 }
 
-.cohart-list::-webkit-scrollbar,
+.cohort-list::-webkit-scrollbar,
 .user-list::-webkit-scrollbar {
     width: 10px;
 }
 
-.cohart-list::-webkit-scrollbar-track,
+.cohort-list::-webkit-scrollbar-track,
 .user-list::-webkit-scrollbar-track {
     border-radius: 10px;
     background: #272727;
 }
 
-.cohart-list::-webkit-scrollbar-thumb,
+.cohort-list::-webkit-scrollbar-thumb,
 .user-list::-webkit-scrollbar-thumb {
     border: 2px solid #272727;
     border-radius: 10px;
     background: #eeeeee;
 }
 
-.cohart-item {
+.cohort-item {
     width: 100%;
     min-height: 74px;
     display: grid;
@@ -1139,18 +1139,18 @@ input {
     box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.5);
 }
 
-.cohart-item:hover,
-.cohart-item.is-selected {
+.cohort-item:hover,
+.cohort-item.is-selected {
     transform: translate(-2px, -2px);
     box-shadow: 6px 6px 0 rgba(0, 0, 0, 0.5);
 }
 
-.cohart-item small {
+.cohort-item small {
     color: #d8d8d8;
     font-size: 12px;
 }
 
-.cohart-item strong {
+.cohort-item strong {
     grid-column: 1 / -1;
     width: fit-content;
     padding: 6px 10px;
@@ -1161,13 +1161,13 @@ input {
 }
 
 /* 기수 코드 입력 */
-.cohart-detail-panel {
+.cohort-detail-panel {
     display: grid;
     grid-template-rows: auto auto auto;
     gap: 14px;
 }
 
-.cohart-summary {
+.cohort-summary {
     display: grid;
     gap: 8px;
     padding: 14px;
@@ -1176,14 +1176,14 @@ input {
     background: #252525;
 }
 
-.cohart-summary p {
+.cohort-summary p {
     margin: 0;
     color: #d8d8d8;
     font-size: 13px;
     font-weight: 900;
 }
 
-.cohart-summary strong {
+.cohort-summary strong {
     width: fit-content;
     padding: 8px 12px;
     border-radius: 10px;
@@ -1193,23 +1193,23 @@ input {
     font-weight: 900;
 }
 
-.cohart-form {
+.cohort-form {
     display: grid;
     grid-template-columns: 1fr auto;
     gap: 10px;
 }
 
-.cohart-form label {
+.cohort-form label {
     display: grid;
     gap: 6px;
 }
 
-.cohart-form span {
+.cohort-form span {
     font-size: 12px;
     font-weight: 900;
 }
 
-.cohart-form input {
+.cohort-form input {
     width: 100%;
     height: 44px;
     padding: 0 12px;
@@ -1221,7 +1221,7 @@ input {
     outline: 0;
 }
 
-.cohart-form button {
+.cohort-form button {
     align-self: end;
     height: 44px;
     padding: 0 14px;
@@ -1234,7 +1234,7 @@ input {
     box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.55);
 }
 
-.cohart-message {
+.cohort-message {
     min-height: 38px;
     margin: 0;
     padding: 9px 12px;
@@ -1247,7 +1247,7 @@ input {
 }
 
 /* 기수 참여자 보기 버튼 */
-.cohart-user-list-button {
+.cohort-user-list-button {
     position: absolute;
     top: 12px;
     right: 92px;
@@ -1269,17 +1269,17 @@ input {
     box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.55);
 }
 
-.cohart-user-list-button:hover {
+.cohort-user-list-button:hover {
     transform: translate(-2px, -2px);
     box-shadow: 6px 6px 0 rgba(0, 0, 0, 0.55);
 }
 
-.cohart-user-list-button:active {
+.cohort-user-list-button:active {
     transform: translate(2px, 2px);
     box-shadow: 1px 1px 0 rgba(0, 0, 0, 0.7);
 }
 
-.cohart-user-list-button img {
+.cohort-user-list-button img {
     width: 30px;
     height: 30px;
     object-fit: contain;

@@ -2,20 +2,26 @@
 const form = document.querySelector(".register-form");
 const card = document.querySelector(".login-card");
 const character = document.querySelector(".omagotchi-character");
-const bubble = document.querySelector(".speech-bubble");
+const bubble = document.querySelector("[data-auth-feedback]") || document.querySelector(".speech-bubble");
 const inputs = document.querySelectorAll(".input-group input");
+
+function setFeedback(message) {
+    if (bubble) {
+        bubble.innerHTML = message;
+    }
+}
 
 // 입력 중 캐릭터 반응
 inputs.forEach((input) => {
     input.addEventListener("focus", () => {
-        bubble.innerHTML = "나만의 오마고치를!<br />생성중입니다!";
+        setFeedback("나만의 오마고치를 생성중입니다.");
     });
 
     input.addEventListener("input", () => {
-        character.classList.add("happy");
+        character?.classList.add("happy");
 
         setTimeout(() => {
-            character.classList.remove("happy");
+            character?.classList.remove("happy");
         }, 600);
     });
 });
@@ -24,37 +30,33 @@ inputs.forEach((input) => {
 form.addEventListener("submit", (event) => {
     const email = form.email.value.trim();
     const password = form.password.value.trim();
-    const username = form.username.value.trim();
 
-    if (!email || !password || !username) {
+    if (!email || !password) {
         event.preventDefault();
-        bubble.innerHTML = "아직 입력하지 않은<br />정보가 있어요!";
+        setFeedback("아직 입력하지 않은 정보가 있어요.");
         shakeCard();
         return;
 
     }
     if (!email.includes("@")) {
         event.preventDefault();
-        bubble.innerHTML = "이메일 형식을<br />확인해주세요.";
+        setFeedback("이메일 형식을 확인해주세요.");
         shakeCard();
         return;
     }
     if (password.length < 8 ) {
         event.preventDefault();
-        bubble.innerHTML = "비밀번호는 8자리 이상으로<br />입력해주세요.";
-        shakeCard();
-        return;
-    }
-    if (username.length < 2) {
-        event.preventDefault();
-        bubble.innerHTML = "사용자 이름은 2자 이상으로<br />입력해주세요.";
+        setFeedback("비밀번호는 8자리 이상으로 입력해주세요.");
         shakeCard();
         return;
     }
     event.preventDefault();
-    bubble.innerHTML = "로그인 화면으로<br />이동중입니다.";
+    setFeedback("사용자 이름을 설정하러 이동중입니다.");
+    sessionStorage.setItem("omagotchiRegisterEmail", email);
+    sessionStorage.setItem("omagotchiRegisterPassword", password);
+
     setTimeout(() => {
-        window.location.href = "/login";
+        window.location.href = "/username";
     }, 800);
 });
 

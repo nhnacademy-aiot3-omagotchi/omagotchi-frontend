@@ -1,0 +1,292 @@
+:root {
+    --green-900: #123c2d;
+    --green-800: #176044;
+    --green-700: #178a59;
+    --green-500: #2fd08a;
+    --green-100: #dff7eb;
+    --ink: #17221d;
+    --muted: #66736c;
+    --line: #d5e4dc;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    color: var(--ink);
+    background: #1eb978;
+    font-family: Pretendard, "Noto Sans KR", system-ui, sans-serif;
+    letter-spacing: 0;
+}
+
+button,
+input {
+    font: inherit;
+}
+
+/* 관리자 인증 화면 */
+.manager-auth-page {
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+    padding: 64px 24px 32px;
+    background:
+        linear-gradient(rgba(23, 96, 68, 0.12) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(23, 96, 68, 0.12) 1px, transparent 1px),
+        #25c983;
+    background-size: 32px 32px;
+}
+
+/* 이전 화면 링크 */
+.manager-auth-back {
+    position: fixed;
+    top: 24px;
+    left: 28px;
+    color: var(--green-900);
+    font-size: 13px;
+    font-weight: 900;
+    text-decoration: none;
+}
+
+/* 캐릭터 안내와 입력 폼 배치 */
+.manager-auth-shell {
+    width: min(1060px, 100%);
+    min-height: 620px;
+    display: grid;
+    grid-template-columns: minmax(0, 1.05fr) minmax(380px, 0.95fr);
+    overflow: hidden;
+    border: 2px solid var(--green-900);
+    border-radius: 12px;
+    background: #fff;
+    box-shadow: 14px 14px 0 rgba(18, 60, 45, 0.23);
+}
+
+/* 관리자 캐릭터 안내 */
+.manager-auth-character {
+    position: relative;
+    min-height: 100%;
+    display: grid;
+    align-content: end;
+    justify-items: center;
+    padding: 42px;
+    background: var(--green-800);
+    color: #fff;
+}
+
+.manager-auth-character img {
+    width: 256px;
+    height: 256px;
+    object-fit: contain;
+    image-rendering: crisp-edges;
+    image-rendering: pixelated;
+}
+
+.manager-auth-character > div:last-child {
+    width: 100%;
+}
+
+.manager-auth-character span,
+.form-kicker {
+    color: #3da777;
+    font-size: 11px;
+    font-weight: 900;
+}
+
+.manager-auth-character h1 {
+    margin: 8px 0 10px;
+    font-size: 32px;
+}
+
+.manager-auth-character p {
+    margin: 0;
+    color: #d7eee3;
+    font-size: 13px;
+    line-height: 1.7;
+}
+
+/* 캐릭터 말풍선 */
+.speech-bubble {
+    position: absolute;
+    top: 140px;
+    left: 50%;
+    z-index: 2;
+    padding: 13px 16px;
+    border: 3px solid var(--ink);
+    border-radius: 9px;
+    background: #fff;
+    color: var(--ink);
+    font-size: 13px;
+    font-weight: 900;
+    line-height: 1.45;
+    text-align: center;
+    transform: translateX(-50%);
+}
+
+.speech-bubble::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    bottom: -10px;
+    width: 16px;
+    height: 16px;
+    border-right: 3px solid var(--ink);
+    border-bottom: 3px solid var(--ink);
+    background: #fff;
+    transform: translateX(-50%) rotate(45deg);
+}
+
+/* 관리자 로그인·등록 폼 */
+.manager-auth-form-panel {
+    display: grid;
+    align-items: center;
+    padding: 48px;
+}
+
+.manager-auth-form-panel form {
+    width: 100%;
+}
+
+.manager-auth-form-panel h2 {
+    margin: 7px 0 8px;
+    font-size: 30px;
+}
+
+.manager-auth-form-panel form > p {
+    margin: 0 0 26px;
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.65;
+}
+
+/* 입력 필드 */
+.input-group {
+    display: grid;
+    gap: 7px;
+    margin-bottom: 15px;
+}
+
+.input-group span {
+    font-size: 11px;
+    font-weight: 900;
+}
+
+.input-group input {
+    width: 100%;
+    height: 50px;
+    padding: 0 14px;
+    border: 1px solid #b8ccc0;
+    border-radius: 6px;
+    outline: none;
+    background: #f9fcfa;
+    color: var(--ink);
+}
+
+.input-group input:focus {
+    border-color: var(--green-700);
+    box-shadow: 0 0 0 3px rgba(47, 208, 138, 0.16);
+}
+
+/* 관리자 등록 입력 배치 */
+.manager-register-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+}
+
+/* 제출 버튼 */
+.manager-auth-submit {
+    width: 100%;
+    height: 52px;
+    margin-top: 5px;
+    border: 1px solid var(--green-900);
+    border-radius: 6px;
+    background: var(--green-700);
+    color: #fff;
+    font-weight: 900;
+    cursor: pointer;
+    box-shadow: 0 5px 0 var(--green-900);
+}
+
+.manager-auth-submit:active {
+    transform: translateY(3px);
+    box-shadow: 0 2px 0 var(--green-900);
+}
+
+/* 하단 이동 링크 */
+.manager-auth-links {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    margin-top: 22px;
+    color: var(--muted);
+    font-size: 11px;
+}
+
+.manager-auth-links a {
+    color: var(--green-800);
+    font-weight: 900;
+}
+
+/* 입력 오류와 성공 모션 */
+.login-card.shake {
+    animation: shake 0.35s ease-in-out;
+}
+
+.manager-character-img.happy {
+    animation: happy 0.6s ease;
+}
+
+@keyframes shake {
+    25% { transform: translateX(-7px); }
+    50% { transform: translateX(7px); }
+    75% { transform: translateX(-4px); }
+}
+
+@keyframes happy {
+    50% { transform: translateY(-10px) rotate(2deg); }
+}
+
+@media (max-width: 760px) {
+    .manager-auth-page {
+        padding: 70px 16px 24px;
+    }
+
+    .manager-auth-back {
+        left: 18px;
+    }
+
+    .manager-auth-shell {
+        grid-template-columns: 1fr;
+    }
+
+    .manager-auth-character {
+        min-height: 300px;
+        padding: 28px;
+    }
+
+    .manager-auth-character img {
+        width: 160px;
+        height: 160px;
+    }
+
+    .manager-auth-character h1 {
+        font-size: 24px;
+    }
+
+    .speech-bubble {
+        top: 18px;
+        left: 50%;
+        font-size: 10px;
+    }
+
+    .manager-auth-form-panel {
+        padding: 34px 24px;
+    }
+
+    .manager-register-grid {
+        grid-template-columns: 1fr;
+        gap: 0;
+    }
+}

@@ -3,322 +3,194 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Omagotchi Manager Dashboard</title>
-
-    <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png" />
-    <link rel="stylesheet" href="/css/auth.css" />
+    <title>Omagotchi 기수 운영</title>
+    <link rel="icon" type="image/png" sizes="48x48" href="/favicon.png" />
     <link rel="stylesheet" href="/css/managerDashboard.css" />
 </head>
 <body>
-<main class="manager-dashboard-page">
-    <section class="manager-dashboard-shell" aria-label="관리자 대시보드">
-        <header class="manager-dashboard-header">
-            <a class="manager-dashboard-logo" href="/managerDashboard" aria-label="관리자 대시보드 홈">
-                <img src="/images/logo.png" alt="Omagotchi Logo">
-            </a>
-
-            <div class="manager-session-card" aria-label="관리자 세션 정보">
-                <span data-manager-organization>소속기관 미등록</span>
+<main class="manager-page">
+    <header class="manager-header">
+        <a class="manager-brand" href="/managerDashboard">Omagotchi <span>기수 운영</span></a>
+        <div class="manager-account">
+            <span class="role-badge">기수 관리자</span>
+            <div>
                 <strong data-manager-name>관리자</strong>
                 <small data-manager-email>manager@example.com</small>
             </div>
+            <button type="button" data-manager-logout>로그아웃</button>
+        </div>
+    </header>
 
-            <nav class="manager-dashboard-nav" aria-label="관리자 메뉴">
-                <button class="is-active" type="button" data-dashboard-tab="cohorts">기수 관리</button>
+    <div class="manager-layout">
+        <aside class="manager-sidebar">
+            <section class="scope-card">
+                <span>현재 관리 기수</span>
+                <select data-cohort-select aria-label="관리할 기수 선택"></select>
+                <small>배정받은 기수만 표시됩니다.</small>
+            </section>
+            <nav aria-label="기수 관리자 메뉴">
+                <button class="is-active" type="button" data-dashboard-tab="overview">운영 요약</button>
                 <button type="button" data-dashboard-tab="codes">가입 코드</button>
                 <button type="button" data-dashboard-tab="applications">참가 신청</button>
-                <button type="button" data-dashboard-tab="memberships">소속/역할</button>
-                <button type="button" data-dashboard-tab="sensors">센서 현황</button>
-                <button type="button" data-dashboard-tab="audits">감사 이력</button>
+                <button type="button" data-dashboard-tab="members">소속 관리</button>
+                <button type="button" data-dashboard-tab="attendance">출결 관리</button>
+                <button type="button" data-dashboard-tab="sensors">공간·센서</button>
+                <button type="button" data-dashboard-tab="community">커뮤니티</button>
+                <button type="button" data-dashboard-tab="audits">작업 이력</button>
             </nav>
-        </header>
+        </aside>
 
-        <section class="manager-hero">
-            <div class="manager-hero-copy">
-                <span class="manager-eyebrow">Manager Dashboard</span>
-                <h1>기수를 만들고<br />가입 코드를 준비하세요.</h1>
-                <p>실습실 안에서 운영할 기수 정보를 먼저 만든 뒤, 다음 단계에서 기수용 가입 코드를 발급합니다.</p>
-            </div>
-
-            <div class="manager-character-panel" aria-hidden="true">
-                <div class="speech-bubble manager-bubble" data-dashboard-bubble>
-                    기수부터 만들면<br />코드는 바로 따라옵니다.
-                </div>
-                <img class="manager-character-img" src="/images/manager_character.gif" alt="">
-            </div>
-        </section>
-
-        <section class="manager-table-panel is-active" aria-labelledby="cohort-list-title" data-dashboard-panel="cohorts">
-            <div class="panel-title-row">
+        <div class="manager-content">
+            <section class="manager-hero">
                 <div>
-                    <span class="panel-kicker">기수 목록</span>
-                    <h2 id="cohort-list-title">최근 기수</h2>
+                    <span class="eyebrow" data-manager-organization>NHN Academy</span>
+                    <h1><span data-current-cohort-name>AIoT 3기</span> 운영 현황</h1>
+                    <p>가입 신청, 소속, 출결과 실습실 환경을 배정된 기수 범위에서 관리합니다.</p>
                 </div>
-                <div class="panel-title-actions">
-                    <button class="manager-outline-button" type="button" data-open-cohort-form>기수 만들기</button>
-                    <button class="manager-outline-button" type="button" data-dashboard-tab="codes">가입 코드 보기</button>
+                <div class="manager-character-panel">
+                    <div class="manager-speech" data-dashboard-bubble>처리할 업무를<br />확인해 볼까요?</div>
+                    <img src="/images/manager_character.gif" alt="기수 관리자 오마고치" />
                 </div>
-            </div>
+            </section>
 
-            <div class="manager-table-wrap">
-                <table class="manager-table">
-                    <thead>
-                    <tr>
-                        <th>기수명</th>
-                        <th>상태</th>
-                        <th>기간</th>
-                        <th>소속 인원</th>
-                        <th>가입 코드</th>
-                        <th>관리</th>
-                    </tr>
-                    </thead>
-                    <tbody data-cohort-list>
-                    </tbody>
-                </table>
-            </div>
+            <section class="summary-grid" aria-label="기수 운영 요약">
+                <article><span>활성 구성원</span><strong data-summary-members>0</strong><small>현재 소속 인원</small></article>
+                <article><span>승인 대기</span><strong data-summary-applications>0</strong><small>처리가 필요한 신청</small></article>
+                <article><span>오늘 출석</span><strong data-summary-attendance>0</strong><small>입실 완료 인원</small></article>
+                <article><span>실습실 CO₂</span><strong data-summary-co2>--</strong><small data-summary-sensor-status>수신 확인 중</small></article>
+            </section>
 
-            <div class="cohort-detail-panel" data-cohort-detail>
-                <span class="panel-kicker">기수 상세</span>
-                <strong>기수를 선택하면 상세 정보가 표시됩니다.</strong>
-                <p>상세, 수정, 코드 발급, 소속 사용자 관리 흐름을 이 영역에서 확인합니다.</p>
-            </div>
-        </section>
-
-        <section class="manager-workspace" aria-labelledby="cohort-create-title" data-cohort-editor>
-            <div class="cohort-create-panel">
-                <div class="panel-title-row">
-                    <div>
-                        <span class="panel-kicker">기수 작업</span>
-                        <h2 id="cohort-create-title" data-cohort-form-title>기수 만들기</h2>
-                    </div>
-                    <span class="panel-status">준비중</span>
+            <section class="dashboard-panel is-active" data-dashboard-panel="overview">
+                <div class="panel-heading">
+                    <div><span>기수 정보</span><h2>운영 개요</h2></div>
+                    <button class="secondary-button" type="button" data-edit-cohort>정보 수정</button>
                 </div>
-
-                <form class="cohort-form" action="#" method="post" data-cohort-form>
-                    <label class="input-group">
-                        <span>기수 이름</span>
-                        <input type="text" name="cohortName" placeholder="예: NHN Academy 12기" />
-                    </label>
-
-                    <label class="input-group">
-                        <span>기수 설명</span>
-                        <input type="text" name="description" placeholder="기수 설명을 입력하세요" />
-                    </label>
-
-                    <div class="cohort-form-grid">
-                        <label class="input-group">
-                            <span>시작일</span>
-                            <input type="date" name="startDate" />
-                        </label>
-
-                        <label class="input-group">
-                            <span>종료일</span>
-                            <input type="date" name="endDate" />
-                        </label>
-                    </div>
-
-                    <div class="cohort-form-grid">
-                        <label class="input-group">
-                            <span>운영 상태</span>
-                            <select name="status">
-                                <option value="READY">준비</option>
-                                <option value="RUNNING">운영</option>
-                                <option value="ENDED">종료</option>
-                            </select>
-                        </label>
-
-                        <label class="input-group">
-                            <span>정원</span>
-                            <input type="number" name="capacity" min="1" placeholder="예: 40" />
-                        </label>
-                    </div>
-
-                    <div class="cohort-form-actions">
-                        <button class="auth-button cohort-create-button" type="submit" data-cohort-submit>
-                            기수 만들기
-                        </button>
-                        <button class="manager-secondary-button" type="button" data-cohort-cancel hidden>
-                            닫기
-                        </button>
-                    </div>
+                <div class="overview-grid">
+                    <article class="cohort-info-card">
+                        <dl>
+                            <div><dt>기수명</dt><dd data-cohort-name>AIoT 3기</dd></div>
+                            <div><dt>운영 기간</dt><dd data-cohort-period>-</dd></div>
+                            <div><dt>운영 상태</dt><dd><span class="status-badge is-active" data-cohort-status>운영 중</span></dd></div>
+                            <div><dt>정원</dt><dd data-cohort-capacity>-</dd></div>
+                        </dl>
+                    </article>
+                    <article class="today-card">
+                        <span>오늘 확인할 업무</span>
+                        <ul>
+                            <li><strong data-todo-applications>0건</strong> 참가 신청 처리</li>
+                            <li><strong data-todo-late>0명</strong> 지각·미입실 확인</li>
+                            <li><strong data-todo-community>0건</strong> 커뮤니티 신고 확인</li>
+                        </ul>
+                    </article>
+                </div>
+                <form class="cohort-edit-form" data-cohort-edit-form hidden>
+                    <label><span>기수 설명</span><input name="description" type="text" /></label>
+                    <label><span>정원</span><input name="capacity" type="number" min="1" /></label>
+                    <button type="submit">저장</button>
+                    <button class="secondary-button" type="button" data-cancel-cohort-edit>취소</button>
                 </form>
-            </div>
+            </section>
 
-            <aside class="cohort-preview-panel" aria-label="생성 예정 기수 미리보기">
-                <span class="preview-label">생성 예정</span>
-                <strong data-preview-name>아직 기수 이름이 없습니다</strong>
-                <p data-preview-period>기간을 입력하면 여기에 표시됩니다.</p>
-                <div class="preview-code-box">
-                    <span>가입 코드</span>
-                    <strong data-preview-code>기수 생성 후 발급</strong>
-                    <button class="manager-inline-button" type="button" data-issue-code disabled>
-                        가입 코드 발급
-                    </button>
+            <section class="dashboard-panel" data-dashboard-panel="codes">
+                <div class="panel-heading">
+                    <div><span>가입 코드</span><h2>수강생 모집 코드</h2></div>
+                    <button type="button" data-issue-code>새 코드 발급</button>
                 </div>
-            </aside>
-        </section>
+                <p class="panel-description">원문 코드는 발급 시 한 번만 확인하는 정책을 화면에 반영했습니다. 프로토타입에서는 사용자 가입 연결 확인을 위해 브라우저에 저장합니다.</p>
+                <div class="code-card" data-code-card></div>
+            </section>
 
-        <section class="manager-table-panel" aria-labelledby="code-list-title" data-dashboard-panel="codes">
-            <div class="panel-title-row">
-                <div>
-                    <span class="panel-kicker">가입 코드</span>
-                    <h2 id="code-list-title">발급 코드</h2>
+            <section class="dashboard-panel" data-dashboard-panel="applications">
+                <div class="panel-heading">
+                    <div><span>참가 신청</span><h2>승인 대기 목록</h2></div>
+                    <span class="count-badge" data-application-count>0건</span>
                 </div>
-                <button class="manager-outline-button" type="button" data-issue-code>
-                    선택 기수 코드 발급
-                </button>
-            </div>
-
-            <div class="manager-table-wrap">
-                <table class="manager-table">
-                    <thead>
-                    <tr>
-                        <th>기수명</th>
-                        <th>가입 코드</th>
-                        <th>상태</th>
-                        <th>만료일</th>
-                        <th>사용 현황</th>
-                        <th>관리</th>
-                    </tr>
-                    </thead>
-                    <tbody data-code-list>
-                    </tbody>
-                </table>
-            </div>
-        </section>
-
-        <section class="manager-table-panel" aria-labelledby="application-list-title" data-dashboard-panel="applications">
-            <div class="panel-title-row">
-                <div>
-                    <span class="panel-kicker">참가 신청</span>
-                    <h2 id="application-list-title">대기 신청</h2>
+                <div class="table-wrap">
+                    <table>
+                        <thead><tr><th>신청자</th><th>이메일</th><th>신청 시각</th><th>상태</th><th>처리</th></tr></thead>
+                        <tbody data-application-list></tbody>
+                    </table>
                 </div>
-                <button class="manager-outline-button" type="button" data-seed-applications>목업 신청 추가</button>
-            </div>
+            </section>
 
-            <div class="manager-table-wrap">
-                <table class="manager-table">
-                    <thead>
-                    <tr>
-                        <th>신청자</th>
-                        <th>이메일</th>
-                        <th>기수명</th>
-                        <th>상태</th>
-                        <th>신청일</th>
-                        <th>거절 사유</th>
-                        <th>관리</th>
-                    </tr>
-                    </thead>
-                    <tbody data-application-list>
-                    </tbody>
-                </table>
-            </div>
-        </section>
-
-        <section class="manager-table-panel" aria-labelledby="membership-list-title" data-dashboard-panel="memberships">
-            <div class="panel-title-row">
-                <div>
-                    <span class="panel-kicker">소속/역할</span>
-                    <h2 id="membership-list-title">기수 소속</h2>
+            <section class="dashboard-panel" data-dashboard-panel="members">
+                <div class="panel-heading">
+                    <div><span>소속 관리</span><h2>기수 구성원</h2></div>
+                    <label class="search-field"><span>검색</span><input type="search" data-member-search placeholder="이름 또는 이메일" /></label>
                 </div>
-                <button class="manager-outline-button" type="button" data-seed-members>목업 사용자 추가</button>
-            </div>
-
-            <div class="member-search-panel">
-                <label class="input-group">
-                    <span>사용자 검색</span>
-                    <input type="search" data-member-search placeholder="이름 또는 이메일을 입력하세요" />
-                </label>
-                <p>현재는 선택한 기수의 목업 사용자 안에서 검색합니다.</p>
-            </div>
-
-            <div class="manager-table-wrap">
-                <table class="manager-table">
-                    <thead>
-                    <tr>
-                        <th>사용자</th>
-                        <th>이메일</th>
-                        <th>소속 상태</th>
-                        <th>역할</th>
-                        <th>관리</th>
-                    </tr>
-                    </thead>
-                    <tbody data-member-list>
-                    </tbody>
-                </table>
-            </div>
-
-            <div class="manager-empty-panel access-preview-panel">
-                <strong>일반 사용자 접근 차단 화면 자리</strong>
-                <p>관리 권한이 없는 사용자가 이 화면에 접근하면 여기의 문구와 동일한 접근 차단 화면으로 분리할 수 있습니다.</p>
-            </div>
-        </section>
-
-        <section class="manager-table-panel" aria-labelledby="sensor-list-title" data-dashboard-panel="sensors">
-            <div class="panel-title-row">
-                <div>
-                    <span class="panel-kicker">센서 현황</span>
-                    <h2 id="sensor-list-title">실습실 상태</h2>
+                <div class="table-wrap">
+                    <table>
+                        <thead><tr><th>구성원</th><th>이메일</th><th>기수 역할</th><th>소속 상태</th><th>관리</th></tr></thead>
+                        <tbody data-member-list></tbody>
+                    </table>
                 </div>
-                <button class="manager-outline-button" type="button" disabled>센서 연동 대기</button>
-            </div>
+                <p class="scope-note">기수 관리자는 전역 계정을 정지하거나 다른 기수 관리자를 지정할 수 없습니다. 이 화면에서는 해당 기수 소속 상태만 변경합니다.</p>
+            </section>
 
-            <div class="sensor-summary-grid">
-                <article class="sensor-card">
-                    <span>온도</span>
-                    <strong>--.-℃</strong>
-                    <p>수신 대기</p>
-                </article>
-                <article class="sensor-card">
-                    <span>습도</span>
-                    <strong>--%</strong>
-                    <p>수신 대기</p>
-                </article>
-                <article class="sensor-card">
-                    <span>재실 인원</span>
-                    <strong>0명</strong>
-                    <p>센서 미연동</p>
-                </article>
-                <article class="sensor-card">
-                    <span>마지막 수신</span>
-                    <strong>--:--</strong>
-                    <p>데이터 없음</p>
-                </article>
-            </div>
-
-            <div class="manager-empty-panel">
-                <strong>나중에 센서 데이터가 들어오면 이 영역에서 운영 현황</strong>
-                <p>온습도, 재실, 입퇴실 이벤트 같은 값은 이후 API 또는 실시간 채널로 연결합니다.</p>
-            </div>
-        </section>
-
-        <section class="manager-table-panel" aria-labelledby="audit-list-title" data-dashboard-panel="audits">
-            <div class="panel-title-row">
-                <div>
-                    <span class="panel-kicker">감사 이력</span>
-                    <h2 id="audit-list-title">작업 이력</h2>
+            <section class="dashboard-panel" data-dashboard-panel="attendance">
+                <div class="panel-heading">
+                    <div><span>출결 관리</span><h2>오늘의 출결</h2></div>
+                    <label class="date-field"><span>조회일</span><input type="date" data-attendance-date /></label>
                 </div>
-                <button class="manager-outline-button" type="button" disabled>이력 조회</button>
-            </div>
+                <div class="table-wrap">
+                    <table>
+                        <thead><tr><th>구성원</th><th>입실</th><th>퇴실</th><th>자동 판정</th><th>최종 상태</th><th>관리</th></tr></thead>
+                        <tbody data-attendance-list></tbody>
+                    </table>
+                </div>
+            </section>
 
-            <div class="manager-table-wrap audit-table-wrap">
-                <table class="manager-table">
-                    <thead>
-                    <tr>
-                        <th>시간</th>
-                        <th>작업</th>
-                        <th>대상</th>
-                        <th>내용</th>
-                    </tr>
-                    </thead>
-                    <tbody data-audit-list>
-                    </tbody>
-                </table>
-            </div>
-        </section>
-    </section>
+            <section class="dashboard-panel" data-dashboard-panel="sensors">
+                <div class="panel-heading">
+                    <div><span>공간·센서</span><h2>실습실 환경</h2></div>
+                    <span class="updated-at" data-sensor-updated>마지막 수신 -</span>
+                </div>
+                <div class="sensor-grid">
+                    <article><span>온도</span><strong data-sensor-temperature>--</strong><small>권장 20~26℃</small></article>
+                    <article><span>습도</span><strong data-sensor-humidity>--</strong><small>권장 40~60%</small></article>
+                    <article><span>이산화탄소</span><strong data-sensor-co2>--</strong><small data-sensor-co2-state>수신 대기</small></article>
+                    <article><span>현재 재실</span><strong data-sensor-occupancy>--</strong><small>입실 기준</small></article>
+                </div>
+                <div class="sensor-notice" data-sensor-notice>센서 데이터는 이 기수의 실습실에 한해 표시됩니다.</div>
+            </section>
+
+            <section class="dashboard-panel" data-dashboard-panel="community">
+                <div class="panel-heading">
+                    <div><span>커뮤니티</span><h2>공지와 신고 관리</h2></div>
+                    <button type="button" data-open-notice-form>공지 작성</button>
+                </div>
+                <form class="notice-form" data-notice-form hidden>
+                    <input name="title" type="text" placeholder="공지 제목" />
+                    <textarea name="content" placeholder="공지 내용을 입력하세요"></textarea>
+                    <button type="submit">공지 등록</button>
+                    <button class="secondary-button" type="button" data-cancel-notice>취소</button>
+                </form>
+                <div class="community-list" data-community-list></div>
+            </section>
+
+            <section class="dashboard-panel" data-dashboard-panel="audits">
+                <div class="panel-heading">
+                    <div><span>작업 이력</span><h2>기수 감사 로그</h2></div>
+                    <span class="count-badge">현재 기수</span>
+                </div>
+                <div class="table-wrap">
+                    <table>
+                        <thead><tr><th>시각</th><th>작업</th><th>대상</th><th>내용</th></tr></thead>
+                        <tbody data-audit-list></tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+    </div>
 </main>
-
+<div class="manager-dialog-backdrop" data-dialog-backdrop hidden>
+    <section class="manager-dialog" role="dialog" aria-modal="true" aria-labelledby="dialog-title">
+        <h2 id="dialog-title" data-dialog-title>확인</h2>
+        <p data-dialog-message></p>
+        <label data-dialog-input-wrap hidden><span data-dialog-input-label>사유</span><input data-dialog-input /></label>
+        <div><button type="button" data-dialog-confirm>확인</button><button class="secondary-button" type="button" data-dialog-cancel>취소</button></div>
+    </section>
+</div>
 <script src="/js/managerDashboard.js"></script>
 </body>
 </html>

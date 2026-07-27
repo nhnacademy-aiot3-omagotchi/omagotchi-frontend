@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Omagotchi Home</title>
+
+    <link rel="icon" type="image/png" sizes="48x48" href="/favicon.png" />
+    <link rel="stylesheet" href="/css/home.css" />
+    <link rel="stylesheet" href="/css/gameFont.css" />
+</head>
+<body>
+<main class="home-page">
+    <section class="home-hero" aria-labelledby="home-title">
+        <h1 id="home-title">Omagotchi</h1>
+
+        <nav class="home-menu" aria-label="주요 메뉴">
+            <a href="/help" aria-label="도움말" data-home-overlay="help">
+                <span>?</span>
+                도움말
+            </a>
+            <a class="has-menu-alert" href="/progress#quests" aria-label="진행 현황" data-home-overlay="progress">
+                <span>✓</span>
+                진행
+            </a>
+            <a href="/personal" aria-label="내 정보" data-home-overlay="personal">
+                <span>●</span>
+                내 정보
+            </a>
+            <a href="/cohort" aria-label="기수" data-home-overlay="cohort">
+                <span>▦</span>
+                기수
+            </a>
+            <a href="/write" aria-label="기록 작성" data-home-overlay="write">
+                <span>✎</span>
+                기록
+            </a>
+            <a href="/space#lab" aria-label="공간" data-home-overlay="space">
+                <span>▣</span>
+                공간
+            </a>
+            <a href="/community" aria-label="커뮤니티" data-home-overlay="community">
+                <span>✦</span>
+                커뮤
+            </a>
+            <a href="/settings" aria-label="설정" data-home-overlay="settings">
+                <span>⚙</span>
+                설정
+            </a>
+        </nav>
+
+        <section class="timer-panel" aria-label="학습 타이머">
+            <time class="timer-display" datetime="PT0S" data-timer-display>00:00:00</time>
+
+            <div class="timer-actions">
+                <button type="button" data-timer-toggle>시작</button>
+                <button type="button" data-open-write>기록</button>
+            </div>
+        </section>
+
+        <button class="attendance-button" type="button" data-attendance-button>
+            입실하기
+        </button>
+
+        <section class="companion-panel" aria-label="캐릭터 상태">
+            <div class="character-badge" data-presence="online">
+                <span data-character-name>오마고치</span>
+                <strong data-character-level>Lv 1</strong>
+            </div>
+            <div class="home-character-stage" data-character-stage>
+                <p class="character-speech-bubble" data-character-bubble aria-live="polite">
+                    오늘도 같이 공부해요!
+                </p>
+                <button
+                        class="home-character-button"
+                        type="button"
+                        data-character-interaction
+                        aria-label="오마고치와 놀아주기"
+                >
+                    <img
+                            class="home-character"
+                            data-home-character
+                            src="/images/characters/default/omagotchi.png"
+                            alt="오마고치 캐릭터"
+                    />
+                </button>
+            </div>
+            <div class="xp-area" aria-label="경험치">
+                <div class="xp-bar">
+                    <span data-xp-fill style="width: 0%"></span>
+                </div>
+                <div class="xp-labels">
+                    <span data-current-xp>0xp</span>
+                    <span data-next-level>다음 레벨까지 50xp</span>
+                </div>
+            </div>
+        </section>
+    </section>
+
+    <section class="attendance-detail" id="attendance-detail" aria-labelledby="attendance-title">
+        <div class="attendance-layout">
+            <section class="attendance-summary" aria-labelledby="attendance-title">
+                <h2 id="attendance-title">오늘 출석</h2>
+                <dl>
+                    <div>
+                        <dt>입실</dt>
+                        <dd data-check-in-time>아직 입실 전</dd>
+                    </div>
+                    <div>
+                        <dt>퇴실</dt>
+                        <dd data-check-out-time>아직 퇴실 전</dd>
+                    </div>
+                    <div>
+                        <dt>조퇴</dt>
+                        <dd data-early-leave>0분</dd>
+                    </div>
+                    <div>
+                        <dt>지각</dt>
+                        <dd data-late-minutes>0분</dd>
+                    </div>
+                </dl>
+            </section>
+
+            <section class="calendar-card" aria-labelledby="calendar-title">
+                <div class="calendar-header">
+                    <h2 id="calendar-title" data-calendar-title>출석 기록</h2>
+                    <span data-calendar-period>이번 달</span>
+                </div>
+                <div class="calendar-grid" aria-label="출석 달력" data-calendar-grid>
+                    <span class="calendar-weekday">월</span>
+                    <span class="calendar-weekday">화</span>
+                    <span class="calendar-weekday">수</span>
+                    <span class="calendar-weekday">목</span>
+                    <span class="calendar-weekday">금</span>
+                    <span class="calendar-weekday is-weekend">토</span>
+                    <span class="calendar-weekday is-weekend">일</span>
+                </div>
+            </section>
+
+            <aside class="streak-card" aria-label="연속 출석">
+                <div class="streak-header">
+                    <h2>연속 출석</h2>
+                    <strong data-streak-count>0일</strong>
+                </div>
+                <p>입실 기록 기준으로 이어집니다.</p>
+                <ol data-streak-list></ol>
+            </aside>
+        </div>
+    </section>
+</main>
+
+<div class="home-overlay-root" data-home-overlay-root aria-live="polite"></div>
+
+<script src="/js/characterAssets.js"></script>
+<script src="/js/home.js"></script>
+</body>
+</html>

@@ -1,1080 +1,574 @@
-// 관리자 대시보드 DOM 요소
-const cohortForm = document.querySelector("[data-cohort-form]");
-const cohortFormTitle = document.querySelector("[data-cohort-form-title]");
-const cohortSubmit = document.querySelector("[data-cohort-submit]");
-const cohortCancel = document.querySelector("[data-cohort-cancel]");
-const cohortEditor = document.querySelector("[data-cohort-editor]");
-const openCohortFormButton = document.querySelector("[data-open-cohort-form]");
-const previewName = document.querySelector("[data-preview-name]");
-const previewPeriod = document.querySelector("[data-preview-period]");
-const previewCode = document.querySelector("[data-preview-code]");
-const issueCodeButtons = document.querySelectorAll("[data-issue-code]");
-const cohortList = document.querySelector("[data-cohort-list]");
-const codeList = document.querySelector("[data-code-list]");
-const applicationList = document.querySelector("[data-application-list]");
-const memberList = document.querySelector("[data-member-list]");
-const memberSearch = document.querySelector("[data-member-search]");
-const seedApplicationsButton = document.querySelector("[data-seed-applications]");
-const seedMembersButton = document.querySelector("[data-seed-members]");
-const auditList = document.querySelector("[data-audit-list]");
-const navTabButtons = document.querySelectorAll(".manager-dashboard-nav [data-dashboard-tab]");
-const tabTriggers = document.querySelectorAll("[data-dashboard-tab]");
-const panels = document.querySelectorAll("[data-dashboard-panel]");
-const panelStatus = document.querySelector(".panel-status");
-const dashboardBubble = document.querySelector("[data-dashboard-bubble]");
-const cohortDetail = document.querySelector("[data-cohort-detail]");
-const managerOrganization = document.querySelector("[data-manager-organization]");
-const managerName = document.querySelector("[data-manager-name]");
-const managerEmail = document.querySelector("[data-manager-email]");
+// 관리자 대시보드가 공유하는 로컬 저장소 키
+const OPERATIONS_KEY = "omagotchiCohortOperations";
+const APPLICATIONS_KEY = "omagotchiCohortApplications";
+const NOTICES_KEY = "omagotchiCohortNotices";
+const AUDITS_KEY = "omagotchiCohortAudits";
 
-// 현재 관리자 목업 세션
-const currentManager = {
-    email: sessionStorage.getItem("omagotchiManagerEmail") || "manager@example.com",
-    name: sessionStorage.getItem("omagotchiManagerName") || "관리자",
-    organization: sessionStorage.getItem("omagotchiManagerOrganization") || "소속기관 미등록"
-};
-const managerStorageScope = `${currentManager.organization}:${currentManager.email}`.replaceAll(/\s+/g, "_");
-const cohortsStorageKey = `omagotchiManagerCohorts:${managerStorageScope}`;
-const applicationsStorageKey = `omagotchiManagerApplications:${managerStorageScope}`;
-const auditsStorageKey = `omagotchiManagerAuditLogs:${managerStorageScope}`;
-let selectedCohortId = null;
-let editingCohortId = null;
+const today = new Date().toISOString().slice(0, 10);
+const managerEmail = sessionStorage.getItem("omagotchiManagerEmail") || "manager@nhnacademy.com";
+const managerName = sessionStorage.getItem("omagotchiManagerName") || "기수 운영자";
+const managerOrganization = sessionStorage.getItem("omagotchiManagerOrganization") || "NHN Academy";
 
-// 대시보드 목업 관리자 추가 지정에 사용
-const sampleMembers = [
-    { id: "user-01", name: "손재민", email: "jaemin.son@example.com", status: "ACTIVE", role: "USER" },
-    { id: "user-02", name: "문재민", email: "jaemin.mun@example.com", status: "ACTIVE", role: "COHORT_MANAGER" },
-    { id: "user-03", name: "박지우", email: "jioo.park@example.com", status: "PENDING", role: "USER" },
-    { id: "user-04", name: "박상민", email: "sangmin.park@example.com", status: "ACTIVE", role: "USER" }
+// API 연동 전 화면 동작을 확인하기 위한 기본 기수 데이터
+const defaultCohorts = [
+    {
+        id: "aiot-3",
+        name: "AIoT 3기",
+        description: "AIoT 서비스 개발 교육 과정",
+        startDate: "2026-07-01",
+        endDate: "2026-12-18",
+        status: "ACTIVE",
+        capacity: 24,
+        joinCode: { value: "AIOT3", status: "ACTIVE", expiresAt: "2026-08-31", issuedAt: "2026-07-20", used: 5 },
+        members: [
+            { id: "manager-01", name: managerName, email: managerEmail, role: "MANAGER", status: "ACTIVE" },
+            { id: "user-01", name: "김민지", email: "minji@example.com", role: "STUDENT", status: "ACTIVE" },
+            { id: "user-02", name: "이현우", email: "hyeon@example.com", role: "STUDENT", status: "ACTIVE" },
+            { id: "user-03", name: "박지수", email: "jisu@example.com", role: "STUDENT", status: "ACTIVE" },
+            { id: "user-04", name: "최승민", email: "seung@example.com", role: "STUDENT", status: "INACTIVE" }
+        ],
+        attendance: [
+            { memberId: "user-01", date: today, checkIn: "09:01", checkOut: "-", autoStatus: "NORMAL", finalStatus: "NORMAL" },
+            { memberId: "user-02", date: today, checkIn: "09:14", checkOut: "-", autoStatus: "LATE", finalStatus: "LATE" },
+            { memberId: "user-03", date: today, checkIn: "-", checkOut: "-", autoStatus: "PENDING", finalStatus: "PENDING" }
+        ],
+        sensor: { temperature: 24.2, humidity: 43, co2: 612, occupancy: 17, updatedAt: "방금 전" }
+    },
+    {
+        id: "backend-7",
+        name: "Backend 7기",
+        description: "백엔드 서비스 개발 교육 과정",
+        startDate: "2026-08-03",
+        endDate: "2027-01-22",
+        status: "PREPARING",
+        capacity: 20,
+        joinCode: { value: "BACK7", status: "ACTIVE", expiresAt: "2026-08-10", issuedAt: "2026-07-22", used: 3 },
+        members: [
+            { id: "manager-01", name: managerName, email: managerEmail, role: "MANAGER", status: "ACTIVE" },
+            { id: "user-11", name: "정하늘", email: "haneul@example.com", role: "STUDENT", status: "ACTIVE" }
+        ],
+        attendance: [],
+        sensor: { temperature: null, humidity: null, co2: null, occupancy: 0, updatedAt: null }
+    }
 ];
 
-// 참가 신청 목업 사용자
-const sampleApplicants = [
-    { id: "apply-user-01", name: "권세윤", email: "seyoon.gwun@example.com" },
-    { id: "apply-user-02", name: "강영진", email: "yungjin.kang@example.com" },
-    { id: "apply-user-03", name: "박찬주", email: "chanju.park@example.com" },
-    { id: "apply-user-04", name: "장재혁", email: "jaehyuk.jang@example.com" }
+const defaultApplications = [
+    { id: "application-01", cohortId: "aiot-3", userId: "applicant-01", name: "윤서준", email: "seojun@example.com", requestedAt: "2026-07-25 09:18", status: "PENDING" },
+    { id: "application-02", cohortId: "aiot-3", userId: "applicant-02", name: "한유진", email: "yujin@example.com", requestedAt: "2026-07-25 10:42", status: "PENDING" }
 ];
 
-// 세션 저장소 JSON 유틸
-const readJson = (key, fallbackValue) => {
+const defaultNotices = [
+    { id: "notice-01", cohortId: "aiot-3", type: "NOTICE", title: "7월 운영 안내와 공간 사용 규칙", content: "실습실과 회의실 이용 규칙을 확인해주세요.", pinned: true, reports: 0 },
+    { id: "post-01", cohortId: "aiot-3", type: "FREE", title: "회의실 B 자리 남아있나요?", content: "백엔드 API 설계 같이 하실 분을 찾습니다.", pinned: false, reports: 2 }
+];
+
+// 로컬 저장소 JSON 읽기/쓰기
+function readJson(key, fallback) {
     try {
-        return JSON.parse(sessionStorage.getItem(key)) || fallbackValue;
+        const value = localStorage.getItem(key);
+        return value ? JSON.parse(value) : structuredClone(fallback);
     } catch {
-        return fallbackValue;
+        return structuredClone(fallback);
     }
+}
+
+function writeJson(key, value) {
+    localStorage.setItem(key, JSON.stringify(value));
+}
+
+// 현재 선택한 기수와 활성 패널 상태
+let cohorts = readJson(OPERATIONS_KEY, defaultCohorts);
+let applications = readJson(APPLICATIONS_KEY, defaultApplications);
+let notices = readJson(NOTICES_KEY, defaultNotices);
+let audits = readJson(AUDITS_KEY, []);
+let selectedCohortId = sessionStorage.getItem("omagotchiManagerCohort") || cohorts[0]?.id;
+let activePanel = sessionStorage.getItem("omagotchiManagerDashboardTab") || "overview";
+const availablePanels = ["overview", "codes", "applications", "members", "attendance", "sensors", "community", "audits"];
+
+if (!availablePanels.includes(activePanel)) {
+    activePanel = "overview";
+}
+
+let dialogCallback = null;
+
+// 반복 조회를 줄이기 위한 대시보드 요소 모음
+const elements = {
+    cohortSelect: document.querySelector("[data-cohort-select]"),
+    name: document.querySelector("[data-manager-name]"),
+    email: document.querySelector("[data-manager-email]"),
+    organization: document.querySelector("[data-manager-organization]"),
+    cohortTitle: document.querySelector("[data-current-cohort-name]"),
+    bubble: document.querySelector("[data-dashboard-bubble]"),
+    memberSearch: document.querySelector("[data-member-search]"),
+    attendanceDate: document.querySelector("[data-attendance-date]"),
+    applicationList: document.querySelector("[data-application-list]"),
+    memberList: document.querySelector("[data-member-list]"),
+    attendanceList: document.querySelector("[data-attendance-list]"),
+    communityList: document.querySelector("[data-community-list]"),
+    auditList: document.querySelector("[data-audit-list]"),
+    codeCard: document.querySelector("[data-code-card]"),
+    editForm: document.querySelector("[data-cohort-edit-form]"),
+    noticeForm: document.querySelector("[data-notice-form]"),
+    dialog: document.querySelector("[data-dialog-backdrop]"),
+    dialogTitle: document.querySelector("[data-dialog-title]"),
+    dialogMessage: document.querySelector("[data-dialog-message]"),
+    dialogInputWrap: document.querySelector("[data-dialog-input-wrap]"),
+    dialogInput: document.querySelector("[data-dialog-input]"),
+    dialogInputLabel: document.querySelector("[data-dialog-input-label]")
 };
 
-const writeJson = (key, value) => {
-    sessionStorage.setItem(key, JSON.stringify(value));
-};
+// 선택 기수 조회와 화면 상태 저장
+function currentCohort() {
+    return cohorts.find((cohort) => cohort.id === selectedCohortId) || cohorts[0];
+}
 
-// 관리자 세션 표시
-const renderManagerSession = () => {
-    managerOrganization.textContent = currentManager.organization;
-    managerName.textContent = `${currentManager.name} 관리자`;
-    managerEmail.textContent = currentManager.email;
-};
+function saveState() {
+    writeJson(OPERATIONS_KEY, cohorts);
+    writeJson(APPLICATIONS_KEY, applications);
+    writeJson(NOTICES_KEY, notices);
+    writeJson(AUDITS_KEY, audits);
+}
 
-// 기수 데이터 정규화
-const normalizeCohort = (cohort) => ({
-    id: cohort.id || `cohort-${Date.now()}`,
-    name: cohort.name || "이름 없는 기수",
-    description: cohort.description || "",
-    startDate: cohort.startDate || "",
-    endDate: cohort.endDate || "",
-    status: cohort.status || "READY",
-    capacity: cohort.capacity || "",
-    memberCount: Number(cohort.memberCount || cohort.members?.length || 0),
-    joinCode: cohort.joinCode || "",
-    codeStatus: cohort.codeStatus || (cohort.joinCode ? "ACTIVE" : "미발급"),
-    expiresAt: cohort.expiresAt || cohort.endDate || "",
-    members: Array.isArray(cohort.members) ? cohort.members : []
-});
-
-// 참가 신청 데이터 정규화
-const normalizeApplication = (application) => ({
-    id: application.id || `application-${Date.now()}`,
-    cohortId: application.cohortId || "",
-    cohortName: application.cohortName || "기수 미지정",
-    userId: application.userId || "",
-    name: application.name || "이름 없음",
-    email: application.email || "",
-    status: application.status || "PENDING",
-    requestedAt: application.requestedAt || new Date().toLocaleString("ko-KR"),
-    rejectReason: application.rejectReason || ""
-});
-
-// 기수/감사 로그 저장소 접근
-const getCohorts = () => readJson(cohortsStorageKey, []).map(normalizeCohort);
-const saveCohorts = (cohorts) => writeJson(cohortsStorageKey, cohorts.map(normalizeCohort));
-const getApplications = () => readJson(applicationsStorageKey, []).map(normalizeApplication);
-const saveApplications = (applications) => writeJson(applicationsStorageKey, applications.map(normalizeApplication));
-const getAudits = () => readJson(auditsStorageKey, []);
-const saveAudits = (audits) => writeJson(auditsStorageKey, audits);
-
-// 표시용 포맷 변환
-const formatDate = (dateValue) => {
-    if (!dateValue) {
-        return "";
-    }
-
-    return dateValue.replaceAll("-", ".");
-};
-
-const getPeriod = (cohort) => {
-    if (cohort.startDate && cohort.endDate) {
-        return `${formatDate(cohort.startDate)} - ${formatDate(cohort.endDate)}`;
-    }
-
-    return "기간 미정";
-};
-
-const getStatusLabel = (status) => {
-    const labels = {
-        READY: "준비",
-        RUNNING: "운영",
-        ENDED: "종료"
-    };
-
-    return labels[status] || status || "준비";
-};
-
-const getMemberStatusLabel = (status) => {
-    const labels = {
+function statusLabel(status) {
+    return {
+        MANAGER: "기수 관리자",
+        MENTOR: "멘토",
+        STUDENT: "수강생",
         ACTIVE: "활성",
-        PENDING: "대기",
         INACTIVE: "비활성",
-        ENDED: "종료"
-    };
-
-    return labels[status] || status || "활성";
-};
-
-const getApplicationStatusLabel = (status) => {
-    const labels = {
+        ENDED: "종료",
+        PREPARING: "준비 중",
+        CLOSED: "종료",
         PENDING: "대기",
-        APPROVED: "승인",
+        NORMAL: "정상",
+        LATE: "지각",
+        ABSENT: "결석",
+        EARLY_LEAVE: "조퇴",
         REJECTED: "거절"
-    };
+    }[status] || status;
+}
 
-    return labels[status] || status || "대기";
-};
+function escapeHtml(value) {
+    return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+}
 
-const getRoleLabel = (role) => {
-    if (role === "COHORT_MANAGER") {
-        return "기수 관리자";
-    }
+function setBubble(message) {
+    elements.bubble.innerHTML = message;
+}
 
-    return "일반";
-};
-
-const getCodeStatusLabel = (cohort) => {
-    if (!cohort.joinCode) {
-        return "미발급";
-    }
-
-    return cohort.codeStatus === "INACTIVE" ? "비활성" : "활성";
-};
-
-// 소속 인원 수 갱신
-const syncMemberCount = (cohort) => {
-    cohort.memberCount = cohort.members.filter((member) => member.status !== "ENDED").length;
-    return cohort;
-};
-
-// 감사 로그 추가
-const addAudit = (action, target, detail) => {
-    const audits = getAudits();
+function addAudit(action, target, detail) {
     audits.unshift({
-        id: `audit-${Date.now()}`,
-        occurredAt: new Date().toLocaleString("ko-KR"),
+        id: crypto.randomUUID?.() || `audit-${Date.now()}`,
+        cohortId: selectedCohortId,
+        occurredAt: new Date().toLocaleString("ko-KR", { hour12: false }),
         action,
         target,
-        detail
+        detail,
+        actor: managerEmail
     });
-    saveAudits(audits.slice(0, 20));
-};
+    audits = audits.slice(0, 100);
+}
 
-// 대시보드 말풍선
-const showBubble = (message) => {
-    dashboardBubble.innerHTML = message;
-};
+// 사이드 메뉴 활성화 및 관리자 세션 정보 표시
+function activatePanel(panel) {
+    activePanel = panel;
+    sessionStorage.setItem("omagotchiManagerDashboardTab", panel);
+    document.querySelectorAll("[data-dashboard-tab]").forEach((button) => {
+        button.classList.toggle("is-active", button.dataset.dashboardTab === panel);
+    });
+    document.querySelectorAll("[data-dashboard-panel]").forEach((section) => {
+        section.classList.toggle("is-active", section.dataset.dashboardPanel === panel);
+    });
+}
 
-// 버튼 피드백
-const flashButton = (button, text) => {
-    if (!button) {
+function renderSession() {
+    elements.name.textContent = managerName;
+    elements.email.textContent = managerEmail;
+    elements.organization.textContent = managerOrganization;
+}
+
+function renderCohortSelect() {
+    elements.cohortSelect.innerHTML = cohorts.map((cohort) => (
+        `<option value="${escapeHtml(cohort.id)}" ${cohort.id === selectedCohortId ? "selected" : ""}>${escapeHtml(cohort.name)}</option>`
+    )).join("");
+}
+
+// 선택한 기수에 한정된 요약 및 세부 패널 렌더링
+function renderSummary() {
+    const cohort = currentCohort();
+    if (!cohort) return;
+    const activeMembers = cohort.members.filter((member) => member.status === "ACTIVE");
+    const pending = applications.filter((item) => item.cohortId === cohort.id && item.status === "PENDING");
+    const attendance = cohort.attendance.filter((item) => item.date === today && item.checkIn !== "-");
+    const late = cohort.attendance.filter((item) => item.date === today && ["LATE", "PENDING", "ABSENT"].includes(item.finalStatus));
+    const reported = notices.filter((item) => item.cohortId === cohort.id && item.reports > 0);
+
+    elements.cohortTitle.textContent = cohort.name;
+    document.querySelector("[data-summary-members]").textContent = activeMembers.length;
+    document.querySelector("[data-summary-applications]").textContent = pending.length;
+    document.querySelector("[data-summary-attendance]").textContent = attendance.length;
+    document.querySelector("[data-summary-co2]").textContent = cohort.sensor.co2 == null ? "--" : `${cohort.sensor.co2}ppm`;
+    document.querySelector("[data-summary-sensor-status]").textContent = cohort.sensor.updatedAt || "수신 데이터 없음";
+    document.querySelector("[data-todo-applications]").textContent = `${pending.length}건`;
+    document.querySelector("[data-todo-late]").textContent = `${late.length}명`;
+    document.querySelector("[data-todo-community]").textContent = `${reported.length}건`;
+}
+
+function renderOverview() {
+    const cohort = currentCohort();
+    document.querySelector("[data-cohort-name]").textContent = cohort.name;
+    document.querySelector("[data-cohort-period]").textContent = `${cohort.startDate} ~ ${cohort.endDate}`;
+    document.querySelector("[data-cohort-status]").textContent = statusLabel(cohort.status);
+    document.querySelector("[data-cohort-capacity]").textContent = `${cohort.members.filter((member) => member.status === "ACTIVE").length} / ${cohort.capacity}명`;
+    elements.editForm.elements.namedItem("description").value = cohort.description;
+    elements.editForm.elements.namedItem("capacity").value = cohort.capacity;
+}
+
+function renderCode() {
+    const code = currentCohort().joinCode;
+    if (!code?.value) {
+        elements.codeCard.innerHTML = `<div><strong>발급된 가입 코드가 없습니다.</strong><p class="panel-description">새 코드를 발급하면 이전 코드는 즉시 폐기됩니다.</p></div>`;
         return;
     }
-
-    const originalText = button.textContent;
-    button.textContent = text;
-    button.classList.add("is-feedback");
-
-    window.setTimeout(() => {
-        button.textContent = originalText;
-        button.classList.remove("is-feedback");
-    }, 1200);
-};
-
-// 가입 코드 생성
-const generateCode = () => {
-    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-    let code = "COH-";
-
-    for (let index = 0; index < 6; index += 1) {
-        code += chars[Math.floor(Math.random() * chars.length)];
-    }
-
-    return code;
-};
-
-// 기수 생성 미리보기 갱신
-const updatePreview = () => {
-    const cohortName = cohortForm.cohortName.value.trim();
-    const startDate = formatDate(cohortForm.startDate.value);
-    const endDate = formatDate(cohortForm.endDate.value);
-    const capacity = cohortForm.capacity.value.trim();
-
-    previewName.textContent = cohortName || "아직 기수 이름이 없습니다";
-
-    if (startDate && endDate) {
-        previewPeriod.textContent = `${startDate} - ${endDate}${capacity ? ` / 정원 ${capacity}명` : ""}`;
-    } else if (startDate) {
-        previewPeriod.textContent = `${startDate} 시작${capacity ? ` / 정원 ${capacity}명` : ""}`;
-    } else if (endDate) {
-        previewPeriod.textContent = `${endDate} 종료${capacity ? ` / 정원 ${capacity}명` : ""}`;
-    } else if (capacity) {
-        previewPeriod.textContent = `정원 ${capacity}명`;
-    } else {
-        previewPeriod.textContent = "기간을 입력하면 여기에 표시됩니다.";
-    }
-};
-
-// 기수 편집기 열기/닫기
-const openCohortEditor = () => {
-    cohortEditor.classList.add("is-editor-open");
-};
-
-const closeCohortEditor = () => {
-    cohortEditor.classList.remove("is-editor-open");
-};
-
-// 기수 폼 모드 변경
-const setFormMode = (mode, cohort = null, shouldOpen = true) => {
-    if (shouldOpen) {
-        openCohortEditor();
-    } else {
-        closeCohortEditor();
-    }
-
-    if (mode === "edit" && cohort) {
-        editingCohortId = cohort.id;
-        cohortFormTitle.textContent = "기수 수정";
-        cohortSubmit.textContent = "기수 저장";
-        cohortCancel.hidden = false;
-        cohortForm.cohortName.value = cohort.name;
-        cohortForm.description.value = cohort.description;
-        cohortForm.startDate.value = cohort.startDate;
-        cohortForm.endDate.value = cohort.endDate;
-        cohortForm.status.value = cohort.status;
-        cohortForm.capacity.value = cohort.capacity;
-        panelStatus.textContent = "수정중";
-        showBubble("기수 정보를 고친 뒤<br />저장하면 됩니다.");
-        updatePreview();
-        return;
-    }
-
-    editingCohortId = null;
-    cohortFormTitle.textContent = "기수 만들기";
-    cohortSubmit.textContent = "기수 만들기";
-    cohortCancel.hidden = !shouldOpen;
-    cohortForm.reset();
-    panelStatus.textContent = "준비중";
-    updatePreview();
-};
-
-// 기수 목록 렌더링
-const renderCohorts = () => {
-    const cohorts = getCohorts();
-
-    if (cohorts.length === 0) {
-        cohortList.innerHTML = `
-            <tr>
-                <td colspan="6">아직 생성된 기수가 없습니다.</td>
-            </tr>
-        `;
-        return;
-    }
-
-    cohortList.innerHTML = cohorts.map((cohort) => {
-        const codeLabel = cohort.joinCode || "미발급";
-        const codeClass = cohort.joinCode ? "" : " is-muted";
-
-        return `
-            <tr data-cohort-id="${cohort.id}">
-                <td>${cohort.name}</td>
-                <td><span class="table-badge">${getStatusLabel(cohort.status)}</span></td>
-                <td>${getPeriod(cohort)}</td>
-                <td>${cohort.memberCount || cohort.members.length}명</td>
-                <td><span class="table-badge${codeClass}">${codeLabel}</span></td>
-                <td>
-                    <div class="manager-action-group">
-                        <button class="manager-action-button" type="button" data-action="detail" data-cohort-id="${cohort.id}">상세</button>
-                        <button class="manager-action-button" type="button" data-action="edit" data-cohort-id="${cohort.id}">수정</button>
-                        <button class="manager-action-button" type="button" data-action="show-code" data-cohort-id="${cohort.id}">코드</button>
-                    </div>
-                </td>
-            </tr>
-        `;
-    }).join("");
-};
-
-// 기수 상세 렌더링
-const renderDetail = () => {
-    const selected = getCohorts().find((cohort) => cohort.id === selectedCohortId);
-
-    if (!selected) {
-        cohortDetail.dataset.expanded = "false";
-        cohortDetail.innerHTML = `
-            <span class="panel-kicker">기수 상세</span>
-            <strong>기수를 선택하면 상세 정보가 표시됩니다.</strong>
-            <p>상세, 수정, 코드 발급, 소속 사용자 관리 흐름을 이 영역에서 확인합니다.</p>
-        `;
-        return;
-    }
-
-    cohortDetail.dataset.expanded = "true";
-
-    cohortDetail.innerHTML = `
-        <span class="panel-kicker">기수 상세</span>
-        <strong>${selected.name}</strong>
-        <p>${selected.description || "등록된 설명이 없습니다."}</p>
-        <div class="cohort-detail-grid">
-            <div class="cohort-detail-item">
-                <span>운영 상태</span>
-                <strong>${getStatusLabel(selected.status)}</strong>
-            </div>
-            <div class="cohort-detail-item">
-                <span>운영 기간</span>
-                <strong>${getPeriod(selected)}</strong>
-            </div>
-            <div class="cohort-detail-item">
-                <span>정원</span>
-                <strong>${selected.capacity || "-"}명</strong>
-            </div>
-            <div class="cohort-detail-item">
-                <span>가입 코드</span>
-                <strong>${selected.joinCode || "미발급"}</strong>
-            </div>
+    elements.codeCard.innerHTML = `
+        <div>
+            <div class="code-value"><strong>${escapeHtml(code.value)}</strong><span class="status-badge">${statusLabel(code.status)}</span></div>
+            <div class="code-meta"><span>만료 ${escapeHtml(code.expiresAt)}</span><span>발급 ${escapeHtml(code.issuedAt)}</span><span>사용 ${code.used || 0}회</span></div>
         </div>
-    `;
-};
+        <div class="code-actions">
+            <button class="is-primary" type="button" data-code-copy>복사</button>
+            <button class="is-danger" type="button" data-code-revoke ${code.status !== "ACTIVE" ? "disabled" : ""}>폐기</button>
+        </div>`;
+}
 
-// 가입 코드 목록 렌더링
-const renderCodes = () => {
-    const cohorts = getCohorts();
-
-    if (cohorts.length === 0) {
-        codeList.innerHTML = `
-            <tr>
-                <td colspan="6">기수를 만든 뒤 가입 코드를 발급할 수 있습니다.</td>
-            </tr>
-        `;
-        return;
-    }
-
-    codeList.innerHTML = cohorts.map((cohort) => {
-        const codeLabel = cohort.joinCode || "미발급";
-        const status = getCodeStatusLabel(cohort);
-        const expiresAt = cohort.expiresAt ? formatDate(cohort.expiresAt) : "기수 종료일 기준";
-        const used = cohort.joinCode ? `${cohort.members.length || cohort.memberCount || 0}/${cohort.capacity || "-"}명` : "-";
-        const toggleLabel = cohort.codeStatus === "INACTIVE" ? "활성화" : "폐기";
-        const issueLabel = cohort.joinCode ? "재발급" : "발급";
-
-        return `
-            <tr data-cohort-id="${cohort.id}">
-                <td>${cohort.name}</td>
-                <td><span class="table-badge${cohort.joinCode ? "" : " is-muted"}">${codeLabel}</span></td>
-                <td>${status}</td>
-                <td>${expiresAt}</td>
-                <td>${used}</td>
-                <td>
-                    <div class="manager-action-group">
-                        <button class="manager-action-button" type="button" data-action="copy-code" data-cohort-id="${cohort.id}" ${cohort.joinCode ? "" : "disabled"}>복사</button>
-                        <button class="manager-action-button" type="button" data-action="toggle-code" data-cohort-id="${cohort.id}" ${cohort.joinCode ? "" : "disabled"}>${toggleLabel}</button>
-                        <button class="manager-action-button" type="button" data-action="issue" data-cohort-id="${cohort.id}">${issueLabel}</button>
-                    </div>
-                </td>
-            </tr>
-        `;
-    }).join("");
-};
-
-// 참가 신청 목록 렌더링
-const renderApplications = () => {
-    const applications = getApplications();
-
-    if (applications.length === 0) {
-        applicationList.innerHTML = `
-            <tr>
-                <td colspan="7">아직 참가 신청이 없습니다.</td>
-            </tr>
-        `;
-        return;
-    }
-
-    applicationList.innerHTML = applications.map((application) => {
-        const isPending = application.status === "PENDING";
-        const badgeClass = application.status === "REJECTED" ? " is-danger" : "";
-
-        return `
-            <tr data-application-id="${application.id}">
-                <td>${application.name}</td>
-                <td>${application.email}</td>
-                <td>${application.cohortName}</td>
-                <td><span class="table-badge${badgeClass}">${getApplicationStatusLabel(application.status)}</span></td>
-                <td>${application.requestedAt}</td>
-                <td>${application.rejectReason || "-"}</td>
-                <td>
-                    <div class="manager-action-group">
-                        <button class="manager-action-button is-active" type="button" data-action="approve-application" data-application-id="${application.id}" ${isPending ? "" : "disabled"}>승인</button>
-                        <button class="manager-action-button is-danger" type="button" data-action="reject-application" data-application-id="${application.id}" ${isPending ? "" : "disabled"}>거절</button>
-                    </div>
-                </td>
-            </tr>
-        `;
-    }).join("");
-};
-
-// 소속 사용자 목록 렌더링
-const renderMembers = () => {
-    const selected = getCohorts().find((cohort) => cohort.id === selectedCohortId);
-
-    if (!selected) {
-        memberList.innerHTML = `
-            <tr>
-                <td colspan="5">기수를 선택하면 소속 사용자 목록을 확인할 수 있습니다.</td>
-            </tr>
-        `;
-        return;
-    }
-
-    const keyword = memberSearch.value.trim().toLowerCase();
-    const members = selected.members.filter((member) => {
-        if (!keyword) {
-            return true;
-        }
-
-        return member.name.toLowerCase().includes(keyword) || member.email.toLowerCase().includes(keyword);
-    });
-
-    if (members.length === 0) {
-        memberList.innerHTML = `
-            <tr>
-                <td colspan="5">표시할 사용자가 없습니다.</td>
-            </tr>
-        `;
-        return;
-    }
-
-    memberList.innerHTML = members.map((member) => {
-        const isManager = member.role === "COHORT_MANAGER";
-
-        return `
-            <tr data-member-id="${member.id}">
-                <td>${member.name}</td>
-                <td>${member.email}</td>
-                <td>${getMemberStatusLabel(member.status)}</td>
-                <td><span class="table-badge${isManager ? "" : " is-muted"}">${getRoleLabel(member.role)}</span></td>
-                <td>
-                    <div class="manager-action-group">
-                        <button class="manager-action-button${isManager ? " is-danger" : " is-active"}" type="button" data-action="toggle-manager" data-member-id="${member.id}" ${member.status === "ENDED" ? "disabled" : ""}>
-                            ${isManager ? "관리자 해제" : "관리자 지정"}
-                        </button>
-                        <button class="manager-action-button" type="button" data-action="toggle-member-status" data-member-id="${member.id}" ${member.status === "ENDED" ? "disabled" : ""}>
-                            ${member.status === "INACTIVE" ? "활성화" : "비활성화"}
-                        </button>
-                        <button class="manager-action-button is-danger" type="button" data-action="end-member" data-member-id="${member.id}" ${member.status === "ENDED" ? "disabled" : ""}>
-                            종료
-                        </button>
-                    </div>
-                </td>
-            </tr>
-        `;
-    }).join("");
-};
-
-// 감사 로그 렌더링
-const renderAudits = () => {
-    const audits = getAudits();
-
-    if (audits.length === 0) {
-        auditList.innerHTML = `
-            <tr>
-                <td colspan="4">아직 세션 작업 이력이 없습니다.</td>
-            </tr>
-        `;
-        return;
-    }
-
-    auditList.innerHTML = audits.map((audit) => `
+function renderApplications() {
+    const rows = applications.filter((item) => item.cohortId === selectedCohortId);
+    document.querySelector("[data-application-count]").textContent = `${rows.filter((item) => item.status === "PENDING").length}건`;
+    elements.applicationList.innerHTML = rows.length ? rows.map((item) => `
         <tr>
-            <td>${audit.occurredAt}</td>
-            <td>${audit.action}</td>
-            <td>${audit.target}</td>
-            <td>${audit.detail}</td>
-        </tr>
-    `).join("");
-};
+            <td><strong>${escapeHtml(item.name)}</strong></td>
+            <td>${escapeHtml(item.email)}</td>
+            <td>${escapeHtml(item.requestedAt)}</td>
+            <td><span class="status-badge">${statusLabel(item.status)}</span></td>
+            <td><div class="table-actions">
+                <button class="is-primary" type="button" data-approve="${item.id}" ${item.status !== "PENDING" ? "disabled" : ""}>승인</button>
+                <button class="is-danger" type="button" data-reject="${item.id}" ${item.status !== "PENDING" ? "disabled" : ""}>거절</button>
+            </div></td>
+        </tr>`).join("") : `<tr><td class="empty-row" colspan="5">참가 신청이 없습니다.</td></tr>`;
+}
 
-// 선택 상태 갱신
-const updateSelectionState = () => {
-    const selected = getCohorts().find((cohort) => cohort.id === selectedCohortId);
+function renderMembers() {
+    const query = elements.memberSearch.value.trim().toLowerCase();
+    const rows = currentCohort().members.filter((member) => (
+        member.name.toLowerCase().includes(query) || member.email.toLowerCase().includes(query)
+    ));
+    elements.memberList.innerHTML = rows.map((member) => `
+        <tr>
+            <td><strong>${escapeHtml(member.name)}</strong></td>
+            <td>${escapeHtml(member.email)}</td>
+            <td>${statusLabel(member.role)}</td>
+            <td><span class="status-badge">${statusLabel(member.status)}</span></td>
+            <td><div class="table-actions">
+                ${member.role === "MANAGER"
+                    ? `<small>시스템 관리자만 변경 가능</small>`
+                    : `<button type="button" data-member-status="${member.id}">${member.status === "ACTIVE" ? "비활성화" : "활성화"}</button>
+                       <button class="is-danger" type="button" data-member-end="${member.id}" ${member.status === "ENDED" ? "disabled" : ""}>소속 종료</button>`}
+            </div></td>
+        </tr>`).join("");
+}
 
-    if (selected) {
-        previewCode.textContent = selected.joinCode || "기수 생성 후 발급";
-        issueCodeButtons.forEach((button) => {
-            button.disabled = false;
-        });
-        return;
-    }
+function renderAttendance() {
+    const date = elements.attendanceDate.value || today;
+    const cohort = currentCohort();
+    const students = cohort.members.filter((member) => member.role !== "MANAGER" && member.status !== "ENDED");
+    elements.attendanceList.innerHTML = students.map((member) => {
+        const record = cohort.attendance.find((item) => item.memberId === member.id && item.date === date);
+        return `<tr>
+            <td><strong>${escapeHtml(member.name)}</strong><small>${escapeHtml(member.email)}</small></td>
+            <td>${record?.checkIn || "-"}</td><td>${record?.checkOut || "-"}</td>
+            <td>${statusLabel(record?.autoStatus || "PENDING")}</td>
+            <td><span class="status-badge">${statusLabel(record?.finalStatus || "PENDING")}</span></td>
+            <td><div class="table-actions"><button type="button" data-attendance-edit="${member.id}">상태 변경</button></div></td>
+        </tr>`;
+    }).join("") || `<tr><td class="empty-row" colspan="6">조회할 구성원이 없습니다.</td></tr>`;
+}
 
-    selectedCohortId = null;
-    previewCode.textContent = "기수 생성 후 발급";
-    issueCodeButtons.forEach((button) => {
-        button.disabled = true;
-    });
-};
+function renderSensors() {
+    const sensor = currentCohort().sensor;
+    const co2Warning = sensor.co2 != null && sensor.co2 >= 1000;
+    document.querySelector("[data-sensor-temperature]").textContent = sensor.temperature == null ? "--" : `${sensor.temperature}℃`;
+    document.querySelector("[data-sensor-humidity]").textContent = sensor.humidity == null ? "--" : `${sensor.humidity}%`;
+    document.querySelector("[data-sensor-co2]").textContent = sensor.co2 == null ? "--" : `${sensor.co2}ppm`;
+    document.querySelector("[data-sensor-occupancy]").textContent = `${sensor.occupancy ?? 0}명`;
+    document.querySelector("[data-sensor-updated]").textContent = sensor.updatedAt ? `마지막 수신 ${sensor.updatedAt}` : "수신 데이터 없음";
+    document.querySelector("[data-sensor-co2-state]").textContent = co2Warning ? "환기가 필요합니다" : sensor.co2 == null ? "수신 대기" : "쾌적";
+    document.querySelector("[data-sensor-co2]").closest("article").classList.toggle("is-warning", co2Warning);
+}
 
-// 전체 렌더링
-const renderAll = () => {
-    renderCohorts();
-    renderDetail();
-    renderCodes();
+function renderCommunity() {
+    const rows = notices.filter((item) => item.cohortId === selectedCohortId).sort((a, b) => Number(b.pinned) - Number(a.pinned));
+    elements.communityList.innerHTML = rows.length ? rows.map((item) => `
+        <article class="community-item ${item.reports ? "is-reported" : ""}">
+            <span class="status-badge">${item.type === "NOTICE" ? "공지" : "자유"}</span>
+            <div><h3>${item.pinned ? "고정 · " : ""}${escapeHtml(item.title)}</h3><p>${escapeHtml(item.content)} · 신고 ${item.reports || 0}건</p></div>
+            <button type="button" data-community-action="${item.id}">${item.pinned ? "고정 해제" : item.reports ? "신고 확인" : "고정"}</button>
+        </article>`).join("") : `<p class="scope-note">등록된 게시글이 없습니다.</p>`;
+}
+
+function renderAudits() {
+    const rows = audits.filter((item) => item.cohortId === selectedCohortId);
+    elements.auditList.innerHTML = rows.length ? rows.map((item) => `
+        <tr><td>${escapeHtml(item.occurredAt)}</td><td>${escapeHtml(item.action)}</td><td>${escapeHtml(item.target)}</td><td>${escapeHtml(item.detail)}</td></tr>
+    `).join("") : `<tr><td class="empty-row" colspan="4">기록된 작업 이력이 없습니다.</td></tr>`;
+}
+
+function renderAll() {
+    renderCohortSelect();
+    renderSummary();
+    renderOverview();
+    renderCode();
     renderApplications();
     renderMembers();
+    renderAttendance();
+    renderSensors();
+    renderCommunity();
     renderAudits();
-    updateSelectionState();
-};
-
-// 탭 전환
-const activatePanel = (panelName) => {
-    if (panelName !== "cohorts") {
-        closeCohortEditor();
-    }
-
-    navTabButtons.forEach((button) => {
-        button.classList.toggle("is-active", button.dataset.dashboardTab === panelName);
-    });
-
-    panels.forEach((panel) => {
-        panel.classList.toggle("is-active", panel.dataset.dashboardPanel === panelName);
-    });
-
-    sessionStorage.setItem("omagotchiManagerDashboardTab", panelName);
-};
-
-// 기수 폼 값 수집
-const getFormPayload = () => ({
-    name: cohortForm.cohortName.value.trim(),
-    description: cohortForm.description.value.trim(),
-    startDate: cohortForm.startDate.value,
-    endDate: cohortForm.endDate.value,
-    status: cohortForm.status.value,
-    capacity: cohortForm.capacity.value.trim()
-});
-
-// 기수 생성/수정 저장
-const saveCohortFromForm = () => {
-    const payload = getFormPayload();
-
-    if (!payload.name) {
-        panelStatus.textContent = "이름 필요";
-        showBubble("일단 만들어봐요<br />기수 이름부터 적어주세요.");
-        cohortForm.cohortName.focus();
-        return;
-    }
-
-    const cohorts = getCohorts();
-
-    if (editingCohortId) {
-        const index = cohorts.findIndex((cohort) => cohort.id === editingCohortId);
-
-        if (index < 0) {
-            setFormMode("create", null, false);
-            return;
-        }
-
-        cohorts[index] = normalizeCohort({
-            ...cohorts[index],
-            ...payload,
-            expiresAt: payload.endDate || cohorts[index].expiresAt
-        });
-        saveCohorts(cohorts);
-        selectedCohortId = cohorts[index].id;
-        panelStatus.textContent = "수정됨";
-        showBubble("기수 수정 완료!<br />목록과 상세에 반영했습니다.");
-        addAudit("기수 수정", cohorts[index].name, "기본 정보 수정");
-        setFormMode("create", null, false);
-        renderAll();
-        activatePanel("cohorts");
-        return;
-    }
-
-    const cohort = normalizeCohort({
-        id: `cohort-${Date.now()}`,
-        ...payload,
-        memberCount: 0,
-        joinCode: "",
-        codeStatus: "미발급",
-        expiresAt: payload.endDate,
-        members: []
-    });
-
-    cohorts.unshift(cohort);
-    saveCohorts(cohorts);
-    selectedCohortId = cohort.id;
-    panelStatus.textContent = "생성됨";
-    showBubble("기수 생성 완료!<br />이제 가입 코드를 발급하세요.");
-    addAudit("기수 생성", cohort.name, `${getStatusLabel(cohort.status)} 상태로 생성`);
-    setFormMode("create", null, false);
-    renderAll();
-    activatePanel("cohorts");
-};
-
-// 가입 코드 발급
-const issueJoinCode = (cohortId = selectedCohortId, feedbackButton = null) => {
-    const cohorts = getCohorts();
-    const selectedIndex = cohorts.findIndex((cohort) => cohort.id === cohortId);
-
-    if (selectedIndex < 0) {
-        panelStatus.textContent = "기수 필요";
-        showBubble("코드를 발급할<br />기수를 먼저 선택해주세요.");
-        return;
-    }
-
-    const selected = cohorts[selectedIndex];
-    selectedCohortId = selected.id;
-
-    selected.joinCode = generateCode();
-    selected.codeStatus = "ACTIVE";
-    selected.expiresAt = selected.endDate;
-    cohorts[selectedIndex] = selected;
-    saveCohorts(cohorts);
-    previewCode.textContent = selected.joinCode;
-    panelStatus.textContent = "코드 발급";
-    flashButton(feedbackButton, "발급됨");
-    addAudit("가입 코드 발급/재발급", selected.name, selected.joinCode);
-    window.setTimeout(() => {
-        renderAll();
-        activatePanel("codes");
-    }, 900);
-};
-
-// 클립보드 복사
-const copyText = async (text) => {
-    if (navigator.clipboard) {
-        await navigator.clipboard.writeText(text);
-        return;
-    }
-
-    const textarea = document.createElement("textarea");
-    textarea.value = text;
-    document.body.appendChild(textarea);
-    textarea.select();
-    document.execCommand("copy");
-    textarea.remove();
-};
-
-// 가입 코드 복사
-const copyCode = async (cohortId, feedbackButton = null) => {
-    const cohort = getCohorts().find((item) => item.id === cohortId);
-
-    if (!cohort?.joinCode) {
-        return;
-    }
-
-    try {
-        await copyText(cohort.joinCode);
-    } catch {
-        flashButton(feedbackButton, "실패");
-        return;
-    }
-
-    selectedCohortId = cohort.id;
-    flashButton(feedbackButton, "복사됨");
-    addAudit("가입 코드 복사", cohort.name, cohort.joinCode);
-};
-
-// 가입 코드 활성/비활성 전환
-const toggleCodeStatus = (cohortId, feedbackButton = null) => {
-    const cohorts = getCohorts();
-    const index = cohorts.findIndex((cohort) => cohort.id === cohortId);
-
-    if (index < 0 || !cohorts[index].joinCode) {
-        return;
-    }
-
-    cohorts[index].codeStatus = cohorts[index].codeStatus === "INACTIVE" ? "ACTIVE" : "INACTIVE";
-    saveCohorts(cohorts);
-    selectedCohortId = cohorts[index].id;
-    const label = getCodeStatusLabel(cohorts[index]);
-    flashButton(feedbackButton, label === "활성" ? "활성됨" : "비활성됨");
-    addAudit("가입 코드 상태 변경", cohorts[index].name, label === "활성" ? "활성화" : "폐기");
-    window.setTimeout(renderAll, 900);
-};
-
-// 참가 신청 목업 추가
-const seedApplications = () => {
-    const cohorts = getCohorts();
-
-    if (cohorts.length === 0) {
-        showBubble("신청을 넣을<br />기수를 먼저 만들어주세요.");
-        return;
-    }
-
-    const applications = getApplications();
-    const pendingExists = applications.some((application) => application.status === "PENDING");
-
-    if (pendingExists) {
-        showBubble("이미 대기 중인<br />목업 신청이 있습니다.");
-        return;
-    }
-
-    const targetCohort = cohorts.find((cohort) => cohort.id === selectedCohortId) || cohorts[0];
-    const nextApplications = sampleApplicants.map((applicant, index) => normalizeApplication({
-        id: `application-${Date.now()}-${index}`,
-        cohortId: targetCohort.id,
-        cohortName: targetCohort.name,
-        userId: applicant.id,
-        name: applicant.name,
-        email: applicant.email,
-        status: "PENDING"
-    }));
-
-    saveApplications([...nextApplications, ...applications]);
-    selectedCohortId = targetCohort.id;
-    addAudit("참가 신청 목업 추가", targetCohort.name, `${nextApplications.length}건 추가`);
-    showBubble("참가 신청이<br />대기 목록에 들어왔습니다.");
-    renderAll();
-    activatePanel("applications");
-};
-
-// 참가 신청 승인
-const approveApplication = (applicationId, feedbackButton = null) => {
-    const applications = getApplications();
-    const applicationIndex = applications.findIndex((application) => application.id === applicationId);
-
-    if (applicationIndex < 0) {
-        return;
-    }
-
-    const application = applications[applicationIndex];
-    const cohorts = getCohorts();
-    const cohortIndex = cohorts.findIndex((cohort) => cohort.id === application.cohortId);
-
-    if (cohortIndex < 0) {
-        showBubble("신청한 기수를<br />찾을 수 없습니다.");
-        return;
-    }
-
-    const duplicateMember = cohorts[cohortIndex].members.some((member) => member.email === application.email);
-
-    if (duplicateMember) {
-        applications[applicationIndex].status = "REJECTED";
-        applications[applicationIndex].rejectReason = "중복 소속";
-        saveApplications(applications);
-        showBubble("중복 가입은<br />불가능합니다.");
-        addAudit("참가 신청 거절", application.cohortName, `${application.email}: 중복 소속`);
-        renderAll();
-        return;
-    }
-
-    cohorts[cohortIndex].members.push({
-        id: application.userId,
-        name: application.name,
-        email: application.email,
-        status: "ACTIVE",
-        role: "USER"
-    });
-    syncMemberCount(cohorts[cohortIndex]);
-    applications[applicationIndex].status = "APPROVED";
-    applications[applicationIndex].rejectReason = "";
-    saveCohorts(cohorts);
-    saveApplications(applications);
-    selectedCohortId = cohorts[cohortIndex].id;
-    flashButton(feedbackButton, "승인됨");
-    showBubble(`${application.name} 님을<br />${application.cohortName}에 승인했습니다.`);
-    addAudit("참가 신청 승인", application.cohortName, application.email);
-    renderAll();
-};
-
-// 참가 신청 거절
-const rejectApplication = (applicationId, feedbackButton = null) => {
-    const applications = getApplications();
-    const index = applications.findIndex((application) => application.id === applicationId);
-
-    if (index < 0) {
-        return;
-    }
-
-    const reason = window.prompt("거절 사유를 입력하세요.", "가입 코드 또는 신청 정보 확인 필요");
-
-    if (reason === null) {
-        return;
-    }
-
-    applications[index].status = "REJECTED";
-    applications[index].rejectReason = reason.trim() || "사유 미입력";
-    saveApplications(applications);
-    flashButton(feedbackButton, "거절됨");
-    showBubble("참가 신청을<br />거절 처리했습니다.");
-    addAudit("참가 신청 거절", applications[index].cohortName, `${applications[index].email}: ${applications[index].rejectReason}`);
-    renderAll();
-};
-
-// 소속 사용자 목업 추가
-const seedMembers = () => {
-    const cohorts = getCohorts();
-    const index = cohorts.findIndex((cohort) => cohort.id === selectedCohortId);
-
-    if (index < 0) {
-        showBubble("소속 사용자를 넣을<br />기수를 먼저 선택해주세요.");
-        return;
-    }
-
-    if (cohorts[index].members.length > 0) {
-        showBubble("이미 목업 사용자가<br />등록되어 있습니다.");
-        return;
-    }
-
-    cohorts[index].members = sampleMembers.map((member) => ({ ...member }));
-    syncMemberCount(cohorts[index]);
-    saveCohorts(cohorts);
-    addAudit("소속 사용자 목업 추가", cohorts[index].name, `${sampleMembers.length}명 추가`);
-    showBubble("소속 사용자 목업을<br />추가했습니다.");
-    renderAll();
-};
-
-// 기수 관리자 역할 변경
-const toggleManagerRole = (memberId) => {
-    const cohorts = getCohorts();
-    const index = cohorts.findIndex((cohort) => cohort.id === selectedCohortId);
-
-    if (index < 0) {
-        return;
-    }
-
-    const member = cohorts[index].members.find((item) => item.id === memberId);
-
-    if (!member) {
-        return;
-    }
-
-    member.role = member.role === "COHORT_MANAGER" ? "USER" : "COHORT_MANAGER";
-    syncMemberCount(cohorts[index]);
-    saveCohorts(cohorts);
-    showBubble(`${member.name} 님을<br />${getRoleLabel(member.role)}로 변경했습니다.`);
-    addAudit("기수 관리자 변경", cohorts[index].name, `${member.name}: ${getRoleLabel(member.role)}`);
-    renderAll();
-};
-
-// 소속 상태 변경
-const toggleMemberStatus = (memberId) => {
-    const cohorts = getCohorts();
-    const index = cohorts.findIndex((cohort) => cohort.id === selectedCohortId);
-
-    if (index < 0) {
-        return;
-    }
-
-    const member = cohorts[index].members.find((item) => item.id === memberId);
-
-    if (!member || member.status === "ENDED") {
-        return;
-    }
-
-    member.status = member.status === "INACTIVE" ? "ACTIVE" : "INACTIVE";
-    syncMemberCount(cohorts[index]);
-    saveCohorts(cohorts);
-    showBubble(`${member.name} 님의<br />소속 상태를 변경했습니다.`);
-    addAudit("소속 상태 변경", cohorts[index].name, `${member.email}: ${getMemberStatusLabel(member.status)}`);
-    renderAll();
-};
-
-// 소속 종료 처리
-const endMember = (memberId) => {
-    const cohorts = getCohorts();
-    const index = cohorts.findIndex((cohort) => cohort.id === selectedCohortId);
-
-    if (index < 0) {
-        return;
-    }
-
-    const member = cohorts[index].members.find((item) => item.id === memberId);
-
-    if (!member) {
-        return;
-    }
-
-    member.status = "ENDED";
-    member.role = "USER";
-    syncMemberCount(cohorts[index]);
-    saveCohorts(cohorts);
-    showBubble(`${member.name} 님의<br />소속을 종료했습니다.`);
-    addAudit("소속 종료", cohorts[index].name, member.email);
-    renderAll();
-};
-
-// 기수 폼 이벤트
-cohortForm.addEventListener("input", updatePreview);
-
-cohortForm.addEventListener("submit", (event) => {
-    event.preventDefault();
-    updatePreview();
-    saveCohortFromForm();
-});
-
-cohortCancel.addEventListener("click", () => {
-    setFormMode("create", null, false);
-    showBubble("기수 작업을 닫았습니다.<br />목록에서 다시 시작하세요.");
-});
-
-openCohortFormButton.addEventListener("click", () => {
-    setFormMode("create", null, true);
-    showBubble("새 기수 정보를<br />입력해주세요.");
-});
-
-// 가입 코드 발급 버튼 이벤트
-issueCodeButtons.forEach((button) => {
-    button.addEventListener("click", () => issueJoinCode(selectedCohortId, button));
-});
-
-// 참가 신청 목업 버튼 이벤트
-seedApplicationsButton.addEventListener("click", seedApplications);
-
-// 탭 버튼 이벤트
-tabTriggers.forEach((button) => {
+}
+
+// 사유 입력이나 확인이 필요한 관리자 작업용 공통 대화상자
+function openDialog({ title, message, inputLabel, inputType = "text", initialValue = "", confirmText = "확인" }, callback) {
+    elements.dialogTitle.textContent = title;
+    elements.dialogMessage.textContent = message;
+    elements.dialogInputWrap.hidden = !inputLabel;
+    elements.dialogInputLabel.textContent = inputLabel || "";
+    elements.dialogInput.type = inputType;
+    elements.dialogInput.value = initialValue;
+    document.querySelector("[data-dialog-confirm]").textContent = confirmText;
+    elements.dialog.hidden = false;
+    dialogCallback = callback;
+    if (inputLabel) elements.dialogInput.focus();
+}
+
+function closeDialog() {
+    elements.dialog.hidden = true;
+    dialogCallback = null;
+}
+
+// 기수 선택과 대시보드 탭 이동
+document.querySelectorAll("[data-dashboard-tab]").forEach((button) => {
     button.addEventListener("click", () => activatePanel(button.dataset.dashboardTab));
 });
 
-// 기수 목록 액션 이벤트
-cohortList.addEventListener("click", (event) => {
-    const button = event.target.closest("[data-action]");
-    const row = event.target.closest("[data-cohort-id]");
+elements.cohortSelect.addEventListener("change", () => {
+    selectedCohortId = elements.cohortSelect.value;
+    sessionStorage.setItem("omagotchiManagerCohort", selectedCohortId);
+    elements.editForm.hidden = true;
+    setBubble(`${currentCohort().name} 업무만<br />표시하고 있습니다.`);
+    renderAll();
+});
 
-    if (!row) {
-        return;
-    }
+// 담당 기수 기본 정보 수정
+document.querySelector("[data-edit-cohort]").addEventListener("click", () => {
+    elements.editForm.hidden = false;
+});
+document.querySelector("[data-cancel-cohort-edit]").addEventListener("click", () => {
+    elements.editForm.hidden = true;
+});
+elements.editForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const cohort = currentCohort();
+    cohort.description = elements.editForm.elements.namedItem("description").value.trim();
+    cohort.capacity = Math.max(1, Number(elements.editForm.elements.namedItem("capacity").value) || cohort.capacity);
+    addAudit("기수 정보 수정", cohort.name, "설명과 정원 변경");
+    elements.editForm.hidden = true;
+    saveState();
+    renderAll();
+    setBubble("기수 정보를<br />저장했습니다.");
+});
 
-    selectedCohortId = row.dataset.cohortId;
-    const cohort = getCohorts().find((item) => item.id === selectedCohortId);
-
-    if (!button) {
+// 가입 코드 발급, 복사 및 폐기
+document.querySelector("[data-issue-code]").addEventListener("click", () => {
+    const defaultExpiry = new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10);
+    openDialog({
+        title: "가입 코드 발급",
+        message: "새 코드를 발급하면 기존 코드는 폐기됩니다. 만료일을 지정하세요.",
+        inputLabel: "만료일",
+        inputType: "date",
+        initialValue: defaultExpiry,
+        confirmText: "발급"
+    }, (expiresAt) => {
+        if (!expiresAt) return false;
+        const code = `${currentCohort().name.replace(/[^A-Za-z0-9가-힣]/g, "").slice(0, 3).toUpperCase()}${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
+        currentCohort().joinCode = { value: code, status: "ACTIVE", expiresAt, issuedAt: today, used: 0 };
+        addAudit("가입 코드 발급", currentCohort().name, `만료일 ${expiresAt}`);
+        saveState();
         renderAll();
-        return;
-    }
+        setBubble("새 가입 코드를<br />발급했습니다.");
+        return true;
+    });
+});
 
-    if (button.dataset.action === "detail") {
-        if (selectedCohortId === row.dataset.cohortId && cohortDetail.dataset.expanded === "true") {
-            selectedCohortId = null;
-            cohortDetail.dataset.expanded = "false";
-            renderAll();
-            return;
+elements.codeCard.addEventListener("click", async (event) => {
+    if (event.target.closest("[data-code-copy]")) {
+        try {
+            await navigator.clipboard.writeText(currentCohort().joinCode.value);
+            setBubble("가입 코드를<br />복사했습니다.");
+        } catch {
+            setBubble(`가입 코드<br />${currentCohort().joinCode.value}`);
         }
+    }
+    if (event.target.closest("[data-code-revoke]")) {
+        openDialog({ title: "가입 코드 폐기", message: "현재 코드를 더 이상 사용할 수 없게 합니다.", confirmText: "폐기" }, () => {
+            currentCohort().joinCode.status = "REVOKED";
+            addAudit("가입 코드 폐기", currentCohort().name, currentCohort().joinCode.value);
+            saveState();
+            renderAll();
+            return true;
+        });
+    }
+});
 
-        cohortDetail.dataset.expanded = "true";
-        showBubble("기수 상세를<br />아래에 표시했습니다.");
+// 사용자 참가 신청 승인 및 거절
+elements.applicationList.addEventListener("click", (event) => {
+    const approve = event.target.closest("[data-approve]");
+    const reject = event.target.closest("[data-reject]");
+    const application = applications.find((item) => item.id === (approve?.dataset.approve || reject?.dataset.reject));
+    if (!application || application.status !== "PENDING") return;
+
+    if (approve) {
+        application.status = "ACTIVE";
+        currentCohort().members.push({ id: application.userId, name: application.name, email: application.email, role: "STUDENT", status: "ACTIVE" });
+        const joinedKey = `omagotchiJoinedCohorts:${application.userId}`;
+        const joined = readJson(joinedKey, []);
+        writeJson(joinedKey, [...new Set([...joined, application.cohortId])]);
+        addAudit("참가 신청 승인", application.email, "PENDING → ACTIVE");
+        saveState();
         renderAll();
-        return;
+        setBubble(`${application.name} 님을<br />승인했습니다.`);
     }
 
-    if (button.dataset.action === "edit") {
-        setFormMode("edit", cohort);
+    if (reject) {
+        openDialog({ title: "참가 신청 거절", message: `${application.name} 님의 신청을 거절합니다.`, inputLabel: "거절 사유", confirmText: "거절" }, (reason) => {
+            if (!reason.trim()) return false;
+            application.status = "REJECTED";
+            application.rejectReason = reason.trim();
+            addAudit("참가 신청 거절", application.email, reason.trim());
+            saveState();
+            renderAll();
+            return true;
+        });
+    }
+});
+
+// 담당 기수 구성원의 소속 상태 변경
+elements.memberSearch.addEventListener("input", renderMembers);
+elements.memberList.addEventListener("click", (event) => {
+    const statusButton = event.target.closest("[data-member-status]");
+    const endButton = event.target.closest("[data-member-end]");
+    const memberId = statusButton?.dataset.memberStatus || endButton?.dataset.memberEnd;
+    const member = currentCohort().members.find((item) => item.id === memberId);
+    if (!member || member.role === "MANAGER") return;
+    const nextStatus = endButton ? "ENDED" : member.status === "ACTIVE" ? "INACTIVE" : "ACTIVE";
+    openDialog({ title: "소속 상태 변경", message: `${member.name} 님의 소속을 ${statusLabel(nextStatus)} 상태로 변경합니다.`, inputLabel: "변경 사유" }, (reason) => {
+        if (!reason.trim()) return false;
+        const previous = member.status;
+        member.status = nextStatus;
+        addAudit("소속 상태 변경", member.email, `${previous} → ${nextStatus}: ${reason.trim()}`);
+        saveState();
         renderAll();
-        return;
-    }
+        return true;
+    });
+});
 
-    if (button.dataset.action === "show-code") {
+// 선택 날짜의 출결 최종 상태 변경
+elements.attendanceDate.value = today;
+elements.attendanceDate.addEventListener("change", renderAttendance);
+elements.attendanceList.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-attendance-edit]");
+    if (!button) return;
+    const member = currentCohort().members.find((item) => item.id === button.dataset.attendanceEdit);
+    const date = elements.attendanceDate.value;
+    openDialog({
+        title: "출결 상태 변경",
+        message: `${member.name} 님의 ${date} 최종 출결 상태를 입력하세요. NORMAL, LATE, ABSENT, EARLY_LEAVE 중 하나를 사용합니다.`,
+        inputLabel: "최종 상태",
+        initialValue: "NORMAL"
+    }, (value) => {
+        const next = value.trim().toUpperCase();
+        if (!["NORMAL", "LATE", "ABSENT", "EARLY_LEAVE"].includes(next)) return false;
+        let record = currentCohort().attendance.find((item) => item.memberId === member.id && item.date === date);
+        if (!record) {
+            record = { memberId: member.id, date, checkIn: "-", checkOut: "-", autoStatus: "PENDING", finalStatus: next };
+            currentCohort().attendance.push(record);
+        } else {
+            record.finalStatus = next;
+        }
+        addAudit("최종 출결 변경", member.email, `${date} ${next}`);
+        saveState();
         renderAll();
-        activatePanel("codes");
-    }
+        return true;
+    });
 });
 
-// 가입 코드 목록 액션 이벤트
-codeList.addEventListener("click", (event) => {
-    const button = event.target.closest("[data-action]");
-
-    if (!button) {
-        return;
+// 담당 기수 공지 작성과 커뮤니티 게시글 관리
+document.querySelector("[data-open-notice-form]").addEventListener("click", () => {
+    elements.noticeForm.hidden = false;
+});
+document.querySelector("[data-cancel-notice]").addEventListener("click", () => {
+    elements.noticeForm.hidden = true;
+});
+elements.noticeForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const title = elements.noticeForm.elements.namedItem("title").value.trim();
+    const content = elements.noticeForm.elements.namedItem("content").value.trim();
+    if (!title || !content) return;
+    notices.unshift({ id: `notice-${Date.now()}`, cohortId: selectedCohortId, type: "NOTICE", title, content, pinned: false, reports: 0 });
+    addAudit("공지 등록", title, "기수 공지 작성");
+    elements.noticeForm.reset();
+    elements.noticeForm.hidden = true;
+    saveState();
+    renderAll();
+});
+elements.communityList.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-community-action]");
+    if (!button) return;
+    const post = notices.find((item) => item.id === button.dataset.communityAction);
+    if (!post) return;
+    if (post.reports) {
+        post.reports = 0;
+        addAudit("커뮤니티 신고 확인", post.title, "신고 검토 완료");
+    } else {
+        post.pinned = !post.pinned;
+        addAudit("게시글 고정 변경", post.title, post.pinned ? "고정" : "고정 해제");
     }
-
-    const cohortId = button.dataset.cohortId;
-    selectedCohortId = cohortId;
-
-    if (button.dataset.action === "copy-code") {
-        copyCode(cohortId, button);
-        return;
-    }
-
-    if (button.dataset.action === "toggle-code") {
-        toggleCodeStatus(cohortId, button);
-        return;
-    }
-
-    if (button.dataset.action === "issue") {
-        issueJoinCode(cohortId, button);
-    }
+    saveState();
+    renderAll();
 });
 
-// 참가 신청 목록 액션 이벤트
-applicationList.addEventListener("click", (event) => {
-    const button = event.target.closest("[data-action]");
-
-    if (!button) {
-        return;
-    }
-
-    if (button.dataset.action === "approve-application") {
-        approveApplication(button.dataset.applicationId, button);
-        return;
-    }
-
-    if (button.dataset.action === "reject-application") {
-        rejectApplication(button.dataset.applicationId, button);
-    }
+// 공통 대화상자와 로그아웃 처리
+document.querySelector("[data-dialog-confirm]").addEventListener("click", () => {
+    if (!dialogCallback) return closeDialog();
+    const accepted = dialogCallback(elements.dialogInputWrap.hidden ? "" : elements.dialogInput.value);
+    if (accepted !== false) closeDialog();
+});
+document.querySelector("[data-dialog-cancel]").addEventListener("click", closeDialog);
+elements.dialog.addEventListener("click", (event) => {
+    if (event.target === elements.dialog) closeDialog();
 });
 
-// 소속 사용자 이벤트
-seedMembersButton.addEventListener("click", seedMembers);
-
-memberSearch.addEventListener("input", renderMembers);
-
-memberList.addEventListener("click", (event) => {
-    const button = event.target.closest("[data-action]");
-
-    if (!button) {
-        return;
-    }
-
-    if (button.dataset.action === "toggle-manager") {
-        toggleManagerRole(button.dataset.memberId);
-        return;
-    }
-
-    if (button.dataset.action === "toggle-member-status") {
-        toggleMemberStatus(button.dataset.memberId);
-        return;
-    }
-
-    if (button.dataset.action === "end-member") {
-        endMember(button.dataset.memberId);
-    }
+document.querySelector("[data-manager-logout]").addEventListener("click", () => {
+    ["omagotchiManagerEmail", "omagotchiManagerName", "omagotchiManagerOrganization", "omagotchiManagerCohort", "omagotchiManagerDashboardTab"]
+        .forEach((key) => sessionStorage.removeItem(key));
+    window.location.href = "/";
 });
 
-// 관리자 대시보드 초기화
-renderManagerSession();
-setFormMode("create", null, false);
+// 저장 상태를 동기화하고 최초 대시보드 렌더링
+saveState();
+renderSession();
 renderAll();
-activatePanel(sessionStorage.getItem("omagotchiManagerDashboardTab") || "cohorts");
+activatePanel(activePanel);

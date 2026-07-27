@@ -2,23 +2,30 @@
 const form = document.querySelector(".password-change-form");
 const card = document.querySelector(".login-card");
 const character = document.querySelector(".omagotchi-character");
-const bubble = document.querySelector(".speech-bubble");
+const bubble = document.querySelector("[data-auth-feedback]") || document.querySelector(".speech-bubble");
 const inputs = document.querySelectorAll(".input-group input");
 const checkUserButton = document.querySelector("[data-check-user-button]");
 const lookupStep = document.querySelector("[data-password-step='lookup']");
 const changeStep = document.querySelector("[data-password-step='change']");
+const passwordTitle = document.querySelector("[data-password-title]");
+
+function setFeedback(message) {
+    if (bubble) {
+        bubble.innerHTML = message;
+    }
+}
 
 // 입력 중 캐릭터 반응
 inputs.forEach((input) => {
     input.addEventListener("focus", () => {
-        bubble.innerHTML = "얼마주고<br />까먹었어요?";
+        setFeedback("계정 정보를 확인할게요.");
     });
 
     input.addEventListener("input", () => {
-        character.classList.add("happy");
+        character?.classList.add("happy");
 
         setTimeout(() => {
-            character.classList.remove("happy");
+            character?.classList.remove("happy");
         }, 600);
     });
 });
@@ -28,13 +35,13 @@ checkUserButton.addEventListener("click", () => {
     const email = form.email.value.trim();
 
     if (!email) {
-        bubble.innerHTML = "사용자 이메일을<br />입력해주세요.";
+        setFeedback("사용자 이메일을 입력해주세요.");
         shakeCard();
         return;
     }
 
     if (!email.includes("@")) {
-        bubble.innerHTML = "이메일 형식을<br />확인해주세요.";
+        setFeedback("이메일 형식을 확인해주세요.");
         shakeCard();
         return;
     }
@@ -43,7 +50,10 @@ checkUserButton.addEventListener("click", () => {
     lookupStep.classList.remove("is-active");
     changeStep.classList.add("is-active");
     changeStep.removeAttribute("aria-hidden");
-    bubble.innerHTML = "이메일을 확인했어요.<br />새 비밀번호를 입력해주세요.";
+    if (passwordTitle) {
+        passwordTitle.textContent = "비밀번호 변경";
+    }
+    setFeedback("새 비밀번호를 입력하세요");
     form.newPassword.focus();
 });
 
@@ -55,25 +65,25 @@ form.addEventListener("submit", (event) => {
     const confirmPassword = form.confirmPassword.value.trim();
 
     if (!newPassword || !confirmPassword) {
-        bubble.innerHTML = "새 비밀번호를<br />모두 입력해주세요.";
+        setFeedback("새 비밀번호를 모두 입력해주세요.");
         shakeCard();
         return;
     }
 
     if (newPassword.length < 8) {
-        bubble.innerHTML = "비밀번호는 8자리 이상으로<br />입력해주세요.";
+        setFeedback("비밀번호는 8자리 이상으로 입력해주세요.");
         shakeCard();
         return;
     }
 
     if (newPassword !== confirmPassword) {
-        bubble.innerHTML = "비밀번호 확인이<br />일치하지 않아요.";
+        setFeedback("비밀번호 확인이 일치하지 않아요.");
         shakeCard();
         return;
     }
 
     // TODO: 백엔드 연동 시 비밀번호 변경 API 호출로 교체한다.
-    bubble.innerHTML = "비밀번호 변경 완료!<br />로그인 화면으로 이동할게요.";
+    setFeedback("비밀번호 변경 완료. 로그인 화면으로 이동할게요.");
 
     setTimeout(() => {
         window.location.href = "/login";

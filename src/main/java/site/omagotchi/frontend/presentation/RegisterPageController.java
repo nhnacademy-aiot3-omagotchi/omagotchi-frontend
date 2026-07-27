@@ -10,4 +10,9 @@ public class RegisterPageController {
     public String registerPage() {
         return "register";
     }
+    // 사용자 이름 입력
+    @GetMapping("/username")
+    public String usernamePage() {
+        return "username";
+    }
 }

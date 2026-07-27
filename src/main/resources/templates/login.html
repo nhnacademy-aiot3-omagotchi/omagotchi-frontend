@@ -3,66 +3,44 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Omagotchi Login</title>
+    <title>Omagotchi 로그인</title>
 
-    <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png" />
+    <link rel="icon" type="image/png" sizes="48x48" href="/favicon.png" />
     <link rel="stylesheet" href="/css/auth.css" />
 </head>
 <body>
-<main class="login-page">
-    <section class="login-card">
+<main class="login-page auth-page">
+    <section class="login-card auth-card" aria-labelledby="login-title">
+        <header class="auth-card-header">
+            <a class="auth-back-link" href="/" aria-label="인덱스로 돌아가기">←</a>
+            <p class="auth-brand">omagotchi</p>
+        </header>
 
-        <div class="brand-panel">
-            <header class="brand-header">
-                <img class="logo-image"
-                     src="/images/logo.png"
-                     alt="Omagotchi Logo">
-            </header>
+        <form class="login-form auth-panel" action="#" method="post">
+            <h1 id="login-title">환영합니다</h1>
+            <p class="auth-subtitle" data-auth-feedback>오마고치와 함께하는 학습</p>
 
-            <div class="character-zone">
-                <div class="speech-bubble">
-                    어서 와요!<br />
-                    오늘의 성장을 시작해요
-                </div>
-
-                <img class="omagotchi-character"
-                     src="/images/normal_character.png"
-                     alt="Omagotchi">
+            <div class="auth-segmented" aria-label="인증 메뉴">
+                <span class="is-active">로그인</span>
+                <a href="/register">회원가입</a>
             </div>
 
-            <p class="brand-message">
-                실습실에서 성장하는 나의 오마고치
-            </p>
-        </div>
+            <label class="input-group auth-input-group">
+                <span class="sr-only">이메일</span>
+                <input type="email" name="email" placeholder="이메일" autocomplete="username" />
+            </label>
 
-        <div class="form-panel">
-            <form class="login-form" action="#" method="post">
-                <h2>Login</h2>
+            <label class="input-group auth-input-group">
+                <span class="sr-only">비밀번호</span>
+                <input type="password" name="password" placeholder="비밀번호" autocomplete="current-password" />
+            </label>
 
-                <label class="input-group">
-                    <span>이메일</span>
-                    <input type="email" name="email" placeholder="이메일을 입력하세요" autocomplete="username" />
-                </label>
+            <a class="auth-forgot-link" href="/passwordChange">비밀번호를 잊으셨나요?</a>
 
-                <label class="input-group">
-                    <span>비밀번호</span>
-                    <input type="password" name="password" placeholder="비밀번호를 입력하세요" />
-                </label>
-
-                <button class="login-button" type="submit">
-                    로그인
-                </button>
-
-                <div class="login-links">
-                    <span class="login-link-group">
-                        <a href="/register">회원가입</a>
-                        <a href="/passwordChange">비밀번호 변경</a>
-                    </span>
-                    <a href="/managerLogin">관리자 로그인</a>
-                </div>
-            </form>
-        </div>
-
+            <button class="login-button auth-submit-button" type="submit">
+                로그인하기
+            </button>
+        </form>
     </section>
 </main>
 

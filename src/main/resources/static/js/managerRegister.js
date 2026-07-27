@@ -13,7 +13,7 @@ const managerRegisterMessages = {
     shortPassword: "비밀번호는 8자리 이상으로<br />입력해주세요.",
     shortUsername: "사용자 이름은 2자 이상으로<br />입력해주세요.",
     shortOrganization: "소속 기관은 2자 이상으로<br />입력해주세요.",
-    success: "관리자 로그인 화면으로<br />이동중입니다."
+    success: "계정 등록 완료!<br />기수 배정은 별도로 진행됩니다."
 };
 
 // 말풍선 메시지 변경
@@ -94,7 +94,7 @@ form.addEventListener("submit", (event) => {
     sessionStorage.setItem("omagotchiManagerEmail", email);
     sessionStorage.setItem("omagotchiManagerName", username);
     sessionStorage.setItem("omagotchiManagerOrganization", organization);
-    sessionStorage.removeItem("omagotchiManagerRole");
+    sessionStorage.setItem("omagotchiManagerAssignmentStatus", "PENDING");
     sessionStorage.removeItem("omagotchiManagerCohort");
     showMessage(managerRegisterMessages.success);
     setTimeout(() => {

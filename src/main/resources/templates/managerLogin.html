@@ -3,69 +3,39 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Omagotchi Login</title>
-
-    <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png" />
-    <link rel="stylesheet" href="/css/auth.css" />
+    <title>Omagotchi 기수 관리자 로그인</title>
+    <link rel="icon" type="image/png" sizes="48x48" href="/favicon.png" />
+    <link rel="stylesheet" href="/css/managerAuth.css" />
 </head>
 <body>
-<main class="login-page">
-    <section class="login-card manager-card">
-
-        <div class="brand-panel manager-brand-panel">
-            <header class="brand-header">
-                <img class="logo-image"
-                     src="/images/logo.png"
-                     alt="Omagotchi Logo">
-            </header>
-
-            <div class="character-zone">
-                <div class="speech-bubble manager-bubble">
-                    이거 코드 AI<br />돌리시는거 아니죠?
-                </div>
-
-                <img class="manager-character-img"
-                     src="/images/manager_character.gif"
-                     alt="관리자 캐릭터">
+<main class="manager-auth-page">
+    <a class="manager-auth-back" href="/">← 시작 화면</a>
+    <section class="manager-auth-shell login-card">
+        <div class="manager-auth-character">
+            <div class="speech-bubble">담당 기수의 오늘을<br />확인해 볼까요?</div>
+            <img class="manager-character-img" src="/images/manager_character.gif" alt="기수 관리자 오마고치" />
+            <div>
+                <span>COHORT MANAGER</span>
+                <h1>기수 운영을 시작합니다</h1>
+                <p>배정받은 기수의 참가 신청, 출결과 실습실 환경을 관리합니다.</p>
             </div>
-
-
-            <p class="brand-message">
-                실습실에서 성장하는 나의 오마고치
-            </p>
         </div>
-
-        <div class="form-panel manager-form-panel">
-            <form class="login-form manager-login-form" action="/managerDashboard" method="get">
-                <h2>Manager<br />Login</h2>
-
-                <label class="input-group">
-                    <span>이메일</span>
-                    <input type="email" name="email" placeholder="이메일을 입력하세요" autocomplete="username" />
-                </label>
-
-                <label class="input-group">
-                    <span>비밀번호</span>
-                    <input type="password" name="password" placeholder="비밀번호를 입력하세요" />
-                </label>
-
-                <button class="login-button" type="submit">
-                    로그인
-                </button>
-
-                <div class="auth-links manager-login-links">
-                    <span class="manager-register-guide">
-                        아직 가입을 하지 않았다면?
-                        <a href="/managerRegister">관리자 회원가입</a>
-                    </span>
-                    <a href="/login">뒤로 가기</a>
+        <div class="manager-auth-form-panel">
+            <form class="login-form" action="/managerDashboard" method="get">
+                <span class="form-kicker">기수 관리자</span>
+                <h2>로그인</h2>
+                <p>일반 사용자와 같은 계정으로 로그인하며, 활성 관리자 소속이 있는 기수만 표시됩니다.</p>
+                <label class="input-group"><span>이메일</span><input type="email" name="email" placeholder="manager@example.com" autocomplete="username" /></label>
+                <label class="input-group"><span>비밀번호</span><input type="password" name="password" placeholder="비밀번호를 입력하세요" autocomplete="current-password" /></label>
+                <button class="manager-auth-submit" type="submit">대시보드 열기</button>
+                <div class="manager-auth-links">
+                    <span>계정이 없다면 <a href="/managerRegister">관리자 계정 등록</a></span>
+                    <a href="/login">사용자 로그인</a>
                 </div>
             </form>
         </div>
-
     </section>
 </main>
-
 <script src="/js/managerLogin.js"></script>
 </body>
 </html>

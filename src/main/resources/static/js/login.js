@@ -2,20 +2,26 @@
 const form = document.querySelector(".login-form");
 const card = document.querySelector(".login-card");
 const character = document.querySelector(".omagotchi-character");
-const bubble = document.querySelector(".speech-bubble");
+const bubble = document.querySelector("[data-auth-feedback]") || document.querySelector(".speech-bubble");
 const inputs = document.querySelectorAll(".input-group input");
+
+function setFeedback(message) {
+    if (bubble) {
+        bubble.innerHTML = message;
+    }
+}
 
 // 입력 중 캐릭터 반응
 inputs.forEach((input) => {
     input.addEventListener("focus", () => {
-        bubble.innerHTML = "입력 중이에요!<br />천천히 해도 괜찮아요.";
+        setFeedback("입력 중이에요. 천천히 해도 괜찮아요.");
     });
 
     input.addEventListener("input", () => {
-        character.classList.add("happy");
+        character?.classList.add("happy");
 
         setTimeout(() => {
-            character.classList.remove("happy");
+            character?.classList.remove("happy");
         }, 600);
     });
 });
@@ -28,7 +34,7 @@ form.addEventListener("submit", (event) => {
     if (!email || !password) {
         event.preventDefault();
 
-        bubble.innerHTML = "이메일과 비밀번호를<br />다시 확인해주세요!";
+        setFeedback("이메일과 비밀번호를 다시 확인해주세요.");
 
         card.classList.add("shake");
 
@@ -40,7 +46,7 @@ form.addEventListener("submit", (event) => {
     }
 
     event.preventDefault();
-    bubble.innerHTML = "좋아요!<br />실습실로 이동할게요.";
+    setFeedback("좋아요. 실습실로 이동할게요.");
     sessionStorage.setItem("omagotchiEmail", email);
     sessionStorage.setItem("omagotchiLoginPassword", password);
     localStorage.setItem("omagotchiLastEmail", email);
@@ -51,6 +57,6 @@ form.addEventListener("submit", (event) => {
 
     setTimeout(() => {
         const hasSelectedCharacter = localStorage.getItem(`omagotchiHasCharacter:${email}`) === "true";
-        window.location.href = hasSelectedCharacter ? "/lab" : "/characterSelector";
+        window.location.href = hasSelectedCharacter ? "/home" : "/characterSelector";
     }, 700);
 });

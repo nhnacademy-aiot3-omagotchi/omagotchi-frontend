@@ -7,10 +7,10 @@ const inputs = document.querySelectorAll(".input-group input");
 
 // 관리자 로그인 메시지
 const managerMessages = {
-    emptyAll: "음... 관리자 계정이<br />둘 다 비어있는데요?",
-    emptyEmail: "이메일이 빠졌어요.<br />infra에 올려둔 계정 다시 봐봐요.",
-    emptyPassword: "비밀번호가 빠졌어요.<br />curriculum 쪽 다시 확인해봐요.",
-    success: "관리자 승인 완료<br />대시보드로 이동합니다."
+    emptyAll: "이메일과 비밀번호를<br />입력해주세요.",
+    emptyEmail: "이메일을<br />입력해주세요.",
+    emptyPassword: "비밀번호를<br />입력해주세요.",
+    success: "배정된 기수를 확인하고<br />대시보드로 이동합니다."
 };
 
 // 말풍선 메시지 변경
@@ -59,6 +59,9 @@ form.addEventListener("submit", (event) => {
     }
 
     sessionStorage.setItem("omagotchiManagerEmail", email);
+    if (!sessionStorage.getItem("omagotchiManagerName")) {
+        sessionStorage.setItem("omagotchiManagerName", email.split("@")[0]);
+    }
     showManagerMessage(managerMessages.success);
 
     window.setTimeout(() => {

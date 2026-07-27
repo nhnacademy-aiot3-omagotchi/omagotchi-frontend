@@ -5,52 +5,37 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Omagotchi</title>
 
-    <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png" />
-    <link rel="stylesheet" href="/css/auth.css" />
+    <link rel="icon" type="image/png" sizes="48x48" href="/favicon.png" />
+    <link rel="stylesheet" href="/css/index.css" />
+    <link rel="stylesheet" href="/css/gameFont.css" />
 </head>
 <body>
-<main class="login-page">
-    <section class="login-card index-card" aria-labelledby="index-title">
+<main class="index-page">
+    <section class="index-landing" aria-labelledby="index-title">
+        <h1 id="index-title">Omagotchi</h1>
 
-        <div class="brand-panel">
-            <header class="brand-header">
-                <img class="logo-image"
-                     src="/images/logo.png"
-                     alt="Omagotchi Logo">
-            </header>
+        <p class="index-subtitle">
+            실습실에서 성장하는 나의 오마고치
+        </p>
 
-            <div class="character-zone">
-                <div class="speech-bubble">
-                    나만의 오마고치를<br />
-                    키워보세요
-                </div>
+        <img class="index-character"
+             src="/images/characters/default/omagotchi_eye.gif"
+             alt="오마고치 캐릭터">
 
-                <img class="omagotchi-character"
-                     src="/images/normal_character.png"
-                     alt="Omagotchi">
-            </div>
+        <p class="index-description">
+            출석과 학습 기록으로 캐릭터를 성장시키고<br />
+            오늘의 퀘스트를 완료해 보세요.
+        </p>
 
-            <p class="brand-message">
-                실습실에서 성장하는 나의 오마고치
-            </p>
-        </div>
+        <form class="index-actions" action="/login" method="get" aria-label="시작 메뉴">
+            <button class="index-growth-button" type="submit">
+                시작하기
+            </button>
+        </form>
 
-        <div class="form-panel">
-            <section class="index-entry" aria-labelledby="index-title">
-                <h1 id="index-title">Omagotchi</h1>
-                <p class="index-description">
-                    출석과 학습 기록으로 캐릭터를 성장시키고<br />
-                    오늘의 퀘스트를 완료해보세요.
-                </p>
-
-                <form class="index-actions" action="/login" method="get" aria-label="시작 메뉴">
-                    <button class="login-button" type="submit">
-                        시작하기
-                    </button>
-                </form>
-            </section>
-        </div>
-
+        <a class="index-admin-link" href="/managerLogin">
+            기수 관리자로 로그인
+        </a>
     </section>
 </main>
 

@@ -1,0 +1,20 @@
+/* 폰트 적용 */
+@font-face {
+    font-family: "Galmuri11";
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: url("/fonts/galmuri/Galmuri11.woff2") format("woff2");
+}
+
+@font-face {
+    font-family: "Galmuri11";
+    font-style: normal;
+    font-weight: 700 900;
+    font-display: swap;
+    src: url("/fonts/galmuri/Galmuri11-Bold.woff2") format("woff2");
+}
+
+:root {
+    --game-font: "Galmuri11", monospace;
+}

@@ -1,0 +1,373 @@
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+:root {
+    --app-green: #1fc979;
+    --green-dark: #17ad66;
+    --green-soft: #9ae7bd;
+    --app-background:
+            linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(0, 0, 0, 0.08)),
+            linear-gradient(135deg, var(--app-green), var(--green-dark));
+    --surface: #d6f7e5;
+    --surface-strong: rgba(255, 255, 255, 0.82);
+    --ink: #090909;
+    --paper: #ffffff;
+    --muted: rgba(255, 255, 255, 0.78);
+    --muted-ink: rgba(0, 0, 0, 0.64);
+    --line: rgba(8, 8, 8, 0.48);
+}
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    overflow-x: hidden;
+    background: var(--app-background);
+    color: var(--paper);
+    font-family: "DNFBitBitv2", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+button,
+a,
+input,
+textarea {
+    font: inherit;
+}
+
+/* 공통 앱 페이지 */
+.app-page {
+    min-height: 100vh;
+    padding: 34px 32px 48px;
+}
+
+.app-shell {
+    width: min(1080px, 100%);
+    margin: 0 auto;
+}
+
+/* 상단 제목과 홈 이동 */
+.app-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+    margin-bottom: 24px;
+}
+
+.app-topbar a {
+    min-height: 46px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 18px;
+    border-radius: 14px;
+    background: var(--paper);
+    color: var(--ink);
+    font-size: 15px;
+    font-weight: 900;
+    text-decoration: none;
+    box-shadow: 0 4px 0 rgba(0, 0, 0, 0.14);
+}
+
+.app-title h1 {
+    margin: 0;
+    color: var(--paper);
+    font-size: clamp(40px, 6vw, 78px);
+    font-weight: 900;
+    line-height: 1;
+    letter-spacing: 0;
+}
+
+.app-title p {
+    margin: 10px 0 0;
+    color: var(--muted);
+    font-size: 16px;
+    font-weight: 900;
+    line-height: 1.45;
+}
+
+/* 공통 콘텐츠 패널 */
+.panel {
+    border: 2px solid var(--line);
+    border-radius: 28px;
+    background: var(--surface);
+    color: var(--ink);
+}
+
+.panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 24px 28px 0;
+}
+
+.panel-header h2 {
+    margin: 0;
+    color: var(--ink);
+    font-size: 28px;
+    font-weight: 900;
+}
+
+/* 화면 전환 탭 */
+.tabs {
+    display: inline-flex;
+    gap: 6px;
+    padding: 6px;
+    border-radius: 14px;
+    background: rgba(11, 136, 82, 0.18);
+}
+
+.tabs button {
+    min-height: 36px;
+    padding: 0 14px;
+    border: 0;
+    border-radius: 10px;
+    background: transparent;
+    color: var(--ink);
+    font-size: 13px;
+    font-weight: 900;
+    cursor: pointer;
+}
+
+.tabs button.is-active {
+    background: var(--paper);
+    color: var(--ink);
+}
+
+.task-list,
+.stat-grid,
+.cohort-grid,
+.help-grid {
+    display: grid;
+    gap: 14px;
+    padding: 24px 28px 28px;
+}
+
+.task-item,
+.stat-card,
+.cohort-card,
+.help-card {
+    border-radius: 20px;
+    background: var(--surface-strong);
+    color: var(--ink);
+}
+
+.task-item {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 16px;
+    padding: 20px 22px;
+}
+
+.task-item h3,
+.stat-card h3,
+.cohort-card h3,
+.help-card h3 {
+    margin: 0;
+    font-size: 19px;
+    font-weight: 900;
+}
+
+.task-item p,
+.stat-card p,
+.cohort-card p,
+.help-card p {
+    margin: 8px 0 0;
+    color: var(--muted-ink);
+    font-size: 14px;
+    font-weight: 900;
+    line-height: 1.45;
+}
+
+.reward {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: #0d8f5a;
+    font-size: 14px;
+    font-weight: 900;
+    white-space: nowrap;
+}
+
+.progress-line {
+    grid-column: 1 / -1;
+    height: 10px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: rgba(0, 0, 0, 0.18);
+}
+
+.progress-line span {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: var(--green-dark);
+}
+
+/* 통계 카드 */
+.stat-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.stat-card {
+    min-height: 132px;
+    padding: 22px;
+}
+
+.stat-card strong {
+    display: block;
+    margin-top: 10px;
+    color: var(--ink);
+    font-size: 30px;
+}
+
+.cohort-grid,
+/* 도움말과 작업 카드 */
+.help-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.cohort-card,
+.help-card {
+    min-height: 154px;
+    padding: 24px;
+}
+
+/* 기수 정보 */
+.cohort-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 16px;
+}
+
+.cohort-meta span,
+.status-pill {
+    display: inline-flex;
+    min-height: 30px;
+    align-items: center;
+    padding: 0 10px;
+    border-radius: 999px;
+    background: var(--paper);
+    color: var(--ink);
+    font-size: 12px;
+    font-weight: 900;
+}
+
+/* 기록 작성 폼 */
+.write-form {
+    display: grid;
+    gap: 16px;
+    padding: 28px;
+}
+
+.write-form input,
+.write-form textarea {
+    width: 100%;
+    border: 2px solid var(--line);
+    border-radius: 18px;
+    background: var(--paper);
+    color: var(--ink);
+    font-size: 16px;
+    font-weight: 900;
+}
+
+.write-form input {
+    min-height: 58px;
+    padding: 0 18px;
+}
+
+.write-form textarea {
+    min-height: 280px;
+    padding: 18px;
+    resize: vertical;
+}
+
+.primary-button {
+    min-height: 58px;
+    border: 0;
+    border-radius: 16px;
+    background: var(--ink);
+    color: var(--paper);
+    font-size: 18px;
+    font-weight: 900;
+    cursor: pointer;
+}
+
+/* 설정 목록 */
+.settings-list {
+    display: grid;
+    gap: 14px;
+    padding: 28px;
+}
+
+.setting-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 18px;
+    min-height: 72px;
+    padding: 16px 20px;
+    border-radius: 18px;
+    background: var(--surface-strong);
+    color: var(--ink);
+}
+
+.setting-row strong {
+    display: block;
+    font-size: 17px;
+}
+
+.setting-row span {
+    display: block;
+    margin-top: 6px;
+    color: var(--muted-ink);
+    font-size: 13px;
+}
+
+.setting-row input {
+    width: 160px;
+    accent-color: var(--ink);
+}
+
+@media (max-width: 760px) {
+    .app-page {
+        padding: 24px 18px 40px;
+    }
+
+    .app-topbar {
+        align-items: flex-start;
+        flex-direction: column-reverse;
+    }
+
+    .panel-header {
+        align-items: flex-start;
+        flex-direction: column;
+        padding: 22px 20px 0;
+    }
+
+    .task-list,
+    .stat-grid,
+    .cohort-grid,
+    .help-grid,
+    .settings-list,
+    .write-form {
+        grid-template-columns: 1fr;
+        padding: 20px;
+    }
+
+    .task-item {
+        grid-template-columns: 1fr;
+    }
+
+    .stat-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .setting-row {
+        grid-template-columns: 1fr;
+    }
+}

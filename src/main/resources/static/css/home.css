@@ -1,0 +1,2045 @@
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+:root {
+    --home-green: #1fc979;
+    --green-deep: #17ad66;
+    --green-soft: #9ae7bd;
+    --home-background:
+            linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(0, 0, 0, 0.08)),
+            linear-gradient(135deg, var(--home-green), var(--green-deep));
+    --ink: #090909;
+    --white: #ffffff;
+    --line: rgba(8, 8, 8, 0.55);
+    --home-brightness: 100%;
+}
+
+html {
+    overflow-x: hidden;
+    scroll-behavior: smooth;
+}
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    overflow-x: hidden;
+    background: #1f1f1f;
+    color: var(--white);
+    font-family: "DNFBitBitv2", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+body.has-home-overlay {
+    overflow: hidden;
+}
+
+button,
+a {
+    font: inherit;
+}
+
+/* 홈 전체 화면 */
+.home-page {
+    min-height: 100vh;
+    overflow-x: hidden;
+    background: var(--home-background);
+    filter: brightness(var(--home-brightness));
+}
+
+/* 타이머 중심의 홈 상단 */
+.home-hero {
+    position: relative;
+    min-height: 100vh;
+    min-height: 100svh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: clamp(18px, 2.1vh, 26px);
+    padding: clamp(26px, 3.1vh, 38px) 32px 34px;
+}
+
+.home-hero::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    bottom: 0;
+    width: min(560px, calc(100% - 64px));
+    height: 5px;
+    border-radius: 999px 999px 0 0;
+    background: rgba(0, 0, 0, 0.24);
+    transform: translateX(-50%);
+}
+
+.home-hero h1 {
+    margin: 0;
+    color: var(--white);
+    font-family: var(--game-font);
+    font-size: 48px;
+    font-weight: 900;
+    line-height: 1;
+    letter-spacing: 0;
+    opacity: 0.92;
+}
+
+/* 홈 메뉴 */
+.home-menu {
+    width: min(1180px, 100%);
+    display: grid;
+    grid-template-columns: repeat(8, minmax(76px, 1fr));
+    gap: 12px;
+    overflow-x: auto;
+    padding: 14px 22px;
+    border: 1px solid rgba(255, 255, 255, 0.36);
+    border-radius: 32px;
+    background: rgba(10, 128, 79, 0.28);
+    scrollbar-width: none;
+}
+
+.home-menu::-webkit-scrollbar {
+    display: none;
+}
+
+.home-menu a {
+    position: relative;
+    min-height: 70px;
+    display: grid;
+    place-items: center;
+    gap: 8px;
+    padding: 12px 8px;
+    border-radius: 12px;
+    background: var(--white);
+    color: var(--ink);
+    font-size: 14px;
+    font-weight: 900;
+    text-align: center;
+    text-decoration: none;
+    box-shadow: 0 4px 0 rgba(0, 0, 0, 0.12);
+    transition:
+            transform 0.14s ease,
+            box-shadow 0.14s ease;
+}
+
+.home-menu a.has-menu-alert::after {
+    content: "";
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #31e6a3;
+    box-shadow: 0 0 0 3px rgba(49, 230, 163, 0.18);
+}
+
+.home-menu a:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 7px 0 rgba(0, 0, 0, 0.14);
+}
+
+.home-menu span {
+    font-size: 18px;
+    line-height: 1;
+}
+
+/* 메뉴 오버레이 영역 */
+.home-overlay-root {
+    position: fixed;
+    inset: 0;
+    z-index: 30;
+    display: none;
+    filter: brightness(var(--home-brightness));
+}
+
+.home-overlay-root.is-open {
+    display: block;
+}
+
+.home-overlay-backdrop {
+    min-height: 100%;
+    display: grid;
+    place-items: center;
+    padding: 34px 24px;
+    background: rgba(0, 0, 0, 0.34);
+    backdrop-filter: blur(3px);
+}
+
+.home-overlay {
+    position: relative;
+    width: min(980px, 100%);
+    max-height: min(780px, calc(100vh - 68px));
+    overflow: auto;
+    padding: 34px;
+    border: 2px solid rgba(255, 255, 255, 0.56);
+    border-radius: 22px;
+    background: var(--home-background);
+    color: var(--white);
+    box-shadow: 0 28px 70px rgba(0, 0, 0, 0.3);
+}
+
+.home-overlay header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+    margin-bottom: 22px;
+}
+
+.home-overlay h2 {
+    margin: 0;
+    color: var(--white);
+    font-size: clamp(38px, 5vw, 66px);
+    font-weight: 900;
+    line-height: 1;
+}
+
+.home-overlay h3 {
+    margin: 0;
+    color: inherit;
+    font-size: 22px;
+    font-weight: 900;
+}
+
+.home-overlay p {
+    margin: 8px 0 0;
+    color: rgba(255, 255, 255, 0.82);
+    font-size: 15px;
+    font-weight: 900;
+    line-height: 1.45;
+}
+
+.home-overlay-close {
+    position: absolute;
+    top: 22px;
+    right: 24px;
+    width: 44px;
+    height: 44px;
+    border: 0;
+    border-radius: 12px;
+    background: transparent;
+    color: var(--white);
+    font-size: 32px;
+    font-weight: 900;
+    cursor: pointer;
+}
+
+/* 오버레이 내부 탭 */
+.overlay-tabs {
+    width: fit-content;
+    max-width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: -56px auto 24px;
+    padding: 6px;
+    border-radius: 12px;
+    background: rgba(0, 0, 0, 0.18);
+}
+
+.overlay-tabs button {
+    min-height: 36px;
+    padding: 0 14px;
+    border: 0;
+    border-radius: 9px;
+    background: transparent;
+    color: var(--white);
+    font-size: 13px;
+    font-weight: 900;
+    cursor: pointer;
+}
+
+.overlay-tabs button.is-active {
+    background: var(--white);
+    color: var(--ink);
+}
+
+.overlay-tab-panel[hidden] {
+    display: none !important;
+}
+
+.overlay-card-grid,
+/* 내 정보 통계 카드 */
+.overlay-stat-grid {
+    display: grid;
+    gap: 14px;
+}
+
+.overlay-card-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.overlay-card-grid article,
+.overlay-stat-grid article,
+.overlay-quest,
+.overlay-room-list article,
+.overlay-settings-list label,
+.overlay-settings-list > button {
+    border-radius: 18px;
+    background: rgba(238, 255, 246, 0.88);
+    color: var(--ink);
+}
+
+.overlay-card-grid article,
+.overlay-stat-grid article {
+    min-height: 132px;
+    padding: 22px;
+}
+
+.overlay-stat-grid {
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.overlay-stat-grid strong {
+    display: block;
+    margin-top: 10px;
+    color: var(--ink);
+    font-size: 28px;
+    font-weight: 900;
+}
+
+.overlay-card-grid article p,
+.overlay-stat-grid article p,
+.overlay-quest p,
+.overlay-room-list p,
+.overlay-settings-list em {
+    color: rgba(0, 0, 0, 0.64);
+}
+
+/* 기수 가입 코드 입력 */
+.overlay-cohort-join {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
+    gap: 10px;
+    margin-top: 16px;
+    padding: 16px;
+    border: 2px solid rgba(24, 75, 55, 0.45);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.76);
+    color: #17221d;
+}
+
+.overlay-cohort-join label {
+    display: grid;
+    gap: 6px;
+}
+
+.overlay-cohort-join label span {
+    font-size: 12px;
+    font-weight: 900;
+}
+
+.overlay-cohort-join input {
+    width: 100%;
+    min-height: 42px;
+    padding: 0 12px;
+    border: 2px solid #8ab7a0;
+    border-radius: 6px;
+    background: #fff;
+    color: #17221d;
+}
+
+.overlay-cohort-join button {
+    min-height: 42px;
+    padding: 0 16px;
+    border: 2px solid #123c2d;
+    border-radius: 6px;
+    background: #176044;
+    color: #fff;
+    font-weight: 900;
+}
+
+.overlay-cohort-join p {
+    grid-column: 1 / -1;
+    margin: 0;
+    color: #52635a;
+    font-size: 11px;
+}
+
+@media (max-width: 620px) {
+    .overlay-cohort-join {
+        grid-template-columns: 1fr;
+    }
+}
+
+.overlay-pill {
+    display: inline-flex;
+    min-height: 30px;
+    align-items: center;
+    margin: 16px 8px 0 0;
+    padding: 0 10px;
+    border-radius: 999px;
+    background: var(--white);
+    color: var(--ink);
+    font-size: 12px;
+    font-weight: 900;
+}
+
+.overlay-section-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+    color: var(--white);
+    font-weight: 900;
+}
+
+.overlay-section-label span {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #32e6a3;
+}
+
+.overlay-section-label em {
+    margin-left: auto;
+    color: rgba(255, 255, 255, 0.72);
+    font-size: 12px;
+    font-style: normal;
+}
+
+/* 퀘스트 카드 */
+.overlay-quest {
+    display: grid;
+    gap: 12px;
+    margin-top: 12px;
+    padding: 18px;
+}
+
+.overlay-quest header {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    margin: 0;
+}
+
+.overlay-quest header strong {
+    color: #0d8f5a;
+    font-size: 13px;
+    white-space: nowrap;
+}
+
+.overlay-progress-line {
+    height: 9px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: rgba(0, 0, 0, 0.24);
+}
+
+.overlay-progress-line span {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: #32e6a3;
+}
+
+.overlay-quest-foot {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 12px;
+    color: rgba(0, 0, 0, 0.66);
+    font-size: 14px;
+    font-weight: 900;
+}
+
+.overlay-quest-foot button,
+.overlay-write-form button,
+.overlay-room-list button {
+    min-height: 42px;
+    border: 0;
+    border-radius: 10px;
+    background: var(--white);
+    color: var(--ink);
+    font-size: 14px;
+    font-weight: 900;
+    cursor: pointer;
+}
+
+.overlay-quest.is-claimable .overlay-quest-foot button {
+    grid-column: 1 / -1;
+    background: #18bd87;
+    color: var(--white);
+}
+
+.overlay-quest-foot em {
+    display: none;
+    color: #0d8f5a;
+    font-style: normal;
+}
+
+.overlay-quest.is-claimed {
+    opacity: 0.5;
+}
+
+.overlay-quest.is-claimed button {
+    display: none;
+}
+
+.overlay-quest.is-claimed .overlay-quest-foot em {
+    display: block;
+}
+
+.overlay-list {
+    display: grid;
+    gap: 12px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.overlay-list li {
+    display: grid;
+    grid-template-columns: 48px 1fr auto;
+    align-items: center;
+    min-height: 68px;
+    padding: 0 18px;
+    border-radius: 16px;
+    background: rgba(238, 255, 246, 0.88);
+    color: var(--ink);
+    font-weight: 900;
+}
+
+.overlay-list li em {
+    font-style: normal;
+}
+
+/* 커뮤니티 목록 */
+.overlay-community {
+    display: grid;
+    gap: 14px;
+}
+
+.overlay-community-toolbar,
+.overlay-community-notice,
+.overlay-community-list li {
+    border-radius: 18px;
+    background: rgba(238, 255, 246, 0.88);
+    color: var(--ink);
+}
+
+.overlay-community-toolbar {
+    display: grid;
+    grid-template-columns: auto minmax(320px, 1fr) 48px;
+    align-items: end;
+    gap: 16px;
+    padding: 18px;
+}
+
+.overlay-community-tabs {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px;
+    border-radius: 14px;
+    background: rgba(0, 0, 0, 0.1);
+}
+
+.overlay-community-tabs button,
+.overlay-community-toolbar > button {
+    min-height: 42px;
+    border: 0;
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: 900;
+    cursor: pointer;
+}
+
+.overlay-community-tabs button {
+    min-width: 56px;
+    padding: 0 14px;
+    background: transparent;
+    color: rgba(0, 0, 0, 0.68);
+}
+
+.overlay-community-tabs button.is-active,
+.overlay-community-toolbar > button {
+    background: var(--white);
+    color: var(--ink);
+    box-shadow: 0 3px 0 rgba(0, 0, 0, 0.12);
+}
+
+.overlay-community-search {
+    display: grid;
+    gap: 6px;
+}
+
+.overlay-community-search span {
+    color: rgba(0, 0, 0, 0.62);
+    font-size: 12px;
+    font-weight: 900;
+}
+
+.overlay-community-search input {
+    width: 100%;
+    min-height: 42px;
+    border: 2px solid rgba(0, 0, 0, 0.14);
+    border-radius: 12px;
+    background: var(--white);
+    color: var(--ink);
+    padding: 0 14px;
+    font-size: 13px;
+    font-weight: 900;
+}
+
+.overlay-community-search input::placeholder {
+    color: rgba(0, 0, 0, 0.46);
+}
+
+.overlay-community-write {
+    width: 48px;
+    min-width: 48px;
+    padding: 0;
+    font-size: 22px;
+    line-height: 1;
+}
+
+.overlay-community-notice {
+    display: grid;
+    grid-template-columns: 96px minmax(0, 1fr);
+    gap: 14px;
+    padding: 18px;
+}
+
+.overlay-community-notice > strong,
+.overlay-community-type {
+    min-height: 30px;
+    width: fit-content;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 12px;
+    border-radius: 999px;
+    background: var(--ink);
+    color: var(--white);
+    font-size: 12px;
+    font-weight: 900;
+}
+
+.overlay-community-notice h3,
+.overlay-community-list h3 {
+    margin: 0;
+    color: var(--ink);
+    font-size: 18px;
+    font-weight: 900;
+}
+
+.overlay-community-notice p,
+.overlay-community-list p {
+    margin: 6px 0 0;
+    color: rgba(0, 0, 0, 0.62);
+    font-size: 13px;
+    font-weight: 900;
+    line-height: 1.45;
+}
+
+.overlay-community-list {
+    display: grid;
+    margin: 0;
+    padding: 0;
+    gap: 10px;
+    list-style: none;
+}
+
+.overlay-community-list li {
+    display: grid;
+    grid-template-columns: 64px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 14px;
+    padding: 16px 18px;
+}
+
+.overlay-community-type {
+    background: rgba(0, 0, 0, 0.12);
+    color: var(--ink);
+}
+
+.overlay-community-type.is-notice {
+    background: var(--ink);
+    color: var(--white);
+}
+
+.overlay-community-list footer {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    color: rgba(0, 0, 0, 0.58);
+    font-size: 14px;
+    font-weight: 900;
+    white-space: nowrap;
+}
+
+.overlay-community-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding-top: 2px;
+}
+
+.overlay-community-pagination button {
+    width: 42px;
+    height: 42px;
+    border: 0;
+    border-radius: 12px;
+    background: rgba(238, 255, 246, 0.88);
+    color: var(--ink);
+    font-size: 28px;
+    font-weight: 900;
+    line-height: 1;
+    cursor: pointer;
+    box-shadow: 0 3px 0 rgba(0, 0, 0, 0.12);
+}
+
+.overlay-community-pagination button:disabled {
+    cursor: default;
+    opacity: 0.42;
+    box-shadow: none;
+}
+
+.overlay-community-pagination strong {
+    min-width: 76px;
+    color: var(--white);
+    font-size: 15px;
+    font-weight: 900;
+    text-align: center;
+}
+
+.overlay-community-list .overlay-community-empty {
+    min-height: 132px;
+    display: grid;
+    grid-template-columns: 1fr;
+    place-content: center;
+    gap: 6px;
+    text-align: center;
+}
+
+.overlay-community-empty strong {
+    font-size: 17px;
+}
+
+.overlay-community-empty p {
+    margin: 0;
+}
+
+/* 게시글 작성 폼 */
+.overlay-community-compose {
+    display: grid;
+    gap: 16px;
+    padding: 22px;
+    border-radius: 18px;
+    background: rgba(238, 255, 246, 0.92);
+    color: var(--ink);
+}
+
+.overlay-community-compose label {
+    display: grid;
+    gap: 7px;
+}
+
+.overlay-community-compose label > span {
+    font-size: 13px;
+    font-weight: 900;
+}
+
+.overlay-community-compose input,
+.overlay-community-compose select,
+.overlay-community-compose textarea {
+    width: 100%;
+    border: 2px solid rgba(0, 0, 0, 0.16);
+    border-radius: 12px;
+    background: var(--white);
+    color: var(--ink);
+    padding: 12px 14px;
+    font: inherit;
+    font-size: 14px;
+    font-weight: 800;
+}
+
+.overlay-community-compose textarea {
+    min-height: 220px;
+    resize: vertical;
+}
+
+.overlay-community-compose > div {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.overlay-community-compose button {
+    min-height: 44px;
+    padding: 0 18px;
+    border: 0;
+    border-radius: 12px;
+    background: rgba(0, 0, 0, 0.1);
+    color: var(--ink);
+    font: inherit;
+    font-size: 13px;
+    font-weight: 900;
+    cursor: pointer;
+}
+
+.overlay-community-compose button[type="submit"] {
+    background: var(--ink);
+    color: var(--white);
+}
+
+/* 학습 기록 작성 폼 */
+.overlay-write-form {
+    display: grid;
+    gap: 14px;
+}
+
+.overlay-write-form input,
+.overlay-write-form textarea {
+    width: 100%;
+    border: 2px solid var(--line);
+    border-radius: 16px;
+    background: var(--white);
+    color: var(--ink);
+    font-size: 16px;
+    font-weight: 900;
+}
+
+.overlay-write-form input {
+    min-height: 54px;
+    padding: 0 16px;
+}
+
+.overlay-write-form textarea {
+    min-height: 240px;
+    padding: 16px;
+    resize: vertical;
+}
+
+/* 실습실 공간 미리보기 */
+.overlay-space-lab {
+    display: grid;
+    grid-template-columns: 140px minmax(0, 1fr);
+    gap: 20px;
+}
+
+.overlay-space-lab aside {
+    display: grid;
+    gap: 10px;
+}
+
+.overlay-space-lab aside article,
+.overlay-space-stage {
+    border-radius: 16px;
+    background: #d6f7e5;
+    color: var(--ink);
+}
+
+.overlay-space-lab aside article {
+    min-height: 78px;
+    display: grid;
+    place-items: center;
+    font-weight: 900;
+}
+
+.overlay-space-lab aside span {
+    color: rgba(8, 8, 8, 0.62);
+}
+
+.overlay-space-stage {
+    position: relative;
+    min-height: 340px;
+    display: grid;
+    place-items: center;
+    padding: 90px 24px 30px;
+    overflow: hidden;
+}
+
+.overlay-space-capacity {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    font-weight: 900;
+}
+
+.overlay-space-character {
+    width: clamp(180px, 23vw, 230px);
+    height: auto;
+    image-rendering: pixelated;
+    animation: overlaySpaceCharacterFloat 2.4s ease-in-out infinite;
+}
+
+.overlay-space-bubble {
+    position: absolute;
+    z-index: 2;
+    top: 34px;
+    left: 50%;
+    min-width: 128px;
+    padding: 12px 16px;
+    border: 3px solid var(--ink);
+    border-radius: 16px;
+    background: var(--white);
+    color: var(--ink);
+    font-family: var(--game-font);
+    font-size: 14px;
+    font-weight: 700;
+    text-align: center;
+    box-shadow: 5px 5px 0 rgba(0, 0, 0, 0.18);
+    transform: translateX(-50%);
+}
+
+.overlay-space-bubble::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    bottom: -14px;
+    width: 22px;
+    height: 22px;
+    background: var(--white);
+    border-right: 3px solid var(--ink);
+    border-bottom: 3px solid var(--ink);
+    transform: translateX(-50%) rotate(45deg);
+}
+
+@keyframes overlaySpaceCharacterFloat {
+    0%,
+    100% {
+        transform: translateY(4px);
+    }
+
+    50% {
+        transform: translateY(-5px);
+    }
+}
+
+/* 회의실과 도서관 목록 */
+.overlay-room-list {
+    display: grid;
+    gap: 14px;
+}
+
+.overlay-room-list article {
+    display: grid;
+    grid-template-columns: 58px minmax(0, 1fr) auto auto;
+    align-items: center;
+    gap: 12px;
+    min-height: 92px;
+    padding: 16px;
+    color: var(--ink);
+    background: #d6f7e5;
+}
+
+.overlay-room-list article > strong {
+    width: 48px;
+    height: 48px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background: var(--white);
+    font-size: 22px;
+}
+
+.overlay-room-list h3,
+.overlay-room-list p {
+    color: var(--ink);
+}
+
+.overlay-room-list article.is-mine {
+    border: 4px solid var(--white);
+    box-shadow: 0 0 0 5px rgba(255, 255, 255, 0.16);
+}
+
+.overlay-room-list article div span {
+    display: inline-flex;
+    min-height: 24px;
+    align-items: center;
+    margin-bottom: 6px;
+    padding: 0 8px;
+    border-radius: 999px;
+    background: var(--ink);
+    color: var(--white);
+    font-size: 11px;
+    font-weight: 900;
+}
+
+/* 설정 메뉴 */
+.overlay-settings-list {
+    display: grid;
+    gap: 14px;
+}
+
+.overlay-settings-list label,
+.overlay-settings-list > button {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 18px;
+    min-height: 72px;
+    padding: 16px 20px;
+    border: 0;
+    border-radius: 16px;
+    background: rgba(238, 255, 246, 0.88);
+    color: var(--ink);
+    text-decoration: none;
+    text-align: left;
+    cursor: pointer;
+}
+
+.overlay-settings-list strong,
+.overlay-settings-list em {
+    display: block;
+    font-style: normal;
+}
+
+.overlay-settings-list em {
+    margin-top: 6px;
+    color: rgba(0, 0, 0, 0.64);
+    font-size: 13px;
+}
+
+.overlay-settings-list > button.is-danger {
+    background: rgba(255, 241, 241, 0.94);
+}
+
+.overlay-settings-list > button.is-danger strong,
+.overlay-settings-list > button.is-danger > span:last-child {
+    color: #c92525;
+}
+
+.overlay-settings-list input {
+    width: 160px;
+    accent-color: var(--ink);
+}
+
+/* 학습 타이머 */
+.timer-panel {
+    display: grid;
+    justify-items: center;
+    gap: 16px;
+    margin-top: clamp(8px, 2vh, 26px);
+}
+
+.timer-display {
+    color: var(--white);
+    font-family: var(--game-font);
+    font-size: clamp(68px, 8.4vw, 116px);
+    font-weight: 900;
+    line-height: 0.95;
+    font-variant-numeric: tabular-nums;
+}
+
+.timer-actions {
+    width: min(340px, calc(100vw - 48px));
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.timer-actions button,
+/* 입실·퇴실 버튼 */
+.attendance-button {
+    min-height: 54px;
+    padding: 0 30px;
+    border: 0;
+    border-radius: 14px;
+    background: var(--white);
+    color: var(--ink);
+    font-size: 18px;
+    font-weight: 900;
+    cursor: pointer;
+    box-shadow: 0 4px 0 rgba(0, 0, 0, 0.14);
+    transition:
+            transform 0.14s ease,
+            box-shadow 0.14s ease,
+            background 0.14s ease;
+}
+
+.timer-actions button {
+    width: 100%;
+    padding-inline: 20px;
+}
+
+.timer-actions button:hover,
+.attendance-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 7px 0 rgba(0, 0, 0, 0.14);
+}
+
+/* 캐릭터와 경험치 */
+.companion-panel {
+    position: relative;
+    display: grid;
+    justify-items: center;
+    gap: 12px;
+    margin-top: clamp(18px, 3vh, 38px);
+}
+
+/* 캐릭터 이름과 접속 상태 */
+.character-badge {
+    position: relative;
+    grid-row: 2;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 42px;
+    padding: 6px 8px 6px 16px;
+    border: 3px solid rgba(255, 255, 255, 0.92);
+    border-radius: 16px;
+    background:
+            linear-gradient(180deg, #2e2e2e, #181818);
+    color: var(--white);
+    font-family: var(--game-font);
+    font-size: 16px;
+    font-weight: 900;
+    white-space: nowrap;
+    margin-bottom: 0;
+    box-shadow:
+            0 6px 0 rgba(0, 0, 0, 0.18),
+            inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+.character-badge::before {
+    content: "";
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--presence-color, #31e6a3);
+    box-shadow: 0 0 0 4px var(--presence-glow, rgba(49, 230, 163, 0.14));
+}
+
+.character-badge[data-presence="online"] {
+    --presence-color: #31e6a3;
+    --presence-glow: rgba(49, 230, 163, 0.14);
+}
+
+.character-badge[data-presence="away"] {
+    --presence-color: #ffb020;
+    --presence-glow: rgba(255, 176, 32, 0.18);
+}
+
+.character-badge[data-presence="busy"] {
+    --presence-color: #ff4d4f;
+    --presence-glow: rgba(255, 77, 79, 0.18);
+}
+
+.character-badge[data-presence="inactive"] {
+    --presence-color: #9a9a9a;
+    --presence-glow: rgba(154, 154, 154, 0.16);
+}
+
+.character-badge strong {
+    min-width: 56px;
+    padding: 6px 11px;
+    border: 2px solid rgba(255, 255, 255, 0.86);
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.08);
+    font-size: 15px;
+    text-align: center;
+}
+
+.character-badge.is-level-up {
+    animation: level-badge-pop 1.1s ease-out both;
+}
+
+.character-badge.is-level-up strong {
+    animation: level-chip-glow 1.1s ease-out both;
+}
+
+.home-character-stage {
+    position: relative;
+    grid-row: 1;
+    display: grid;
+    place-items: center;
+    width: min(520px, calc(100vw - 64px));
+    min-height: clamp(210px, 25vw, 280px);
+    animation: home-character-float 2.4s ease-in-out infinite;
+}
+
+/* 캐릭터 클릭 영역과 반응 모션 */
+.home-character-button {
+    display: grid;
+    place-items: center;
+    width: clamp(170px, 17vw, 250px);
+    aspect-ratio: 1;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.home-character-button:focus-visible {
+    border-radius: 24px;
+    outline: 4px solid rgba(255, 255, 255, 0.92);
+    outline-offset: 8px;
+}
+
+.home-character {
+    width: 100%;
+    height: auto;
+    image-rendering: pixelated;
+    transition:
+            transform 0.18s ease,
+            filter 0.18s ease;
+}
+
+.home-character-button:hover .home-character,
+.home-character-button:focus-visible .home-character {
+    transform: translateY(-4px) rotate(-2deg) scale(1.04);
+    filter: drop-shadow(0 12px 0 rgba(0, 0, 0, 0.12));
+}
+
+.home-character-button.is-reacting {
+    animation: character-play-hop 0.72s ease-out;
+}
+
+.home-character-stage.is-studying {
+    animation-duration: 1.7s;
+}
+
+.home-character-stage.is-studying .home-character {
+    filter: drop-shadow(0 0 12px rgba(255, 255, 255, 0.32));
+}
+
+.home-character.is-level-up {
+    animation: level-character-hop 0.7s ease-out;
+}
+
+.character-speech-bubble {
+    position: absolute;
+    z-index: 2;
+    left: calc(50% + clamp(58px, 7vw, 92px));
+    top: 4px;
+    width: max-content;
+    max-width: min(240px, 34vw);
+    margin: 0;
+    padding: 13px 17px;
+    border: 3px solid var(--ink);
+    border-radius: 16px;
+    background: var(--white);
+    color: var(--ink);
+    font-family: var(--game-font);
+    font-size: 15px;
+    font-weight: 900;
+    line-height: 1.35;
+    text-align: center;
+    box-shadow: 6px 6px 0 rgba(0, 0, 0, 0.2);
+    transform-origin: 20% 100%;
+}
+
+.character-speech-bubble::after {
+    content: "";
+    position: absolute;
+    left: 24px;
+    bottom: -11px;
+    width: 18px;
+    height: 18px;
+    border-right: 3px solid var(--ink);
+    border-bottom: 3px solid var(--ink);
+    background: inherit;
+    transform: rotate(45deg);
+}
+
+.character-speech-bubble.is-changing {
+    animation: character-bubble-pop 0.34s ease-out;
+}
+
+/* 경험치 바 */
+.xp-area {
+    grid-row: 3;
+    width: min(520px, calc(100vw - 64px));
+    margin-top: clamp(12px, 1.8vh, 22px);
+}
+
+.xp-bar {
+    height: 13px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: #333333;
+}
+
+.xp-bar span {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: var(--white);
+}
+
+.xp-labels {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 8px;
+    color: var(--white);
+    font-family: var(--game-font);
+    font-size: 16px;
+    font-weight: 900;
+}
+
+.attendance-button {
+    min-width: 210px;
+    min-height: 62px;
+    font-size: 24px;
+}
+
+.attendance-button.is-checked-in {
+    background: #111111;
+    color: var(--white);
+}
+
+.attendance-button.is-complete,
+.attendance-button.is-complete:hover {
+    border: 2px solid var(--ink);
+    background: var(--white);
+    color: #126b45;
+    cursor: default;
+    box-shadow: 0 4px 0 rgba(0, 0, 0, 0.16);
+    transform: none;
+    opacity: 1;
+}
+
+@media (min-width: 1100px) and (min-height: 940px) {
+    .home-hero {
+        padding-top: clamp(30px, 3.4vh, 44px);
+    }
+
+    .home-hero h1 {
+        font-size: 56px;
+    }
+
+    .timer-panel {
+        margin-top: clamp(18px, 3vh, 36px);
+    }
+
+    .timer-actions button {
+        min-height: 58px;
+        padding: 0 34px;
+        font-size: 19px;
+    }
+
+    .attendance-button {
+        min-width: 238px;
+        min-height: 70px;
+        font-size: 27px;
+    }
+
+    .companion-panel {
+        margin-top: clamp(48px, 6vh, 76px);
+    }
+
+    .home-character-stage {
+        min-height: clamp(260px, 25vh, 320px);
+    }
+
+    .home-character-button {
+        width: clamp(210px, 17.5vw, 280px);
+    }
+
+    .xp-area {
+        margin-top: clamp(18px, 2.4vh, 30px);
+    }
+}
+
+@media (min-width: 901px) and (max-height: 900px) {
+    .home-hero {
+        min-height: max(100svh, 780px);
+        gap: 12px;
+        padding: 18px 32px 24px;
+    }
+
+    .home-hero h1 {
+        font-size: 46px;
+    }
+
+    .home-menu {
+        width: min(1080px, 100%);
+        grid-template-columns: repeat(8, minmax(70px, 1fr));
+        gap: 10px;
+        padding: 12px 18px;
+    }
+
+    .home-menu a {
+        min-height: 58px;
+        padding: 9px 8px;
+        font-size: 13px;
+    }
+
+    .home-menu span {
+        font-size: 16px;
+    }
+
+    .timer-panel {
+        gap: 12px;
+        margin-top: 10px;
+    }
+
+    .timer-display {
+        font-size: clamp(64px, 6.6vw, 92px);
+    }
+
+    .timer-actions button {
+        min-height: 50px;
+        padding: 0 28px;
+        font-size: 17px;
+    }
+
+    .attendance-button {
+        min-width: 210px;
+        min-height: 58px;
+        font-size: 23px;
+    }
+
+    .companion-panel {
+        gap: 8px;
+        margin-top: 14px;
+    }
+
+    .home-character-stage {
+        min-height: 220px;
+    }
+
+    .home-character-button {
+        width: clamp(165px, 13vw, 205px);
+    }
+
+    .xp-area {
+        width: min(460px, calc(100vw - 64px));
+    }
+
+    .xp-bar {
+        height: 11px;
+    }
+}
+
+@media (min-width: 901px) and (max-height: 680px) {
+    .home-hero {
+        gap: 8px;
+        padding: 14px 28px 20px;
+    }
+
+    .home-hero h1 {
+        font-size: 40px;
+    }
+
+    .home-menu {
+        width: min(1020px, 100%);
+        grid-template-columns: repeat(8, minmax(64px, 1fr));
+        gap: 8px;
+        padding: 10px 16px;
+    }
+
+    .home-menu a {
+        min-height: 52px;
+        padding: 8px 6px;
+        font-size: 12px;
+    }
+
+    .timer-panel {
+        gap: 10px;
+        margin-top: 6px;
+    }
+
+    .timer-display {
+        font-size: clamp(58px, 6vw, 78px);
+    }
+
+    .timer-actions button {
+        min-height: 46px;
+        padding: 0 24px;
+        font-size: 16px;
+    }
+
+    .attendance-button {
+        min-width: 196px;
+        min-height: 54px;
+        font-size: 22px;
+    }
+
+    .companion-panel {
+        gap: 6px;
+        margin-top: 8px;
+    }
+
+    .character-badge {
+        min-height: 36px;
+        padding: 5px 7px 5px 12px;
+        border-width: 2px;
+        border-radius: 13px;
+        font-size: 13px;
+    }
+
+    .character-badge::before {
+        width: 7px;
+        height: 7px;
+        box-shadow: 0 0 0 3px rgba(49, 230, 163, 0.14);
+    }
+
+    .character-badge strong {
+        min-width: 48px;
+        padding: 4px 8px;
+        border-width: 1px;
+        border-radius: 8px;
+        font-size: 12px;
+    }
+
+    .home-character-button {
+        width: clamp(145px, 12vw, 178px);
+    }
+
+    .home-character-stage {
+        min-height: 176px;
+    }
+
+    .xp-area {
+        width: min(430px, calc(100vw - 64px));
+        margin-top: 4px;
+    }
+
+    .xp-labels {
+        margin-top: 6px;
+        font-size: 14px;
+    }
+}
+
+.brightness-control span {
+    display: none;
+}
+
+/* 출석 상세 영역 */
+.attendance-detail {
+    min-height: auto;
+    display: block;
+    overflow-x: hidden;
+    padding: 56px 56px 64px;
+    border-top: 2px solid rgba(0, 0, 0, 0.16);
+    background:
+            linear-gradient(180deg, rgba(0, 0, 0, 0.08), rgba(0, 0, 0, 0) 120px),
+            linear-gradient(135deg, #1dbf72, #16ad66);
+}
+
+.attendance-layout {
+    width: 100%;
+    max-width: 1120px;
+    min-width: 0;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 320px;
+    gap: 20px;
+}
+
+.attendance-summary,
+.calendar-card,
+.streak-card {
+    min-width: 0;
+    max-width: 100%;
+    border: 2px solid var(--line);
+    border-radius: 24px;
+    background: rgba(238, 255, 246, 0.82);
+    color: var(--ink);
+}
+
+/* 오늘 출석 요약 */
+.attendance-summary {
+    padding: 26px;
+}
+
+.attendance-summary h2,
+.calendar-card h2,
+.streak-card h2 {
+    margin: 0;
+    color: var(--ink);
+    font-size: clamp(28px, 3vw, 42px);
+    font-weight: 900;
+    letter-spacing: 0;
+}
+
+.attendance-summary dl {
+    margin: 22px 0 22px;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.attendance-summary div {
+    min-height: 76px;
+    padding: 14px 16px;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.72);
+}
+
+.attendance-summary dt {
+    margin-bottom: 6px;
+    color: rgba(0, 0, 0, 0.66);
+    font-size: 13px;
+    font-weight: 900;
+}
+
+.attendance-summary dd {
+    margin: 0;
+    color: var(--ink);
+    font-size: 22px;
+    font-weight: 900;
+}
+
+/* 월별 출석 달력 */
+.calendar-card {
+    margin-top: 20px;
+    padding: 24px 26px 28px;
+}
+
+.calendar-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+    margin-bottom: 26px;
+}
+
+.calendar-header span {
+    color: rgba(0, 0, 0, 0.66);
+    font-size: 14px;
+    font-weight: 900;
+}
+
+.calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 10px;
+}
+
+.calendar-grid span {
+    min-height: 38px;
+    display: grid;
+    place-items: center;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.72);
+    color: var(--ink);
+    font-size: 13px;
+    font-weight: 900;
+}
+
+.calendar-weekday.is-weekend {
+    background: rgba(9, 9, 9, 0.12);
+    color: #0f6f49;
+}
+
+.calendar-day {
+    min-height: 38px;
+    display: grid;
+    place-items: center;
+    border: 0;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.82);
+    color: var(--ink);
+    font-size: 13px;
+    font-weight: 900;
+}
+
+.calendar-day.is-weekend {
+    background: rgba(17, 184, 112, 0.22);
+    color: #0d6b46;
+}
+
+.calendar-day.is-today {
+    background: var(--ink);
+    color: var(--white);
+}
+
+.calendar-day.is-present {
+    outline: 4px solid rgba(255, 255, 255, 0.85);
+}
+
+/* 연속 출석 */
+.streak-card {
+    grid-column: 2;
+    grid-row: 1;
+    padding: 24px;
+    align-self: start;
+}
+
+.streak-header {
+    display: flex;
+    align-items: start;
+    justify-content: space-between;
+    gap: 14px;
+    margin-bottom: 10px;
+}
+
+.streak-card h2 {
+    margin: 0;
+    font-size: 28px;
+    text-align: left;
+}
+
+.streak-header > strong {
+    min-width: 58px;
+    min-height: 40px;
+    display: inline-grid;
+    place-items: center;
+    border-radius: 999px;
+    background: var(--ink);
+    color: var(--white);
+    font-size: 18px;
+    font-weight: 900;
+}
+
+.streak-card > p {
+    margin: 0 0 18px;
+    color: rgba(0, 0, 0, 0.62);
+    font-size: 13px;
+    font-weight: 900;
+    line-height: 1.45;
+}
+
+.streak-card ol {
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 8px;
+    list-style: none;
+}
+
+.streak-card ol::before {
+    display: none;
+}
+
+.streak-card li {
+    display: grid;
+    justify-items: center;
+    gap: 7px;
+    color: rgba(0, 0, 0, 0.68);
+    font-size: 11px;
+    font-weight: 900;
+    text-align: center;
+}
+
+.streak-card li span {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.82);
+    border: 2px solid rgba(0, 0, 0, 0.16);
+}
+
+.streak-card li.is-active span {
+    background: var(--white);
+    box-shadow: inset 0 0 0 5px var(--ink);
+}
+
+.streak-card li.is-active strong {
+    color: var(--ink);
+}
+
+@keyframes home-character-float {
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-10px);
+    }
+}
+
+@keyframes character-play-hop {
+    0%,
+    100% {
+        transform: translateY(0) rotate(0);
+    }
+
+    28% {
+        transform: translateY(-24px) rotate(-5deg);
+    }
+
+    55% {
+        transform: translateY(3px) rotate(4deg);
+    }
+
+    76% {
+        transform: translateY(-7px) rotate(-2deg);
+    }
+}
+
+@keyframes character-bubble-pop {
+    0% {
+        opacity: 0;
+        transform: translateY(8px) scale(0.86);
+    }
+
+    100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+@keyframes level-badge-pop {
+    0% {
+        transform: translateY(0) scale(1);
+        box-shadow:
+                0 6px 0 rgba(0, 0, 0, 0.18),
+                inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+    }
+
+    30% {
+        transform: translateY(-6px) scale(1.08);
+        box-shadow:
+                0 8px 0 rgba(0, 0, 0, 0.18),
+                0 0 0 7px rgba(255, 255, 255, 0.18),
+                0 0 0 14px rgba(49, 230, 163, 0.16),
+                inset 0 0 0 1px rgba(255, 255, 255, 0.18);
+    }
+
+    100% {
+        transform: translateY(0) scale(1);
+        box-shadow:
+                0 6px 0 rgba(0, 0, 0, 0.18),
+                inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+    }
+}
+
+@keyframes level-chip-glow {
+    0%,
+    100% {
+        background: rgba(255, 255, 255, 0.08);
+    }
+
+    35% {
+        background: rgba(49, 230, 163, 0.36);
+    }
+}
+
+@keyframes level-character-hop {
+    0% {
+        transform: translateY(0) scale(1);
+    }
+
+    35% {
+        transform: translateY(-18px) scale(1.08);
+    }
+
+    65% {
+        transform: translateY(3px) scale(0.98);
+    }
+
+    100% {
+        transform: translateY(0) scale(1);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .home-character-stage,
+    .home-character-button,
+    .home-character,
+    .character-speech-bubble,
+    .character-badge,
+    .character-badge strong {
+        animation: none !important;
+        transition: none !important;
+    }
+}
+
+@media (max-width: 900px) {
+    .home-hero {
+        gap: 22px;
+        padding: 32px 20px;
+    }
+
+    .home-menu {
+        grid-template-columns: repeat(8, minmax(68px, 1fr));
+        max-width: 100%;
+        padding: 14px;
+        gap: 10px;
+    }
+
+    .home-menu a {
+        min-height: 68px;
+        font-size: 12px;
+    }
+
+    .attendance-detail {
+        padding: 48px 22px;
+    }
+
+    .attendance-layout {
+        grid-template-columns: 1fr;
+        gap: 28px;
+    }
+
+    .streak-card {
+        grid-column: auto;
+        grid-row: auto;
+    }
+
+    .streak-card ol {
+        grid-template-columns: repeat(7, minmax(0, 1fr));
+        gap: 8px;
+    }
+
+    .streak-card ol::before {
+        display: none;
+    }
+
+    .streak-card li span {
+        width: 28px;
+        height: 28px;
+    }
+
+    .home-overlay {
+        padding: 28px 22px;
+    }
+
+    .overlay-tabs {
+        width: 100%;
+        margin: 0 0 20px;
+    }
+
+    .overlay-tabs button {
+        flex: 1 1 auto;
+    }
+
+    .overlay-community-toolbar {
+        grid-template-columns: 1fr 48px;
+    }
+
+    .overlay-community-tabs,
+    .overlay-community-search {
+        grid-column: 1 / -1;
+    }
+
+    .overlay-community-write {
+        grid-column: 2;
+        justify-self: end;
+    }
+
+    .overlay-community-notice,
+    .overlay-community-list li {
+        grid-template-columns: 1fr;
+    }
+
+    .overlay-community-list footer {
+        justify-content: flex-start;
+        flex-wrap: wrap;
+    }
+
+    .overlay-card-grid,
+    .overlay-stat-grid,
+    .overlay-community,
+    .overlay-space-lab {
+        grid-template-columns: 1fr;
+    }
+
+    .overlay-space-lab aside {
+        grid-template-columns: repeat(3, 1fr);
+    }
+
+    .overlay-room-list article {
+        grid-template-columns: 52px minmax(0, 1fr);
+    }
+
+    .overlay-room-list article button {
+        justify-self: start;
+    }
+}
+
+@media (max-width: 560px) {
+    .home-hero h1 {
+        font-size: 36px;
+    }
+
+    .home-menu {
+        grid-template-columns: repeat(8, minmax(62px, 1fr));
+    }
+
+    .timer-display {
+        font-size: 54px;
+    }
+
+    .timer-actions button {
+        min-height: 48px;
+        padding: 0 20px;
+        font-size: 15px;
+    }
+
+    .attendance-button {
+        min-height: 58px;
+        font-size: 20px;
+    }
+
+    .home-character-stage {
+        width: calc(100vw - 40px);
+        min-height: 220px;
+    }
+
+    .character-speech-bubble {
+        top: 0;
+        right: 0;
+        left: auto;
+        max-width: 180px;
+        padding: 11px 14px;
+        font-size: 13px;
+    }
+
+    .attendance-summary,
+    .calendar-card {
+        padding: 28px 22px;
+        border-radius: 24px;
+    }
+
+    .attendance-summary dl {
+        grid-template-columns: 1fr;
+    }
+
+    .calendar-grid {
+        gap: 7px;
+    }
+
+    .calendar-grid span,
+    .calendar-day {
+        min-height: 40px;
+        font-size: 12px;
+    }
+
+    .home-overlay-backdrop {
+        padding: 18px 14px;
+    }
+
+    .home-overlay {
+        max-height: calc(100vh - 36px);
+        padding: 24px 18px;
+        border-radius: 18px;
+    }
+
+    .home-overlay h2 {
+        font-size: 38px;
+    }
+
+    .home-overlay-close {
+        top: 14px;
+        right: 14px;
+    }
+
+    .overlay-quest header,
+    .overlay-quest-foot,
+    .overlay-settings-list label,
+    .overlay-settings-list > button {
+        grid-template-columns: 1fr;
+    }
+
+    .overlay-space-lab aside {
+        gap: 8px;
+    }
+
+    .overlay-space-lab aside article {
+        min-height: 68px;
+        font-size: 12px;
+    }
+
+    .overlay-room-list article {
+        gap: 10px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .home-character {
+        animation: none;
+    }
+}

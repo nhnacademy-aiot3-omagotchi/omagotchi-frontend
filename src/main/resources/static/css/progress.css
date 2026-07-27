@@ -1,0 +1,264 @@
+/* 진행 화면 크기 */
+.progress-shell {
+    width: min(1120px, 100%);
+}
+
+.progress-panel {
+    overflow: hidden;
+    background: #d6f7e5;
+    border-color: rgba(8, 8, 8, 0.48);
+    box-shadow: 0 26px 60px rgba(0, 0, 0, 0.18);
+}
+
+.progress-panel .panel-header {
+    align-items: center;
+}
+
+.progress-panel .panel-header h2 {
+    color: var(--ink);
+}
+
+/* 진행 메뉴 탭 */
+.progress-tabs {
+    background: rgba(11, 136, 82, 0.18);
+}
+
+.progress-tabs button {
+    color: var(--ink);
+}
+
+.progress-tabs button.is-active {
+    background: var(--paper);
+    color: var(--ink);
+}
+
+/* 퀘스트 구간 제목 */
+.progress-section-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 20px 28px 0;
+    color: var(--ink);
+    font-weight: 900;
+    letter-spacing: 0;
+}
+
+.progress-section-label strong {
+    font-size: 16px;
+}
+
+.progress-section-label span {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #18bd87;
+}
+
+.progress-section-label em {
+    margin-left: auto;
+    color: rgba(0, 0, 0, 0.56);
+    font-size: 12px;
+    font-style: normal;
+}
+
+.progress-view {
+    min-height: 440px;
+}
+
+.progress-view[hidden] {
+    display: none;
+}
+
+/* 퀘스트 카드 */
+.quest-item {
+    position: relative;
+    grid-template-columns: minmax(0, 1fr) auto;
+    background: rgba(255, 255, 255, 0.78);
+    border: 1px solid rgba(8, 8, 8, 0.14);
+    color: var(--ink);
+}
+
+.quest-item.is-claimed {
+    opacity: 0.48;
+}
+
+.progress-panel .task-item h3,
+.progress-panel .stat-card h3 {
+    color: var(--ink);
+}
+
+.progress-panel .task-item p,
+.progress-panel .stat-card p {
+    color: rgba(0, 0, 0, 0.62);
+}
+
+.progress-panel .stat-card {
+    background: rgba(255, 255, 255, 0.78);
+    color: var(--ink);
+}
+
+.progress-panel .stat-card strong {
+    color: var(--ink);
+}
+
+.quest-item.is-claimed .claim-button {
+    display: none;
+}
+
+.quest-item.is-claimed .claimed-label {
+    display: block;
+}
+
+/* 퀘스트 진행률 */
+.quest-progress {
+    color: rgba(0, 0, 0, 0.66);
+    font-size: 14px;
+    font-weight: 900;
+    text-align: right;
+}
+
+/* 보상 수령 버튼 */
+.claim-button {
+    grid-column: 1 / -1;
+    min-height: 44px;
+    border: 0;
+    border-radius: 10px;
+    background: #18bd87;
+    color: var(--paper);
+    font-size: 15px;
+    font-weight: 900;
+    cursor: pointer;
+}
+
+.claimed-label {
+    display: none;
+    grid-column: 1 / -1;
+    margin: 0;
+    color: #0f9d63;
+    font-size: 14px;
+    font-weight: 900;
+}
+
+/* 업적 목록 */
+.achievement-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+    padding: 28px;
+}
+
+.achievement-grid article,
+.timeline-list article,
+.leader-list li {
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.78);
+    color: var(--ink);
+}
+
+.achievement-grid article {
+    min-height: 180px;
+    padding: 22px;
+}
+
+.achievement-grid span {
+    display: inline-flex;
+    min-height: 24px;
+    align-items: center;
+    padding: 0 8px;
+    border: 1px solid rgba(8, 8, 8, 0.16);
+    border-radius: 7px;
+    color: rgba(0, 0, 0, 0.62);
+    font-size: 11px;
+    font-weight: 900;
+}
+
+.achievement-grid strong {
+    display: block;
+    margin-top: 26px;
+    font-size: 19px;
+}
+
+.achievement-grid p,
+.timeline-list p {
+    margin: 10px 0 0;
+    color: rgba(0, 0, 0, 0.62);
+    font-size: 14px;
+    font-weight: 900;
+}
+
+.leader-list,
+.timeline-list {
+    display: grid;
+    gap: 12px;
+    margin: 0;
+    padding: 28px;
+}
+
+/* 랭킹 목록 */
+.leader-list {
+    list-style: none;
+}
+
+.leader-list li {
+    display: grid;
+    grid-template-columns: 58px 1fr auto;
+    align-items: center;
+    min-height: 76px;
+    padding: 0 22px;
+}
+
+.leader-list strong {
+    width: 36px;
+    height: 36px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background: rgba(24, 189, 135, 0.22);
+}
+
+.leader-list span,
+.leader-list em,
+.timeline-list strong {
+    font-size: 16px;
+    font-style: normal;
+    font-weight: 900;
+}
+
+/* 학습 타임라인 */
+.timeline-list article {
+    min-height: 86px;
+    padding: 20px 22px;
+}
+
+@media (max-width: 760px) {
+    .progress-panel .panel-header {
+        align-items: stretch;
+    }
+
+    .progress-tabs {
+        overflow-x: auto;
+        justify-content: flex-start;
+    }
+
+    .progress-tabs button {
+        white-space: nowrap;
+    }
+
+    .progress-section-label {
+        padding: 18px 20px 0;
+    }
+
+    .progress-section-label em {
+        display: none;
+    }
+
+    .achievement-grid {
+        grid-template-columns: 1fr;
+        padding: 20px;
+    }
+
+    .leader-list,
+    .timeline-list {
+        padding: 20px;
+    }
+}
