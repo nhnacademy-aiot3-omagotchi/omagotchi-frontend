@@ -54,6 +54,27 @@ a {
     color: var(--white);
 }
 
+.space-shell.space-shell-v2 {
+    width: min(1160px, 100%);
+    min-height: 700px;
+    grid-template-rows: auto 1fr;
+    background: rgba(255, 255, 255, 0.96);
+    color: #10271d;
+}
+
+.space-shell.space-shell-v2 .space-header h1 {
+    color: #10271d;
+}
+
+.space-shell.space-shell-v2 .space-header p {
+    color: #557064;
+}
+
+.space-shell.space-shell-v2 .space-header a {
+    background: #10271d;
+    color: #ffffff;
+}
+
 /* 공간 제목과 홈 이동 */
 .space-header {
     display: flex;

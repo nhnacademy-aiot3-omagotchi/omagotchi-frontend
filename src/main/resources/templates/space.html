@@ -5,126 +5,31 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Omagotchi Space</title>
     <link rel="icon" type="image/png" sizes="48x48" href="/favicon.png" />
-    <link rel="stylesheet" href="/css/space.css" />
     <link rel="stylesheet" href="/css/gameFont.css" />
+    <link rel="stylesheet" href="/css/space.css" />
+    <link rel="stylesheet" href="/css/spaceRoom.css" />
 </head>
 <body>
 <main class="space-page">
-    <section class="space-shell" aria-labelledby="space-title">
+    <section class="space-shell space-shell-v2" aria-labelledby="space-title">
         <header class="space-header">
             <div>
-                <h1 id="space-title">Space</h1>
-                <p data-space-caption>현재 학습 공간과 사용할 수 있는 공간을 확인합니다.</p>
+                <h1 id="space-title">공간</h1>
+                <p>담당 실습실과 사용할 수 있는 회의실·도서관을 확인합니다.</p>
             </div>
             <a href="/home">홈으로</a>
         </header>
-
-        <nav class="space-tabs" aria-label="공간 탭">
-            <button class="is-active" type="button" data-space-tab="lab">실습실</button>
-            <button type="button" data-space-tab="meeting">회의실</button>
-            <button type="button" data-space-tab="library">도서관</button>
-        </nav>
-
-        <section class="space-view is-active" data-space-view="lab" aria-label="실습실">
-            <aside class="sensor-stack" aria-label="실습실 센서">
-                <article>
-                    <strong>CO₂</strong>
-                    <span>410ppm</span>
-                </article>
-                <article>
-                    <strong>온도</strong>
-                    <span>24℃</span>
-                </article>
-                <article>
-                    <strong>습도</strong>
-                    <span>42%</span>
-                </article>
-            </aside>
-
-            <section class="lab-status-card">
-                <div class="lab-capacity">
-                    <span>참여 인원</span>
-                    <strong>0 / 50</strong>
-                </div>
-                <div class="space-bubble" data-space-bubble>오늘도 집중!</div>
+        <div class="space-room-app" data-space-room-app></div>
+        <noscript>
+            <section>
+                <h2>회의실 A</h2>
+                <p>공간 현황을 확인하려면 브라우저에서 JavaScript를 활성화해 주세요.</p>
             </section>
-        </section>
-
-        <section class="space-view" data-space-view="meeting" aria-label="회의실" hidden>
-            <div class="room-list">
-                <article class="room-card is-available">
-                    <div class="room-number">1</div>
-                    <div>
-                        <h2>회의실 A</h2>
-                        <p>사용 가능 · 4인실</p>
-                    </div>
-                    <button type="button" data-room-action="use">사용하기</button>
-                </article>
-                <article class="room-card is-occupied">
-                    <div class="room-number">2</div>
-                    <div>
-                        <h2>회의실 B</h2>
-                        <p>사용 중 · 2 / 4</p>
-                        <span>남은 시간 11:03</span>
-                    </div>
-                    <div class="room-actions">
-                        <button type="button" data-room-action="join">참여하기</button>
-                        <button type="button" data-room-action="alert">알림</button>
-                    </div>
-                </article>
-                <article class="room-card is-mine">
-                    <div class="room-number">3</div>
-                    <div>
-                        <span class="my-room-badge">사용 중</span>
-                        <h2>회의실 C</h2>
-                        <p>내가 사용 중 · 남은 시간 24:10</p>
-                    </div>
-                    <div class="room-actions">
-                        <button type="button" data-room-action="extend">연장</button>
-                        <button type="button" data-room-action="release">반납</button>
-                    </div>
-                </article>
-            </div>
-        </section>
-
-        <section class="space-view" data-space-view="library" aria-label="도서관" hidden>
-            <div class="room-list">
-                <article class="room-card is-available">
-                    <div class="room-number">1</div>
-                    <div>
-                        <h2>도서관 A구역</h2>
-                        <p>사용 가능 · 12 / 20 좌석</p>
-                    </div>
-                    <button type="button" data-room-action="enter">입장</button>
-                </article>
-                <article class="room-card is-occupied">
-                    <div class="room-number">2</div>
-                    <div>
-                        <h2>도서관 B구역</h2>
-                        <p>사용 중</p>
-                    </div>
-                    <button type="button" data-room-action="leave">퇴장</button>
-                </article>
-                <article class="room-card is-full">
-                    <div class="room-number">3</div>
-                    <div>
-                        <h2>도서관 C구역</h2>
-                        <p>만석 · 20 / 20 좌석</p>
-                    </div>
-                    <button type="button" data-room-action="alert">알림</button>
-                </article>
-            </div>
-        </section>
-
-        <footer class="space-footer" aria-label="페이지 이동">
-            <button type="button" data-space-prev>←</button>
-            <span data-space-page>page 1 / 3</span>
-            <button type="button" data-space-next>→</button>
-        </footer>
+        </noscript>
     </section>
 </main>
 
-<script src="/js/characterAssets.js"></script>
+<script src="/js/spaceRoom.js"></script>
 <script src="/js/space.js"></script>
 </body>
 </html>

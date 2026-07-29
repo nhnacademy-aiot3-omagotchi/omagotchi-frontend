@@ -11,7 +11,7 @@ public class LoginPageController {
         return "login";
     }
     // 비밀번호 변경
-    @GetMapping("/passwordChange")
+    @GetMapping("/password-change")
     public String passwordChangePage() {
         return "passwordChange";
     }

@@ -98,7 +98,7 @@ form.addEventListener("submit", (event) => {
     sessionStorage.removeItem("omagotchiManagerCohort");
     showMessage(managerRegisterMessages.success);
     setTimeout(() => {
-        window.location.href = "/managerLogin";
+        window.location.href = "/manager-login";
     }, 800);
 });
 

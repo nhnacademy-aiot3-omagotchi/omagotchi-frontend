@@ -6,7 +6,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 @Controller
 public class CharacterSelectorController {
     // 캐릭터 선택 화면
-    @GetMapping("/characterSelector")
+    @GetMapping("/character-selector")
     public String characterSelector() {
         return "characterSelector";
     }

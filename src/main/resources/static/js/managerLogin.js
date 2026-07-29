@@ -65,6 +65,6 @@ form.addEventListener("submit", (event) => {
     showManagerMessage(managerMessages.success);
 
     window.setTimeout(() => {
-        window.location.href = "/managerDashboard";
+        window.location.href = "/manager-dashboard";
     }, 450);
 });

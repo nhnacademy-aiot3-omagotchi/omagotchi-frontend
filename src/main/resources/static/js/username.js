@@ -42,5 +42,5 @@ usernameForm.addEventListener("submit", (event) => {
         localStorage.setItem(`omagotchiPassword:${email}`, password);
     }
 
-    window.location.href = "/characterSelector";
+    window.location.href = "/character-selector";
 });

@@ -1,3 +1,10 @@
+import { createAttendance } from "./home/attendance.js";
+import { createCharacter } from "./home/character.js";
+import { createLevel } from "./home/level.js";
+import { createPresence } from "./home/presence.js";
+import { createTimer } from "./home/timer.js";
+import { escapeHtml, formatDuration } from "./home/utils.js";
+
 // 홈 화면에서 갱신하는 주요 UI 요소
 const timerDisplay = document.querySelector("[data-timer-display]");
 const timerToggle = document.querySelector("[data-timer-toggle]");
@@ -21,6 +28,15 @@ const calendarPeriod = document.querySelector("[data-calendar-period]");
 const streakCount = document.querySelector("[data-streak-count]");
 const streakList = document.querySelector("[data-streak-list]");
 const homeOverlayRoot = document.querySelector("[data-home-overlay-root]");
+const presenceHud = document.querySelector("[data-presence-hud]");
+const presenceTrigger = document.querySelector("[data-presence-trigger]");
+const presencePanel = document.querySelector("[data-presence-panel]");
+const presenceCount = document.querySelector("[data-presence-count]");
+const presenceCapacity = document.querySelector("[data-presence-capacity]");
+const presenceSearch = document.querySelector("[data-presence-search]");
+const presenceList = document.querySelector("[data-presence-list]");
+const presenceRefresh = document.querySelector("[data-presence-refresh]");
+const presenceUpdated = document.querySelector("[data-presence-updated]");
 
 // 로그인 사용자와 캐릭터 선택 결과 복원
 const currentUserEmail = sessionStorage.getItem("omagotchiEmail")
@@ -57,7 +73,6 @@ if (selectedCharacterName !== storedCharacterName) {
 const attendanceKey = `omagotchiAttendance:${currentUserEmail}`;
 const xpKey = `omagotchiXp:${currentUserEmail}`;
 const brightnessKey = "omagotchiHomeBrightness";
-const xpPerLevel = 50;
 const sessionOnlyKeys = [
     "omagotchiEmail",
     "omagotchiCharacterId",
@@ -70,19 +85,10 @@ const sessionOnlyKeys = [
     "omagotchiCharacterColor"
 ];
 
-// 타이머, 레벨 효과, 커뮤니티 목록의 현재 화면 상태
-let timerStatus = "idle";
-let startedAt = 0;
-let elapsedBeforeStart = 0;
-let tickId = null;
-let characterBubbleTimer = null;
-let characterClickCount = 0;
-let characterClickResetTimer = null;
-let renderedLevel = null;
+// 오버레이 안에서 사용하는 목록 상태
 let communityFilter = "all";
 let communityKeyword = "";
 let communityPage = 1;
-let renderedAttendanceDateKey = getLocalDateKey();
 const communityPageSize = 3;
 
 // 관리자 화면에서 저장한 기수 정보를 사용자 기수 화면에 반영
@@ -166,363 +172,79 @@ const communityPosts = [
     }
 ];
 
-// 학습 타이머: 시작 시각과 누적 시간을 기준으로 실제 경과 시간 계산
-function formatDuration(totalSeconds) {
-    const hours = String(Math.floor(totalSeconds / 3600)).padStart(2, "0");
-    const minutes = String(Math.floor((totalSeconds % 3600) / 60)).padStart(2, "0");
-    const seconds = String(totalSeconds % 60).padStart(2, "0");
-
-    return `${hours}:${minutes}:${seconds}`;
-}
-
-function getElapsedSeconds() {
-    if (timerStatus !== "running") {
-        return elapsedBeforeStart;
-    }
-
-    return elapsedBeforeStart + Math.floor((Date.now() - startedAt) / 1000);
-}
-// document.title
-function renderTimer() {
-    const elapsed = getElapsedSeconds();
-    const formattedTime = formatDuration(elapsed);
-
-    timerDisplay.textContent = formattedTime;
-    timerDisplay.setAttribute("datetime", `PT${elapsed}S`);
-
-    document.title = `${formattedTime} - Omagotchi`;
-}
-
-// 캐릭터 반응: 타이머 상태와 클릭 동작에 맞춰 표정 대신 움직임과 대사를 변경
-function getCharacterIdleMessage() {
-    return timerStatus === "running"
-        ? "집중하고 있어요!"
-        : "오늘도 같이 공부해요!";
-}
-
-function showCharacterMessage(message, resetDelay = 2200) {
-    if (!characterBubble) {
-        return;
-    }
-
-    window.clearTimeout(characterBubbleTimer);
-    characterBubble.textContent = message;
-    characterBubble.classList.remove("is-changing");
-
-    window.requestAnimationFrame(() => {
-        characterBubble.classList.add("is-changing");
-    });
-
-    characterBubbleTimer = window.setTimeout(() => {
-        characterBubble.textContent = getCharacterIdleMessage();
-        characterBubble.classList.remove("is-changing");
-    }, resetDelay);
-}
-
-function setCharacterStudyState(isStudying) {
-    characterStage?.classList.toggle("is-studying", isStudying);
-}
-
-function startTimer() {
-    timerStatus = "running";
-    startedAt = Date.now();
-    timerToggle.textContent = "일시정지";
-    setCharacterStudyState(true);
-    showCharacterMessage("집중 모드 시작!");
-    tickId = window.setInterval(renderTimer, 1000);
-    renderTimer();
-}
-
-function pauseTimer() {
-    elapsedBeforeStart = getElapsedSeconds();
-    timerStatus = "idle";
-    timerToggle.textContent = "시작";
-    setCharacterStudyState(false);
-    showCharacterMessage("잠깐 쉬어도 괜찮아요.");
-    window.clearInterval(tickId);
-    renderTimer();
-}
-
-// 출결 상태: 사용자별 입실/퇴실 기록 저장 및 화면 갱신
-function formatTime(date) {
-    return new Intl.DateTimeFormat("ko-KR", {
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: false
-    }).format(date);
-}
-
-function getLocalDateKey(date = new Date()) {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const day = String(date.getDate()).padStart(2, "0");
-
-    return `${year}-${month}-${day}`;
-}
-
-function getAttendanceHistory() {
-    try {
-        const savedAttendance = JSON.parse(localStorage.getItem(attendanceKey)) || {};
-
-        // 기존 단일 출석 기록을 날짜별 저장 형식으로 한 번 변환합니다.
-        if (savedAttendance.checkInAt) {
-            const attendanceDate = getLocalDateKey(new Date(savedAttendance.checkInAt));
-            const migratedAttendance = {
-                [attendanceDate]: savedAttendance
-            };
-
-            localStorage.setItem(attendanceKey, JSON.stringify(migratedAttendance));
-            return migratedAttendance;
-        }
-
-        return savedAttendance;
-    } catch {
-        return {};
-    }
-}
-
-function saveTodayAttendance(attendance) {
-    const attendanceHistory = getAttendanceHistory();
-    attendanceHistory[getLocalDateKey()] = attendance;
-    localStorage.setItem(attendanceKey, JSON.stringify(attendanceHistory));
-}
-
-function renderAttendance() {
-    const attendanceHistory = getAttendanceHistory();
-    const attendance = attendanceHistory[getLocalDateKey()] || {};
-    const hasCheckIn = Boolean(attendance.checkInAt);
-    const hasCheckOut = hasCheckIn && Boolean(attendance.checkOutAt);
-
-    checkInTime.textContent = hasCheckIn
-        ? formatTime(new Date(attendance.checkInAt))
-        : "아직 입실 전";
-    checkOutTime.textContent = hasCheckOut
-        ? formatTime(new Date(attendance.checkOutAt))
-        : "아직 퇴실 전";
-    earlyLeave.textContent = hasCheckOut ? "0분" : "기록 없음";
-    lateMinutes.textContent = hasCheckIn ? "0분" : "기록 없음";
-
-    if (hasCheckIn && !hasCheckOut) {
-        attendanceButton.textContent = "퇴실하기";
-        attendanceButton.classList.add("is-checked-in");
-        attendanceButton.classList.remove("is-complete");
-        attendanceButton.disabled = false;
-    } else if (hasCheckIn && hasCheckOut) {
-        attendanceButton.textContent = "✓ 퇴실 완료";
-        attendanceButton.classList.remove("is-checked-in");
-        attendanceButton.classList.add("is-complete");
-        attendanceButton.disabled = true;
-    } else {
-        attendanceButton.textContent = "입실하기";
-        attendanceButton.classList.remove("is-checked-in");
-        attendanceButton.classList.remove("is-complete");
-        attendanceButton.disabled = false;
-    }
-
-    renderCalendar(attendanceHistory);
-    renderStreak(attendanceHistory);
-}
-
-function toggleAttendance() {
-    const attendanceHistory = getAttendanceHistory();
-    const todayKey = getLocalDateKey();
-    const attendance = attendanceHistory[todayKey] || {};
-
-    if (attendance.checkInAt && !attendance.checkOutAt) {
-        attendance.checkOutAt = new Date().toISOString();
-    } else if (!attendance.checkInAt) {
-        attendance.checkInAt = new Date().toISOString();
-        delete attendance.checkOutAt;
-    } else {
-        return;
-    }
-
-    saveTodayAttendance(attendance);
-    renderAttendance();
-}
-
-// 현재 월의 출석 달력을 날짜와 주말 정보에 맞춰 생성
-function renderCalendar(attendanceHistory) {
-    const today = new Date();
-    const currentYear = today.getFullYear();
-    const currentMonth = today.getMonth();
-    const currentMonthLabel = new Intl.DateTimeFormat("ko-KR", {
-        month: "long"
-    }).format(today);
-    const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
-    const firstDay = new Date(currentYear, currentMonth, 1).getDay();
-    const offset = firstDay === 0 ? 6 : firstDay - 1;
-    const fragment = document.createDocumentFragment();
-
-    if (calendarTitle) {
-        calendarTitle.textContent = `${currentMonthLabel} 출석 기록`;
-    }
-
-    if (calendarPeriod) {
-        calendarPeriod.textContent = `${currentYear}년 ${currentMonthLabel}`;
-    }
-
-    calendarGrid.setAttribute("aria-label", `${currentYear}년 ${currentMonthLabel} 출석 달력`);
-    calendarGrid.querySelectorAll(".calendar-day, .calendar-blank").forEach((node) => node.remove());
-
-    for (let index = 0; index < offset; index += 1) {
-        const blank = document.createElement("span");
-        blank.className = "calendar-blank";
-        blank.setAttribute("aria-hidden", "true");
-        fragment.append(blank);
-    }
-
-    for (let day = 1; day <= daysInMonth; day += 1) {
-        const dayOfWeek = new Date(currentYear, currentMonth, day).getDay();
-        const dayNode = document.createElement("span");
-        dayNode.className = "calendar-day";
-        dayNode.textContent = String(day);
-
-        if (dayOfWeek === 0 || dayOfWeek === 6) {
-            dayNode.classList.add("is-weekend");
-        }
-
-        if (day === today.getDate()) {
-            dayNode.classList.add("is-today");
-        }
-
-        const dateKey = getLocalDateKey(new Date(currentYear, currentMonth, day));
-        if (attendanceHistory[dateKey]?.checkInAt) {
-            dayNode.classList.add("is-present");
-            dayNode.setAttribute("aria-label", `${day}일 출석`);
-        }
-
-        fragment.append(dayNode);
-    }
-
-    calendarGrid.append(fragment);
-}
-
-// 오늘을 포함한 최근 출석 기록으로 연속 출석과 7일 현황을 계산
-function renderStreak(attendanceHistory) {
-    if (!streakCount || !streakList) {
-        return;
-    }
-
-    const hasAttendance = (date) => Boolean(
-        attendanceHistory[getLocalDateKey(date)]?.checkInAt
-    );
-    const streakCursor = new Date();
-    let currentStreak = 0;
-
-    // 오늘 입실 전에는 어제까지 이어진 출석을 유지합니다.
-    if (!hasAttendance(streakCursor)) {
-        streakCursor.setDate(streakCursor.getDate() - 1);
-    }
-
-    while (hasAttendance(streakCursor)) {
-        currentStreak += 1;
-        streakCursor.setDate(streakCursor.getDate() - 1);
-    }
-
-    streakCount.textContent = `${currentStreak}일`;
-    streakList.replaceChildren();
-
-    const recentDates = Array.from({ length: 7 }, (_, index) => {
-        const date = new Date();
-        date.setHours(12, 0, 0, 0);
-        date.setDate(date.getDate() - (6 - index));
-        return date;
-    });
-
-    recentDates.forEach((date, index) => {
-        const item = document.createElement("li");
-        const marker = document.createElement("span");
-        const label = document.createElement("strong");
-
-        if (hasAttendance(date)) {
-            item.classList.add("is-active");
-        }
-
-        label.textContent = index === recentDates.length - 1
-            ? "오늘"
-            : `${date.getMonth() + 1}/${date.getDate()}`;
-
-        item.append(marker, label);
-        streakList.append(item);
-    });
-}
-
-// 페이지를 계속 열어둔 상태에서 날짜가 바뀌면 오늘 출석을 다시 표시
-function refreshAttendanceDate() {
-    const currentDateKey = getLocalDateKey();
-
-    if (currentDateKey === renderedAttendanceDateKey) {
-        return;
-    }
-
-    renderedAttendanceDateKey = currentDateKey;
-    renderAttendance();
-}
-
-// 화면 설정과 캐릭터 경험치 상태 관리
 function setBrightness(value) {
     document.documentElement.style.setProperty("--home-brightness", `${value}%`);
     localStorage.setItem(brightnessKey, value);
 }
 
-function getStoredXp() {
-    const storedXp = Number(localStorage.getItem(xpKey));
-    return Number.isFinite(storedXp) && storedXp > 0 ? storedXp : 0;
-}
+const characterController = createCharacter({
+    image: homeCharacter,
+    stage: characterStage,
+    interaction: characterInteraction,
+    bubble: characterBubble,
+    nameElement: characterName,
+    selectedName: selectedCharacterName,
+    selectedImage: selectedCharacterImage,
+    animatedImage: selectedCharacterAnimatedImage
+});
 
-function playLevelUpEffect() {
-    const badge = characterLevel?.closest(".character-badge");
-
-    badge?.classList.remove("is-level-up");
-    homeCharacter?.classList.remove("is-level-up");
-
-    window.requestAnimationFrame(() => {
-        badge?.classList.add("is-level-up");
-        homeCharacter?.classList.add("is-level-up");
-    });
-
-    window.setTimeout(() => {
-        badge?.classList.remove("is-level-up");
-        homeCharacter?.classList.remove("is-level-up");
-    }, 1200);
-}
-
-function renderLevel(options = {}) {
-    const totalXp = getStoredXp();
-    const level = Math.floor(totalXp / xpPerLevel) + 1;
-    const xpInLevel = totalXp % xpPerLevel;
-    const progress = Math.min(100, Math.round((xpInLevel / xpPerLevel) * 100));
-    const shouldAnimate = options.animate && renderedLevel !== null && level > renderedLevel;
-
-    if (characterLevel) {
-        characterLevel.textContent = `Lv ${level}`;
+const timerController = createTimer({
+    display: timerDisplay,
+    toggle: timerToggle,
+    onStart: () => {
+        characterController.setStudyState(true);
+        characterController.showMessage("집중 모드 시작!");
+    },
+    onPause: () => {
+        characterController.setStudyState(false);
+        characterController.showMessage("잠깐 쉬어도 괜찮아요.");
     }
+});
 
-    if (xpFill) {
-        xpFill.style.width = `${progress}%`;
-    }
+const levelController = createLevel({
+    levelElement: characterLevel,
+    xpFill,
+    currentXpLabel,
+    nextLevelLabel,
+    characterImage: homeCharacter,
+    storageKey: xpKey
+});
 
-    if (currentXpLabel) {
-        currentXpLabel.textContent = `${xpInLevel}xp`;
-    }
+let presenceController;
+const attendanceController = createAttendance({
+    button: attendanceButton,
+    checkInTime,
+    checkOutTime,
+    earlyLeave,
+    lateMinutes,
+    calendarGrid,
+    calendarTitle,
+    calendarPeriod,
+    streakCount,
+    streakList,
+    storageKey: attendanceKey,
+    onChange: () => presenceController?.render()
+});
 
-    if (nextLevelLabel) {
-        nextLevelLabel.textContent = `다음 레벨까지 ${xpPerLevel - xpInLevel}xp`;
-    }
-
-    if (shouldAnimate) {
-        playLevelUpEffect();
-    }
-
-    renderedLevel = level;
-}
-
-function addXp(amount) {
-    const nextXp = getStoredXp() + amount;
-    localStorage.setItem(xpKey, String(nextXp));
-    renderLevel({ animate: true });
-}
+presenceController = createPresence({
+    hud: presenceHud,
+    trigger: presenceTrigger,
+    panel: presencePanel,
+    count: presenceCount,
+    capacity: presenceCapacity,
+    search: presenceSearch,
+    list: presenceList,
+    refreshButton: presenceRefresh,
+    updated: presenceUpdated,
+    currentUser: {
+        name: sessionStorage.getItem("omagotchiUsername")
+            || (currentUserEmail === "guest" ? "나" : currentUserEmail.split("@")[0]),
+        email: currentUserEmail === "guest" ? "student@omagotchi.site" : currentUserEmail
+    },
+    selectedCharacterImage,
+    getAttendanceHistory: attendanceController.getHistory,
+    isOverlayOpen: () => document.body.classList.contains("has-home-overlay")
+});
 
 // 홈 메뉴별 오버레이 제목과 본문 템플릿
 const overlayTitles = {
@@ -555,6 +277,10 @@ const overlayContent = {
             <article>
                 <h3>기수</h3>
                 <p>참여 중인 기수와 가입 가능한 기수를 확인합니다.</p>
+            </article>
+            <article>
+                <h3>재실 인원</h3>
+                <p>화면 오른쪽의 재실 HUD를 누르거나 U 키를 눌러 같은 기수의 실습실 상태를 확인합니다.</p>
             </article>
         </div>
     `,
@@ -626,7 +352,7 @@ const overlayContent = {
     `,
     personal: `
         <div class="overlay-stat-grid">
-            <article><h3>총 학습</h3><strong>${formatDuration(getElapsedSeconds())}</strong><p>현재 타이머 기준</p></article>
+            <article><h3>총 학습</h3><strong>${formatDuration(timerController.getElapsedSeconds())}</strong><p>현재 타이머 기준</p></article>
             <article><h3>세션</h3><strong>0회</strong><p>완료한 학습 세션</p></article>
             <article><h3>연속 출석</h3><strong>0일</strong><p>입실 기록 기준</p></article>
             <article><h3>캐릭터</h3><strong>${characterLevel?.textContent || "Lv 1"}</strong><p>${selectedCharacterName}</p></article>
@@ -650,40 +376,7 @@ const overlayContent = {
             <button type="button" data-close-home-overlay>임시 저장</button>
         </form>
     `,
-    space: `
-        <div class="overlay-tabs" aria-label="공간 탭">
-            <button class="is-active" type="button" data-overlay-tab="lab">실습실</button>
-            <button type="button" data-overlay-tab="meeting">회의실</button>
-            <button type="button" data-overlay-tab="library">도서관</button>
-        </div>
-        <section class="overlay-tab-panel is-active" data-overlay-panel="lab">
-            <div class="overlay-space-lab">
-                <aside>
-                    <article><strong>CO₂</strong><span>410ppm</span></article>
-                    <article><strong>온도</strong><span>24℃</span></article>
-                    <article><strong>습도</strong><span>42%</span></article>
-                </aside>
-                <div class="overlay-space-stage">
-                    <span class="overlay-space-capacity">참여 인원 0 / 50</span>
-                    <div class="overlay-space-bubble">오늘도 집중!</div>
-                </div>
-            </div>
-        </section>
-        <section class="overlay-tab-panel" data-overlay-panel="meeting" hidden>
-            <div class="overlay-room-list">
-                <article><strong>1</strong><div><h3>회의실 A</h3><p>사용 가능 · 4인실</p></div><button type="button">사용하기</button></article>
-                <article><strong>2</strong><div><h3>회의실 B</h3><p>사용 중 · 2 / 4<br>남은 시간 11:03</p></div><button type="button">참여하기</button><button type="button">알림</button></article>
-                <article class="is-mine"><strong>3</strong><div><span>사용 중</span><h3>회의실 C</h3><p>내가 사용 중 · 남은 시간 24:10</p></div><button type="button">연장</button><button type="button">반납</button></article>
-            </div>
-        </section>
-        <section class="overlay-tab-panel" data-overlay-panel="library" hidden>
-            <div class="overlay-room-list">
-                <article><strong>1</strong><div><h3>도서관 A구역</h3><p>사용 가능 · 12 / 20 좌석</p></div><button type="button">입장</button></article>
-                <article><strong>2</strong><div><h3>도서관 B구역</h3><p>사용 중</p></div><button type="button">퇴장</button></article>
-                <article><strong>3</strong><div><h3>도서관 C구역</h3><p>만석 · 20 / 20 좌석</p></div><button type="button">알림</button></article>
-            </div>
-        </section>
-    `,
+    space: `<div class="space-room-app" data-space-room-app></div>`,
     community: `
         <div class="overlay-community">
             <header class="overlay-community-toolbar">
@@ -743,15 +436,6 @@ const overlayContent = {
 };
 
 // 커뮤니티 검색, 필터, 페이지 이동 및 글쓰기 처리
-function escapeHtml(value) {
-    return String(value)
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#039;");
-}
-
 function getFilteredCommunityPosts() {
     const normalizedKeyword = communityKeyword.trim().toLowerCase();
 
@@ -892,9 +576,10 @@ function openHomeOverlay(type) {
         return;
     }
 
+    presenceController.close();
     homeOverlayRoot.innerHTML = `
         <section class="home-overlay-backdrop" data-close-home-overlay>
-            <article class="home-overlay" role="dialog" aria-modal="true" aria-labelledby="home-overlay-title">
+            <article class="home-overlay home-overlay--${type}" role="dialog" aria-modal="true" aria-labelledby="home-overlay-title">
                 <button class="home-overlay-close" type="button" data-close-home-overlay aria-label="닫기">×</button>
                 <header>
                     <h2 id="home-overlay-title">${overlayTitles[type]}</h2>
@@ -913,14 +598,10 @@ function openHomeOverlay(type) {
     }
 
     if (type === "space") {
-        const spaceCharacter = homeOverlayRoot.querySelector("[data-space-character]");
-
-        if (spaceCharacter) {
-            spaceCharacter.onerror = () => {
-                spaceCharacter.onerror = null;
-                spaceCharacter.src = selectedCharacterImage;
-            };
-        }
+        window.OmagotchiSpaceRoom?.mount(
+            homeOverlayRoot.querySelector("[data-space-room-app]"),
+            { initialTab: location.hash.slice(1) || "lab" }
+        );
     }
 }
 
@@ -946,54 +627,6 @@ function logout() {
 
     window.location.href = "/";
 }
-
-// 홈의 고정 버튼 이벤트
-timerToggle?.addEventListener("click", () => {
-    if (timerStatus === "running") {
-        pauseTimer();
-        return;
-    }
-
-    startTimer();
-});
-
-attendanceButton?.addEventListener("click", toggleAttendance);
-
-characterInteraction?.addEventListener("click", () => {
-    characterClickCount += 1;
-
-    const messages = [
-        "좋아요!",
-        "같이 공부해요!",
-        "한 번 더!",
-        "오늘도 성장 중!"
-    ];
-
-    characterInteraction.classList.remove("is-reacting");
-    window.requestAnimationFrame(() => {
-        characterInteraction.classList.add("is-reacting");
-    });
-
-    if (characterClickCount === 10) {
-        showCharacterMessage("그만 눌러!", 5000);
-        characterClickResetTimer = window.setTimeout(() => {
-            characterClickCount = 0;
-            characterClickResetTimer = null;
-        }, 5000);
-        return;
-    }
-
-    if (characterClickCount < 10 && !characterClickResetTimer) {
-        const message = messages[Math.floor(Math.random() * messages.length)];
-        showCharacterMessage(message);
-    }
-});
-
-characterInteraction?.addEventListener("animationend", (event) => {
-    if (event.animationName === "character-play-hop") {
-        characterInteraction.classList.remove("is-reacting");
-    }
-});
 
 document.querySelector("[data-open-write]")?.addEventListener("click", () => {
     openHomeOverlay("write");
@@ -1055,7 +688,7 @@ homeOverlayRoot?.addEventListener("click", (event) => {
     if (claimButton) {
         const quest = claimButton.closest(".overlay-quest");
         quest?.classList.add("is-claimed");
-        addXp(Number(claimButton.dataset.xpReward) || 0);
+        levelController.addXp(Number(claimButton.dataset.xpReward) || 0);
         claimButton.disabled = true;
         return;
     }
@@ -1161,28 +794,10 @@ document.addEventListener("keydown", (event) => {
 });
 
 // 저장된 사용자 설정을 적용한 뒤 최초 화면 렌더링
-if (homeCharacter) {
-    homeCharacter.onerror = () => {
-        homeCharacter.onerror = null;
-        homeCharacter.src = selectedCharacterImage;
-    };
-    homeCharacter.src = selectedCharacterAnimatedImage;
-}
-
-if (characterName) {
-    characterName.textContent = selectedCharacterName;
-}
-
 const savedBrightness = localStorage.getItem(brightnessKey) || "100";
 setBrightness(savedBrightness);
-renderLevel();
-renderTimer();
-renderAttendance();
-
-window.setInterval(refreshAttendanceDate, 30_000);
-window.addEventListener("focus", refreshAttendanceDate);
-document.addEventListener("visibilitychange", () => {
-    if (!document.hidden) {
-        refreshAttendanceDate();
-    }
-});
+characterController.init();
+timerController.init();
+levelController.render();
+attendanceController.init();
+presenceController.init();

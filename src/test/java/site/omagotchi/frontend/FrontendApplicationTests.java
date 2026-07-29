@@ -121,7 +121,7 @@ class FrontendApplicationTests {
 
 	@Test
 	void managerRegisterPageIsRendered() throws Exception {
-		mockMvc.perform(get("/managerRegister"))
+		mockMvc.perform(get("/manager-register"))
 				.andExpect(status().isOk())
 				.andExpect(view().name("managerRegister"))
 				.andExpect(content().string(containsString("소속 기관")));
@@ -132,7 +132,7 @@ class FrontendApplicationTests {
 
 	@Test
 	void managerDashboardIsRendered() throws Exception {
-		mockMvc.perform(get("/managerDashboard"))
+		mockMvc.perform(get("/manager-dashboard"))
 				.andExpect(status().isOk())
 				.andExpect(view().name("managerDashboard"))
 				.andExpect(content().string(containsString("배정받은 기수만 표시됩니다")));

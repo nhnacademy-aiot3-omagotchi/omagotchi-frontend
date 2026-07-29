@@ -8,6 +8,7 @@
     <link rel="icon" type="image/png" sizes="48x48" href="/favicon.png" />
     <link rel="stylesheet" href="/css/home.css" />
     <link rel="stylesheet" href="/css/gameFont.css" />
+    <link rel="stylesheet" href="/css/spaceRoom.css" />
 </head>
 <body>
 <main class="home-page">
@@ -48,6 +49,61 @@
                 설정
             </a>
         </nav>
+
+        <aside class="presence-hud" data-presence-hud>
+            <button
+                    class="presence-trigger"
+                    type="button"
+                    data-presence-trigger
+                    aria-expanded="false"
+                    aria-controls="presence-panel"
+            >
+                <span class="presence-trigger-copy">
+                    <strong>실습실 재실 인원</strong>
+                    <span><b data-presence-count>0</b> / <b data-presence-capacity>50</b></span>
+                </span>
+                <kbd aria-hidden="true">U</kbd>
+            </button>
+
+            <section
+                    class="presence-panel"
+                    id="presence-panel"
+                    data-presence-panel
+                    aria-labelledby="presence-panel-title"
+                    hidden
+            >
+                <header>
+                    <div>
+                        <span>MY COHORT LAB</span>
+                        <h2 id="presence-panel-title">AIoT 3기 실습실</h2>
+                    </div>
+                    <button
+                            class="presence-refresh"
+                            type="button"
+                            data-presence-refresh
+                            aria-label="재실 인원 새로고침"
+                            title="재실 인원 새로고침"
+                    >↻</button>
+                </header>
+
+                <label class="presence-search">
+                    <span class="sr-only">이름 또는 이메일 검색</span>
+                    <input
+                            type="search"
+                            data-presence-search
+                            placeholder="이름 또는 이메일 검색"
+                            autocomplete="off"
+                    />
+                </label>
+
+                <div class="presence-list" data-presence-list></div>
+
+                <footer>
+                    <span data-presence-updated>아직 갱신하지 않음</span>
+                    <span><kbd>Esc</kbd> 닫기</span>
+                </footer>
+            </section>
+        </aside>
 
         <section class="timer-panel" aria-label="학습 타이머">
             <time class="timer-display" datetime="PT0S" data-timer-display>00:00:00</time>
@@ -152,6 +208,7 @@
 <div class="home-overlay-root" data-home-overlay-root aria-live="polite"></div>
 
 <script src="/js/characterAssets.js"></script>
-<script src="/js/home.js"></script>
+<script src="/js/spaceRoom.js"></script>
+<script type="module" src="/js/home.js"></script>
 </body>
 </html>
