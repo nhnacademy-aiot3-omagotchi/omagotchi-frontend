@@ -258,30 +258,135 @@ const overlayTitles = {
     settings: "설정",
     password: "비밀번호 변경"
 };
-
+// 메뉴 오버레이
 const overlayContent = {
     help: `
-        <div class="overlay-card-grid">
-            <article>
-                <h3>입실하기</h3>
-                <p>하루 학습을 시작할 때 입실을 기록합니다. 이후 퇴실 기록과 출석률 계산에 사용됩니다.</p>
-            </article>
-            <article>
-                <h3>학습 타이머</h3>
-                <p>집중 시간을 기록하고 퀘스트 진행도와 캐릭터 성장에 반영합니다.</p>
-            </article>
-            <article>
-                <h3>공간</h3>
-                <p>실습실, 회의실, 도서관처럼 사용할 공간을 선택합니다.</p>
-            </article>
-            <article>
-                <h3>기수</h3>
-                <p>참여 중인 기수와 가입 가능한 기수를 확인합니다.</p>
-            </article>
-            <article>
-                <h3>재실 인원</h3>
-                <p>화면 오른쪽의 재실 HUD를 누르거나 U 키를 눌러 같은 기수의 실습실 상태를 확인합니다.</p>
-            </article>
+        <div class="help-accordion">
+            <details open>
+            <summary>1. 출석 및 상태</summary>
+            <div class="help-detail">
+                <ul>
+                    <li><strong>입실하기</strong>: 오늘 출석을 기록하고 담당 기수 실습실에 입실</li>
+                    <li><strong>외출하기</strong>: 잠시 자리를 비운 상태로 변경</li>
+                    <li><strong>퇴실하기</strong>: 오늘 공간 이용 종료</li>
+                </ul>
+
+                <h4>사용자 상태</h4>
+                <ul>
+                    <li><strong>재실</strong>: 실습실 이용 중</li>
+                    <li><strong>부재중</strong>: 외출 등으로 자리 비움</li>
+                    <li><strong>회의중</strong>: 회의실 이용 중</li>
+                    <li><strong>퇴실</strong>: 공간 이용 종료</li>
+                </ul>
+            </div>
+        </details>
+
+        <details>
+            <summary>2. 학습 타이머</summary>
+            <div class="help-detail">
+                <ul>
+                    <li><strong>시작</strong>: 학습 시간 측정 시작</li>
+                    <li><strong>기록</strong>: 현재까지 측정한 학습 구간 저장</li>
+                    <li>측정 중에는 브라우저 탭 제목에 시간이 표시됩니다.</li>
+                    <li>저장된 학습 시간은 퀘스트 진행도와 경험치에 반영됩니다.</li>
+                </ul>
+            </div>
+        </details>
+
+        <details>
+            <summary>3. 캐릭터 성장</summary>
+            <div class="help-detail">
+                <ul>
+                    <li>출석, 학습 기록, 퀘스트 완료로 경험치를 획득합니다.</li>
+                    <li>경험치가 기준에 도달하면 레벨이 상승합니다.</li>
+                    <li>캐릭터를 클릭하면 움직임과 말풍선 반응이 나타납니다.</li>
+                    <li>진행 메뉴에서 완료한 퀘스트의 보상을 받을 수 있습니다.</li>
+                </ul>
+            </div>
+        </details>
+
+        <details>
+            <summary>4. 공간 이용</summary>
+            <div class="help-detail">
+                <ul>
+                    <li><strong>실습실</strong>: 입실하면 담당 기수 실습실에 자동 연결</li>
+                    <li><strong>회의실</strong>: 파티를 구성해 제한된 인원으로 이용</li>
+                    <li><strong>도서관</strong>: 개인 또는 조용한 학습 공간</li>
+                    <li>사용 중인 회의실은 이용 시간을 연장하거나 반납할 수 있습니다.</li>
+                    <li>만실인 회의실은 공실 알림을 신청할 수 있습니다.</li>
+                </ul>
+            </div>
+        </details>
+
+        <details>
+            <summary>5. 파티와 사용자 목록</summary>
+            <div class="help-detail">
+                <ul>
+                    <li>같은 기수의 실습실 재실 인원을 확인합니다.</li>
+                    <li>이름 또는 이메일로 사용자를 검색합니다.</li>
+                    <li>사용자 목록에서 파티원을 초대할 수 있습니다.</li>
+                    <li>파티를 만든 후 이용 가능한 회의실에 입장합니다.</li>
+                    <li>현재 파티 인원과 각 사용자의 상태를 확인합니다.</li>
+                </ul>
+            </div>
+        </details>
+
+        <details>
+            <summary>6. 메뉴 설명</summary>
+            <div class="help-detail">
+                <ul>
+                    <li><strong>진행</strong>: 퀘스트, 업적, 랭킹, 타임라인, 통계 확인</li>
+                    <li><strong>내 정보</strong>: 학습 시간, 출석, 캐릭터 정보 확인</li>
+                    <li><strong>기수</strong>: 참여 중이거나 가입 가능한 기수 확인</li>
+                    <li><strong>기록</strong>: 타이머로 저장한 학습 구간 확인</li>
+                    <li><strong>공간</strong>: 실습실, 회의실, 도서관 이용</li>
+                    <li><strong>커뮤</strong>: 공지 및 자유 게시판 이용</li>
+                    <li><strong>설정</strong>: 화면 밝기, 비밀번호 변경, 로그아웃</li>
+                </ul>
+            </div>
+        </details>
+
+        <details>
+            <summary>7. 키보드 조작</summary>
+            <div class="help-detail">
+                <dl class="help-key-list">
+                    <div><dt><kbd>U</kbd> <kbd>u</kbd> <kbd>ㅕ</kbd></dt><dd>실습실 재실 인원 열기 또는 닫기</dd></div>
+                    <div><dt><kbd>Esc</kbd></dt><dd>현재 오버레이 또는 사용자 목록 닫기</dd></div>
+                    <div><dt><kbd>Enter</kbd></dt><dd>현재 선택한 버튼 실행</dd></div>
+                    <div><dt><kbd>Tab</kbd></dt><dd>다음 조작 요소로 이동</dd></div>
+                </dl>
+            </div>
+        </details>
+
+        <details>
+            <summary>8. 자주 묻는 질문</summary>
+            <div class="help-detail help-faq">
+                <details>
+                    <summary>입실과 출석은 같은 기능인가요?</summary>
+                    <p>네. 입실하면 오늘 출석을 기록하고 담당 기수 실습실의 재실 상태로 전환됩니다.</p>
+                </details>
+
+                <details>
+                    <summary>학습 기록과 커뮤니티 글 기록은 무엇이 다른가요?</summary>
+                    <p>학습 기록은 타이머의 구간별 시간을 저장하는 기능이며, 커뮤니티 글은 게시판에 작성하는 일반 게시글입니다.</p>
+                </details>
+
+                <details>
+                    <summary>공실 알림은 어디에서 확인하나요?</summary>
+                    <p>회의실 탭에서 공실 알림을 신청하거나 해제할 수 있습니다. 구체적인 알림 확인 방식은 서비스 연동 후 제공됩니다.</p>
+                </details>
+
+                <details>
+                    <summary>퀘스트 보상은 어떻게 받나요?</summary>
+                    <p>진행 메뉴의 퀘스트 탭에서 완료된 퀘스트의 보상 받기를 선택합니다.</p>
+                </details>
+
+                <details>
+                    <summary>기수 가입 코드는 어디에 입력하나요?</summary>
+                    <p>기수 메뉴에서 가입할 기수를 선택하고 기수 관리자가 발급한 가입 코드를 입력합니다.</p>
+                </details>
+            </div>
+        </details>
         </div>
     `,
     progress: `
