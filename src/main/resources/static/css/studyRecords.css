@@ -1,0 +1,423 @@
+/* 타이머 구간 기록 목록 */
+.study-records {
+    display: grid;
+    gap: 18px;
+    color: var(--ink);
+}
+
+.study-records-page {
+    padding: 24px;
+}
+
+.study-record-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+}
+
+.study-record-tabs {
+    display: inline-flex;
+    gap: 4px;
+    padding: 4px;
+    border-radius: 8px;
+    background: rgba(8, 72, 47, 0.12);
+}
+
+.study-record-tabs button,
+.study-period-navigation button,
+.study-record-pagination button {
+    min-height: 38px;
+    padding: 0 13px;
+    border: 1px solid rgba(8, 72, 47, 0.22);
+    border-radius: 6px;
+    background: #fff;
+    color: var(--ink);
+    font: inherit;
+    font-size: 12px;
+    font-weight: 900;
+    cursor: pointer;
+}
+
+.study-record-tabs button.is-active {
+    border-color: #123c2d;
+    background: #123c2d;
+    color: #fff;
+}
+
+.study-period-navigation {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.study-period-navigation strong {
+    min-width: 170px;
+    color: var(--ink);
+    text-align: center;
+    font-size: 14px;
+}
+
+.study-records-summary {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 180px)) minmax(220px, 1fr);
+    align-items: center;
+    gap: 12px;
+    padding: 18px;
+    border: 2px solid rgba(8, 72, 47, 0.32);
+    border-radius: 8px;
+    background: rgba(238, 255, 246, 0.9);
+}
+
+.study-records-summary div {
+    display: grid;
+    gap: 5px;
+}
+
+.study-records-summary span,
+.study-records-summary p {
+    margin: 0;
+    color: rgba(0, 0, 0, 0.62);
+    font-size: 13px;
+    font-weight: 800;
+}
+
+.study-records-summary strong {
+    color: var(--ink);
+    font-size: 23px;
+    font-variant-numeric: tabular-nums;
+}
+
+.study-records-summary p {
+    justify-self: end;
+    text-align: right;
+}
+
+.study-record-list {
+    display: grid;
+    gap: 10px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.study-record {
+    display: grid;
+    grid-template-columns: 54px minmax(0, 1fr);
+    gap: 14px;
+    padding: 14px;
+    border: 2px solid rgba(8, 72, 47, 0.26);
+    border-radius: 8px;
+    background: rgba(238, 255, 246, 0.9);
+}
+
+.study-record-sequence {
+    width: 54px;
+    height: 54px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background: #123c2d;
+    color: #fff;
+    font-size: 20px;
+    font-weight: 900;
+}
+
+.study-record-content,
+.study-record-view {
+    min-width: 0;
+}
+
+.study-record-view {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 14px;
+}
+
+.study-record-view header {
+    min-width: 0;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 16px;
+    margin: 0;
+}
+
+.study-record-view h3 {
+    overflow: hidden;
+    margin: 0 0 7px;
+    color: var(--ink);
+    font-size: 18px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.study-record-time {
+    min-width: 116px;
+    display: grid;
+    justify-items: end;
+    gap: 4px;
+    font-variant-numeric: tabular-nums;
+}
+
+.study-record-time strong {
+    color: #087449;
+    font-size: 20px;
+}
+
+.study-record-time span,
+.study-record-no-tag {
+    color: rgba(0, 0, 0, 0.55);
+    font-size: 12px;
+    font-weight: 800;
+}
+
+.study-record-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.study-record-tags li {
+    padding: 4px 7px;
+    border-radius: 4px;
+    background: rgba(16, 126, 80, 0.12);
+    color: #075f3c;
+    font-size: 11px;
+    font-weight: 900;
+}
+
+.study-record-view > button,
+.study-record-edit button {
+    min-height: 38px;
+    padding: 0 13px;
+    border: 1px solid rgba(0, 0, 0, 0.22);
+    border-radius: 6px;
+    background: #fff;
+    color: var(--ink);
+    font: inherit;
+    font-size: 12px;
+    font-weight: 900;
+    cursor: pointer;
+}
+
+.study-record-edit {
+    display: none;
+    grid-template-columns: minmax(180px, 0.8fr) minmax(220px, 1.2fr) auto;
+    align-items: end;
+    gap: 10px;
+}
+
+.study-record.is-editing .study-record-view {
+    display: none;
+}
+
+.study-record.is-editing .study-record-edit {
+    display: grid;
+}
+
+.study-record-edit label {
+    display: grid;
+    gap: 6px;
+    color: rgba(0, 0, 0, 0.68);
+    font-size: 12px;
+    font-weight: 900;
+}
+
+.study-record-edit input {
+    width: 100%;
+    min-height: 42px;
+    padding: 0 11px;
+    border: 2px solid rgba(8, 72, 47, 0.3);
+    border-radius: 6px;
+    background: #fff;
+    color: var(--ink);
+    font: inherit;
+    font-size: 13px;
+}
+
+.study-record-edit small {
+    color: rgba(0, 0, 0, 0.5);
+    font-size: 10px;
+}
+
+.study-record-edit > div {
+    display: flex;
+    gap: 6px;
+}
+
+.study-record-edit button[type="submit"] {
+    background: #123c2d;
+    color: #fff;
+}
+
+.study-record-empty {
+    min-height: 230px;
+    display: grid;
+    place-content: center;
+    justify-items: center;
+    padding: 30px;
+    border: 2px dashed rgba(8, 72, 47, 0.34);
+    border-radius: 8px;
+    background: rgba(238, 255, 246, 0.74);
+    text-align: center;
+}
+
+.study-record-empty strong {
+    font-size: 18px;
+}
+
+.study-record-empty p {
+    margin: 8px 0 0;
+    color: rgba(0, 0, 0, 0.6);
+    font-size: 13px;
+}
+
+.study-period-overview {
+    display: grid;
+    gap: 18px;
+    padding: 20px;
+    border: 2px solid rgba(8, 72, 47, 0.26);
+    border-radius: 8px;
+    background: rgba(238, 255, 246, 0.9);
+}
+
+.study-period-overview > header {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 20px;
+}
+
+.study-period-overview > header span {
+    color: #087449;
+    font-size: 10px;
+    font-weight: 900;
+}
+
+.study-period-overview > header h3 {
+    margin: 4px 0 0;
+    color: var(--ink);
+    font-size: 18px;
+}
+
+.study-period-overview > header p {
+    margin: 0;
+    color: rgba(0, 0, 0, 0.55);
+    font-size: 12px;
+    font-weight: 800;
+}
+
+.study-period-overview ol {
+    display: grid;
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.study-period-overview li {
+    display: grid;
+    grid-template-columns: 42px minmax(0, 1fr) 88px;
+    align-items: center;
+    gap: 10px;
+    color: rgba(0, 0, 0, 0.48);
+    font-size: 12px;
+    font-weight: 900;
+}
+
+.study-period-overview li > div {
+    height: 10px;
+    overflow: hidden;
+    border-radius: 5px;
+    background: rgba(8, 72, 47, 0.12);
+}
+
+.study-period-overview li i {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: #18ad68;
+}
+
+.study-period-overview li strong {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+.study-period-overview li.has-record {
+    color: var(--ink);
+}
+
+.study-record-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+}
+
+.study-record-pagination span {
+    min-width: 54px;
+    color: rgba(0, 0, 0, 0.6);
+    text-align: center;
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+}
+
+.study-record-pagination button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+@media (max-width: 720px) {
+    .study-record-toolbar,
+    .study-period-overview > header {
+        display: grid;
+    }
+
+    .study-record-tabs,
+    .study-period-navigation {
+        width: 100%;
+    }
+
+    .study-record-tabs button {
+        flex: 1;
+    }
+
+    .study-period-navigation strong {
+        min-width: 0;
+        flex: 1;
+    }
+
+    .study-records-summary {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .study-records-summary p {
+        grid-column: 1 / -1;
+        justify-self: start;
+        text-align: left;
+    }
+
+    .study-record-view,
+    .study-record-view header,
+    .study-record-edit {
+        grid-template-columns: 1fr;
+    }
+
+    .study-record-time {
+        justify-items: start;
+    }
+
+    .study-record-view > button {
+        width: 100%;
+    }
+
+    .study-period-overview li {
+        grid-template-columns: 36px minmax(0, 1fr) 76px;
+    }
+}

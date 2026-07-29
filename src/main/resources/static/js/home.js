@@ -2,6 +2,7 @@ import { createAttendance } from "./home/attendance.js";
 import { createCharacter } from "./home/character.js";
 import { createLevel } from "./home/level.js";
 import { createPresence } from "./home/presence.js";
+import { createStudyRecords } from "./home/studyRecords.js";
 import { createTimer } from "./home/timer.js";
 import { escapeHtml, formatDuration } from "./home/utils.js";
 
@@ -72,6 +73,7 @@ if (selectedCharacterName !== storedCharacterName) {
 // 백엔드 연동 전 사용자별 상태를 구분하기 위한 저장소 키
 const attendanceKey = `omagotchiAttendance:${currentUserEmail}`;
 const xpKey = `omagotchiXp:${currentUserEmail}`;
+const studyRecordsKey = `omagotchiStudyRecords:${currentUserEmail}`;
 const brightnessKey = "omagotchiHomeBrightness";
 const sessionOnlyKeys = [
     "omagotchiEmail",
@@ -201,6 +203,11 @@ const timerController = createTimer({
     }
 });
 
+const studyRecordsController = createStudyRecords({
+    storageKey: studyRecordsKey,
+    getElapsedSeconds: timerController.getElapsedSeconds
+});
+
 const levelController = createLevel({
     levelElement: characterLevel,
     xpFill,
@@ -252,7 +259,7 @@ const overlayTitles = {
     progress: "진행",
     personal: "내 정보",
     cohort: "기수",
-    write: "기록",
+    write: "학습 기록",
     space: "공간",
     community: "커뮤",
     settings: "설정",
@@ -286,7 +293,7 @@ const overlayContent = {
             <div class="help-detail">
                 <ul>
                     <li><strong>시작</strong>: 학습 시간 측정 시작</li>
-                    <li><strong>기록</strong>: 현재까지 측정한 학습 구간 저장</li>
+                    <li><strong>구간 기록</strong>: 직전 기록 이후의 학습 시간을 저장</li>
                     <li>측정 중에는 브라우저 탭 제목에 시간이 표시됩니다.</li>
                     <li>저장된 학습 시간은 퀘스트 진행도와 경험치에 반영됩니다.</li>
                 </ul>
@@ -338,7 +345,7 @@ const overlayContent = {
                     <li><strong>진행</strong>: 퀘스트, 업적, 랭킹, 타임라인, 통계 확인</li>
                     <li><strong>내 정보</strong>: 학습 시간, 출석, 캐릭터 정보 확인</li>
                     <li><strong>기수</strong>: 참여 중이거나 가입 가능한 기수 확인</li>
-                    <li><strong>기록</strong>: 타이머로 저장한 학습 구간 확인</li>
+                    <li><strong>학습 기록</strong>: 저장한 구간을 일간·월간·연간으로 확인하고 수정</li>
                     <li><strong>공간</strong>: 실습실, 회의실, 도서관 이용</li>
                     <li><strong>커뮤</strong>: 공지 및 자유 게시판 이용</li>
                     <li><strong>설정</strong>: 화면 밝기, 비밀번호 변경, 로그아웃</li>
@@ -474,13 +481,7 @@ const overlayContent = {
             <p data-home-cohort-message>유효한 코드를 입력하면 관리자 승인 대기 상태로 등록됩니다.</p>
         </form>
     `,
-    write: `
-        <form class="overlay-write-form">
-            <input type="text" placeholder="제목" aria-label="기록 제목" />
-            <textarea placeholder="오늘 배운 내용이나 회고를 적어주세요." aria-label="기록 내용"></textarea>
-            <button type="button" data-close-home-overlay>임시 저장</button>
-        </form>
-    `,
+    write: `<div data-study-records></div>`,
     space: `<div class="space-room-app" data-space-room-app></div>`,
     community: `
         <div class="overlay-community">
@@ -702,6 +703,12 @@ function openHomeOverlay(type) {
         renderCommunity();
     }
 
+    if (type === "write") {
+        studyRecordsController.mount(
+            homeOverlayRoot.querySelector("[data-study-records]")
+        );
+    }
+
     if (type === "space") {
         window.OmagotchiSpaceRoom?.mount(
             homeOverlayRoot.querySelector("[data-space-room-app]"),
@@ -734,7 +741,10 @@ function logout() {
 }
 
 document.querySelector("[data-open-write]")?.addEventListener("click", () => {
-    openHomeOverlay("write");
+    const result = studyRecordsController.addRecord();
+    characterController.showMessage(
+        result.ok ? `${result.record.sequence}번째 구간을 기록했어요.` : result.message
+    );
 });
 
 document.querySelectorAll("[data-home-overlay]").forEach((link) => {
@@ -746,6 +756,10 @@ document.querySelectorAll("[data-home-overlay]").forEach((link) => {
 
 // 동적으로 생성되는 오버레이 버튼은 상위 요소에서 한 번에 처리
 homeOverlayRoot?.addEventListener("click", (event) => {
+    if (studyRecordsController.handleClick(event)) {
+        return;
+    }
+
     const closeTarget = event.target.closest("[data-close-home-overlay]");
     const tabButton = event.target.closest("[data-overlay-tab]");
     const claimButton = event.target.closest("[data-home-claim]");
@@ -832,6 +846,10 @@ homeOverlayRoot?.addEventListener("input", (event) => {
 
 // 커뮤니티 글쓰기와 기수 가입 코드 제출 처리
 homeOverlayRoot?.addEventListener("submit", (event) => {
+    if (studyRecordsController.handleSubmit(event)) {
+        return;
+    }
+
     const communityForm = event.target.closest("[data-community-compose]");
     const cohortForm = event.target.closest("[data-home-cohort-form]");
 

@@ -7,6 +7,7 @@
 
     <link rel="icon" type="image/png" sizes="48x48" href="/favicon.png" th:href="@{/favicon.png}" />
     <link rel="stylesheet" href="/css/home.css" th:href="@{/css/home.css}" />
+    <link rel="stylesheet" href="/css/studyRecords.css" th:href="@{/css/studyRecords.css}" />
     <link rel="stylesheet" href="/css/gameFont.css" th:href="@{/css/gameFont.css}" />
     <link rel="stylesheet" href="/css/spaceRoom.css" th:href="@{/css/spaceRoom.css}" />
     <link rel="stylesheet" href="/css/imageProtection.css" th:href="@{/css/imageProtection.css}" />
@@ -33,9 +34,9 @@
                 <span>▦</span>
                 기수
             </a>
-            <a href="/write" aria-label="기록 작성" data-home-overlay="write">
-                <span>✎</span>
-                기록
+            <a href="/write" aria-label="학습 기록 확인" data-home-overlay="write">
+                <span>▤</span>
+                학습 기록
             </a>
             <a href="/space#lab" aria-label="공간" data-home-overlay="space">
                 <span>▣</span>
@@ -111,7 +112,7 @@
 
             <div class="timer-actions">
                 <button type="button" data-timer-toggle>시작</button>
-                <button type="button" data-open-write>기록</button>
+                <button type="button" data-open-write>구간 기록</button>
             </div>
         </section>
 

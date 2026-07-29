@@ -48,6 +48,9 @@ class FrontendApplicationTests {
 		mockMvc.perform(get("/css/home.css"))
 				.andExpect(status().isOk());
 
+		mockMvc.perform(get("/css/studyRecords.css"))
+				.andExpect(status().isOk());
+
 		mockMvc.perform(get("/css/appPages.css"))
 				.andExpect(status().isOk());
 
@@ -61,6 +64,9 @@ class FrontendApplicationTests {
 				.andExpect(status().isOk());
 
 		mockMvc.perform(get("/js/home.js"))
+				.andExpect(status().isOk());
+
+		mockMvc.perform(get("/js/write.js"))
 				.andExpect(status().isOk());
 
 		mockMvc.perform(get("/js/progress.js"))
@@ -98,7 +104,7 @@ class FrontendApplicationTests {
 		mockMvc.perform(get("/write"))
 				.andExpect(status().isOk())
 				.andExpect(view().name("write"))
-				.andExpect(content().string(containsString("오늘 공부한 내용")));
+				.andExpect(content().string(containsString("학습 기록")));
 
 		mockMvc.perform(get("/settings"))
 				.andExpect(status().isOk())

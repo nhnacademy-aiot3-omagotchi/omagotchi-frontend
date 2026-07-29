@@ -460,6 +460,11 @@ button {
     gap: 4px;
 }
 
+.cohort-edit-form > button {
+    align-self: end;
+    height: 38px;
+}
+
 .cohort-edit-form label span,
 .search-field span,
 .date-field span {
