@@ -4,9 +4,9 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Omagotchi Progress</title>
-    <link rel="icon" type="image/png" sizes="48x48" href="/favicon.png" />
-    <link rel="stylesheet" href="/css/appPages.css" />
-    <link rel="stylesheet" href="/css/progress.css" />
+    <link rel="icon" type="image/png" sizes="48x48" href="/favicon.png" th:href="@{/favicon.png}" />
+    <link rel="stylesheet" href="/css/appPages.css" th:href="@{/css/appPages.css}" />
+    <link rel="stylesheet" href="/css/progress.css" th:href="@{/css/progress.css}" />
 </head>
 <body>
 <main class="app-page">
@@ -140,6 +140,6 @@
         </section>
     </section>
 </main>
-<script src="/js/progress.js"></script>
+<script src="/js/progress.js" th:src="@{/js/progress.js}"></script>
 </body>
 </html>

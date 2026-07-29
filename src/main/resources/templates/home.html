@@ -5,10 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Omagotchi Home</title>
 
-    <link rel="icon" type="image/png" sizes="48x48" href="/favicon.png" />
-    <link rel="stylesheet" href="/css/home.css" />
-    <link rel="stylesheet" href="/css/gameFont.css" />
-    <link rel="stylesheet" href="/css/spaceRoom.css" />
+    <link rel="icon" type="image/png" sizes="48x48" href="/favicon.png" th:href="@{/favicon.png}" />
+    <link rel="stylesheet" href="/css/home.css" th:href="@{/css/home.css}" />
+    <link rel="stylesheet" href="/css/gameFont.css" th:href="@{/css/gameFont.css}" />
+    <link rel="stylesheet" href="/css/spaceRoom.css" th:href="@{/css/spaceRoom.css}" />
 </head>
 <body>
 <main class="home-page">
@@ -40,7 +40,7 @@
                 <span>▣</span>
                 공간
             </a>
-            <a href="/community" aria-label="커뮤니티" data-home-overlay="community">
+            <a href="/home#community" aria-label="커뮤니티" data-home-overlay="community">
                 <span>✦</span>
                 커뮤
             </a>
@@ -207,8 +207,8 @@
 
 <div class="home-overlay-root" data-home-overlay-root aria-live="polite"></div>
 
-<script src="/js/characterAssets.js"></script>
-<script src="/js/spaceRoom.js"></script>
-<script type="module" src="/js/home.js"></script>
+<script src="/js/characterAssets.js" th:src="@{/js/characterAssets.js}"></script>
+<script src="/js/spaceRoom.js" th:src="@{/js/spaceRoom.js}"></script>
+<script type="module" src="/js/home.js" th:src="@{/js/home.js}"></script>
 </body>
 </html>

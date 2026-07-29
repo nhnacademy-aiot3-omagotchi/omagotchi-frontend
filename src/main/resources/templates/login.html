@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Omagotchi 로그인</title>
 
-    <link rel="icon" type="image/png" sizes="48x48" href="/favicon.png" />
-    <link rel="stylesheet" href="/css/auth.css" />
+    <link rel="icon" type="image/png" sizes="48x48" href="/favicon.png" th:href="@{/favicon.png}" />
+    <link rel="stylesheet" href="/css/auth.css" th:href="@{/css/auth.css}" />
 </head>
 <body>
 <main class="login-page auth-page">
@@ -44,6 +44,6 @@
     </section>
 </main>
 
-<script src="/js/login.js"></script>
+<script src="/js/login.js" th:src="@{/js/login.js}"></script>
 </body>
 </html>

@@ -4,10 +4,10 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Omagotchi Space</title>
-    <link rel="icon" type="image/png" sizes="48x48" href="/favicon.png" />
-    <link rel="stylesheet" href="/css/gameFont.css" />
-    <link rel="stylesheet" href="/css/space.css" />
-    <link rel="stylesheet" href="/css/spaceRoom.css" />
+    <link rel="icon" type="image/png" sizes="48x48" href="/favicon.png" th:href="@{/favicon.png}" />
+    <link rel="stylesheet" href="/css/gameFont.css" th:href="@{/css/gameFont.css}" />
+    <link rel="stylesheet" href="/css/space.css" th:href="@{/css/space.css}" />
+    <link rel="stylesheet" href="/css/spaceRoom.css" th:href="@{/css/spaceRoom.css}" />
 </head>
 <body>
 <main class="space-page">
@@ -29,7 +29,7 @@
     </section>
 </main>
 
-<script src="/js/spaceRoom.js"></script>
-<script src="/js/space.js"></script>
+<script src="/js/spaceRoom.js" th:src="@{/js/spaceRoom.js}"></script>
+<script src="/js/space.js" th:src="@{/js/space.js}"></script>
 </body>
 </html>

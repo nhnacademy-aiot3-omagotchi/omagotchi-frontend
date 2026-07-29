@@ -4,8 +4,8 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Omagotchi 기수 관리자 로그인</title>
-    <link rel="icon" type="image/png" sizes="48x48" href="/favicon.png" />
-    <link rel="stylesheet" href="/css/managerAuth.css" />
+    <link rel="icon" type="image/png" sizes="48x48" href="/favicon.png" th:href="@{/favicon.png}" />
+    <link rel="stylesheet" href="/css/managerAuth.css" th:href="@{/css/managerAuth.css}" />
 </head>
 <body>
 <main class="manager-auth-page">
@@ -36,6 +36,6 @@
         </div>
     </section>
 </main>
-<script src="/js/managerLogin.js"></script>
+<script src="/js/managerLogin.js" th:src="@{/js/managerLogin.js}"></script>
 </body>
 </html>
