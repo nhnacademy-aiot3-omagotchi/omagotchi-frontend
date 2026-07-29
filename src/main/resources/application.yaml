@@ -4,6 +4,16 @@ server:
 spring:
   application:
     name: frontend
+  web:
+    resources:
+      chain:
+        strategy:
+          content:
+            enabled: true
+            paths: /**
+      cache:
+        cachecontrol:
+          no-cache: true
 
 management:
   endpoints:
