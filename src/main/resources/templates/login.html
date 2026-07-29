@@ -7,6 +7,7 @@
 
     <link rel="icon" type="image/png" sizes="48x48" href="/favicon.png" th:href="@{/favicon.png}" />
     <link rel="stylesheet" href="/css/auth.css" th:href="@{/css/auth.css}" />
+    <link rel="stylesheet" href="/css/passwordToggle.css" th:href="@{/css/passwordToggle.css}" />
 </head>
 <body>
 <main class="login-page auth-page">
@@ -30,10 +31,16 @@
                 <input type="email" name="email" placeholder="이메일" autocomplete="username" />
             </label>
 
-            <label class="input-group auth-input-group">
-                <span class="sr-only">비밀번호</span>
-                <input type="password" name="password" placeholder="비밀번호" autocomplete="current-password" />
-            </label>
+            <div class="input-group auth-input-group">
+                <label class="sr-only" for="login-password">비밀번호</label>
+                <div class="password-input-wrap">
+                    <input id="login-password" type="password" name="password" placeholder="비밀번호" autocomplete="current-password" />
+                    <button class="password-visibility-toggle" type="button" data-password-toggle
+                            aria-label="비밀번호 표시" aria-pressed="false">
+                        <span class="password-eye" aria-hidden="true"></span>
+                    </button>
+                </div>
+            </div>
 
             <a class="auth-forgot-link" href="/password-change">비밀번호를 잊으셨나요?</a>
 
@@ -45,5 +52,6 @@
 </main>
 
 <script src="/js/login.js" th:src="@{/js/login.js}"></script>
+<script src="/js/passwordToggle.js" th:src="@{/js/passwordToggle.js}"></script>
 </body>
 </html>
