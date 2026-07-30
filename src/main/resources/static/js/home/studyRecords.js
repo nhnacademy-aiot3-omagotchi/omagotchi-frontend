@@ -275,7 +275,7 @@ export function createStudyRecords({ storageKey, getElapsedSeconds }) {
             return `
                 <div class="study-record-empty">
                     <strong>${emptyMessage}</strong>
-                    <p>홈에서 타이머를 시작한 뒤 구간 기록을 눌러 보세요.</p>
+                    <p>홈에서 타이머를 시작하고 정지를 누르면 학습 기록이 저장됩니다.</p>
                 </div>
             `;
         }
@@ -472,7 +472,7 @@ export function createStudyRecords({ storageKey, getElapsedSeconds }) {
                         <span>선택 기간 합계</span>
                         <strong>${formatDuration(totalSeconds)}</strong>
                     </div>
-                    <p>구간 기록을 남겨도 타이머는 멈추지 않습니다.</p>
+                    <p>창을 닫아도 타이머는 계속 실행됩니다.</p>
                 </header>
                 ${viewMode === "daily"
                     ? renderDaily(visibleRecords)

@@ -10,6 +10,7 @@
     <link rel="stylesheet" href="/css/studyRecords.css" th:href="@{/css/studyRecords.css}" />
     <link rel="stylesheet" href="/css/gameFont.css" th:href="@{/css/gameFont.css}" />
     <link rel="stylesheet" href="/css/spaceRoom.css" th:href="@{/css/spaceRoom.css}" />
+    <link rel="stylesheet" href="/css/notificationPanel.css" th:href="@{/css/notificationPanel.css}" />
     <link rel="stylesheet" href="/css/imageProtection.css" th:href="@{/css/imageProtection.css}" />
 </head>
 <body>
@@ -112,8 +113,8 @@
 
             <div class="timer-actions">
                 <button type="button" data-timer-toggle>시작</button>
-                <button type="button" data-open-write>구간 기록</button>
             </div>
+            <p class="timer-policy" data-timer-status aria-live="polite"></p>
         </section>
 
         <button class="attendance-button" type="button" data-attendance-button>
@@ -185,13 +186,13 @@
                     <span data-calendar-period>이번 달</span>
                 </div>
                 <div class="calendar-grid" aria-label="출석 달력" data-calendar-grid>
+                    <span class="calendar-weekday is-weekend">일</span>
                     <span class="calendar-weekday">월</span>
                     <span class="calendar-weekday">화</span>
                     <span class="calendar-weekday">수</span>
                     <span class="calendar-weekday">목</span>
                     <span class="calendar-weekday">금</span>
                     <span class="calendar-weekday is-weekend">토</span>
-                    <span class="calendar-weekday is-weekend">일</span>
                 </div>
             </section>
 
@@ -208,6 +209,7 @@
 </main>
 
 <div class="home-overlay-root" data-home-overlay-root aria-live="polite"></div>
+<th:block th:replace="~{fragments/home-notification-panel :: notificationPanelTemplate}"></th:block>
 
 <script src="/js/characterAssets.js" th:src="@{/js/characterAssets.js}"></script>
 <script src="/js/spaceRoom.js" th:src="@{/js/spaceRoom.js}"></script>

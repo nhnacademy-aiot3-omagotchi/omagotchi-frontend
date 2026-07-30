@@ -56,7 +56,7 @@ export function createAttendance({
         const monthLabel = new Intl.DateTimeFormat("ko-KR", { month: "long" }).format(today);
         const daysInMonth = new Date(year, month + 1, 0).getDate();
         const firstDay = new Date(year, month, 1).getDay();
-        const offset = firstDay === 0 ? 6 : firstDay - 1;
+        const offset = firstDay;
         const fragment = document.createDocumentFragment();
 
         if (calendarTitle) calendarTitle.textContent = `${monthLabel} 출석 기록`;

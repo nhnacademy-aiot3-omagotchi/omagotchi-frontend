@@ -74,6 +74,7 @@ if (selectedCharacterName !== storedCharacterName) {
 const attendanceKey = `omagotchiAttendance:${currentUserEmail}`;
 const xpKey = `omagotchiXp:${currentUserEmail}`;
 const studyRecordsKey = `omagotchiStudyRecords:${currentUserEmail}`;
+const timerKey = `omagotchiStudyTimer:${currentUserEmail}`;
 const brightnessKey = "omagotchiHomeBrightness";
 const sessionOnlyKeys = [
     "omagotchiEmail",
@@ -190,20 +191,37 @@ const characterController = createCharacter({
     animatedImage: selectedCharacterAnimatedImage
 });
 
+let studyRecordsController;
+
 const timerController = createTimer({
     display: timerDisplay,
     toggle: timerToggle,
-    onStart: () => {
+    statusMessage: document.querySelector("[data-timer-status]"),
+    storageKey: timerKey,
+    onStart: ({ restored }) => {
         characterController.setStudyState(true);
-        characterController.showMessage("집중 모드 시작!");
+        characterController.showMessage(
+            restored ? "이어서 공부해볼까요?" : "집중 모드 시작!"
+        );
     },
-    onPause: () => {
+    onPause: ({ reason }) => {
         characterController.setStudyState(false);
-        characterController.showMessage("잠깐 쉬어도 괜찮아요.");
+
+        if (reason === "user" && studyRecordsController) {
+            const result = studyRecordsController.addRecord();
+            characterController.showMessage(
+                result.ok
+                    ? `${result.record.sequence}번째 학습 기록을 저장했어요.`
+                    : result.message
+            );
+            return;
+        }
+
+        characterController.showMessage("오늘 학습 시간이 저장됐어요.");
     }
 });
 
-const studyRecordsController = createStudyRecords({
+studyRecordsController = createStudyRecords({
     storageKey: studyRecordsKey,
     getElapsedSeconds: timerController.getElapsedSeconds
 });
@@ -214,6 +232,7 @@ const levelController = createLevel({
     currentXpLabel,
     nextLevelLabel,
     characterImage: homeCharacter,
+    characterStage,
     storageKey: xpKey
 });
 
@@ -293,8 +312,8 @@ const overlayContent = {
             <div class="help-detail">
                 <ul>
                     <li><strong>시작</strong>: 학습 시간 측정 시작</li>
-                    <li><strong>구간 기록</strong>: 직전 기록 이후의 학습 시간을 저장</li>
-                    <li><strong>학습 기록</strong>: 구간 기록에서 저장한 학습 기록을 일·월·연간으로 구분</li>
+                    <li><strong>정지</strong>: 타이머를 멈추고 직전 시작 이후의 학습 시간을 저장</li>
+                    <li><strong>학습 기록</strong>: 저장된 학습 기록을 일·월·연간으로 구분</li>
                     <li>측정 중에는 브라우저 탭 제목에 시간이 표시됩니다.</li>
                     <li>저장된 학습 시간은 퀘스트 진행도와 경험치에 반영됩니다.</li>
                 </ul>
@@ -740,13 +759,6 @@ function logout() {
 
     window.location.href = "/";
 }
-
-document.querySelector("[data-open-write]")?.addEventListener("click", () => {
-    const result = studyRecordsController.addRecord();
-    characterController.showMessage(
-        result.ok ? `${result.record.sequence}번째 구간을 기록했어요.` : result.message
-    );
-});
 
 document.querySelectorAll("[data-home-overlay]").forEach((link) => {
     link.addEventListener("click", (event) => {
