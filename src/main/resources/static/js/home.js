@@ -294,6 +294,7 @@ const overlayContent = {
                 <ul>
                     <li><strong>시작</strong>: 학습 시간 측정 시작</li>
                     <li><strong>구간 기록</strong>: 직전 기록 이후의 학습 시간을 저장</li>
+                    <li><strong>학습 기록</strong>: 구간 기록에서 저장한 학습 기록을 일·월·연간으로 구분</li>
                     <li>측정 중에는 브라우저 탭 제목에 시간이 표시됩니다.</li>
                     <li>저장된 학습 시간은 퀘스트 진행도와 경험치에 반영됩니다.</li>
                 </ul>

@@ -1,6 +1,8 @@
 import { escapeHtml, formatDuration } from "./utils.js";
 
-const PAGE_SIZE = 5;
+const HEAT_THRESHOLDS = [2, 4, 6, 8].map((hours) => hours * 60 * 60);
+const HEAT_LEGEND_LEVELS = [0, 1, 2, 3, 4, 5];
+const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
 
 function createId(prefix) {
     if (window.crypto?.randomUUID) {
@@ -28,6 +30,13 @@ function isSameDay(left, right) {
     return left.getFullYear() === right.getFullYear()
         && left.getMonth() === right.getMonth()
         && left.getDate() === right.getDate();
+}
+
+function toDateKey(date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
 }
 
 function filterRecords(records, viewMode, referenceDate) {
@@ -82,22 +91,71 @@ function movePeriod(viewMode, date, amount) {
     return next;
 }
 
-function createPeriodSummary(records, viewMode, referenceDate) {
-    const itemCount = viewMode === "monthly"
-        ? new Date(referenceDate.getFullYear(), referenceDate.getMonth() + 1, 0).getDate()
-        : 12;
-    const values = Array.from({ length: itemCount }, (_, index) => ({
-        label: viewMode === "monthly" ? `${index + 1}일` : `${index + 1}월`,
+function sumDuration(records) {
+    return records.reduce(
+        (sum, record) => sum + (Number(record.durationSeconds) || 0),
+        0
+    );
+}
+
+function groupDailyTotals(records) {
+    return records.reduce((totals, record) => {
+        const date = parseRecordedAt(record);
+
+        if (!date) {
+            return totals;
+        }
+
+        const key = toDateKey(date);
+        totals.set(key, (totals.get(key) || 0) + (Number(record.durationSeconds) || 0));
+        return totals;
+    }, new Map());
+}
+
+function getHeatLevel(seconds) {
+    if (seconds <= 0) {
+        return 0;
+    }
+
+    for (let index = HEAT_THRESHOLDS.length - 1; index >= 0; index -= 1) {
+        if (seconds >= HEAT_THRESHOLDS[index]) {
+            return index + 2;
+        }
+    }
+
+    return 1;
+}
+
+function formatCalendarTime(seconds) {
+    if (!seconds) {
+        return "기록 없음";
+    }
+
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+
+    if (hours) {
+        return `${hours}시간 ${minutes}분`;
+    }
+
+    return `${minutes}분`;
+}
+
+function createMonthTotals(records) {
+    const totals = Array.from({ length: 12 }, (_, index) => ({
+        month: index + 1,
         seconds: 0
     }));
 
     records.forEach((record) => {
         const date = parseRecordedAt(record);
-        const index = viewMode === "monthly" ? date.getDate() - 1 : date.getMonth();
-        values[index].seconds += Number(record.durationSeconds) || 0;
+
+        if (date) {
+            totals[date.getMonth()].seconds += Number(record.durationSeconds) || 0;
+        }
     });
 
-    return values;
+    return totals;
 }
 
 // 구간 기록의 계산, 저장, 편집 화면을 한 곳에서 관리한다.
@@ -108,7 +166,6 @@ export function createStudyRecords({ storageKey, getElapsedSeconds }) {
     let container = null;
     let viewMode = "daily";
     let referenceDate = new Date();
-    let currentPage = 1;
 
     function readRecords() {
         try {
@@ -150,16 +207,12 @@ export function createStudyRecords({ storageKey, getElapsedSeconds }) {
             updatedAt: now
         };
 
-        // 랩 타이머처럼 첫 구간부터 시간순으로 읽을 수 있게 뒤에 추가한다.
         records.push(record);
         writeRecords(records);
         lastRecordedElapsed = elapsedSeconds;
         editingId = null;
         viewMode = "daily";
         referenceDate = new Date(now);
-        currentPage = Math.ceil(
-            filterRecords(records, viewMode, referenceDate).length / PAGE_SIZE
-        );
         render();
 
         return { ok: true, record };
@@ -217,61 +270,166 @@ export function createStudyRecords({ storageKey, getElapsedSeconds }) {
         `;
     }
 
-    function renderPeriodOverview(records) {
-        const periods = createPeriodSummary(records, viewMode, referenceDate);
-        const maximum = Math.max(...periods.map((period) => period.seconds), 1);
-        const periodName = viewMode === "monthly" ? "일자" : "월";
-
-        return `
-            <section class="study-period-overview" aria-label="${periodName}별 학습 시간">
-                <header>
-                    <div>
-                        <span>${viewMode === "monthly" ? "DAILY TOTAL" : "MONTHLY TOTAL"}</span>
-                        <h3>${periodName}별 누적 학습</h3>
-                    </div>
-                    <p>막대는 선택한 기간의 학습 시간을 비교합니다.</p>
-                </header>
-                <ol>
-                    ${periods.map((period) => `
-                        <li class="${period.seconds ? "has-record" : ""}">
-                            <span>${period.label}</span>
-                            <div aria-hidden="true">
-                                <i style="width: ${Math.round((period.seconds / maximum) * 100)}%"></i>
-                            </div>
-                            <strong>${formatDuration(period.seconds)}</strong>
-                        </li>
-                    `).join("")}
-                </ol>
-            </section>
-        `;
-    }
-
-    function renderDailyRecords(records) {
-        const totalPages = Math.max(1, Math.ceil(records.length / PAGE_SIZE));
-        currentPage = Math.min(Math.max(currentPage, 1), totalPages);
-        const pageStart = (currentPage - 1) * PAGE_SIZE;
-        const pageRecords = records.slice(pageStart, pageStart + PAGE_SIZE);
-
+    function renderRecordList(records, emptyMessage) {
         if (!records.length) {
             return `
                 <div class="study-record-empty">
-                    <strong>이 날짜에는 저장된 구간이 없습니다.</strong>
+                    <strong>${emptyMessage}</strong>
                     <p>홈에서 타이머를 시작한 뒤 구간 기록을 눌러 보세요.</p>
                 </div>
             `;
         }
 
+        return `<ol class="study-record-list">${records.map(renderRecord).join("")}</ol>`;
+    }
+
+    function renderDaily(records) {
         return `
-            <ol class="study-record-list">${pageRecords.map(renderRecord).join("")}</ol>
-            <nav class="study-record-pagination" aria-label="학습 기록 페이지">
-                <button type="button" data-study-record-page="prev" ${currentPage === 1 ? "disabled" : ""}>
-                    이전
-                </button>
-                <span><strong>${currentPage}</strong> / ${totalPages}</span>
-                <button type="button" data-study-record-page="next" ${currentPage === totalPages ? "disabled" : ""}>
-                    다음
-                </button>
-            </nav>
+            <section class="study-day-detail" aria-label="선택 날짜의 구간 기록">
+                <header>
+                    <div>
+                        <span>DAILY LOG</span>
+                        <h3>${referenceDate.getMonth() + 1}월 ${referenceDate.getDate()}일 구간 기록</h3>
+                    </div>
+                    <strong>${formatDuration(sumDuration(records))}</strong>
+                </header>
+                ${renderRecordList(records, "이 날짜에는 저장된 구간이 없습니다.")}
+            </section>
+        `;
+    }
+
+    function renderMonthly(records) {
+        const year = referenceDate.getFullYear();
+        const month = referenceDate.getMonth();
+        const firstDay = new Date(year, month, 1).getDay();
+        const lastDate = new Date(year, month + 1, 0).getDate();
+        const totals = groupDailyTotals(records);
+        const selectedKey = toDateKey(referenceDate);
+        const selectedRecords = records.filter((record) => {
+            const date = parseRecordedAt(record);
+            return date && toDateKey(date) === selectedKey;
+        });
+        const cells = [];
+
+        for (let index = 0; index < firstDay; index += 1) {
+            cells.push(`<li class="study-calendar-empty" aria-hidden="true"></li>`);
+        }
+
+        for (let day = 1; day <= lastDate; day += 1) {
+            const date = new Date(year, month, day);
+            const key = toDateKey(date);
+            const seconds = totals.get(key) || 0;
+            const weekday = date.getDay();
+            const isSelected = key === selectedKey;
+            const isToday = isSameDay(date, new Date());
+
+            cells.push(`
+                <li>
+                    <button type="button"
+                            class="study-calendar-day heat-${getHeatLevel(seconds)}
+                                   ${isSelected ? "is-selected" : ""}
+                                   ${isToday ? "is-today" : ""}
+                                   ${weekday === 0 ? "is-sunday" : ""}
+                                   ${weekday === 6 ? "is-saturday" : ""}"
+                            data-study-calendar-day="${key}"
+                            aria-pressed="${isSelected}"
+                            aria-label="${month + 1}월 ${day}일, ${formatCalendarTime(seconds)}">
+                        <span>${day}</span>
+                        <strong>${seconds ? formatDuration(seconds).slice(0, 5) : "—"}</strong>
+                    </button>
+                </li>
+            `);
+        }
+
+        return `
+            <div class="study-month-layout">
+                <section class="study-calendar" aria-label="${year}년 ${month + 1}월 학습 달력">
+                    <header>
+                        <div>
+                            <span>MONTHLY HEATMAP</span>
+                            <h3>날짜별 학습 시간</h3>
+                        </div>
+                        <p>공부 시간이 길수록 진한 색으로 표시됩니다.</p>
+                    </header>
+                    <ol class="study-calendar-weekdays" aria-hidden="true">
+                        ${WEEKDAYS.map((day, index) => `
+                            <li class="${index === 0 ? "is-sunday" : index === 6 ? "is-saturday" : ""}">${day}</li>
+                        `).join("")}
+                    </ol>
+                    <ol class="study-calendar-grid">${cells.join("")}</ol>
+                    <div class="study-heat-legend" aria-label="학습 시간 색상 범례">
+                        <span>0시간</span>
+                        ${HEAT_LEGEND_LEVELS.map((level) => `<i class="heat-${level}" aria-hidden="true"></i>`).join("")}
+                        <span>8시간 이상</span>
+                    </div>
+                </section>
+                <section class="study-selected-day" aria-label="선택 날짜 기록">
+                    <header>
+                        <div>
+                            <span>SELECTED DAY</span>
+                            <h3>${month + 1}월 ${referenceDate.getDate()}일</h3>
+                        </div>
+                        <strong>${formatDuration(sumDuration(selectedRecords))}</strong>
+                    </header>
+                    ${renderRecordList(selectedRecords, "선택한 날짜에는 기록이 없습니다.")}
+                </section>
+            </div>
+        `;
+    }
+
+    function renderYearly(records) {
+        const monthTotals = createMonthTotals(records);
+        const dailyTotals = groupDailyTotals(records);
+        const totalSeconds = sumDuration(records);
+        const activeDays = [...dailyTotals.values()].filter((seconds) => seconds > 0).length;
+        const averageSeconds = activeDays ? Math.round(totalSeconds / activeDays) : 0;
+        const bestMonth = monthTotals.reduce(
+            (best, month) => month.seconds > best.seconds ? month : best,
+            monthTotals[0]
+        );
+        const maximum = Math.max(...monthTotals.map((month) => month.seconds), 1);
+
+        return `
+            <section class="study-year-dashboard" aria-label="${referenceDate.getFullYear()}년 학습 통계">
+                <div class="study-year-stats">
+                    <article>
+                        <span>연간 총 학습</span>
+                        <strong>${formatDuration(totalSeconds)}</strong>
+                    </article>
+                    <article>
+                        <span>학습한 날</span>
+                        <strong>${activeDays}일</strong>
+                    </article>
+                    <article>
+                        <span>학습일 평균</span>
+                        <strong>${formatDuration(averageSeconds)}</strong>
+                    </article>
+                    <article>
+                        <span>가장 많이 공부한 달</span>
+                        <strong>${bestMonth.seconds ? `${bestMonth.month}월` : "—"}</strong>
+                    </article>
+                </div>
+                <section class="study-year-chart">
+                    <header>
+                        <div>
+                            <span>YEARLY TREND</span>
+                            <h3>월별 누적 학습</h3>
+                        </div>
+                        <p>한 해의 학습 흐름을 월 단위로 비교합니다.</p>
+                    </header>
+                    <ol>
+                        ${monthTotals.map((month) => `
+                            <li class="${month.seconds ? "has-record" : ""}">
+                                <span>${month.month}월</span>
+                                <div aria-hidden="true">
+                                    <i style="width: ${Math.round((month.seconds / maximum) * 100)}%"></i>
+                                </div>
+                                <strong>${formatDuration(month.seconds)}</strong>
+                            </li>
+                        `).join("")}
+                    </ol>
+                </section>
+            </section>
         `;
     }
 
@@ -282,10 +440,7 @@ export function createStudyRecords({ storageKey, getElapsedSeconds }) {
 
         const records = readRecords();
         const visibleRecords = filterRecords(records, viewMode, referenceDate);
-        const totalSeconds = visibleRecords.reduce(
-            (sum, record) => sum + (Number(record.durationSeconds) || 0),
-            0
-        );
+        const totalSeconds = sumDuration(visibleRecords);
 
         container.innerHTML = `
             <section class="study-records" aria-label="학습 기록">
@@ -317,11 +472,13 @@ export function createStudyRecords({ storageKey, getElapsedSeconds }) {
                         <span>선택 기간 합계</span>
                         <strong>${formatDuration(totalSeconds)}</strong>
                     </div>
-                    <p>구간 기록을 눌러도 타이머는 계속 흐릅니다.</p>
+                    <p>구간 기록을 남겨도 타이머는 멈추지 않습니다.</p>
                 </header>
                 ${viewMode === "daily"
-                    ? renderDailyRecords(visibleRecords)
-                    : renderPeriodOverview(visibleRecords)}
+                    ? renderDaily(visibleRecords)
+                    : viewMode === "monthly"
+                        ? renderMonthly(visibleRecords)
+                        : renderYearly(visibleRecords)}
             </section>
         `;
 
@@ -341,11 +498,10 @@ export function createStudyRecords({ storageKey, getElapsedSeconds }) {
         const viewButton = event.target.closest("[data-study-record-view]");
         const periodButton = event.target.closest("[data-study-period-move]");
         const todayButton = event.target.closest("[data-study-period-today]");
-        const pageButton = event.target.closest("[data-study-record-page]");
+        const calendarDay = event.target.closest("[data-study-calendar-day]");
 
         if (viewButton) {
             viewMode = viewButton.dataset.studyRecordView;
-            currentPage = 1;
             editingId = null;
             render();
             return true;
@@ -357,7 +513,6 @@ export function createStudyRecords({ storageKey, getElapsedSeconds }) {
                 referenceDate,
                 Number(periodButton.dataset.studyPeriodMove)
             );
-            currentPage = 1;
             editingId = null;
             render();
             return true;
@@ -365,14 +520,16 @@ export function createStudyRecords({ storageKey, getElapsedSeconds }) {
 
         if (todayButton) {
             referenceDate = new Date();
-            currentPage = 1;
             editingId = null;
             render();
             return true;
         }
 
-        if (pageButton && !pageButton.disabled) {
-            currentPage += pageButton.dataset.studyRecordPage === "next" ? 1 : -1;
+        if (calendarDay) {
+            const [year, month, day] = calendarDay.dataset.studyCalendarDay
+                .split("-")
+                .map(Number);
+            referenceDate = new Date(year, month - 1, day);
             editingId = null;
             render();
             return true;
