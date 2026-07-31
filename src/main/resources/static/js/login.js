@@ -57,6 +57,6 @@ form.addEventListener("submit", (event) => {
 
     setTimeout(() => {
         const hasSelectedCharacter = localStorage.getItem(`omagotchiHasCharacter:${email}`) === "true";
-        window.location.href = hasSelectedCharacter ? "/home" : "/character-selector";
+            window.location.href = hasSelectedCharacter ? "/check-in" : "/character-selector";
     }, 700);
 });

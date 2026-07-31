@@ -1,0 +1,178 @@
+:root {
+    --checkin-green: #1fbd78;
+    --checkin-green-dark: #0d704c;
+    --checkin-ink: #111713;
+    --checkin-paper: #f7fbf8;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    min-width: 320px;
+    color: var(--checkin-paper);
+    background:
+        linear-gradient(rgba(255, 255, 255, 0.055) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.055) 1px, transparent 1px),
+        #121614;
+    background-size: 48px 48px;
+    font-family: "Galmuri11", system-ui, sans-serif;
+}
+
+button {
+    font: inherit;
+}
+
+.check-in-stage {
+    min-height: 100svh;
+    display: grid;
+    place-items: center;
+    padding: 32px;
+}
+
+.wake-panel {
+    width: min(660px, 100%);
+    text-align: center;
+}
+
+.wake-panel__eyebrow {
+    margin: 0 0 12px;
+    color: #7ad9af;
+    font-size: 0.78rem;
+    font-weight: 800;
+}
+
+.wake-panel h1 {
+    margin: 0;
+    font-size: clamp(1.65rem, 5vw, 3rem);
+    line-height: 1.25;
+}
+
+.wake-panel__description {
+    max-width: 520px;
+    margin: 16px auto 12px;
+    color: #b8c5bd;
+    line-height: 1.65;
+}
+
+.sleeping-character {
+    position: relative;
+    width: min(290px, 70vw);
+    aspect-ratio: 1;
+    margin: 20px auto 4px;
+    padding: 20px;
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+}
+
+.sleeping-character::after {
+    content: "";
+    position: absolute;
+    left: 18%;
+    right: 18%;
+    bottom: 11%;
+    height: 20px;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.36);
+    filter: blur(3px);
+}
+
+.sleeping-character img {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    image-rendering: pixelated;
+    user-select: none;
+    -webkit-user-drag: none;
+}
+
+.sleep-bubble {
+    position: absolute;
+    z-index: 2;
+    top: 12%;
+    right: 15%;
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    color: var(--checkin-ink);
+    background: #75d6ed;
+    border: 5px solid #e5f9ff;
+    box-shadow: 0 5px 0 rgba(0, 0, 0, 0.28);
+    animation: sleepBubble 1.8s ease-in-out infinite;
+}
+
+.wake-message {
+    min-height: 1.5em;
+    margin: 2px 0 18px;
+    color: #a6dabd;
+}
+
+.wake-actions {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+}
+
+.wake-actions button {
+    min-width: 142px;
+    padding: 15px 20px;
+    border: 2px solid #c9d1cc;
+    border-radius: 7px;
+    color: var(--checkin-ink);
+    background: var(--checkin-paper);
+    box-shadow: 0 5px 0 #8b948e;
+    cursor: pointer;
+}
+
+.wake-actions button:active {
+    transform: translateY(4px);
+    box-shadow: 0 1px 0 #8b948e;
+}
+
+.sleeping-character.is-waking {
+    animation: wakeJump 650ms cubic-bezier(.2, .9, .3, 1);
+}
+
+body.is-leaving {
+    animation: leaveStage 650ms ease forwards;
+}
+
+@keyframes sleepBubble {
+    50% { transform: translate(4px, -7px) scale(1.08); }
+}
+
+@keyframes wakeJump {
+    35% { transform: translateY(-28px) rotate(-3deg); }
+    70% { transform: translateY(3px) rotate(2deg); }
+}
+
+@keyframes leaveStage {
+    to { opacity: 0; background-color: var(--checkin-green); }
+}
+
+@media (max-width: 520px) {
+    .check-in-stage {
+        padding: 24px 18px;
+    }
+
+    .wake-actions {
+        flex-direction: column;
+    }
+
+    .wake-actions button {
+        width: 100%;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 1ms !important;
+        animation-iteration-count: 1 !important;
+    }
+}

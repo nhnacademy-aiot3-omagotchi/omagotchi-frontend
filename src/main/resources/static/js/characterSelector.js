@@ -217,7 +217,7 @@ enterButton.addEventListener("click", () => {
 
     setTimeout(() => {
         selectedImage.classList.remove("happy");
-        window.location.href = "/home";
+        window.location.href = "/check-in";
     }, 600);
 });
 

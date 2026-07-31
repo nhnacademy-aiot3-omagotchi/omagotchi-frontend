@@ -12,6 +12,8 @@
     <link rel="stylesheet" href="/css/spaceRoom.css" th:href="@{/css/spaceRoom.css}" />
     <link rel="stylesheet" href="/css/notificationPanel.css" th:href="@{/css/notificationPanel.css}" />
     <link rel="stylesheet" href="/css/imageProtection.css" th:href="@{/css/imageProtection.css}" />
+    <link rel="stylesheet" th:href="@{/css/homeAttendance.css}">
+    <link rel="stylesheet" th:href="@{/css/homeAttendanceSync.css}" href="/css/homeAttendanceSync.css">
 </head>
 <body>
 <main class="home-page">
@@ -24,27 +26,27 @@
                 도움말
             </a>
             <a class="has-menu-alert" href="/progress#quests" aria-label="진행 현황" data-home-overlay="progress">
-                <span>✓</span>
+                <span><img src = "/images/app/quest.png" alt = " " width = "32"></span>
                 진행
             </a>
             <a href="/personal" aria-label="내 정보" data-home-overlay="personal">
-                <span>●</span>
+                <span><img src = "/images/app/userList.png" alt = " " width = "32"></span>
                 내 정보
             </a>
             <a href="/cohort" aria-label="기수" data-home-overlay="cohort">
-                <span>▦</span>
+                <span><img src = "/images/app/cohort.png" alt = " " width = "32"></span>
                 기수
             </a>
             <a href="/write" aria-label="학습 기록 확인" data-home-overlay="write">
-                <span>▤</span>
+                <span><img src = "/images/app/studyrecord.png" alt = " " width = "32"></span>
                 학습 기록
             </a>
             <a href="/space#lab" aria-label="공간" data-home-overlay="space">
-                <span>▣</span>
+                <span><img src = "/images/app/door.png" alt = " " width = "32"></span>
                 공간
             </a>
             <a href="/home#community" aria-label="커뮤니티" data-home-overlay="community">
-                <span>✦</span>
+                <span><img src = "/images/app/commu.png" alt = " " width = "32"></span>
                 커뮤
             </a>
             <a href="/settings" aria-label="설정" data-home-overlay="settings">
@@ -215,5 +217,7 @@
 <script src="/js/spaceRoom.js" th:src="@{/js/spaceRoom.js}"></script>
 <script type="module" src="/js/home.js" th:src="@{/js/home.js}"></script>
 <script src="/js/imageProtection.js" th:src="@{/js/imageProtection.js}"></script>
+<script type="module" th:src="@{/js/homeAttendance.js}"></script>
+<script type="module" th:src="@{/js/homeAttendanceSync.js}" src="/js/homeAttendanceSync.js"></script>
 </body>
 </html>

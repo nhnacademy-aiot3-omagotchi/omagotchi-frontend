@@ -199,7 +199,7 @@ export function createStudyRecords({ storageKey, getElapsedSeconds }) {
             id: createId("segment"),
             sessionId,
             sequence,
-            name: `구간 ${sequence}`,
+            name: `${sequence}`,
             tags: [],
             durationSeconds,
             elapsedSeconds,
