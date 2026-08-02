@@ -1,0 +1,24 @@
+:root {
+    --cursor-touch: url("/images/cursor/touch_re3.png") 24 24, pointer;
+}
+
+.home-character-button,
+.home-character-button *,
+.sleeping-character,
+.sleeping-character *,
+.selected-character,
+.character-option,
+.character-option *,
+.index-character,
+.omagotchi-character,
+.manager-character-img,
+.space-character,
+.overlay-space-character,
+[data-character-interaction],
+[data-character-interaction] *,
+[data-home-character],
+[data-selected-image],
+[data-wake-character],
+[data-sleeping-character] {
+    cursor: var(--cursor-touch);
+}

@@ -187,13 +187,21 @@ colorRow.addEventListener("click", (event) => {
 });
 
 // 캐릭터 선택 완료
-enterButton.addEventListener("click", () => {
+enterButton.addEventListener("click", async () => {
     const selectedImagePath = getSelectedImagePath();
     const selectedAnimatedImagePath = getSelectedAnimatedImagePath();
+    // [API-REPLACE] 로그인 사용자를 브라우저 저장소에서 찾지 않도록 변경
     const email = sessionStorage.getItem("omagotchiEmail")
         || localStorage.getItem("omagotchiLastEmail")
-        || "user@example.com";
+        || "guest";
+    await window.OmagotchiApi?.character?.saveSelection?.({
+        characterId: selectedCharacter.id,
+        colorId: selectedColor.id
+    });
 
+    // [API-REPLACE] 캐릭터 선택 저장 API로 교체
+    // 서버에는 characterId와 colorId 정도만 저장하고,
+    // 이름과 이미지 경로는 조회 시 캐릭터 데이터로 조합하는 것이 좋음
     sessionStorage.setItem("omagotchiCharacterId", selectedCharacter.id);
     sessionStorage.setItem("omagotchiCharacterName", selectedCharacter.name);
     sessionStorage.setItem("omagotchiCharacterImage", selectedImagePath);
@@ -211,7 +219,7 @@ enterButton.addEventListener("click", () => {
     localStorage.setItem(`omagotchiCharacterColorId:${email}`, selectedColor.id);
     localStorage.setItem(`omagotchiCharacterColorName:${email}`, selectedColor.name);
     localStorage.setItem(`omagotchiCharacterColor:${email}`, selectedColor.value || "");
-
+    // 유지
     selectedBubble.textContent = "입장!";
     selectedImage.classList.add("happy");
 

@@ -1,3 +1,4 @@
+// [KEEP] 공통 유틸리티 -> 삭제 X
 export function escapeHtml(value) {
     return String(value)
         .replaceAll("&", "&amp;")

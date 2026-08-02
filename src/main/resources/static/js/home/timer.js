@@ -1,6 +1,7 @@
 import { formatDuration } from "./utils.js";
 
 const TIMER_STATE_VERSION = 1;
+// [POLICY-CHECK] 실제 서비스의 학습일 시작 마감 정책인지 확인
 const STUDY_DAY_START_HOUR = 7;
 const STUDY_DAY_CLOSE_HOUR = 4;
 
@@ -12,6 +13,7 @@ function formatDateKey(date) {
 }
 
 // 오전 7시 전 기록은 전날 학습일에 포함한다.
+// [POLICY-CHECK] 운영 제한이 실제 요구사항이 아니라면 삭제
 function getStudyDate(now = new Date()) {
     const studyDate = new Date(now);
     if (studyDate.getHours() < STUDY_DAY_START_HOUR) {
@@ -29,7 +31,8 @@ function isMaintenanceTime(now = new Date()) {
     const hour = now.getHours();
     return hour >= STUDY_DAY_CLOSE_HOUR && hour < STUDY_DAY_START_HOUR;
 }
-
+// [API-REPLACE 또는 LOCAL-KEEP]
+// 초단위 렌더링은 브라우저, 최종 기록은 서버에서
 function readState(storageKey) {
     try {
         const saved = JSON.parse(localStorage.getItem(storageKey));
@@ -68,6 +71,7 @@ export function createTimer({
 
     function saveState(now = Date.now()) {
         const elapsedSeconds = getElapsedSeconds(now);
+        // [LOCAL-CACHE-CHECK] 서버 세션 연동 후 보조 캐시로 유지할지 결정
         localStorage.setItem(storageKey, JSON.stringify({
             version: TIMER_STATE_VERSION,
             studyDate,

@@ -143,6 +143,182 @@ a {
     line-height: 1;
 }
 
+.bgm-player {
+    position: absolute;
+    z-index: 8;
+    top: clamp(180px, 24vh, 250px);
+    left: 14px;
+    width: min(300px, calc(100vw - 28px));
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 10px 12px;
+    align-items: center;
+    padding: 14px;
+    border: 3px solid rgba(255, 255, 255, 0.86);
+    border-radius: 0 18px 18px 0;
+    background: #ffffff;
+    color: #10281f;
+    box-shadow: 0 6px 0 rgba(0, 0, 0, 0.16);
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.bgm-player button {
+    font-family: inherit;
+}
+
+.bgm-player-copy {
+    min-width: 0;
+    display: grid;
+    gap: 2px;
+}
+
+.bgm-player-copy span,
+.bgm-player-copy small {
+    color: #577166;
+    font-size: 12px;
+    font-weight: 800;
+}
+
+.bgm-player-copy strong {
+    overflow: hidden;
+    font-size: 15px;
+    line-height: 1.2;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.bgm-player-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.bgm-player-actions button {
+    width: 38px;
+    height: 38px;
+    display: grid;
+    place-items: center;
+    border: 2px solid #10281f;
+    border-radius: 10px;
+    background: #72d6aa;
+    color: #09251a;
+    font-size: 16px;
+    font-weight: 900;
+    cursor: pointer;
+    box-shadow: 0 3px 0 rgba(0, 0, 0, 0.16);
+}
+
+.bgm-player-actions button:hover,
+.bgm-player-actions button:focus-visible {
+    background: #8be2bd;
+}
+
+.bgm-player-actions button:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+.bgm-volume {
+    grid-column: 1 / -1;
+}
+
+.bgm-volume input {
+    width: 100%;
+    accent-color: #17ad66;
+}
+
+.bgm-playlist {
+    position: absolute;
+    top: calc(100% + 10px);
+    left: 0;
+    width: min(360px, calc(100vw - 28px));
+    max-height: min(420px, calc(100svh - 320px));
+    overflow: auto;
+    padding: 12px;
+    border: 3px solid rgba(255, 255, 255, 0.9);
+    border-radius: 0 18px 18px 0;
+    background: #f7fff9;
+    color: #10281f;
+    box-shadow: 0 8px 0 rgba(0, 0, 0, 0.16);
+}
+
+.bgm-playlist[hidden] {
+    display: none;
+}
+
+.bgm-playlist header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 10px;
+}
+
+.bgm-playlist header strong {
+    font-size: 14px;
+}
+
+.bgm-playlist header button {
+    min-height: 32px;
+    padding: 0 12px;
+    border: 2px solid #10281f;
+    border-radius: 9px;
+    background: #ffffff;
+    color: #10281f;
+    font-size: 12px;
+    font-weight: 900;
+    cursor: pointer;
+}
+
+.bgm-playlist header button.is-active {
+    background: #72d6aa;
+}
+
+.bgm-playlist ol {
+    display: grid;
+    gap: 6px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.bgm-playlist li button {
+    width: 100%;
+    display: grid;
+    gap: 2px;
+    padding: 10px;
+    border: 2px solid rgba(16, 40, 31, 0.22);
+    border-radius: 10px;
+    background: #ffffff;
+    color: #10281f;
+    text-align: left;
+    cursor: pointer;
+}
+
+.bgm-playlist li button:hover,
+.bgm-playlist li button:focus-visible,
+.bgm-playlist li button.is-current {
+    border-color: #10281f;
+    background: #dff8eb;
+}
+
+.bgm-playlist li span {
+    overflow: hidden;
+    font-size: 13px;
+    font-weight: 900;
+    line-height: 1.2;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.bgm-playlist li small {
+    overflow: hidden;
+    color: #577166;
+    font-size: 11px;
+    font-weight: 800;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 /* 실습실 재실 인원을 빠르게 확인하는 홈 HUD */
 .sr-only {
     position: absolute;
@@ -192,12 +368,14 @@ a {
     transform: translateY(-2px);
 }
 
-.presence-trigger:focus-visible,
-.presence-refresh:focus-visible,
-.presence-search input:focus-visible {
-    outline: 3px solid #111111;
-    outline-offset: 3px;
-}
+    .presence-trigger:focus-visible,
+    .presence-refresh:focus-visible,
+    .presence-search input:focus-visible,
+    .bgm-player-actions button:focus-visible,
+    .bgm-volume input:focus-visible {
+        outline: 3px solid #111111;
+        outline-offset: 3px;
+    }
 
 .presence-trigger-copy {
     min-width: 0;
@@ -2670,6 +2848,23 @@ a {
         width: min(340px, calc(100vw - 20px));
     }
 
+    .bgm-player {
+        position: fixed;
+        top: auto;
+        left: 10px;
+        bottom: 98px;
+        width: min(300px, calc(100vw - 20px));
+        border-radius: 16px;
+    }
+
+    .bgm-playlist {
+        top: auto;
+        bottom: calc(100% + 10px);
+        width: 100%;
+        max-height: min(360px, calc(100svh - 220px));
+        border-radius: 16px;
+    }
+
     .presence-trigger {
         min-height: 72px;
         padding: 9px 10px 9px 16px;
@@ -2797,6 +2992,24 @@ a {
         right: 8px;
         bottom: 8px;
         width: calc(100vw - 16px);
+    }
+
+    .bgm-player {
+        left: 8px;
+        bottom: 88px;
+        width: calc(100vw - 16px);
+        grid-template-columns: minmax(0, 1fr) auto;
+        padding: 12px;
+    }
+
+    .bgm-player-copy strong {
+        font-size: 13px;
+    }
+
+    .bgm-player-actions button {
+        width: 34px;
+        height: 34px;
+        font-size: 14px;
     }
 
     .presence-panel {

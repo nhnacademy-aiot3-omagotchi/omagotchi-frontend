@@ -13,6 +13,7 @@ export function createCharacter({
     let clickResetTimer = null;
     let studying = false;
     // 메시지 띄우기
+    // [UI-KEEP] 캐릭터 기본 대사 -> 유지
     function getIdleMessage() {
         return studying ? "집중하고 있어요!" : "오늘도 같이 공부해요!";
     }
@@ -40,7 +41,7 @@ export function createCharacter({
         studying = isStudying;
         stage?.classList.toggle("is-studying", isStudying);
     }
-
+    // [UI-KKEEP] 캐릭터 클릭 반응 -> 유지
     function handleCharacterClick() {
         clickCount += 1;
         const messages = ["좋아요!", "같이 공부해요!", "한 번 더!", "오늘도 성장 중!"];

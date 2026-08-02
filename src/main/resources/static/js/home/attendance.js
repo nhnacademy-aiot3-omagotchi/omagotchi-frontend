@@ -12,9 +12,11 @@ export function createAttendance({
     streakCount,
     streakList,
     storageKey,
+    api,
     onChange
 }) {
     let renderedDateKey = getLocalDateKey();
+    let serverHistory = null;
 
     function formatTime(date) {
         return new Intl.DateTimeFormat("ko-KR", {
@@ -23,12 +25,15 @@ export function createAttendance({
             hour12: false
         }).format(date);
     }
-
-    function getHistory() {
+    // [API-REPLACE] 서버 출석 기록 조회 API로 교체
+    function getLocalHistory() {
         try {
             const saved = JSON.parse(localStorage.getItem(storageKey)) || {};
 
             // 예전에 저장한 단일 출석 데이터가 있으면 날짜별 구조로 한 번만 바꾼다.
+            // [Mock] 실제 서비스에서는 필요하지 않은 이전 로컬 저장소 마이그레이션입니다. 1~5
+            // [MOCK-DELETE] 로컬 스토리지 이전 형식 마이그레이션
+            // 서버 DB 연동이 완료되면 삭제
             if (saved.checkInAt) {
                 const dateKey = getLocalDateKey(new Date(saved.checkInAt));
                 const migrated = { [dateKey]: saved };
@@ -40,10 +45,51 @@ export function createAttendance({
             return {};
         }
     }
+
+    function normalizeAttendance(entry = {}) {
+        return {
+            ...entry,
+            checkInAt: entry.checkInAt || entry.checkedInAt,
+            checkOutAt: entry.checkOutAt || entry.checkedOutAt
+        };
+    }
+
+    function normalizeHistory(payload) {
+        const source = payload?.history || payload?.records || payload || {};
+        if (Array.isArray(source)) {
+            return source.reduce((history, entry) => {
+                const dateKey = entry.date || entry.serviceDate || getLocalDateKey(new Date(entry.checkInAt || entry.checkedInAt));
+                history[dateKey] = normalizeAttendance(entry);
+                return history;
+            }, {});
+        }
+
+        return Object.fromEntries(
+            Object.entries(source).map(([dateKey, entry]) => [dateKey, normalizeAttendance(entry)])
+        );
+    }
+
+    function getHistory() {
+        return serverHistory || getLocalHistory();
+    }
+
+    async function loadServerHistory() {
+        if (!api?.getHistory) return;
+
+        const history = await api.getHistory();
+        if (!history) return;
+
+        serverHistory = normalizeHistory(history);
+        render();
+    }
     // 저장
+    // [API-REPLACE] 입실 퇴실 저장 API로 교체
     function saveToday(attendance) {
-        const history = getHistory();
+        const history = serverHistory || getLocalHistory();
         history[getLocalDateKey()] = attendance;
+        if (serverHistory) {
+            serverHistory = history;
+        }
         localStorage.setItem(storageKey, JSON.stringify(history));
     }
     // 달력 (철석)
@@ -146,6 +192,8 @@ export function createAttendance({
 
         if (checkInTime) checkInTime.textContent = hasCheckIn ? formatTime(new Date(attendance.checkInAt)) : "아직 입실 전";
         if (checkOutTime) checkOutTime.textContent = hasCheckOut ? formatTime(new Date(attendance.checkOutAt)) : "아직 퇴실 전";
+        // [Mock] 실제 서비스에서는 필요하지 않은 임시 지각/조퇴 표시입니다. 1~2
+        // [MOCK-DELETE] 실제 지각, 조퇴 시간 계산 결과로 교체
         if (earlyLeave) earlyLeave.textContent = hasCheckOut ? "0분" : "기록 없음";
         if (lateMinutes) lateMinutes.textContent = hasCheckIn ? "0분" : "기록 없음";
 
@@ -161,11 +209,21 @@ export function createAttendance({
         onChange?.();
     }
     // 토글
-    function toggle() {
+    // [API-REPLACE] 브라우저 시간이 아니라 서버에서 입실 퇴실 시간을 기록해야 함
+    async function toggle() {
         const history = getHistory();
         const attendance = history[getLocalDateKey()] || {};
+        const nextAction = attendance.checkInAt && !attendance.checkOutAt ? "checkOut" : "checkIn";
 
-        if (attendance.checkInAt && !attendance.checkOutAt) {
+        if (button) button.disabled = true;
+        const serverAttendance = await api?.[nextAction]?.();
+        if (serverAttendance) {
+            saveToday(normalizeAttendance(serverAttendance));
+            render();
+            return;
+        }
+
+        if (nextAction === "checkOut") {
             attendance.checkOutAt = new Date().toISOString();
         } else if (!attendance.checkInAt) {
             attendance.checkInAt = new Date().toISOString();
@@ -187,6 +245,7 @@ export function createAttendance({
     function init() {
         button?.addEventListener("click", toggle);
         render();
+        loadServerHistory();
         window.setInterval(refreshDate, 30_000);
         window.addEventListener("focus", refreshDate);
         document.addEventListener("visibilitychange", () => {

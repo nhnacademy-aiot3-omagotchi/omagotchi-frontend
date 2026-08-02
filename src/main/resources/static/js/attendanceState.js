@@ -1,4 +1,6 @@
+// [API-REPLACE] localStorage용 출석 키, 서버 연동 후 삭제
 const ATTENDANCE_PREFIX = "omagotchiAttendance:";
+// [UI-KEEP] 한국 서비스 기준 시간대
 const SEOUL_TIME_ZONE = "Asia/Seoul";
 
 function getSeoulParts(now = new Date()) {
@@ -13,7 +15,7 @@ function getSeoulParts(now = new Date()) {
 
     return Object.fromEntries(parts.map(({type, value}) => [type, value]));
 }
-
+// [POLICY-CHECK] 출석일이 오전 4시에 전환되는 것이 실제 요구사항인지 확인
 export function getServiceDate(now = new Date()) {
     const parts = getSeoulParts(now);
     const date = new Date(`${parts.year}-${parts.month}-${parts.day}T12:00:00+09:00`);
@@ -30,13 +32,13 @@ export function getServiceDate(now = new Date()) {
         day: "2-digit"
     }).format(date);
 }
-
+// [API-REPLACE] 로그인 사용자는 서버 세션 또는 인증 객체에서 받아야 함
 export function getCurrentUserKey() {
     return sessionStorage.getItem("omagotchiEmail")
         || localStorage.getItem("omagotchiLastEmail")
-        || "student@omagotchi.site";
+        || "guest";
 }
-
+// [API-REPLACE] GET /api/attendance/today 같은 조회 API로 교체
 function getAttendanceKey(userKey = getCurrentUserKey()) {
     return `${ATTENDANCE_PREFIX}${userKey}:${getServiceDate()}`;
 }
@@ -53,13 +55,15 @@ export function getTodayAttendance() {
         return null;
     }
 }
-
+// [API-REPLACE] POST 입실 API로 교체
+// checkedInAt은 브라우저 시간이 아니라 서버 시간이 되어야 함
 export function isCheckedInToday() {
     return Boolean(getTodayAttendance()?.checkedInAt);
 }
 
-export function checkInToday() {
-    const attendance = {
+export async function checkInToday() {
+    const serverAttendance = await window.OmagotchiApi?.attendance?.checkIn?.();
+    const attendance = serverAttendance || {
         serviceDate: getServiceDate(),
         checkedInAt: new Date().toISOString(),
         status: "PRESENT",

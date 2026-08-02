@@ -14,6 +14,7 @@
     <link rel="stylesheet" href="/css/imageProtection.css" th:href="@{/css/imageProtection.css}" />
     <link rel="stylesheet" th:href="@{/css/homeAttendance.css}">
     <link rel="stylesheet" th:href="@{/css/homeAttendanceSync.css}" href="/css/homeAttendanceSync.css">
+    <link rel="stylesheet" href="/css/cursor.css" th:href="@{/css/cursor.css}" />
 </head>
 <body>
 <main class="home-page">
@@ -22,7 +23,7 @@
 
         <nav class="home-menu" aria-label="주요 메뉴">
             <a href="/help" aria-label="도움말" data-home-overlay="help">
-                <span>?</span>
+                <span><img src ="/images/app/help.png" alt = " " width = "32"></span>
                 도움말
             </a>
             <a class="has-menu-alert" href="/progress#quests" aria-label="진행 현황" data-home-overlay="progress">
@@ -50,10 +51,34 @@
                 커뮤
             </a>
             <a href="/settings" aria-label="설정" data-home-overlay="settings">
-                <span>⚙</span>
+                <span><img src = "/images/app/set.png" alt = " " width = "32"></span>
                 설정
             </a>
         </nav>
+
+        <aside class="bgm-player" data-bgm-player aria-label="배경 음악">
+            <div class="bgm-player-copy">
+                <span>BGM</span>
+                <strong data-bgm-title>준비 중</strong>
+                <small data-bgm-artist>Pixabay</small>
+            </div>
+            <div class="bgm-player-actions">
+                <button type="button" data-bgm-play aria-label="BGM 재생" title="BGM 재생">▶</button>
+                <button type="button" data-bgm-next aria-label="다음 BGM" title="다음 BGM">⏭</button>
+                <button type="button" data-bgm-list aria-expanded="false" aria-controls="bgm-playlist" aria-label="BGM 플레이리스트" title="BGM 플레이리스트">▤</button>
+            </div>
+            <label class="bgm-volume">
+                <span class="sr-only">BGM 볼륨</span>
+                <input type="range" min="0" max="100" value="22" data-bgm-volume />
+            </label>
+            <section class="bgm-playlist" id="bgm-playlist" data-bgm-panel hidden>
+                <header>
+                    <strong>Playlist</strong>
+                    <button type="button" data-bgm-shuffle aria-pressed="false">Shuffle</button>
+                </header>
+                <ol data-bgm-tracks></ol>
+            </section>
+        </aside>
 
         <aside class="presence-hud" data-presence-hud>
             <button
@@ -213,11 +238,10 @@
 <div class="home-overlay-root" data-home-overlay-root aria-live="polite"></div>
 <th:block th:replace="~{fragments/home-notification-panel :: notificationPanelTemplate}"></th:block>
 
+<script src="/js/api.js" th:src="@{/js/api.js}"></script>
 <script src="/js/characterAssets.js" th:src="@{/js/characterAssets.js}"></script>
 <script src="/js/spaceRoom.js" th:src="@{/js/spaceRoom.js}"></script>
 <script type="module" src="/js/home.js" th:src="@{/js/home.js}"></script>
 <script src="/js/imageProtection.js" th:src="@{/js/imageProtection.js}"></script>
-<script type="module" th:src="@{/js/homeAttendance.js}"></script>
-<script type="module" th:src="@{/js/homeAttendanceSync.js}" src="/js/homeAttendanceSync.js"></script>
 </body>
 </html>

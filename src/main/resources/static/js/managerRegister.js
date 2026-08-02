@@ -48,8 +48,9 @@ character.addEventListener("click", () => {
     showMessage(`관리자 소속은<br />${organization} 입니다.`);
 });
 
+// [Mock] 실제 서비스에서는 필요하지 않은 임시 관리자 회원가입 검증입니다. 1~43
 // 관리자 회원가입 목업 검증
-form.addEventListener("submit", (event) => {
+form.addEventListener("submit", async (event) => {
     const email = form.email.value.trim();
     const password = form.password.value.trim();
     const username = form.username.value.trim();
@@ -91,6 +92,7 @@ form.addEventListener("submit", (event) => {
     }
 
     event.preventDefault();
+    const session = await window.OmagotchiApi?.auth?.managerRegister?.({ email, password, username, organization });
     sessionStorage.setItem("omagotchiManagerEmail", email);
     sessionStorage.setItem("omagotchiManagerName", username);
     sessionStorage.setItem("omagotchiManagerOrganization", organization);
@@ -98,7 +100,7 @@ form.addEventListener("submit", (event) => {
     sessionStorage.removeItem("omagotchiManagerCohort");
     showMessage(managerRegisterMessages.success);
     setTimeout(() => {
-        window.location.href = "/manager-login";
+        window.location.href = session?.redirectUrl || "/manager-login";
     }, 800);
 });
 

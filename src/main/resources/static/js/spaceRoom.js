@@ -1,95 +1,27 @@
 (() => {
-    const stateKey = "omagotchiSpacePrototypeV2";
+    const stateKey = "omagotchiSpaceState";
     const currentUserEmail = sessionStorage.getItem("omagotchiEmail")
         || localStorage.getItem("omagotchiLastEmail")
-        || "student@omagotchi.site";
+        || "guest";
     const currentUser = {
         id: "current-user",
-        name: sessionStorage.getItem("omagotchiUsername") || currentUserEmail.split("@")[0] || "한유진",
-        cohortId: 3,
-        cohortName: "AIoT 3기"
+        name: sessionStorage.getItem("omagotchiUsername")
+            || (currentUserEmail === "guest" ? "나" : currentUserEmail.split("@")[0]),
+        cohortId: null,
+        cohortName: ""
     };
 
     const initialState = {
         activeTab: "lab",
-        selectedRoomId: "meeting-a",
+        selectedRoomId: "",
         alertRoomIds: [],
         libraryInside: false,
         partyPanelOpen: false,
         party: null,
-        rooms: [
-            {
-                id: "meeting-a",
-                name: "회의실 A",
-                capacity: 4,
-                status: "AVAILABLE",
-                sensor: { co2: 436, temperature: 23.8, humidity: 43 },
-                occupancy: null
-            },
-            {
-                id: "meeting-b",
-                name: "회의실 B",
-                capacity: 4,
-                status: "OCCUPIED",
-                sensor: { co2: 612, temperature: 24.3, humidity: 45 },
-                occupancy: {
-                    ownerId: "user-park",
-                    cohortId: 3,
-                    cohortName: "AIoT 3기",
-                    startedAt: Date.now() - (42 * 60 * 1000),
-                    expiresAt: Date.now() + (78 * 60 * 1000),
-                    extensionCount: 0,
-                    participants: [
-                        { id: "user-park", name: "박상민" },
-                        { id: "user-kim", name: "김민서" },
-                        { id: "user-lee", name: "이발소" }
-                    ]
-                }
-            },
-            {
-                id: "meeting-c",
-                name: "회의실 C",
-                capacity: 4,
-                status: "OCCUPIED",
-                sensor: { co2: 781, temperature: 24.7, humidity: 41 },
-                occupancy: {
-                    ownerId: "other-cohort-user",
-                    cohortId: 7,
-                    cohortName: "Backend 7기",
-                    startedAt: Date.now() - (91 * 60 * 1000),
-                    expiresAt: Date.now() + (29 * 60 * 1000),
-                    extensionCount: 1,
-                    participants: [
-                        { id: "hidden-1", name: "비공개" },
-                        { id: "hidden-2", name: "비공개" },
-                        { id: "hidden-3", name: "비공개" },
-                        { id: "hidden-4", name: "비공개" }
-                    ]
-                }
-            },
-            {
-                id: "meeting-d",
-                name: "회의실 D",
-                capacity: 8,
-                status: "INACTIVE",
-                inactiveReason: "장비 점검 중",
-                sensor: { co2: null, temperature: null, humidity: null },
-                occupancy: null
-            }
-        ]
+        rooms: []
     };
 
-    // API 연동 전까지 홈의 재실 인원 목록과 같은 형태로 사용합니다.
-    const cohortMembers = [
-        { id: "user-moosik", email: "moosik@omagotchi.site", name: "최무식", cohortId: 3, status: "present", characterImage: "/images/characters/study/study.png" },
-        { id: "user-sooki", email: "sooki@omagotchi.site", name: "정수기", cohortId: 3, status: "present", characterImage: "/images/characters/sprout/sprout.png" },
-        { id: "user-suckbong", email: "suckbong@omagotchi.site", name: "한석봉", cohortId: 3, status: "present", characterImage: "/images/characters/commit/commit.png" },
-        { id: "user-oreo", email: "oreo@omagotchi.site", name: "오레오", cohortId: 3, status: "away", characterImage: "/images/characters/caffeine/caffeine.png" },
-        { id: "user-jiwoo", email: "jiwoo@omagotchi.site", name: "박지우", cohortId: 3, status: "meeting", characterImage: "/images/characters/debug/debug.png" },
-        { id: "user-minjun", email: "minjun@omagotchi.site", name: "김민준", cohortId: 3, status: "meeting", characterImage: "/images/characters/night/night.png" },
-        { id: "user-seojun", email: "seojun@omagotchi.site", name: "이서준", cohortId: 3, status: "offline", characterImage: "/images/characters/server/server.png" },
-        { id: "user-subin", email: "subin@omagotchi.site", name: "박수빈", cohortId: 3, status: "offline", characterImage: "/images/characters/kid/kid.png" }
-    ];
+    const cohortMembers = [];
 
     const memberStatusLabels = {
         present: "재실",
@@ -232,7 +164,7 @@
                 <header class="space-room-section-head">
                     <div>
                         <span class="space-room-kicker">MY COHORT LAB</span>
-                        <h3 id="space-lab-title">AIoT 3기 실습실</h3>
+                        <h3 id="space-lab-title">실습실</h3>
                     </div>
                     <span class="space-room-status ${checkedIn ? "is-active" : ""}">
                         ${checkedIn ? "입실 중" : "입실 전"}
@@ -240,12 +172,12 @@
                 </header>
                 <div class="space-room-lab-grid">
                     <aside class="space-room-sensors" aria-label="실습실 센서 상태">
-                        ${renderSensor({ co2: 410, temperature: 24, humidity: 42 })}
+                        ${renderSensor({ co2: null, temperature: null, humidity: null })}
                     </aside>
                     <div class="space-room-lab-stage">
                         <div>
                             <span>현재 인원</span>
-                            <strong>${checkedIn ? 18 : 17} / 50</strong>
+                            <strong>${checkedIn ? 1 : 0} / 0</strong>
                         </div>
                         <p>${checkedIn
                             ? "입실 기록과 함께 실습실 참여 상태가 연결되었습니다."
@@ -364,7 +296,7 @@
     function renderRoomList() {
         return `
             <div class="space-room-list" role="list" aria-label="회의실 목록">
-                ${state.rooms.map((room) => {
+                ${state.rooms.length ? state.rooms.map((room) => {
                     const view = getRoomView(room);
                     const selected = room.id === state.selectedRoomId;
                     const remaining = room.occupancy ? formatRemaining(room.occupancy.expiresAt) : "";
@@ -385,7 +317,7 @@
                             ${remaining ? `<time data-space-countdown="${room.id}">${remaining}</time>` : ""}
                         </button>
                     `;
-                }).join("")}
+                }).join("") : `<p class="space-room-empty-state">등록된 회의실이 없습니다.</p>`}
             </div>
         `;
     }
@@ -436,6 +368,16 @@
 
     function renderRoomDetail() {
         const room = state.rooms.find((item) => item.id === state.selectedRoomId) || state.rooms[0];
+        if (!room) {
+            return `
+                <article class="space-room-detail" aria-live="polite">
+                    <section class="space-room-empty-state">
+                        <h4>회의실 정보가 없습니다</h4>
+                        <p>백엔드에서 회의실 목록을 내려주면 이 영역에 표시됩니다.</p>
+                    </section>
+                </article>
+            `;
+        }
         const view = getRoomView(room);
         const occupancy = room.occupancy;
         const isMine = occupancy?.ownerId === currentUser.id;
@@ -589,7 +531,7 @@
                 <div class="space-room-library-grid">
                     <article>
                         <span>현재 이용</span>
-                        <strong>31명</strong>
+                        <strong>0명</strong>
                         <p>여러 기수가 함께 사용하는 조용한 학습 공간입니다.</p>
                     </article>
                     <article>

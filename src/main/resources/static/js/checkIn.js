@@ -2,23 +2,10 @@ import { checkInToday, isCheckedInToday } from "./attendanceState.js";
 
 const SHAKE_COUNT_TO_WAKE = 4;
 const WAKE_DURATION_MS = 2800;
-const ATTENDANCE_SNAPSHOT_KEY = "omagotchiAttendanceSnapshot";
-const ATTENDANCE_HISTORY_KEY = "omagotchiAttendanceHistory";
-
-const localDateKey = (date = new Date()) => {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const day = String(date.getDate()).padStart(2, "0");
-    return `${year}-${month}-${day}`;
-};
-
-const formatTime = (date) => new Intl.DateTimeFormat("ko-KR", {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false
-}).format(date);
 
 function prepareWakeMarkup() {
+    // 텍스트를 찾아 버튼을 삭제하고
+    // 텍스트 기준으로 data 속성을 추가
     document.querySelectorAll("button, a").forEach((element) => {
         if (element.textContent.trim() === "입실하기") {
             element.remove();
@@ -47,38 +34,6 @@ function prepareWakeMarkup() {
         }
     });
 }
-
-function saveAttendanceSnapshot() {
-    const now = new Date();
-    const snapshot = {
-        date: localDateKey(now),
-        checkedInAt: now.toISOString(),
-        checkedInTime: formatTime(now),
-        cohortName: sessionStorage.getItem("omagotchiCohortName")
-            || localStorage.getItem("omagotchiCohortName")
-            || "AIoT 3기",
-        labName: sessionStorage.getItem("omagotchiLabName")
-            || localStorage.getItem("omagotchiLabName")
-            || "실습실",
-        status: "재실",
-        sensors: {
-            temperature: 24,
-            humidity: 42,
-            co2: 410,
-            dust: 18
-        }
-    };
-
-    localStorage.setItem(ATTENDANCE_SNAPSHOT_KEY, JSON.stringify(snapshot));
-
-    const history = JSON.parse(localStorage.getItem(ATTENDANCE_HISTORY_KEY) || "[]");
-    const withoutToday = history.filter((entry) => entry.date !== snapshot.date);
-    localStorage.setItem(
-        ATTENDANCE_HISTORY_KEY,
-        JSON.stringify([...withoutToday, snapshot].sort((a, b) => a.date.localeCompare(b.date)))
-    );
-}
-
 function getCharacterImage(character) {
     if (character.tagName === "IMG") {
         return character;
@@ -130,14 +85,12 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     };
 
-    const finishWake = () => {
+    const finishWake = async () => {
         if (waking) {
             return;
         }
         waking = true;
-
-        checkInToday();
-        saveAttendanceSnapshot();
+        await checkInToday();
 
         const image = getCharacterImage(character);
         if (image) {

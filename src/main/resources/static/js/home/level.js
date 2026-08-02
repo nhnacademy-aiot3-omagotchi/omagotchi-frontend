@@ -8,11 +8,12 @@ export function createLevel({
     storageKey,
     xpPerLevel = 50
 }) {
+    // [API-REPLACE] 서버에서 사용자 레벨 경험치를 조회하도록 교체
     function getStoredXp() {
         const storedXp = Number(localStorage.getItem(storageKey));
         return Number.isFinite(storedXp) && storedXp > 0 ? storedXp : 0;
     }
-
+    // [POLICY-CHECK] 레벨 계산을 프론트에서 할지 서버에서 할지 결정
     function getLevel(totalXp) {
         return Math.floor(totalXp / xpPerLevel) + 1;
     }
@@ -87,6 +88,8 @@ export function createLevel({
     }
 
     // 경험치 +
+    // [API-REPLACE] 클라이언트에서 경험치를 직접 증가시키면 안 됨.
+    // 퀘스트 출석 결과를 서버에서 검증한 뒤 경험치를 반영해야 함
     function addXp(amount) {
         const earnedXp = Number(amount);
 

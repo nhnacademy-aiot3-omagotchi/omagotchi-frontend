@@ -19,7 +19,7 @@ function shakeUsernameCard() {
 }
 
 // 이름과 임시 가입 정보를 저장하고 캐릭터 선택 화면으로 이동
-usernameForm.addEventListener("submit", (event) => {
+usernameForm.addEventListener("submit", async (event) => {
     event.preventDefault();
 
     const username = usernameForm.username.value.trim();
@@ -33,6 +33,7 @@ usernameForm.addEventListener("submit", (event) => {
     }
 
     if (email) {
+        await window.OmagotchiApi?.auth?.updateProfile?.({ email, username });
         sessionStorage.setItem("omagotchiEmail", email);
         localStorage.setItem("omagotchiLastEmail", email);
         localStorage.setItem(`omagotchiUsername:${email}`, username);

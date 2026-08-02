@@ -33,8 +33,9 @@ inputs.forEach((input) => {
     });
 });
 
+// [Mock] 실제 서비스에서는 필요하지 않은 임시 관리자 로그인 처리입니다. 1~27
 // 관리자 로그인 목업 처리
-form.addEventListener("submit", (event) => {
+form.addEventListener("submit", async (event) => {
     event.preventDefault();
 
     const email = form.email.value.trim();
@@ -58,13 +59,15 @@ form.addEventListener("submit", (event) => {
         return;
     }
 
+    const session = await window.OmagotchiApi?.auth?.managerLogin?.({ email, password });
+    const manager = session?.manager || session;
     sessionStorage.setItem("omagotchiManagerEmail", email);
     if (!sessionStorage.getItem("omagotchiManagerName")) {
-        sessionStorage.setItem("omagotchiManagerName", email.split("@")[0]);
+        sessionStorage.setItem("omagotchiManagerName", manager?.name || email.split("@")[0]);
     }
     showManagerMessage(managerMessages.success);
 
     window.setTimeout(() => {
-        window.location.href = "/manager-dashboard";
+        window.location.href = session?.redirectUrl || "/manager-dashboard";
     }, 450);
 });

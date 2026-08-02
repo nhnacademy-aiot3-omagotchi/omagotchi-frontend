@@ -1,4 +1,5 @@
 import { createAttendance } from "./home/attendance.js";
+import { createBgmPlayer } from "./home/bgm.js";
 import { createCharacter } from "./home/character.js";
 import { createLevel } from "./home/level.js";
 import { createPresence } from "./home/presence.js";
@@ -38,6 +39,7 @@ const presenceSearch = document.querySelector("[data-presence-search]");
 const presenceList = document.querySelector("[data-presence-list]");
 const presenceRefresh = document.querySelector("[data-presence-refresh]");
 const presenceUpdated = document.querySelector("[data-presence-updated]");
+const bgmPlayerRoot = document.querySelector("[data-bgm-player]");
 
 // 로그인 사용자와 캐릭터 선택 결과 복원
 const currentUserEmail = sessionStorage.getItem("omagotchiEmail")
@@ -87,6 +89,7 @@ const sessionOnlyKeys = [
     "omagotchiCharacterColorName",
     "omagotchiCharacterColor"
 ];
+const api = window.OmagotchiApi;
 
 // 오버레이 안에서 사용하는 목록 상태
 let communityFilter = "all";
@@ -109,10 +112,9 @@ function renderHomeCohortCards() {
     if (!managed.length) {
         return `
             <article>
-                <h3>AIoT 3기</h3>
-                <p>현재 참여 중인 기수입니다.</p>
-                <span class="overlay-pill">5 / 24</span>
-                <span class="overlay-pill">참가중</span>
+                <h3>참여 기수 없음</h3>
+                <p>승인된 기수 정보가 없습니다.</p>
+                <span class="overlay-pill">대기</span>
             </article>`;
     }
 
@@ -127,53 +129,7 @@ function renderHomeCohortCards() {
             </article>`;
     }).join("");
 }
-const communityPosts = [
-    {
-        id: 1,
-        type: "notice",
-        title: "오늘 집중 세션 인증 올려주세요",
-        content: "타이머 30분 이상 기록한 사람은 진행 탭에서 보상도 같이 받아가면 됩니다.",
-        likes: 12,
-        comments: 4,
-        attachments: 1
-    },
-    {
-        id: 2,
-        type: "free",
-        title: "회의실 B 자리 남아있나요?",
-        content: "백엔드 API 명세 같이 정리할 사람 있으면 댓글 남겨주세요.",
-        likes: 5,
-        comments: 2,
-        attachments: 0
-    },
-    {
-        id: 3,
-        type: "free",
-        title: "출석 알림 Telegram ADR 초안 공유",
-        content: "알림 방식과 MQ 선택 기준을 문서로 정리하고 있습니다.",
-        likes: 8,
-        comments: 3,
-        attachments: 1
-    },
-    {
-        id: 4,
-        type: "notice",
-        title: "실습실 센서 점검 일정",
-        content: "금요일 오후 실습실 센서 점검이 예정되어 있습니다.",
-        likes: 3,
-        comments: 1,
-        attachments: 0
-    },
-    {
-        id: 5,
-        type: "free",
-        title: "오늘 저녁 알고리즘 스터디",
-        content: "도서관 B구역에서 7시에 시작합니다.",
-        likes: 7,
-        comments: 6,
-        attachments: 0
-    }
-];
+const communityPosts = [];
 
 function setBrightness(value) {
     document.documentElement.style.setProperty("--home-brightness", `${value}%`);
@@ -189,6 +145,10 @@ const characterController = createCharacter({
     selectedName: selectedCharacterName,
     selectedImage: selectedCharacterImage,
     animatedImage: selectedCharacterAnimatedImage
+});
+
+const bgmPlayer = createBgmPlayer({
+    root: bgmPlayerRoot
 });
 
 let studyRecordsController;
@@ -223,7 +183,8 @@ const timerController = createTimer({
 
 studyRecordsController = createStudyRecords({
     storageKey: studyRecordsKey,
-    getElapsedSeconds: timerController.getElapsedSeconds
+    getElapsedSeconds: timerController.getElapsedSeconds,
+    api: api?.studyRecords
 });
 
 const levelController = createLevel({
@@ -249,6 +210,7 @@ const attendanceController = createAttendance({
     streakCount,
     streakList,
     storageKey: attendanceKey,
+    api: api?.attendance,
     onChange: () => presenceController?.render()
 });
 
@@ -265,10 +227,11 @@ presenceController = createPresence({
     currentUser: {
         name: sessionStorage.getItem("omagotchiUsername")
             || (currentUserEmail === "guest" ? "나" : currentUserEmail.split("@")[0]),
-        email: currentUserEmail === "guest" ? "student@omagotchi.site" : currentUserEmail
+        email: currentUserEmail === "guest" ? "" : currentUserEmail
     },
     selectedCharacterImage,
     getAttendanceHistory: attendanceController.getHistory,
+    api: api?.presence,
     isOverlayOpen: () => document.body.classList.contains("has-home-overlay")
 });
 
@@ -374,7 +337,20 @@ const overlayContent = {
         </details>
 
         <details>
-            <summary>7. 키보드 조작</summary>
+            <summary>7. 배경 음악</summary>
+            <div class="help-detail">
+                <ul>
+                    <li><strong>재생</strong>: 홈 화면의 BGM 버튼을 눌러 음악을 시작하거나 정지합니다.</li>
+                    <li><strong>플레이리스트</strong>: 목록 버튼을 눌러 10개의 lofi 트랙을 확인하고 직접 선택합니다.</li>
+                    <li><strong>셔플</strong>: 플레이리스트 안의 Shuffle 버튼으로 섞어서 재생할 수 있습니다.</li>
+                    <li>한 곡이 끝나면 다음 곡이 자동으로 이어집니다.</li>
+                    <li>볼륨과 셔플 설정은 브라우저에 저장됩니다.</li>
+                </ul>
+            </div>
+        </details>
+
+        <details>
+            <summary>8. 키보드 조작</summary>
             <div class="help-detail">
                 <dl class="help-key-list">
                     <div><dt><kbd>U</kbd> <kbd>u</kbd> <kbd>ㅕ</kbd></dt><dd>실습실 재실 인원 열기 또는 닫기</dd></div>
@@ -386,7 +362,7 @@ const overlayContent = {
         </details>
 
         <details>
-            <summary>8. 자주 묻는 질문</summary>
+            <summary>9. 자주 묻는 질문</summary>
             <div class="help-detail help-faq">
                 <details>
                     <summary>입실과 출석은 같은 기능인가요?</summary>
@@ -426,59 +402,36 @@ const overlayContent = {
         </div>
         <section class="overlay-tab-panel is-active" data-overlay-panel="quests">
             <div class="overlay-section-label"><strong>일일</strong><span></span><em>자정에 초기화</em></div>
-            <article class="overlay-quest is-claimable" data-home-quest="focus-beginner">
-                <header>
-                    <div>
-                        <h3>집중 시작</h3>
-                        <p>오늘 학습 타이머를 30분 이상 기록합니다.</p>
-                    </div>
-                    <strong>+50xp</strong>
-                </header>
-                <div class="overlay-progress-line"><span style="width: 100%"></span></div>
-                <div class="overlay-quest-foot">
-                    <span>49분 / 30분</span>
-                    <button type="button" data-home-claim data-xp-reward="50">보상 받기</button>
-                    <em>수령 완료</em>
-                </div>
-            </article>
             <article class="overlay-quest">
                 <header>
                     <div>
-                        <h3>출석 완료</h3>
-                        <p>입실과 퇴실을 모두 기록합니다.</p>
+                        <h3>등록된 퀘스트가 없습니다.</h3>
+                        <p>백엔드에서 퀘스트 목록을 내려주면 이 영역에 표시됩니다.</p>
                     </div>
-                    <strong>+30xp</strong>
                 </header>
-                <div class="overlay-progress-line"><span style="width: 50%"></span></div>
-                <div class="overlay-quest-foot"><span>입실 완료</span></div>
             </article>
         </section>
         <section class="overlay-tab-panel" data-overlay-panel="achievements" hidden>
             <div class="overlay-card-grid">
-                <article><h3>첫 발걸음</h3><p>처음으로 출석을 완료합니다.</p></article>
-                <article><h3>꾸준한 학습자</h3><p>학습 타이머 10시간을 달성합니다.</p></article>
-                <article><h3>세션 마스터</h3><p>학습 세션 100회를 완료합니다.</p></article>
+                <article><h3>등록된 업적이 없습니다.</h3><p>백엔드에서 업적 목록을 내려주면 이 영역에 표시됩니다.</p></article>
             </div>
         </section>
         <section class="overlay-tab-panel" data-overlay-panel="leaders" hidden>
             <ol class="overlay-list">
-                <li><strong>1</strong><span>잼민</span><em>312분</em></li>
-                <li><strong>2</strong><span>공부쟁이</span><em>294분</em></li>
-                <li><strong>3</strong><span>디버깅이</span><em>284분</em></li>
+                <li><strong>-</strong><span>랭킹 데이터가 없습니다.</span><em>0분</em></li>
             </ol>
         </section>
         <section class="overlay-tab-panel" data-overlay-panel="timeline" hidden>
             <div class="overlay-card-grid">
-                <article><h3>입실</h3><p>오늘 09:04에 입실했습니다.</p></article>
-                <article><h3>학습 세션</h3><p>49분 집중 세션을 완료했습니다.</p></article>
+                <article><h3>활동 기록이 없습니다.</h3><p>출석과 학습 기록이 생성되면 이 영역에 표시됩니다.</p></article>
             </div>
         </section>
         <section class="overlay-tab-panel" data-overlay-panel="stats" hidden>
             <div class="overlay-stat-grid">
-                <article><h3>오늘 집중</h3><strong>49분</strong></article>
-                <article><h3>세션</h3><strong>1회</strong></article>
-                <article><h3>연속 출석</h3><strong>1일</strong></article>
-                <article><h3>이번 주</h3><strong>49분</strong></article>
+                <article><h3>오늘 집중</h3><strong>0분</strong></article>
+                <article><h3>세션</h3><strong>0회</strong></article>
+                <article><h3>연속 출석</h3><strong>0일</strong></article>
+                <article><h3>이번 주</h3><strong>0분</strong></article>
             </div>
         </section>
     `,
@@ -488,7 +441,7 @@ const overlayContent = {
             <article><h3>세션</h3><strong>0회</strong><p>완료한 학습 세션</p></article>
             <article><h3>연속 출석</h3><strong>0일</strong><p>입실 기록 기준</p></article>
             <article><h3>캐릭터</h3><strong>${characterLevel?.textContent || "Lv 1"}</strong><p>${selectedCharacterName}</p></article>
-            <article><h3>참여 기수</h3><strong>AIoT 3기</strong><p>5 / 24 · 참가중</p></article>
+            <article><h3>참여 기수</h3><strong>없음</strong><p>승인된 기수 정보가 없습니다.</p></article>
         </div>
     `,
     cohort: `
@@ -521,8 +474,8 @@ const overlayContent = {
             <section class="overlay-community-notice" aria-label="고정 공지">
                 <strong>고정 공지</strong>
                 <div>
-                    <h3>7월 운영 안내와 공간 사용 규칙</h3>
-                    <p>공지 게시글은 기수 관리자가 작성하고, 목록 상단에 고정할 수 있습니다.</p>
+                    <h3>등록된 고정 공지가 없습니다.</h3>
+                    <p>기수 관리자가 작성한 공지가 이 영역에 표시됩니다.</p>
                 </div>
             </section>
 
@@ -662,7 +615,7 @@ function openCommunityComposer() {
     body.querySelector("input")?.focus();
 }
 
-function submitCommunityPost(form) {
+async function submitCommunityPost(form) {
     const formData = new FormData(form);
     const title = String(formData.get("title") || "").trim();
     const content = String(formData.get("content") || "").trim();
@@ -671,7 +624,7 @@ function submitCommunityPost(form) {
         return;
     }
 
-    communityPosts.unshift({
+    const draft = {
         id: Date.now(),
         type: formData.get("type") === "notice" ? "notice" : "free",
         title,
@@ -679,7 +632,9 @@ function submitCommunityPost(form) {
         likes: 0,
         comments: 0,
         attachments: 0
-    });
+    };
+    const saved = await api?.community?.createPost?.(draft);
+    communityPosts.unshift(saved || draft);
     communityFilter = "all";
     communityKeyword = "";
     communityPage = 1;
@@ -858,7 +813,7 @@ homeOverlayRoot?.addEventListener("input", (event) => {
 });
 
 // 커뮤니티 글쓰기와 기수 가입 코드 제출 처리
-homeOverlayRoot?.addEventListener("submit", (event) => {
+homeOverlayRoot?.addEventListener("submit", async (event) => {
     if (studyRecordsController.handleSubmit(event)) {
         return;
     }
@@ -870,6 +825,12 @@ homeOverlayRoot?.addEventListener("submit", (event) => {
         event.preventDefault();
         const code = cohortForm.cohortCode.value.trim().toUpperCase();
         const message = cohortForm.querySelector("[data-home-cohort-message]");
+        const serverResult = await api?.cohort?.applyByCode?.({ code });
+        if (serverResult) {
+            message.textContent = serverResult.message || "참가 신청이 완료되었습니다. 관리자 승인을 기다려주세요.";
+            cohortForm.reset();
+            return;
+        }
         const managed = getHomeManagedCohorts();
         const cohort = managed.find((item) => (
             item.joinCode?.value === code
@@ -920,7 +881,7 @@ homeOverlayRoot?.addEventListener("submit", (event) => {
     }
 
     event.preventDefault();
-    submitCommunityPost(communityForm);
+    await submitCommunityPost(communityForm);
 });
 
 document.addEventListener("keydown", (event) => {
@@ -937,3 +898,4 @@ timerController.init();
 levelController.render();
 attendanceController.init();
 presenceController.init();
+bgmPlayer.init();

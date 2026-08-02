@@ -31,7 +31,7 @@ inputs.forEach((input) => {
 });
 
 // 사용자 확인 단계
-checkUserButton.addEventListener("click", () => {
+checkUserButton.addEventListener("click", async () => {
     const email = form.email.value.trim();
 
     if (!email) {
@@ -46,7 +46,12 @@ checkUserButton.addEventListener("click", () => {
         return;
     }
 
-    // TODO: 백엔드 연동 시 사용자 존재 여부 확인 API로 교체한다.
+    const lookup = await window.OmagotchiApi?.auth?.lookupPasswordReset?.({ email });
+    if (lookup?.exists === false) {
+        setFeedback("가입된 이메일을 찾을 수 없습니다.");
+        shakeCard();
+        return;
+    }
     lookupStep.classList.remove("is-active");
     changeStep.classList.add("is-active");
     changeStep.removeAttribute("aria-hidden");
@@ -58,7 +63,7 @@ checkUserButton.addEventListener("click", () => {
 });
 
 // 새 비밀번호 변경 단계
-form.addEventListener("submit", (event) => {
+form.addEventListener("submit", async (event) => {
     event.preventDefault();
 
     const newPassword = form.newPassword.value.trim();
@@ -82,7 +87,10 @@ form.addEventListener("submit", (event) => {
         return;
     }
 
-    // TODO: 백엔드 연동 시 비밀번호 변경 API 호출로 교체한다.
+    await window.OmagotchiApi?.auth?.resetPassword?.({
+        email: form.email.value.trim(),
+        newPassword
+    });
     setFeedback("비밀번호 변경 완료. 로그인 화면으로 이동할게요.");
 
     setTimeout(() => {

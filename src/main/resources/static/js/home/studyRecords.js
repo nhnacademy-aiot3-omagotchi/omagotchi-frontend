@@ -159,14 +159,14 @@ function createMonthTotals(records) {
 }
 
 // 구간 기록의 계산, 저장, 편집 화면을 한 곳에서 관리한다.
-export function createStudyRecords({ storageKey, getElapsedSeconds }) {
+export function createStudyRecords({ storageKey, getElapsedSeconds, api }) {
     const sessionId = createId("timer");
     let lastRecordedElapsed = 0;
     let editingId = null;
     let container = null;
     let viewMode = "daily";
     let referenceDate = new Date();
-
+    // [API-REPLACE] 학습 기록 목록 조회 API로 교체
     function readRecords() {
         try {
             const records = JSON.parse(localStorage.getItem(storageKey) || "[]");
@@ -175,11 +175,19 @@ export function createStudyRecords({ storageKey, getElapsedSeconds }) {
             return [];
         }
     }
-
+    // [API-REPLACE] 학습 기록 생성 수정 API로 교체
     function writeRecords(records) {
         localStorage.setItem(storageKey, JSON.stringify(records));
     }
 
+    async function loadRecords() {
+        const records = await api?.list?.();
+        if (!Array.isArray(records)) return;
+
+        writeRecords(records);
+        render();
+    }
+    // [API-REPLACE] ID 순서 기록 시각은 서버가 최종 결정하도록 변경
     function addRecord() {
         const elapsedSeconds = getElapsedSeconds();
         const durationSeconds = elapsedSeconds - lastRecordedElapsed;
@@ -209,6 +217,12 @@ export function createStudyRecords({ storageKey, getElapsedSeconds }) {
 
         records.push(record);
         writeRecords(records);
+        api?.create?.(record).then((saved) => {
+            if (!saved?.id || saved.id === record.id) return;
+            const latest = readRecords().map((item) => item.id === record.id ? { ...item, ...saved } : item);
+            writeRecords(latest);
+            render();
+        });
         lastRecordedElapsed = elapsedSeconds;
         editingId = null;
         viewMode = "daily";
@@ -549,7 +563,7 @@ export function createStudyRecords({ storageKey, getElapsedSeconds }) {
 
         return false;
     }
-
+    // [API-REPLACE] 학습 기록 수정 PATH API 호출
     function handleSubmit(event) {
         const form = event.target.closest("[data-study-record-form]");
 
@@ -570,6 +584,7 @@ export function createStudyRecords({ storageKey, getElapsedSeconds }) {
         record.tags = parseTags(formData.get("tags"));
         record.updatedAt = new Date().toISOString();
         writeRecords(records);
+        api?.update?.(record.id, record);
         editingId = null;
         render();
         return true;
@@ -577,7 +592,10 @@ export function createStudyRecords({ storageKey, getElapsedSeconds }) {
 
     return {
         addRecord,
-        mount,
+        mount: (target) => {
+            mount(target);
+            loadRecords();
+        },
         handleClick,
         handleSubmit
     };

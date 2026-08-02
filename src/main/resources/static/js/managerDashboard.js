@@ -5,62 +5,22 @@ const NOTICES_KEY = "omagotchiCohortNotices";
 const AUDITS_KEY = "omagotchiCohortAudits";
 
 const today = new Date().toISOString().slice(0, 10);
-const managerEmail = sessionStorage.getItem("omagotchiManagerEmail") || "manager@nhnacademy.com";
-const managerName = sessionStorage.getItem("omagotchiManagerName") || "기수 운영자";
-const managerOrganization = sessionStorage.getItem("omagotchiManagerOrganization") || "NHN Academy";
-
-// API 연동 전 화면 동작을 확인하기 위한 기본 기수 데이터
-const defaultCohorts = [
-    {
-        id: "aiot-3",
-        name: "AIoT 3기",
-        description: "AIoT 서비스 개발 교육 과정",
-        startDate: "2026-07-01",
-        endDate: "2026-12-18",
-        status: "ACTIVE",
-        capacity: 24,
-        joinCode: { value: "AIOT3", status: "ACTIVE", expiresAt: "2026-08-31", issuedAt: "2026-07-20", used: 5 },
-        members: [
-            { id: "manager-01", name: managerName, email: managerEmail, role: "MANAGER", status: "ACTIVE" },
-            { id: "user-01", name: "김민지", email: "minji@example.com", role: "STUDENT", status: "ACTIVE" },
-            { id: "user-02", name: "이현우", email: "hyeon@example.com", role: "STUDENT", status: "ACTIVE" },
-            { id: "user-03", name: "박지수", email: "jisu@example.com", role: "STUDENT", status: "ACTIVE" },
-            { id: "user-04", name: "최승민", email: "seung@example.com", role: "STUDENT", status: "INACTIVE" }
-        ],
-        attendance: [
-            { memberId: "user-01", date: today, checkIn: "09:01", checkOut: "-", autoStatus: "NORMAL", finalStatus: "NORMAL" },
-            { memberId: "user-02", date: today, checkIn: "09:14", checkOut: "-", autoStatus: "LATE", finalStatus: "LATE" },
-            { memberId: "user-03", date: today, checkIn: "-", checkOut: "-", autoStatus: "PENDING", finalStatus: "PENDING" }
-        ],
-        sensor: { temperature: 24.2, humidity: 43, co2: 612, occupancy: 17, updatedAt: "방금 전" }
-    },
-    {
-        id: "backend-7",
-        name: "Backend 7기",
-        description: "백엔드 서비스 개발 교육 과정",
-        startDate: "2026-08-03",
-        endDate: "2027-01-22",
-        status: "PREPARING",
-        capacity: 20,
-        joinCode: { value: "BACK7", status: "ACTIVE", expiresAt: "2026-08-10", issuedAt: "2026-07-22", used: 3 },
-        members: [
-            { id: "manager-01", name: managerName, email: managerEmail, role: "MANAGER", status: "ACTIVE" },
-            { id: "user-11", name: "정하늘", email: "haneul@example.com", role: "STUDENT", status: "ACTIVE" }
-        ],
-        attendance: [],
-        sensor: { temperature: null, humidity: null, co2: null, occupancy: 0, updatedAt: null }
-    }
-];
-
-const defaultApplications = [
-    { id: "application-01", cohortId: "aiot-3", userId: "applicant-01", name: "윤서준", email: "seojun@example.com", requestedAt: "2026-07-25 09:18", status: "PENDING" },
-    { id: "application-02", cohortId: "aiot-3", userId: "applicant-02", name: "한유진", email: "yujin@example.com", requestedAt: "2026-07-25 10:42", status: "PENDING" }
-];
-
-const defaultNotices = [
-    { id: "notice-01", cohortId: "aiot-3", type: "NOTICE", title: "7월 운영 안내와 공간 사용 규칙", content: "실습실과 회의실 이용 규칙을 확인해주세요.", pinned: true, reports: 0 },
-    { id: "post-01", cohortId: "aiot-3", type: "FREE", title: "회의실 B 자리 남아있나요?", content: "백엔드 API 설계 같이 하실 분을 찾습니다.", pinned: false, reports: 2 }
-];
+const managerEmail = sessionStorage.getItem("omagotchiManagerEmail") || "";
+const managerName = sessionStorage.getItem("omagotchiManagerName") || "관리자";
+const managerOrganization = sessionStorage.getItem("omagotchiManagerOrganization") || "";
+const emptyCohort = {
+    id: "",
+    name: "기수 없음",
+    description: "등록된 기수가 없습니다.",
+    startDate: "-",
+    endDate: "-",
+    status: "PREPARING",
+    capacity: 0,
+    members: [],
+    attendance: [],
+    sensor: {},
+    joinCode: null
+};
 
 // 로컬 저장소 JSON 읽기/쓰기
 function readJson(key, fallback) {
@@ -77,9 +37,9 @@ function writeJson(key, value) {
 }
 
 // 현재 선택한 기수와 활성 패널 상태
-let cohorts = readJson(OPERATIONS_KEY, defaultCohorts);
-let applications = readJson(APPLICATIONS_KEY, defaultApplications);
-let notices = readJson(NOTICES_KEY, defaultNotices);
+let cohorts = readJson(OPERATIONS_KEY, []);
+let applications = readJson(APPLICATIONS_KEY, []);
+let notices = readJson(NOTICES_KEY, []);
 let audits = readJson(AUDITS_KEY, []);
 let selectedCohortId = sessionStorage.getItem("omagotchiManagerCohort") || cohorts[0]?.id;
 let activePanel = sessionStorage.getItem("omagotchiManagerDashboardTab") || "overview";
@@ -90,6 +50,18 @@ if (!availablePanels.includes(activePanel)) {
 }
 
 let dialogCallback = null;
+
+async function hydrateDashboard() {
+    const dashboard = await window.OmagotchiApi?.manager?.getDashboard?.();
+    if (!dashboard) return;
+
+    cohorts = Array.isArray(dashboard.cohorts) ? dashboard.cohorts : cohorts;
+    applications = Array.isArray(dashboard.applications) ? dashboard.applications : applications;
+    notices = Array.isArray(dashboard.notices) ? dashboard.notices : notices;
+    audits = Array.isArray(dashboard.audits) ? dashboard.audits : audits;
+    selectedCohortId = dashboard.selectedCohortId || selectedCohortId || cohorts[0]?.id;
+    renderAll();
+}
 
 // 반복 조회를 줄이기 위한 대시보드 요소 모음
 const elements = {
@@ -119,7 +91,7 @@ const elements = {
 
 // 선택 기수 조회와 화면 상태 저장
 function currentCohort() {
-    return cohorts.find((cohort) => cohort.id === selectedCohortId) || cohorts[0];
+    return cohorts.find((cohort) => cohort.id === selectedCohortId) || cohorts[0] || emptyCohort;
 }
 
 function saveState() {
@@ -572,3 +544,4 @@ saveState();
 renderSession();
 renderAll();
 activatePanel(activePanel);
+hydrateDashboard();

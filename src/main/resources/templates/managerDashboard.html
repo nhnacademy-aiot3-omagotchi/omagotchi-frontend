@@ -5,6 +5,7 @@
       layout:decorate="~{layouts/managerLayout}">
 <head>
     <title>Omagotchi 기수 운영</title>
+    <link rel="stylesheet" href="/css/cursor.css" th:href="@{/css/cursor.css}" />
 </head>
 <body>
 <div class="manager-content" layout:fragment="content">
@@ -149,6 +150,7 @@
             </section>
 </div>
 <th:block layout:fragment="pageScripts">
+    <script src="/js/api.js" th:src="@{/js/api.js}"></script>
     <script src="/js/managerDashboard.js"
             th:src="@{/js/managerDashboard.js}"></script>
 </th:block>

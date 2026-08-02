@@ -9,7 +9,7 @@ window.OmagotchiCharacterAssets = (() => {
         white: "White_eye.gif",
         dark_gray: "Dark_Gray_eye.gif"
     };
-
+// 이미지 파일명 통일화
     const gifNameOverrides = {
         caffeine: {
             cream_can: "cream_Can_eye.gif"

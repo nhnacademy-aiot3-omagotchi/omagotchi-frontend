@@ -26,8 +26,9 @@ inputs.forEach((input) => {
     });
 });
 
+// [Mock] 실제 서비스에서는 필요하지 않은 임시 회원가입 검증입니다. 1~28
 // 회원가입 목업 검증
-form.addEventListener("submit", (event) => {
+form.addEventListener("submit", async (event) => {
     const email = form.email.value.trim();
     const password = form.password.value.trim();
 
@@ -52,11 +53,12 @@ form.addEventListener("submit", (event) => {
     }
     event.preventDefault();
     setFeedback("사용자 이름을 설정하러 이동중입니다.");
+    const session = await window.OmagotchiApi?.auth?.register?.({ email, password });
     sessionStorage.setItem("omagotchiRegisterEmail", email);
     sessionStorage.setItem("omagotchiRegisterPassword", password);
 
     setTimeout(() => {
-        window.location.href = "/username";
+        window.location.href = session?.redirectUrl || "/username";
     }, 800);
 });
 

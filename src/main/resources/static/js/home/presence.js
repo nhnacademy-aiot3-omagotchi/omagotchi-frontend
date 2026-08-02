@@ -20,32 +20,21 @@ export function createPresence({
     currentUser,
     selectedCharacterImage,
     getAttendanceHistory,
+    api,
     isOverlayOpen
 }) {
     let users = [];
     let keyword = "";
-    let labCapacity = 50;
-    let occupiedCount = 17;
+    let labCapacity = 0;
+    let occupiedCount = 0;
     let keyTimer = null;
-
-    const mockUsers = [
-        { id: "current-user", ...currentUser, status: "offline", characterImage: selectedCharacterImage, current: true },
-        { id: "user-moosik", name: "최무식", email: "moosik@omagotchi.site", status: "present", characterImage: "/images/characters/study/study.png" },
-        { id: "user-sooki", name: "정수기", email: "sooki@omagotchi.site", status: "present", characterImage: "/images/characters/sprout/sprout.png" },
-        { id: "user-suckbong", name: "한석봉", email: "suckbong@omagotchi.site", status: "present", characterImage: "/images/characters/commit/commit.png" },
-        { id: "user-oreo", name: "오레오", email: "oreo@omagotchi.site", status: "away", characterImage: "/images/characters/caffeine/caffeine.png" },
-        { id: "user-jiwoo", name: "박지우", email: "jiwoo@omagotchi.site", status: "meeting", characterImage: "/images/characters/debug/debug.png" },
-        { id: "user-minjun", name: "김민준", email: "minjun@omagotchi.site", status: "meeting", characterImage: "/images/characters/night/night.png" },
-        { id: "user-seojun", name: "이서준", email: "seojun@omagotchi.site", status: "offline", characterImage: "/images/characters/server/server.png" },
-        { id: "user-subin", name: "박수빈", email: "subin@omagotchi.site", status: "offline", characterImage: "/images/characters/kid/kid.png" }
-    ];
 
     function getCurrentStatus() {
         const attendance = getAttendanceHistory()[getLocalDateKey()] || {};
         if (!attendance.checkInAt || attendance.checkOutAt) return "offline";
 
         try {
-            const spaceState = JSON.parse(sessionStorage.getItem("omagotchiSpacePrototypeV2") || "{}");
+            const spaceState = JSON.parse(sessionStorage.getItem("omagotchiSpaceState") || "{}");
             const inMeeting = spaceState.rooms?.some((room) => (
                 room.occupancy?.participants?.some((participant) => participant.id === "current-user")
             ));
@@ -101,17 +90,38 @@ export function createPresence({
     }
 
     async function loadSnapshot() {
+        // [API-KEEP] 임시 API 연결 지점
+        const serverSnapshot = await api?.getLabPresence?.();
+        if (serverSnapshot) {
+            return serverSnapshot;
+        }
         if (window.OmagotchiPresenceApi?.getLabPresence) {
             return window.OmagotchiPresenceApi.getLabPresence();
         }
-
-        await new Promise((resolve) => window.setTimeout(resolve, 280));
-        const currentIsPresent = getCurrentStatus() === "present";
         return {
-            capacity: 50,
-            occupiedCount: 17 + Number(currentIsPresent),
-            users: mockUsers.map((user) => ({ ...user }))
+            capacity: 0,
+            occupiedCount: 0,
+            users: []
         };
+    }
+
+    function applySnapshot(snapshot) {
+        labCapacity = Number(snapshot.capacity) || 0;
+        occupiedCount = Number.isFinite(Number(snapshot.occupiedCount))
+            ? Number(snapshot.occupiedCount)
+            : snapshot.users?.filter((user) => user.status === "present").length || 0;
+        users = Array.isArray(snapshot.users) ? snapshot.users : [];
+        render();
+
+        if (updated) {
+            const time = new Intl.DateTimeFormat("ko-KR", {
+                hour: "2-digit",
+                minute: "2-digit",
+                second: "2-digit",
+                hour12: false
+            }).format(new Date());
+            updated.textContent = `${time} 갱신`;
+        }
     }
 
     async function refresh() {
@@ -121,22 +131,7 @@ export function createPresence({
         refreshButton.classList.add("is-loading");
         try {
             const snapshot = await loadSnapshot();
-            labCapacity = Number(snapshot.capacity) || 50;
-            occupiedCount = Number.isFinite(Number(snapshot.occupiedCount))
-                ? Number(snapshot.occupiedCount)
-                : snapshot.users?.filter((user) => user.status === "present").length || 0;
-            users = Array.isArray(snapshot.users) ? snapshot.users : [];
-            render();
-
-            if (updated) {
-                const time = new Intl.DateTimeFormat("ko-KR", {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                    second: "2-digit",
-                    hour12: false
-                }).format(new Date());
-                updated.textContent = `${time} 갱신`;
-            }
+            applySnapshot(snapshot);
         } catch {
             if (updated) updated.textContent = "갱신 실패 · 기존 목록 표시 중";
         } finally {
@@ -197,6 +192,10 @@ export function createPresence({
             if (panel?.hidden === false && hud && !hud.contains(event.target)) setOpen(false);
         });
         document.addEventListener("keydown", handleKeydown);
+        api?.subscribeLabPresence?.({
+            message: applySnapshot,
+            error: (_, source) => source.close()
+        });
         refresh();
     }
 

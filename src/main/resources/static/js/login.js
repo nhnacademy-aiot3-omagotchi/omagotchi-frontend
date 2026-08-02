@@ -26,8 +26,9 @@ inputs.forEach((input) => {
     });
 });
 
+// [Mock] 실제 서비스에서는 필요하지 않은 임시 로그인 처리입니다. 1~18
 // 로그인 목업 처리
-form.addEventListener("submit", (event) => {
+form.addEventListener("submit", async (event) => {
     const email = form.email.value.trim();
     const password = form.password.value.trim();
 
@@ -47,8 +48,14 @@ form.addEventListener("submit", (event) => {
 
     event.preventDefault();
     setFeedback("좋아요. 실습실로 이동할게요.");
+    const session = await window.OmagotchiApi?.auth?.login?.({ email, password });
+    const user = session?.user || session;
+    const nextUrl = session?.redirectUrl;
     sessionStorage.setItem("omagotchiEmail", email);
     sessionStorage.setItem("omagotchiLoginPassword", password);
+    if (user?.name) {
+        sessionStorage.setItem("omagotchiUsername", user.name);
+    }
     localStorage.setItem("omagotchiLastEmail", email);
 
     if (!localStorage.getItem(`omagotchiPassword:${email}`)) {
@@ -57,6 +64,6 @@ form.addEventListener("submit", (event) => {
 
     setTimeout(() => {
         const hasSelectedCharacter = localStorage.getItem(`omagotchiHasCharacter:${email}`) === "true";
-            window.location.href = hasSelectedCharacter ? "/check-in" : "/character-selector";
+            window.location.href = nextUrl || (hasSelectedCharacter ? "/check-in" : "/character-selector");
     }, 700);
 });
