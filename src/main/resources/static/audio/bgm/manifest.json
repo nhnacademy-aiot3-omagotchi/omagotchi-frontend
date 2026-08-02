@@ -88,5 +88,85 @@
     "source": "https://pixabay.com/music/lofi-lofi-chill-vlog-beats-573883/",
     "license": "Pixabay Content License",
     "attributionRequired": false
+  },
+  {
+    "id": "ghost-duet",
+    "title": "Ghost Duet (2017)",
+    "artist": "Louie Zong",
+    "src": "/audio/bgm/ghost-duet.mp3",
+    "source": "https://louiezong.bandcamp.com/album/ghost-songs?t=1",
+    "license": "Creator-stated usage policy with attribution",
+    "attributionRequired": true,
+    "credit": "Ghost Duet by Louie Zong"
+  },
+  {
+    "id": "ghost-choir",
+    "title": "Ghost Choir (2018)",
+    "artist": "Louie Zong",
+    "src": "/audio/bgm/ghost-choir.mp3",
+    "source": "https://louiezong.bandcamp.com/album/ghost-songs?t=2",
+    "license": "Creator-stated usage policy with attribution",
+    "attributionRequired": true,
+    "credit": "Ghost Choir by Louie Zong"
+  },
+  {
+    "id": "ghost-guest",
+    "title": "Ghost + Guest (2020)",
+    "artist": "Louie Zong",
+    "src": "/audio/bgm/ghost-guest.mp3",
+    "source": "https://louiezong.bandcamp.com/album/ghost-songs?t=3",
+    "license": "Creator-stated usage policy with attribution",
+    "attributionRequired": true,
+    "credit": "Ghost + Guest by Louie Zong"
+  },
+  {
+    "id": "ghost-castle",
+    "title": "Ghost Castle (2021)",
+    "artist": "Louie Zong",
+    "src": "/audio/bgm/ghost-castle.mp3",
+    "source": "https://louiezong.bandcamp.com/album/ghost-songs?t=4",
+    "license": "Creator-stated usage policy with attribution",
+    "attributionRequired": true,
+    "credit": "Ghost Castle by Louie Zong"
+  },
+  {
+    "id": "ghost-cowboys",
+    "title": "Ghost Cowboys (2022)",
+    "artist": "Louie Zong",
+    "src": "/audio/bgm/ghost-cowboys.mp3",
+    "source": "https://louiezong.bandcamp.com/album/ghost-songs?t=5",
+    "license": "Creator-stated usage policy with attribution",
+    "attributionRequired": true,
+    "credit": "Ghost Cowboys by Louie Zong"
+  },
+  {
+    "id": "ghost-swing",
+    "title": "Ghost Swing (2023)",
+    "artist": "Louie Zong",
+    "src": "/audio/bgm/ghost-swing.mp3",
+    "source": "https://louiezong.bandcamp.com/album/ghost-songs?t=6",
+    "license": "Creator-stated usage policy with attribution",
+    "attributionRequired": true,
+    "credit": "Ghost Swing by Louie Zong"
+  },
+  {
+    "id": "ghosta-nova",
+    "title": "Ghosta Nova (2024)",
+    "artist": "Louie Zong",
+    "src": "/audio/bgm/ghosta-nova.mp3",
+    "source": "https://louiezong.bandcamp.com/album/ghost-songs?t=7",
+    "license": "Creator-stated usage policy with attribution",
+    "attributionRequired": true,
+    "credit": "Ghosta Nova by Louie Zong"
+  },
+  {
+    "id": "ghost-waltz",
+    "title": "Ghost Waltz (2025)",
+    "artist": "Louie Zong",
+    "src": "/audio/bgm/ghost-waltz.mp3",
+    "source": "https://louiezong.bandcamp.com/album/ghost-songs?t=8",
+    "license": "Creator-stated usage policy with attribution",
+    "attributionRequired": true,
+    "credit": "Ghost Waltz by Louie Zong"
   }
 ]

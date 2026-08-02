@@ -341,10 +341,11 @@ const overlayContent = {
             <div class="help-detail">
                 <ul>
                     <li><strong>재생</strong>: 홈 화면의 BGM 버튼을 눌러 음악을 시작하거나 정지합니다.</li>
-                    <li><strong>플레이리스트</strong>: 목록 버튼을 눌러 10개의 lofi 트랙을 확인하고 직접 선택합니다.</li>
+                    <li><strong>플레이리스트</strong>: 목록 버튼을 눌러 배경 음악 트랙을 확인하고 직접 선택합니다.</li>
                     <li><strong>셔플</strong>: 플레이리스트 안의 Shuffle 버튼으로 섞어서 재생할 수 있습니다.</li>
                     <li>한 곡이 끝나면 다음 곡이 자동으로 이어집니다.</li>
                     <li>볼륨과 셔플 설정은 브라우저에 저장됩니다.</li>
+                    <li>Pixabay Music과 Louie Zong의 Ghost Songs를 사용하며, 표기가 필요한 곡은 재생 시 크레딧을 표시합니다.</li>
                 </ul>
             </div>
         </details>

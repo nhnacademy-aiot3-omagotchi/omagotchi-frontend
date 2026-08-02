@@ -38,6 +38,7 @@ export function createBgmPlayer({ root }) {
     const artistElement = root.querySelector("[data-bgm-artist]");
     const panel = root.querySelector("[data-bgm-panel]");
     const trackList = root.querySelector("[data-bgm-tracks]");
+    const creditElement = root.querySelector("[data-bgm-credit]");
 
     let tracks = [];
     let queue = [];
@@ -45,6 +46,7 @@ export function createBgmPlayer({ root }) {
     let currentIndex = 0;
     let playing = false;
     let shuffleEnabled = Boolean(saved.shuffle);
+    let creditTimer = null;
 
     audio.preload = "metadata";
     const savedVolume = Number(saved.volume);
@@ -93,7 +95,7 @@ export function createBgmPlayer({ root }) {
             shuffleButton.setAttribute("aria-pressed", String(shuffleEnabled));
         }
         if (trackList) {
-            trackList.innerHTML = tracks.map((item, index) => `
+            trackList.innerHTML = tracks.length ? tracks.map((item, index) => `
                 <li>
                     <button
                         type="button"
@@ -105,7 +107,7 @@ export function createBgmPlayer({ root }) {
                         <small>${item.artist}</small>
                     </button>
                 </li>
-            `).join("");
+            `).join("") : `<li class="bgm-playlist-empty">BGM 목록을 불러오지 못했습니다.</li>`;
         }
     }
 
@@ -115,6 +117,19 @@ export function createBgmPlayer({ root }) {
             trackId: currentTrack()?.id || null,
             shuffle: shuffleEnabled
         });
+    }
+
+    function showCredit(track = currentTrack()) {
+        window.clearTimeout(creditTimer);
+        if (!creditElement || !track?.attributionRequired) {
+            creditElement?.classList.remove("is-visible");
+            return;
+        }
+        creditElement.textContent = `Credit: ${track.credit || `${track.title} by ${track.artist}`}`;
+        creditElement.classList.add("is-visible");
+        creditTimer = window.setTimeout(() => {
+            creditElement.classList.remove("is-visible");
+        }, 4200);
     }
 
     function setTrack(index) {
@@ -143,6 +158,7 @@ export function createBgmPlayer({ root }) {
         try {
             await audio.play();
             playing = true;
+            showCredit();
         } catch {
             playing = false;
         }
@@ -207,11 +223,16 @@ export function createBgmPlayer({ root }) {
 
     async function init() {
         try {
-            const response = await fetch(TRACKS_URL);
+            const response = await fetch(TRACKS_URL, { cache: "no-store" });
+            if (!response.ok) {
+                throw new Error(`BGM manifest request failed: ${response.status}`);
+            }
             tracks = await response.json();
             pickInitialTrack();
         } catch {
             tracks = [];
+            if (titleElement) titleElement.textContent = "BGM 목록 로드 실패";
+            if (artistElement) artistElement.textContent = "새로고침 후 다시 시도";
             render();
             return;
         }
