@@ -62,6 +62,7 @@ export function createBgmPlayer({ root }) {
     if (volumeInput) {
         volumeInput.value = String(Math.round(audio.volume * 100));
     }
+    audio.loop = repeatOneEnabled;
 
     function currentTrack() {
         return tracks[currentIndex];
@@ -119,7 +120,7 @@ export function createBgmPlayer({ root }) {
             listButton.setAttribute("aria-expanded", String(panel?.hidden === false));
         }
         if (shuffleButton) {
-            shuffleButton.textContent = "Shuffle";
+            shuffleButton.textContent = "⇄";
             shuffleButton.classList.toggle("is-active", shuffleEnabled);
             shuffleButton.setAttribute("aria-pressed", String(shuffleEnabled));
             shuffleButton.title = shuffleEnabled ? "셔플 끄기" : "셔플 켜기";
@@ -177,6 +178,7 @@ export function createBgmPlayer({ root }) {
             return;
         }
         audio.src = track.src;
+        audio.load();
         renderProgress();
         saveCurrentState();
         render();
@@ -253,6 +255,7 @@ export function createBgmPlayer({ root }) {
 
     function toggleRepeatOne() {
         repeatOneEnabled = !repeatOneEnabled;
+        audio.loop = repeatOneEnabled;
         saveCurrentState();
         render();
     }
@@ -320,6 +323,9 @@ export function createBgmPlayer({ root }) {
         });
         audio.addEventListener("ended", handleEnded);
         audio.addEventListener("loadedmetadata", renderProgress);
+        audio.addEventListener("loadeddata", renderProgress);
+        audio.addEventListener("durationchange", renderProgress);
+        audio.addEventListener("canplay", renderProgress);
         audio.addEventListener("timeupdate", renderProgress);
         audio.addEventListener("pause", () => {
             playing = false;

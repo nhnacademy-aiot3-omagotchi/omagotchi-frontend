@@ -148,7 +148,7 @@ a {
     z-index: 8;
     top: clamp(180px, 24vh, 250px);
     left: 14px;
-    width: min(340px, calc(100vw - 28px));
+    width: min(360px, calc(100vw - 28px));
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
     gap: 10px 12px;
@@ -189,13 +189,13 @@ a {
 
 .bgm-player-actions {
     display: flex;
-    gap: 8px;
+    gap: 7px;
 }
 
 .bgm-player-actions button {
-    min-width: 36px;
+    min-width: 34px;
     height: 38px;
-    padding: 0 8px;
+    padding: 0 7px;
     display: grid;
     place-items: center;
     border: 2px solid #10281f;
@@ -209,7 +209,7 @@ a {
 }
 
 .bgm-player-actions [data-bgm-repeat] {
-    min-width: 42px;
+    min-width: 40px;
 }
 
 .bgm-player-actions button:hover,
@@ -217,8 +217,7 @@ a {
     background: #8be2bd;
 }
 
-.bgm-player-actions button.is-active,
-.bgm-playlist-modes button.is-active {
+.bgm-player-actions button.is-active {
     background: #26bd73;
     color: #ffffff;
     border-color: #10281f;
@@ -341,26 +340,6 @@ a {
 
 .bgm-playlist header strong {
     font-size: 14px;
-}
-
-.bgm-playlist-modes {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: flex-end;
-    gap: 6px;
-}
-
-.bgm-playlist-modes button {
-    min-height: 32px;
-    padding: 0 12px;
-    border: 2px solid #10281f;
-    border-radius: 9px;
-    background: #ffffff;
-    color: #10281f;
-    font-size: 12px;
-    font-weight: 900;
-    cursor: pointer;
-    box-shadow: 0 3px 0 rgba(0, 0, 0, 0.16);
 }
 
 .bgm-playlist ol {
