@@ -65,18 +65,25 @@
             <div class="bgm-player-actions">
                 <button type="button" data-bgm-play aria-label="BGM 재생" title="BGM 재생">▶</button>
                 <button type="button" data-bgm-next aria-label="다음 BGM" title="다음 BGM">⏭</button>
+                <button type="button" data-bgm-repeat aria-pressed="false" aria-label="현재 BGM 반복" title="현재 BGM 반복">↻1</button>
                 <button type="button" data-bgm-list aria-expanded="false" aria-controls="bgm-playlist" aria-label="BGM 플레이리스트" title="BGM 플레이리스트">▤</button>
             </div>
             <label class="bgm-volume">
                 <span class="sr-only">BGM 볼륨</span>
                 <input type="range" min="0" max="100" value="22" data-bgm-volume />
             </label>
+            <div class="bgm-progress" aria-label="BGM 재생 진행도">
+                <progress value="0" max="100" data-bgm-progress></progress>
+                <span><b data-bgm-current-time>0:00</b> / <b data-bgm-duration>0:00</b></span>
+            </div>
             <p class="bgm-source-note">노래 출처는 도움말에 정리했습니다.</p>
             <p class="bgm-credit-toast" data-bgm-credit role="status" aria-live="polite"></p>
             <section class="bgm-playlist" id="bgm-playlist" data-bgm-panel hidden>
                 <header>
                     <strong>Playlist</strong>
-                    <button type="button" data-bgm-shuffle aria-pressed="false">Shuffle</button>
+                    <div class="bgm-playlist-modes">
+                        <button type="button" data-bgm-shuffle aria-pressed="false">Shuffle</button>
+                    </div>
                 </header>
                 <ol data-bgm-tracks></ol>
             </section>
