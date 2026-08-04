@@ -419,8 +419,8 @@ const overlayContent = {
             </div>
         </section>
         <section class="overlay-tab-panel" data-overlay-panel="leaders" hidden>
-            <ol class="overlay-list">
-                <li><strong>-</strong><span>랭킹 데이터가 없습니다.</span><em>0분</em></li>
+            <ol class="overlay-list overlay-leader-list" aria-label="학습 시간 랭킹">
+                <li data-empty-ranking><strong>-</strong><span>랭킹 데이터가 없습니다.</span><em>0분</em></li>
             </ol>
         </section>
         <section class="overlay-tab-panel" data-overlay-panel="timeline" hidden>
