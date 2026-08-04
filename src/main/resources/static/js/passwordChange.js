@@ -5,9 +5,6 @@ const character = document.querySelector(".omagotchi-character");
 const bubble = document.querySelector("[data-auth-feedback]") || document.querySelector(".speech-bubble");
 const inputs = document.querySelectorAll(".input-group input");
 const checkUserButton = document.querySelector("[data-check-user-button]");
-const lookupStep = document.querySelector("[data-password-step='lookup']");
-const changeStep = document.querySelector("[data-password-step='change']");
-const passwordTitle = document.querySelector("[data-password-title]");
 
 function setFeedback(message) {
     if (bubble) {
@@ -30,8 +27,8 @@ inputs.forEach((input) => {
     });
 });
 
-// 사용자 확인 단계
-checkUserButton.addEventListener("click", async () => {
+// 미구현 비밀번호 재설정 기능 안내
+checkUserButton.addEventListener("click", () => {
     const email = form.email.value.trim();
 
     if (!email) {
@@ -46,56 +43,13 @@ checkUserButton.addEventListener("click", async () => {
         return;
     }
 
-    const lookup = await window.OmagotchiApi?.auth?.lookupPasswordReset?.({ email });
-    if (lookup?.exists === false) {
-        setFeedback("가입된 이메일을 찾을 수 없습니다.");
-        shakeCard();
-        return;
-    }
-    lookupStep.classList.remove("is-active");
-    changeStep.classList.add("is-active");
-    changeStep.removeAttribute("aria-hidden");
-    if (passwordTitle) {
-        passwordTitle.textContent = "비밀번호 변경";
-    }
-    setFeedback("새 비밀번호를 입력하세요");
-    form.newPassword.focus();
+    setFeedback("비밀번호 재설정 기능은 아직 준비 중입니다.");
 });
 
-// 새 비밀번호 변경 단계
-form.addEventListener("submit", async (event) => {
+// 미구현 비밀번호 재설정 제출 안내
+form.addEventListener("submit", (event) => {
     event.preventDefault();
-
-    const newPassword = form.newPassword.value.trim();
-    const confirmPassword = form.confirmPassword.value.trim();
-
-    if (!newPassword || !confirmPassword) {
-        setFeedback("새 비밀번호를 모두 입력해주세요.");
-        shakeCard();
-        return;
-    }
-
-    if (newPassword.length < 8) {
-        setFeedback("비밀번호는 8자리 이상으로 입력해주세요.");
-        shakeCard();
-        return;
-    }
-
-    if (newPassword !== confirmPassword) {
-        setFeedback("비밀번호 확인이 일치하지 않아요.");
-        shakeCard();
-        return;
-    }
-
-    await window.OmagotchiApi?.auth?.resetPassword?.({
-        email: form.email.value.trim(),
-        newPassword
-    });
-    setFeedback("비밀번호 변경 완료. 로그인 화면으로 이동할게요.");
-
-    setTimeout(() => {
-        window.location.href = "/login";
-    }, 800);
+    setFeedback("비밀번호 재설정 기능은 아직 준비 중입니다.");
 });
 
 // 카드 흔들림 피드백
