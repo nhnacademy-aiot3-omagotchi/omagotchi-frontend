@@ -19,13 +19,12 @@ function shakeUsernameCard() {
     }, 350);
 }
 
-// 이름과 임시 가입 정보를 저장하고 캐릭터 선택 화면으로 이동
+// 사용자 이름 저장과 캐릭터 선택 화면 이동
 usernameForm.addEventListener("submit", async (event) => {
     event.preventDefault();
 
     const username = usernameForm.username.value.trim();
     const email = sessionStorage.getItem("omagotchiRegisterEmail");
-    const password = sessionStorage.getItem("omagotchiRegisterPassword");
 
     if (username.length < 2) {
         setUsernameFeedback("사용자 이름은 2자 이상으로 입력해주세요.");
@@ -54,10 +53,6 @@ usernameForm.addEventListener("submit", async (event) => {
     } else {
         sessionStorage.setItem("omagotchiUsername", username);
         localStorage.setItem("omagotchiUsername:guest", username);
-    }
-
-    if (email && password) {
-        localStorage.setItem(`omagotchiPassword:${email}`, password);
     }
 
     window.location.href = "/character-selector";
