@@ -41,6 +41,7 @@ build/
 *.env
 !*.env.example
 !*.env.sample
+!.env.*.example
 secrets/
 *.pem
 *.key
@@ -58,3 +59,4 @@ hs_err_pid*
 replay_pid*
 .mise.local.toml
 mise.local.toml
+.serena
