@@ -1,0 +1,39 @@
+spring:
+  http:
+    clients:
+      connect-timeout: 2s
+      read-timeout: 5s
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      username: ""
+      password: ""
+      connect-timeout: 1s
+      timeout: 2s
+      ssl:
+        enabled: false
+  session:
+    timeout: PT30M
+    data:
+      redis:
+        namespace: omagotchi:frontend:test:session
+
+server:
+  port: 0
+  servlet:
+    session:
+      cookie:
+        name: OMAGOTCHI_SESSION
+        secure: false
+
+clients:
+  identity:
+    base-url: http://localhost:8083
+    username: frontend
+    password: test-only-frontend-credential-value
+
+management:
+  health:
+    redis:
+      enabled: false
