@@ -39,6 +39,7 @@ public enum CommonErrorCode implements ErrorCode {
             "COMMON_UNSUPPORTED_MEDIA_TYPE",
             "지원하지 않는 요청 본문 형식입니다."
     ),
+    /** Frontend가 호출한 서비스의 응답 계약 위반. */
     DOWNSTREAM_INVALID_RESPONSE(
             ErrorType.BAD_GATEWAY,
             "COMMON_DOWNSTREAM_INVALID_RESPONSE",
