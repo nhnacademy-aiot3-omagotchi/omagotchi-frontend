@@ -114,6 +114,7 @@ button {
 .manager-account button,
 .panel-heading button,
 .cohort-edit-form button,
+.sensor-threshold-form button,
 .notice-form button,
 .manager-dialog button {
     min-height: 38px;
@@ -358,6 +359,12 @@ button {
     margin-bottom: 20px;
 }
 
+.panel-heading-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
 .panel-heading > div > span {
     color: var(--green-700);
     font-size: 11px;
@@ -451,6 +458,7 @@ button {
 }
 
 .cohort-edit-form[hidden],
+.sensor-threshold-form[hidden],
 .notice-form[hidden] {
     display: none;
 }
@@ -466,6 +474,7 @@ button {
 }
 
 .cohort-edit-form label span,
+.sensor-threshold-form label span,
 .search-field span,
 .date-field span {
     color: var(--muted);
@@ -630,6 +639,33 @@ td small {
     background: #fff8e9;
 }
 
+.sensor-threshold-form {
+    display: grid;
+    gap: 14px;
+    margin-top: 14px;
+    padding: 16px;
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    background: #f8fbf9;
+}
+
+.sensor-threshold-fields {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.sensor-threshold-form label {
+    display: grid;
+    gap: 5px;
+}
+
+.sensor-threshold-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
 .updated-at {
     color: var(--muted);
     font-size: 11px;
@@ -773,6 +809,10 @@ td small {
     .sensor-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
+
+    .sensor-threshold-fields {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
 }
 
 @media (max-width: 680px) {
@@ -844,6 +884,11 @@ td small {
         align-items: flex-end;
     }
 
+    .panel-heading-actions {
+        width: 100%;
+        justify-content: space-between;
+    }
+
     .overview-grid,
     .cohort-info-card dl {
         grid-template-columns: 1fr;
@@ -857,6 +902,10 @@ td small {
 
     .sensor-grid {
         grid-template-columns: 1fr 1fr;
+    }
+
+    .sensor-threshold-fields {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
     .community-item {

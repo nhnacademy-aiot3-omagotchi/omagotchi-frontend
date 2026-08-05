@@ -21,6 +21,7 @@ body::-webkit-scrollbar,
 
 body::after {
     content: "";
+    display: none;
     position: fixed;
     right: 10px;
     bottom: 2px;
@@ -30,6 +31,10 @@ body::after {
     pointer-events: none;
     background: rgba(255, 255, 255, 0.52);
     clip-path: polygon(0 0, 100% 0, 50% 100%);
+}
+
+body.has-scroll-cue:not(.is-scroll-cue-hidden):not(.has-open-dialog)::after {
+    display: block;
     animation: scrollCuePulse 1.6s ease-in-out infinite;
 }
 

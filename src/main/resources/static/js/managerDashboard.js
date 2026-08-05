@@ -3,6 +3,14 @@ const OPERATIONS_KEY = "omagotchiCohortOperations";
 const APPLICATIONS_KEY = "omagotchiCohortApplications";
 const NOTICES_KEY = "omagotchiCohortNotices";
 const AUDITS_KEY = "omagotchiCohortAudits";
+const DEFAULT_SENSOR_THRESHOLDS = {
+    temperatureMin: 20,
+    temperatureMax: 26,
+    humidityMin: 40,
+    humidityMax: 60,
+    co2Max: 1000,
+    occupancyMax: 30
+};
 
 const today = new Date().toISOString().slice(0, 10);
 const managerEmail = sessionStorage.getItem("omagotchiManagerEmail") || "";
@@ -80,6 +88,7 @@ const elements = {
     auditList: document.querySelector("[data-audit-list]"),
     codeCard: document.querySelector("[data-code-card]"),
     editForm: document.querySelector("[data-cohort-edit-form]"),
+    sensorThresholdForm: document.querySelector("[data-sensor-threshold-form]"),
     noticeForm: document.querySelector("[data-notice-form]"),
     dialog: document.querySelector("[data-dialog-backdrop]"),
     dialogTitle: document.querySelector("[data-dialog-title]"),
@@ -133,6 +142,15 @@ function setBubble(message) {
     elements.bubble.innerHTML = message;
 }
 
+function sensorThresholds(cohort = currentCohort()) {
+    cohort.sensor ??= {};
+    cohort.sensor.thresholds = {
+        ...DEFAULT_SENSOR_THRESHOLDS,
+        ...(cohort.sensor.thresholds || {})
+    };
+    return cohort.sensor.thresholds;
+}
+
 function addAudit(action, target, detail) {
     audits.unshift({
         id: crypto.randomUUID?.() || `audit-${Date.now()}`,
@@ -174,6 +192,7 @@ function renderCohortSelect() {
 function renderSummary() {
     const cohort = currentCohort();
     if (!cohort) return;
+    cohort.sensor ??= {};
     const activeMembers = cohort.members.filter((member) => member.status === "ACTIVE");
     const pending = applications.filter((item) => item.cohortId === cohort.id && item.status === "PENDING");
     const attendance = cohort.attendance.filter((item) => item.date === today && item.checkIn !== "-");
@@ -271,15 +290,33 @@ function renderAttendance() {
 }
 
 function renderSensors() {
-    const sensor = currentCohort().sensor;
-    const co2Warning = sensor.co2 != null && sensor.co2 >= 1000;
+    const cohort = currentCohort();
+    cohort.sensor ??= {};
+    const sensor = cohort.sensor;
+    const thresholds = sensorThresholds();
+    const temperatureWarning = sensor.temperature != null
+        && (sensor.temperature < thresholds.temperatureMin || sensor.temperature > thresholds.temperatureMax);
+    const humidityWarning = sensor.humidity != null
+        && (sensor.humidity < thresholds.humidityMin || sensor.humidity > thresholds.humidityMax);
+    const co2Warning = sensor.co2 != null && sensor.co2 >= thresholds.co2Max;
+    const occupancyWarning = sensor.occupancy != null && sensor.occupancy > thresholds.occupancyMax;
     document.querySelector("[data-sensor-temperature]").textContent = sensor.temperature == null ? "--" : `${sensor.temperature}℃`;
     document.querySelector("[data-sensor-humidity]").textContent = sensor.humidity == null ? "--" : `${sensor.humidity}%`;
     document.querySelector("[data-sensor-co2]").textContent = sensor.co2 == null ? "--" : `${sensor.co2}ppm`;
     document.querySelector("[data-sensor-occupancy]").textContent = `${sensor.occupancy ?? 0}명`;
     document.querySelector("[data-sensor-updated]").textContent = sensor.updatedAt ? `마지막 수신 ${sensor.updatedAt}` : "수신 데이터 없음";
+    document.querySelector("[data-sensor-temperature-range]").textContent = `권장 ${thresholds.temperatureMin}~${thresholds.temperatureMax}℃`;
+    document.querySelector("[data-sensor-humidity-range]").textContent = `권장 ${thresholds.humidityMin}~${thresholds.humidityMax}%`;
+    document.querySelector("[data-sensor-occupancy-range]").textContent = `최대 ${thresholds.occupancyMax}명`;
     document.querySelector("[data-sensor-co2-state]").textContent = co2Warning ? "환기가 필요합니다" : sensor.co2 == null ? "수신 대기" : "쾌적";
+    document.querySelector("[data-sensor-temperature]").closest("article").classList.toggle("is-warning", temperatureWarning);
+    document.querySelector("[data-sensor-humidity]").closest("article").classList.toggle("is-warning", humidityWarning);
     document.querySelector("[data-sensor-co2]").closest("article").classList.toggle("is-warning", co2Warning);
+    document.querySelector("[data-sensor-occupancy]").closest("article").classList.toggle("is-warning", occupancyWarning);
+    Object.entries(thresholds).forEach(([key, value]) => {
+        const field = elements.sensorThresholdForm.elements.namedItem(key);
+        if (field) field.value = value;
+    });
 }
 
 function renderCommunity() {
@@ -485,6 +522,51 @@ elements.attendanceList.addEventListener("click", (event) => {
         renderAll();
         return true;
     });
+});
+
+// 실습실 센서 임계치 수정
+document.querySelector("[data-open-sensor-thresholds]").addEventListener("click", () => {
+    elements.sensorThresholdForm.hidden = false;
+});
+document.querySelector("[data-cancel-sensor-thresholds]").addEventListener("click", () => {
+    elements.sensorThresholdForm.hidden = true;
+    renderSensors();
+});
+elements.sensorThresholdForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const form = elements.sensorThresholdForm;
+    const next = {
+        temperatureMin: Number(form.elements.namedItem("temperatureMin").value),
+        temperatureMax: Number(form.elements.namedItem("temperatureMax").value),
+        humidityMin: Number(form.elements.namedItem("humidityMin").value),
+        humidityMax: Number(form.elements.namedItem("humidityMax").value),
+        co2Max: Number(form.elements.namedItem("co2Max").value),
+        occupancyMax: Number(form.elements.namedItem("occupancyMax").value)
+    };
+
+    const invalid = Object.values(next).some((value) => Number.isNaN(value))
+        || next.temperatureMin > next.temperatureMax
+        || next.humidityMin > next.humidityMax
+        || next.co2Max < 1
+        || next.occupancyMax < 1;
+
+    if (invalid) {
+        setBubble("임계치 값을<br />확인해 주세요.");
+        return;
+    }
+
+    const cohort = currentCohort();
+    cohort.sensor ??= {};
+    cohort.sensor.thresholds = next;
+    addAudit(
+        "센서 임계치 수정",
+        cohort.name,
+        `온도 ${next.temperatureMin}~${next.temperatureMax}℃, 습도 ${next.humidityMin}~${next.humidityMax}%, CO₂ ${next.co2Max}ppm, 재실 ${next.occupancyMax}명`
+    );
+    elements.sensorThresholdForm.hidden = true;
+    saveState();
+    renderAll();
+    setBubble("센서 임계치를<br />저장했습니다.");
 });
 
 // 담당 기수 공지 작성과 커뮤니티 게시글 관리
