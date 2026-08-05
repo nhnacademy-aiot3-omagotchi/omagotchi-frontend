@@ -259,12 +259,17 @@ body {
 }
 
 .username-card .username-feedback {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
+    position: static;
+    width: auto;
+    height: auto;
+    margin: -22px 0 26px;
+    overflow: visible;
+    clip: auto;
+    color: #66736c;
+    font-size: 14px;
+    font-weight: 900;
+    line-height: 1.5;
+    text-align: center;
 }
 
 .username-card .username-input-group {

@@ -140,6 +140,18 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     });
 
+    character.addEventListener("click", () => {
+        if (waking) {
+            return;
+        }
+
+        character.classList.remove("is-shaking");
+        void character.offsetWidth;
+        character.classList.add("is-shaking");
+        setMessage("좋아요. 입실을 기록할게요.");
+        window.setTimeout(finishWake, 420);
+    });
+
     if (isCheckedInToday()) {
         window.location.replace("/home");
     }

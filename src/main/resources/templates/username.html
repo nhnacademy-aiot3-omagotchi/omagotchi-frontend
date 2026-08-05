@@ -17,11 +17,18 @@
         </header>
 
         <form class="auth-form username-form auth-panel" action="#" method="post">
-            <p class="auth-subtitle username-feedback" data-auth-feedback>사용자 이름을 입력하세요</p>
+            <p class="auth-subtitle username-feedback" data-auth-feedback>닉네임은 16글자 제한입니다.</p>
 
             <label class="input-group auth-input-group username-input-group">
                 <span class="sr-only">사용자 이름</span>
-                <input type="text" name="username" placeholder="사용자 이름" autocomplete="nickname" />
+                <input
+                        type="text"
+                        name="username"
+                        placeholder="사용자 이름"
+                        autocomplete="nickname"
+                        maxlength="16"
+                        pattern="[0-9A-Za-z가-힣]{2,16}"
+                />
             </label>
 
             <button class="auth-button auth-submit-button" type="submit">

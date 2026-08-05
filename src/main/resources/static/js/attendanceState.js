@@ -1,5 +1,6 @@
 // [API-REPLACE] localStorage용 출석 키, 서버 연동 후 삭제
 const ATTENDANCE_PREFIX = "omagotchiAttendance:";
+const LEGACY_ATTENDANCE_PREFIX = "omagotchiAttendance:";
 // [UI-KEEP] 한국 서비스 기준 시간대
 const SEOUL_TIME_ZONE = "Asia/Seoul";
 
@@ -40,17 +41,41 @@ export function getCurrentUserKey() {
 }
 // [API-REPLACE] GET /api/attendance/today 같은 조회 API로 교체
 function getAttendanceKey(userKey = getCurrentUserKey()) {
-    return `${ATTENDANCE_PREFIX}${userKey}:${getServiceDate()}`;
+    return `${ATTENDANCE_PREFIX}${userKey}`;
+}
+
+function getLegacyAttendanceKey(userKey = getCurrentUserKey()) {
+    return `${LEGACY_ATTENDANCE_PREFIX}${userKey}:${getServiceDate()}`;
+}
+
+function normalizeAttendance(entry = {}) {
+    return {
+        ...entry,
+        checkInAt: entry.checkInAt || entry.checkedInAt,
+        checkOutAt: entry.checkOutAt || entry.checkedOutAt
+    };
 }
 
 export function getTodayAttendance() {
+    const dateKey = getServiceDate();
     const raw = localStorage.getItem(getAttendanceKey());
-    if (!raw) {
-        return null;
+
+    if (raw) {
+        try {
+            const history = JSON.parse(raw) || {};
+            if (history[dateKey]) {
+                return normalizeAttendance(history[dateKey]);
+            }
+        } catch {
+            return null;
+        }
     }
 
+    const legacyRaw = localStorage.getItem(getLegacyAttendanceKey());
+    if (!legacyRaw) return null;
+
     try {
-        return JSON.parse(raw);
+        return normalizeAttendance(JSON.parse(legacyRaw));
     } catch {
         return null;
     }
@@ -58,19 +83,36 @@ export function getTodayAttendance() {
 // [API-REPLACE] POST 입실 API로 교체
 // checkedInAt은 브라우저 시간이 아니라 서버 시간이 되어야 함
 export function isCheckedInToday() {
-    return Boolean(getTodayAttendance()?.checkedInAt);
+    return Boolean(getTodayAttendance()?.checkInAt);
 }
 
 export async function checkInToday() {
     const serverAttendance = await window.OmagotchiApi?.attendance?.checkIn?.();
-    const attendance = serverAttendance || {
+    const attendance = normalizeAttendance(serverAttendance || {
         serviceDate: getServiceDate(),
-        checkedInAt: new Date().toISOString(),
+        checkInAt: new Date().toISOString(),
+        status: "PRESENT",
+        spaceStatus: "IN_LAB"
+    });
+    const dateKey = attendance.serviceDate || getServiceDate();
+    let history = {};
+
+    try {
+        history = JSON.parse(localStorage.getItem(getAttendanceKey()) || "{}") || {};
+    } catch {
+        history = {};
+    }
+
+    history[dateKey] = {
+        ...history[dateKey],
+        ...attendance,
+        checkInAt: attendance.checkInAt || new Date().toISOString(),
+        serviceDate: dateKey,
         status: "PRESENT",
         spaceStatus: "IN_LAB"
     };
 
-    localStorage.setItem(getAttendanceKey(), JSON.stringify(attendance));
+    localStorage.setItem(getAttendanceKey(), JSON.stringify(history));
     window.dispatchEvent(new CustomEvent("omagotchi:attendance", {detail: attendance}));
     return attendance;
 }

@@ -2,6 +2,7 @@
 const usernameForm = document.querySelector(".username-form");
 const usernameCard = document.querySelector(".login-card");
 const usernameFeedback = document.querySelector("[data-auth-feedback]");
+const USERNAME_PATTERN = /^[0-9A-Za-z가-힣]{2,16}$/;
 
 function setUsernameFeedback(message) {
     if (usernameFeedback) {
@@ -32,11 +33,27 @@ usernameForm.addEventListener("submit", async (event) => {
         return;
     }
 
+    if (username.length > 16) {
+        setUsernameFeedback("사용자 이름은 16자 이하로 입력해주세요.");
+        shakeUsernameCard();
+        return;
+    }
+
+    if (!USERNAME_PATTERN.test(username)) {
+        setUsernameFeedback("특수문자는 허용하지 않습니다.");
+        shakeUsernameCard();
+        return;
+    }
+
     if (email) {
         await window.OmagotchiApi?.auth?.updateProfile?.({ email, username });
         sessionStorage.setItem("omagotchiEmail", email);
+        sessionStorage.setItem("omagotchiUsername", username);
         localStorage.setItem("omagotchiLastEmail", email);
         localStorage.setItem(`omagotchiUsername:${email}`, username);
+    } else {
+        sessionStorage.setItem("omagotchiUsername", username);
+        localStorage.setItem("omagotchiUsername:guest", username);
     }
 
     if (email && password) {

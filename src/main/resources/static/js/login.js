@@ -53,8 +53,14 @@ form.addEventListener("submit", async (event) => {
     const nextUrl = session?.redirectUrl;
     sessionStorage.setItem("omagotchiEmail", email);
     sessionStorage.setItem("omagotchiLoginPassword", password);
-    if (user?.name) {
-        sessionStorage.setItem("omagotchiUsername", user.name);
+    const username = user?.name || user?.username;
+    if (username) {
+        sessionStorage.setItem("omagotchiUsername", username);
+    } else {
+        const storedUsername = localStorage.getItem(`omagotchiUsername:${email}`);
+        if (storedUsername) {
+            sessionStorage.setItem("omagotchiUsername", storedUsername);
+        }
     }
     localStorage.setItem("omagotchiLastEmail", email);
 

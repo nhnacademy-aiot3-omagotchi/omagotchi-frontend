@@ -200,8 +200,9 @@ export function createAttendance({
         if (button) {
             button.classList.toggle("is-checked-in", hasCheckIn && !hasCheckOut);
             button.classList.toggle("is-complete", hasCheckOut);
-            button.textContent = hasCheckOut ? "✓ 퇴실 완료" : hasCheckIn ? "퇴실하기" : "입실하기";
-            button.disabled = hasCheckOut;
+            button.hidden = !hasCheckIn || hasCheckOut;
+            button.textContent = "퇴실하기";
+            button.disabled = !hasCheckIn || hasCheckOut;
         }
 
         renderCalendar(history);
@@ -213,7 +214,12 @@ export function createAttendance({
     async function toggle() {
         const history = getHistory();
         const attendance = history[getLocalDateKey()] || {};
-        const nextAction = attendance.checkInAt && !attendance.checkOutAt ? "checkOut" : "checkIn";
+        if (!attendance.checkInAt || attendance.checkOutAt) {
+            render();
+            return;
+        }
+
+        const nextAction = "checkOut";
 
         if (button) button.disabled = true;
         const serverAttendance = await api?.[nextAction]?.();
@@ -223,14 +229,7 @@ export function createAttendance({
             return;
         }
 
-        if (nextAction === "checkOut") {
-            attendance.checkOutAt = new Date().toISOString();
-        } else if (!attendance.checkInAt) {
-            attendance.checkInAt = new Date().toISOString();
-            delete attendance.checkOutAt;
-        } else {
-            return;
-        }
+        attendance.checkOutAt = new Date().toISOString();
         saveToday(attendance);
         render();
     }

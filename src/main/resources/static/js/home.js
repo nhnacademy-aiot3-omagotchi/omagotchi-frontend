@@ -45,6 +45,9 @@ const bgmPlayerRoot = document.querySelector("[data-bgm-player]");
 const currentUserEmail = sessionStorage.getItem("omagotchiEmail")
     || localStorage.getItem("omagotchiLastEmail")
     || "guest";
+const currentUserName = sessionStorage.getItem("omagotchiUsername")
+    || localStorage.getItem(`omagotchiUsername:${currentUserEmail}`)
+    || (currentUserEmail === "guest" ? "나" : currentUserEmail.split("@")[0]);
 const selectedCharacterId = sessionStorage.getItem("omagotchiCharacterId")
     || localStorage.getItem(`omagotchiCharacterId:${currentUserEmail}`);
 const selectedCharacterColorId = sessionStorage.getItem("omagotchiCharacterColorId")
@@ -66,6 +69,7 @@ const storedCharacterName = sessionStorage.getItem("omagotchiCharacterName")
 const selectedCharacterName = storedCharacterName
     .replace(/^\[([^\]]+)]$/, "$1")
     .trim();
+const displayCharacterName = currentUserName || selectedCharacterName;
 
 if (selectedCharacterName !== storedCharacterName) {
     sessionStorage.setItem("omagotchiCharacterName", selectedCharacterName);
@@ -80,6 +84,7 @@ const timerKey = `omagotchiStudyTimer:${currentUserEmail}`;
 const brightnessKey = "omagotchiHomeBrightness";
 const sessionOnlyKeys = [
     "omagotchiEmail",
+    "omagotchiUsername",
     "omagotchiCharacterId",
     "omagotchiCharacterName",
     "omagotchiCharacterImage",
@@ -142,7 +147,7 @@ const characterController = createCharacter({
     interaction: characterInteraction,
     bubble: characterBubble,
     nameElement: characterName,
-    selectedName: selectedCharacterName,
+    selectedName: displayCharacterName,
     selectedImage: selectedCharacterImage,
     animatedImage: selectedCharacterAnimatedImage
 });
@@ -225,8 +230,7 @@ presenceController = createPresence({
     refreshButton: presenceRefresh,
     updated: presenceUpdated,
     currentUser: {
-        name: sessionStorage.getItem("omagotchiUsername")
-            || (currentUserEmail === "guest" ? "나" : currentUserEmail.split("@")[0]),
+        name: displayCharacterName,
         email: currentUserEmail === "guest" ? "" : currentUserEmail
     },
     selectedCharacterImage,
@@ -867,7 +871,7 @@ homeOverlayRoot?.addEventListener("submit", async (event) => {
             id: `application-${Date.now()}`,
             cohortId: cohort.id,
             userId: currentUserEmail,
-            name: sessionStorage.getItem("omagotchiUsername") || currentUserEmail.split("@")[0],
+            name: displayCharacterName,
             email: currentUserEmail,
             requestedAt: new Date().toLocaleString("ko-KR", { hour12: false }),
             status: "PENDING"

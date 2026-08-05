@@ -25,7 +25,8 @@ export function createPresence({
 }) {
     let users = [];
     let keyword = "";
-    let labCapacity = 0;
+    const initialCapacity = Number(capacity?.textContent) || 50;
+    let labCapacity = initialCapacity;
     let occupiedCount = 0;
     let keyTimer = null;
 
@@ -45,10 +46,25 @@ export function createPresence({
     }
 
     function syncCurrentUser() {
-        const current = users.find((user) => user.current);
-        if (!current) return;
+        const currentStatus = getCurrentStatus();
+        let current = users.find((user) => user.current || user.email === currentUser.email);
 
-        current.status = getCurrentStatus();
+        if (!current) {
+            current = {
+                id: "current-user",
+                name: currentUser.name,
+                email: currentUser.email,
+                status: currentStatus,
+                current: true,
+                characterImage: selectedCharacterImage
+            };
+            users.unshift(current);
+        }
+
+        current.name = currentUser.name;
+        current.email = currentUser.email;
+        current.current = true;
+        current.status = currentStatus;
         current.characterImage = selectedCharacterImage;
     }
 
@@ -85,6 +101,7 @@ export function createPresence({
             </section>
         `).join("") : `<p class="presence-panel-empty">검색 결과가 없습니다.</p>`;
 
+        occupiedCount = users.filter((user) => ["present", "meeting"].includes(user.status)).length;
         if (count) count.textContent = String(occupiedCount);
         if (capacity) capacity.textContent = String(labCapacity);
     }
@@ -106,10 +123,7 @@ export function createPresence({
     }
 
     function applySnapshot(snapshot) {
-        labCapacity = Number(snapshot.capacity) || 0;
-        occupiedCount = Number.isFinite(Number(snapshot.occupiedCount))
-            ? Number(snapshot.occupiedCount)
-            : snapshot.users?.filter((user) => user.status === "present").length || 0;
+        labCapacity = Number(snapshot.capacity) || initialCapacity;
         users = Array.isArray(snapshot.users) ? snapshot.users : [];
         render();
 
