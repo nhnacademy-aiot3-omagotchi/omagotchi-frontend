@@ -1,3 +1,6 @@
+/* 커스텀 스크롤 */
+@import url("/css/scrollCue.css");
+
 :root {
     --cursor-touch: url("/images/cursor/touch_re3.png") 24 24, pointer;
 }
