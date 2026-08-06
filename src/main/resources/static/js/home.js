@@ -407,7 +407,7 @@ const overlayContent = {
             <button type="button" data-overlay-tab="stats">통계</button>
         </div>
         <section class="overlay-tab-panel is-active" data-overlay-panel="quests">
-            <div class="overlay-section-label"><strong>일일</strong><span></span><em>자정에 초기화</em></div>
+            <div class="overlay-section-label"><strong>일일</strong><span></span><em>익일 4시에 초기화</em></div>
             <article class="overlay-quest">
                 <header>
                     <div>
