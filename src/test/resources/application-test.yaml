@@ -3,6 +3,9 @@ spring:
     clients:
       connect-timeout: 2s
       read-timeout: 5s
+    serviceclient:
+      identity-service:
+        base-url: http://localhost:8083
   data:
     redis:
       host: localhost
@@ -27,9 +30,12 @@ server:
         name: OMAGOTCHI_SESSION
         secure: false
 
+eureka:
+  client:
+    enabled: false
+
 clients:
   identity:
-    base-url: http://localhost:8083
     username: frontend
     password: test-only-frontend-credential-value
 
