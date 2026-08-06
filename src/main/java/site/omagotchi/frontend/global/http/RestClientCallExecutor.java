@@ -1,5 +1,7 @@
 package site.omagotchi.frontend.global.http;
 
+import org.springframework.cloud.loadbalancer.blocking.client.BlockingLoadBalancerClient;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClientException;
@@ -11,32 +13,65 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 /**
- * RestClient 호출의 공통 실패 처리.
- * Identity·Learning 등 서비스별 HTTP client의 중복 try/catch 제거.
- * 호출별 4xx 공개 정책 전달을 위한 RestClient 공통 status handler 미사용.
+ * 대상: 호출 대상 서비스
+ * 역할: 비가용 실패 공통 변환, 호출별 4xx 정책 적용
+ * 비가용 범위: Discovery·연결·5xx 등
  */
 @Component
 public class RestClientCallExecutor {
 
+    private static final String NO_SERVICE_INSTANCE_MESSAGE_PREFIX =
+            "No instances available for ";
+
     public <T> T execute(
             Supplier<T> request,
-            Function<RestClientResponseException, BusinessException> errorResponseMapper
+            Function<RestClientResponseException, BusinessException> responseExceptionTranslator
     ) {
         try {
             return request.get();
+
         } catch (ResourceAccessException exception) {
-            // 연결 실패·timeout 등 HTTP 응답을 받지 못한 경우
+            // HTTP 응답 미수신: 연결 실패·Timeout의 503 변환
             throw new BusinessException(CommonErrorCode.SERVICE_UNAVAILABLE, exception);
+
+        } catch (IllegalStateException exception) {
+            // Discovery Instance 부재: 전용 예외 Type 부재에 따른 제한적 503 변환
+            if (isMissingServiceInstance(exception)) {
+                throw new BusinessException(CommonErrorCode.SERVICE_UNAVAILABLE, exception);
+            }
+            throw exception;
+
         } catch (RestClientResponseException exception) {
-            // 호출 대상 서비스 5xx의 세부 내용 비공개와 Frontend 503 변환
+            // 호출 대상 5xx: 세부 내용 비공개와 503 변환
             if (exception.getStatusCode().is5xxServerError()) {
                 throw new BusinessException(CommonErrorCode.SERVICE_UNAVAILABLE, exception);
             }
-            // HTTP 오류 응답을 받은 경우의 서비스별 오류 code 해석
-            throw errorResponseMapper.apply(exception);
+            // 호출 대상 4xx: Endpoint별 공개 정책 위임
+            throw responseExceptionTranslator.apply(exception);
+
         } catch (RestClientException exception) {
-            // 응답 변환 실패 등 정상 응답으로 사용할 수 없는 경우
-            throw new BusinessException(CommonErrorCode.DOWNSTREAM_INVALID_RESPONSE, exception);
+            // 기타 RestClient 실패: Spring이 감싼 응답 본문 해석 실패만 502 변환
+            if (exception.getCause() instanceof HttpMessageNotReadableException) {
+                throw new BusinessException(
+                        CommonErrorCode.DOWNSTREAM_INVALID_RESPONSE,
+                        exception
+                );
+            }
+            throw exception;
         }
+    }
+
+    // 일반 IllegalStateException 오분류 방지를 위한 메시지·발생 위치 동시 확인
+    private static boolean isMissingServiceInstance(IllegalStateException exception) {
+        String message = exception.getMessage();
+        if (message == null || !message.startsWith(NO_SERVICE_INSTANCE_MESSAGE_PREFIX)) {
+            return false;
+        }
+        for (StackTraceElement stackTraceElement : exception.getStackTrace()) {
+            if (BlockingLoadBalancerClient.class.getName().equals(stackTraceElement.getClassName())) {
+                return true;
+            }
+        }
+        return false;
     }
 }

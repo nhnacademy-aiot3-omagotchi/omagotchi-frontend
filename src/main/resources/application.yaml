@@ -15,6 +15,9 @@ spring:
     clients:
       connect-timeout: ${HTTP_CLIENT_CONNECT_TIMEOUT}
       read-timeout: ${HTTP_CLIENT_READ_TIMEOUT}
+    serviceclient:
+      identity-service:
+        base-url: ${IDENTITY_SERVICE_BASE_URL}
   data:
     redis:
       host: ${SESSION_REDIS_HOST}
@@ -52,8 +55,15 @@ management:
     health:
       show-details: never
 
+eureka:
+  client:
+    enabled: ${EUREKA_ENABLED}
+    register-with-eureka: false
+    fetch-registry: true
+    serviceUrl:
+      defaultZone: ${EUREKA_URL}
+
 clients:
   identity:
-    base-url: ${IDENTITY_SERVICE_BASE_URL}
     username: ${FRONTEND_USERNAME}
     password: ${FRONTEND_PASSWORD}

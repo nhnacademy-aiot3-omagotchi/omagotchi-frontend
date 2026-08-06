@@ -10,3 +10,8 @@ server:
     session:
       cookie:
         secure: false
+
+eureka:
+  client:
+    # 로컬 고정 주소 사용
+    enabled: false
