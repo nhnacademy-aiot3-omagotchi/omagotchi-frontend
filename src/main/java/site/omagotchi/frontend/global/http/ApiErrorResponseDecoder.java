@@ -8,10 +8,7 @@ import site.omagotchi.frontend.global.exception.ApiErrorResponse;
 import site.omagotchi.frontend.global.exception.BusinessException;
 import site.omagotchi.frontend.global.exception.CommonErrorCode;
 
-/**
- * Frontend가 호출한 서비스에서 받은 공통 오류 JSON의 해석과 기본 계약 검증.
- * Frontend 내부 예외 처리가 아닌 Outbound HTTP 응답 해석.
- */
+// 내부 서비스가 반환한 공통 오류 JSON의 해석과 기본 계약 검증
 @Component
 public class ApiErrorResponseDecoder {
 
@@ -28,9 +25,8 @@ public class ApiErrorResponseDecoder {
             );
         }
 
-        // 응답이 적절한지 검사
+        // 공통 오류 본문의 필수 값 검사
         if (response == null
-                || response.status() != exception.getStatusCode().value()
                 || !StringUtils.hasText(response.code())
                 || !StringUtils.hasText(response.message())
                 || !StringUtils.hasText(response.path())
