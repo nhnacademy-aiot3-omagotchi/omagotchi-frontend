@@ -27,6 +27,15 @@ window.OmagotchiCharacterAssets = (() => {
         study: {
             cream_can: "cream_Can_eye.gif",
             light_coral: "Cora_eyel.gif"
+        },
+        night: {
+            pistachio: "Pistachio_eye3.gif",
+            cyan: "Cyan_eye3.gif",
+            cream_can: "Cream_Can_eye3.gif",
+            light_coral: "Light_Coral_eye3.gif",
+            light_purple: "Light_Purple_eye3.gif",
+            white: "White_eye3.gif",
+            dark_gray: "Dark_Gray_eye3.gif"
         }
     };
 
