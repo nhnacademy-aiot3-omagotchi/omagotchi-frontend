@@ -18,11 +18,14 @@ public class ApiErrorResponseDecoder {
         try {
             response = exception.getResponseBodyAs(ApiErrorResponse.class);
         } catch (RestClientException decodeFailure) {
-            throw new BusinessException(
+            BusinessException contractViolation = new BusinessException(
                     CommonErrorCode.DOWNSTREAM_INVALID_RESPONSE,
                     "HTTP 오류 응답 JSON 해석 실패 status=" + exception.getStatusCode().value(),
-                    decodeFailure
+                    exception
             );
+            // json 변환 예외를 보존하기 위한 로그 및 디버깅 용도
+            contractViolation.addSuppressed(decodeFailure);
+            throw contractViolation;
         }
 
         // 공통 오류 본문의 필수 값 검사
