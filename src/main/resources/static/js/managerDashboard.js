@@ -59,7 +59,7 @@ let notices = readJson(NOTICES_KEY, []);
 let audits = readJson(AUDITS_KEY, []);
 let selectedCohortId = sessionStorage.getItem("omagotchiManagerCohort") || cohorts[0]?.id;
 let activePanel = sessionStorage.getItem("omagotchiManagerDashboardTab") || "overview";
-const availablePanels = ["overview", "codes", "applications", "members", "attendance", "sensors", "community", "audits"];
+const availablePanels = ["overview", "codes", "applications", "members", "attendance", "sensors", "community", "audits", "studyStats"];
 
 if (!availablePanels.includes(activePanel)) {
     activePanel = "overview";
@@ -94,6 +94,8 @@ const elements = {
     attendanceList: document.querySelector("[data-attendance-list]"),
     communityList: document.querySelector("[data-community-list]"),
     auditList: document.querySelector("[data-audit-list]"),
+    studyStatsSearch: document.querySelector("[data-studystats-search]"),
+    studyStatsList: document.querySelector("[data-studystats-list]"),
     codeCard: document.querySelector("[data-code-card]"),
     editForm: document.querySelector("[data-cohort-edit-form]"),
     sensorThresholdForm: document.querySelector("[data-sensor-threshold-form]"),
@@ -435,6 +437,30 @@ function renderAudits() {
     `).join("") : `<tr><td class="empty-row" colspan="4">기록된 작업 이력이 없습니다.</td></tr>`;
 }
 
+function renderStudyStats() {
+    const query = (elements.studyStatsSearch?.value || "").trim().toLowerCase();
+    const students = currentCohort().members.filter((member) => member.role !== "MANAGER");
+    const rows = students.filter((member) => (
+        member.name.toLowerCase().includes(query) || member.email.toLowerCase().includes(query)
+    ));
+    
+    if (elements.studyStatsList) {
+        elements.studyStatsList.innerHTML = rows.length ? rows.map((member) => {
+            const todayStudy = "0시간 0분";
+            const totalStudy = "0시간 0분";
+            const sessions = 0;
+            return `
+            <tr>
+                <td><strong>${escapeHtml(member.name)}</strong></td>
+                <td><small>${escapeHtml(member.email)}</small></td>
+                <td>${todayStudy}</td>
+                <td>${totalStudy}</td>
+                <td>${sessions}회</td>
+            </tr>`;
+        }).join("") : `<tr><td class="empty-row" colspan="5">조회된 구성원이 없습니다.</td></tr>`;
+    }
+}
+
 function renderAll() {
     renderCohortSelect();
     renderSummary();
@@ -446,6 +472,7 @@ function renderAll() {
     renderSensors();
     renderCommunity();
     renderAudits();
+    renderStudyStats();
 }
 
 // 사유 입력이나 확인이 필요한 관리자 작업용 공통 대화상자
@@ -575,6 +602,9 @@ elements.applicationList.addEventListener("click", (event) => {
 
 // 담당 기수 구성원의 소속 상태 변경
 elements.memberSearch.addEventListener("input", renderMembers);
+if (elements.studyStatsSearch) {
+    elements.studyStatsSearch.addEventListener("input", renderStudyStats);
+}
 elements.memberList.addEventListener("click", (event) => {
     const statusButton = event.target.closest("[data-member-status]");
     const endButton = event.target.closest("[data-member-end]");
