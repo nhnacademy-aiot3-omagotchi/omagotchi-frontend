@@ -1,0 +1,13 @@
+<section class="dashboard-panel" data-dashboard-panel="members" th:fragment="panel">
+    <div class="panel-heading">
+        <div><span>소속 관리</span><h2>기수 구성원</h2></div>
+        <label class="search-field"><span>검색</span><input type="search" data-member-search placeholder="이름 또는 이메일" /></label>
+    </div>
+    <div class="table-wrap">
+        <table>
+            <thead><tr><th>구성원</th><th>이메일</th><th>기수 역할</th><th>소속 상태</th><th>관리</th></tr></thead>
+            <tbody data-member-list></tbody>
+        </table>
+    </div>
+    <p class="scope-note">기수 관리자는 전역 계정을 정지하거나 다른 기수 관리자를 지정할 수 없습니다. 이 화면에서는 해당 기수 소속 상태만 변경합니다.</p>
+</section>

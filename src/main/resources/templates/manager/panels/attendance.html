@@ -1,0 +1,12 @@
+<section class="dashboard-panel" data-dashboard-panel="attendance" th:fragment="panel">
+    <div class="panel-heading">
+        <div><span>출결 관리</span><h2>오늘의 출결</h2></div>
+        <label class="date-field"><span>조회일</span><input type="date" data-attendance-date /></label>
+    </div>
+    <div class="table-wrap">
+        <table>
+            <thead><tr><th>구성원</th><th>입실</th><th>퇴실</th><th>자동 판정</th><th>최종 상태</th><th>관리</th></tr></thead>
+            <tbody data-attendance-list></tbody>
+        </table>
+    </div>
+</section>
