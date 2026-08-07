@@ -5,9 +5,11 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestClientResponseException;
+import org.springframework.web.client.UnknownContentTypeException;
 import site.omagotchi.frontend.global.exception.BusinessException;
 import site.omagotchi.frontend.global.exception.CommonErrorCode;
 
@@ -158,5 +160,40 @@ class RestClientCallExecutorTest {
 
         // Then: 원본 RestClient 오류 전파
         assertThatThrownBy(action).isSameAs(failure);
+    }
+
+    @Test
+    @DisplayName("성공 응답 Content-Type 계약 위반의 502 변환")
+    void mapsUnknownResponseContentTypeToBadGateway() {
+        // Given: 2xx 응답이지만 선언한 응답 Body로 읽을 수 없는 Content-Type
+        UnknownContentTypeException failure = new UnknownContentTypeException(
+                String.class,
+                MediaType.TEXT_HTML,
+                HttpStatus.OK,
+                "OK",
+                new HttpHeaders(),
+                "<html>unexpected</html>".getBytes(StandardCharsets.UTF_8)
+        );
+
+        // When: 공통 HTTP 호출 실행
+        ThrowingCallable action = () -> executor.execute(
+                () -> {
+                    throw failure;
+                },
+                exception -> new BusinessException(
+                        CommonErrorCode.DOWNSTREAM_INVALID_RESPONSE,
+                        exception
+                )
+        );
+
+        // Then: 호출 대상 성공 응답 계약 위반의 502 변환
+        assertThatThrownBy(action)
+                .isInstanceOfSatisfying(BusinessException.class, exception -> {
+                    assertSoftly(softly -> {
+                        softly.assertThat(exception.getErrorCode())
+                                .isEqualTo(CommonErrorCode.DOWNSTREAM_INVALID_RESPONSE);
+                        softly.assertThat(exception.getCause()).isSameAs(failure);
+                    });
+                });
     }
 }

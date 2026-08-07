@@ -6,17 +6,14 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestClientResponseException;
+import org.springframework.web.client.UnknownContentTypeException;
 import site.omagotchi.frontend.global.exception.BusinessException;
 import site.omagotchi.frontend.global.exception.CommonErrorCode;
 
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-/**
- * 대상: 호출 대상 서비스
- * 역할: 비가용 실패 공통 변환, 호출별 4xx 정책 적용
- * 비가용 범위: Discovery·연결·5xx 등
- */
+// 외부 HTTP 호출의 비가용 503 변환과 호출별 4xx 공개 정책 위임
 @Component
 public class RestClientCallExecutor {
 
@@ -50,8 +47,9 @@ public class RestClientCallExecutor {
             throw responseExceptionTranslator.apply(exception);
 
         } catch (RestClientException exception) {
-            // 기타 RestClient 실패: Spring이 감싼 응답 본문 해석 실패만 502 변환
-            if (exception.getCause() instanceof HttpMessageNotReadableException) {
+            // 2xx 응답 본문·Content-Type 계약 위반만 502 변환
+            if (exception instanceof UnknownContentTypeException
+                    || exception.getCause() instanceof HttpMessageNotReadableException) {
                 throw new BusinessException(
                         CommonErrorCode.DOWNSTREAM_INVALID_RESPONSE,
                         exception
