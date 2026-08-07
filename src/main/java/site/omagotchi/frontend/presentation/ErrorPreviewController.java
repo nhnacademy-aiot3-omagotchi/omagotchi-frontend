@@ -7,7 +7,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 
 import java.io.IOException;
 
-/** Local Profile의 실제 ERROR dispatch 화면 확인. */
+// Local Profile ERROR dispatch 화면 점검 endpoint
+// 운영 Bean 미등록과 공개 장애 유도 API 비대상
 @Controller
 @Profile("local")
 public class ErrorPreviewController {
@@ -20,5 +21,10 @@ public class ErrorPreviewController {
     @GetMapping("/preview/error/500")
     public void preview500(HttpServletResponse response) throws IOException {
         response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+    }
+
+    @GetMapping("/preview/error/503")
+    public void preview503(HttpServletResponse response) throws IOException {
+        response.sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
     }
 }
