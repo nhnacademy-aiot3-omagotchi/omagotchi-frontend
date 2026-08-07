@@ -194,6 +194,61 @@ class IdentityRestAuthClientTest {
         server.verify();
     }
 
+    @Test
+    @DisplayName("Identity Signup 200 응답의 계약 위반 거절")
+    void rejectsUnexpectedSignupSuccessStatus() {
+        // Given: 201 계약과 다른 Signup 200 응답
+        server.expect(once(), requestTo(BASE_URL + SIGNUP_PATH))
+                .andExpect(method(HttpMethod.POST))
+                .andRespond(withStatus(HttpStatus.OK));
+
+        // When: Identity Signup 호출
+        ThrowingCallable action = () -> client.signUp(
+                "user@example.com",
+                "password-passphrase",
+                "오마고치"
+        );
+
+        // Then: 호출 대상 응답 계약 위반 변환
+        assertError(action, CommonErrorCode.DOWNSTREAM_INVALID_RESPONSE);
+        server.verify();
+    }
+
+    @Test
+    @DisplayName("Identity Login 201 응답의 계약 위반 거절")
+    void rejectsUnexpectedLoginSuccessStatus() {
+        // Given: 200 계약과 다른 Login 201 응답
+        server.expect(once(), requestTo(BASE_URL + LOGIN_PATH))
+                .andExpect(method(HttpMethod.POST))
+                .andRespond(withStatus(HttpStatus.CREATED));
+
+        // When: Identity Login 호출
+        ThrowingCallable action = () -> client.login(
+                "user@example.com",
+                "password-passphrase"
+        );
+
+        // Then: 호출 대상 응답 계약 위반 변환
+        assertError(action, CommonErrorCode.DOWNSTREAM_INVALID_RESPONSE);
+        server.verify();
+    }
+
+    @Test
+    @DisplayName("Identity Logout 200 응답의 계약 위반 거절")
+    void rejectsUnexpectedLogoutSuccessStatus() {
+        // Given: 204 계약과 다른 Logout 200 응답
+        server.expect(once(), requestTo(BASE_URL + LOGOUT_PATH))
+                .andExpect(method(HttpMethod.POST))
+                .andRespond(withStatus(HttpStatus.OK));
+
+        // When: Identity Logout 호출
+        ThrowingCallable action = () -> client.logout("refresh-token");
+
+        // Then: 호출 대상 응답 계약 위반 변환
+        assertError(action, CommonErrorCode.DOWNSTREAM_INVALID_RESPONSE);
+        server.verify();
+    }
+
     @ParameterizedTest(name = "{0}")
     @MethodSource("expectedSignupErrors")
     @DisplayName("회원가입 API가 공개하는 Identity 거절의 Frontend 오류 변환")

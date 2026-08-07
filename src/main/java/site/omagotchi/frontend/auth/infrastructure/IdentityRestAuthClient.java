@@ -1,6 +1,7 @@
 package site.omagotchi.frontend.auth.infrastructure;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import site.omagotchi.frontend.auth.application.AuthErrorCode;
@@ -27,7 +28,7 @@ public class IdentityRestAuthClient implements IdentityAuthClient {
     @Override
     public void signUp(String email, String password, String name) {
         // 회원가입 4xx: 요청 형식·가입 입력·중복 Email만 공개
-        callExecutor.execute(
+        ResponseEntity<Void> response = callExecutor.execute(
                 () -> httpService.signUp(new IdentitySignupRequest(email, password, name)),
                 exception -> failureTranslator.translate(
                         exception,
@@ -36,6 +37,7 @@ public class IdentityRestAuthClient implements IdentityAuthClient {
                         AuthErrorCode.DUPLICATE_EMAIL
                 )
         );
+        requireStatus(response, HttpStatus.CREATED, "Signup");
     }
 
     @Override
@@ -48,6 +50,7 @@ public class IdentityRestAuthClient implements IdentityAuthClient {
                         AuthErrorCode.INVALID_CREDENTIALS
                 )
         );
+        requireStatus(response, HttpStatus.OK, "Login");
 
         // 성공 응답 Body 누락: Identity 계약 위반의 502 변환
         if (response.getBody() == null) {
@@ -65,9 +68,25 @@ public class IdentityRestAuthClient implements IdentityAuthClient {
     public void logout(String refreshToken) {
         // 현재 Browser Session의 Refresh Token Family 폐기
         // Logout 4xx: 공개 오류 없음과 미등록 응답의 502 변환
-        callExecutor.execute(
+        ResponseEntity<Void> response = callExecutor.execute(
                 () -> httpService.logout(new IdentityRefreshTokenRequest(refreshToken)),
                 failureTranslator::translate
         );
+        requireStatus(response, HttpStatus.NO_CONTENT, "Logout");
+    }
+
+    private static void requireStatus(
+            ResponseEntity<?> response,
+            HttpStatus expectedStatus,
+            String operation
+    ) {
+        if (response.getStatusCode().value() != expectedStatus.value()) {
+            throw new BusinessException(
+                    CommonErrorCode.DOWNSTREAM_INVALID_RESPONSE,
+                    "Identity " + operation + " 성공 응답 Status 불일치 expected="
+                            + expectedStatus.value()
+                            + ", actual=" + response.getStatusCode().value()
+            );
+        }
     }
 }
