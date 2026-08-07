@@ -1,9 +1,13 @@
 package site.omagotchi.frontend;
 
+import jakarta.servlet.DispatcherType;
+import jakarta.servlet.RequestDispatcher;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -16,7 +20,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest
 @ActiveProfiles("test")
-@AutoConfigureMockMvc
+@AutoConfigureMockMvc(addFilters = false)
 class FrontendApplicationTests {
 
 	@Autowired
@@ -128,6 +132,25 @@ class FrontendApplicationTests {
 	}
 
 	@Test
+	@DisplayName("전용 Template이 없는 ERROR dispatch는 상태 계열 오류 View 반환")
+	void errorDispatchUsesStatusSeriesFallbackView() throws Exception {
+		// Given: 전용 Template이 없는 405·503 ERROR dispatch
+		// When: Boot 기본 오류 Controller가 상태 계열 Template 탐색
+		// Then: 4xx·5xx 공통 View 반환
+		mockMvc.perform(get("/error")
+				.accept(MediaType.TEXT_HTML)
+				.with(errorDispatch(405)))
+				.andExpect(status().isMethodNotAllowed())
+				.andExpect(view().name("error/4xx"));
+
+		mockMvc.perform(get("/error")
+				.accept(MediaType.TEXT_HTML)
+				.with(errorDispatch(503)))
+				.andExpect(status().isServiceUnavailable())
+				.andExpect(view().name("error/5xx"));
+	}
+
+	@Test
 	void managerRegisterPageIsRendered() throws Exception {
 		mockMvc.perform(get("/manager-register"))
 				.andExpect(status().isOk())
@@ -136,6 +159,17 @@ class FrontendApplicationTests {
 
 		mockMvc.perform(get("/js/managerRegister.js"))
 				.andExpect(status().isOk());
+	}
+
+	private static org.springframework.test.web.servlet.request.RequestPostProcessor errorDispatch(
+			int status
+	) {
+		return request -> {
+			request.setDispatcherType(DispatcherType.ERROR);
+			request.setAttribute(RequestDispatcher.ERROR_STATUS_CODE, status);
+			request.setAttribute(RequestDispatcher.ERROR_REQUEST_URI, "/test/error");
+			return request;
+		};
 	}
 
 	@Test
