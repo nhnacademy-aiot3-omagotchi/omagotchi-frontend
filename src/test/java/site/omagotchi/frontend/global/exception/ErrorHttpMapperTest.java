@@ -23,6 +23,8 @@ class ErrorHttpMapperTest {
                 .contains(CommonErrorCode.UNSUPPORTED_MEDIA_TYPE);
         assertThat(ErrorHttpMapper.findErrorCode(HttpStatus.INTERNAL_SERVER_ERROR))
                 .contains(CommonErrorCode.INTERNAL_SERVER_ERROR);
+        assertThat(ErrorHttpMapper.findErrorCode(HttpStatus.SERVICE_UNAVAILABLE))
+                .contains(CommonErrorCode.SERVICE_UNAVAILABLE);
     }
 
     @Test
