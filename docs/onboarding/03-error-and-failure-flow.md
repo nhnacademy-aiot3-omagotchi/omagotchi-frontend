@@ -128,7 +128,7 @@ Identity 4xx
 → ApiErrorResponseDecoder
 → IdentityAuthErrorResolver
 → IdentityRestAuthClient
-→ SignupResult.INVALID_INPUT 또는 DUPLICATE_EMAIL
+→ SignupResult.Rejected(ErrorCode)
 → AuthenticationService의 변경 없는 전달
 → SignupPageController의 결과 분기
 → authFeedback·HTTP 상태 설정
@@ -136,8 +136,16 @@ Identity 4xx
 ```
 
 - 복구 결과
-  - `INVALID_INPUT`: `COMMON_INVALID_REQUEST`·`ACCOUNT_INVALID_SIGNUP_INPUT`
-  - `DUPLICATE_EMAIL`: `ACCOUNT_DUPLICATE_EMAIL`
+  - `COMMON_INVALID_REQUEST`: Identity 필수값 검증 실패
+  - `ACCOUNT_INVALID_EMAIL`: 이메일 정책 위반
+  - `ACCOUNT_INVALID_PASSWORD`: 비밀번호 정책 위반
+  - `ACCOUNT_INVALID_NAME`: 이름 정책 위반
+  - `ACCOUNT_DUPLICATE_EMAIL`: 이메일 중복
+- 역할 분리
+  - Frontend: 필수값·기본 이메일 형식의 즉시 Form 검증
+  - Identity: 이메일·이름·비밀번호 가입 정책의 판정
+  - Identity Auth Adapter: 공개 Code·HTTP 상태의 허용 목록 검증
+  - Signup Page: Frontend 문구와 동일 Form의 400·409 응답
 - Presentation 책임
   - Application 결과의 동일 Form 변환
   - `BindingResult`·HTTP 상태·View 복구
@@ -145,7 +153,9 @@ Identity 4xx
 - `SignupResult` 경계
   - 소유: Application
   - 사용: Infrastructure Port 구현의 반환값·Presentation의 후속 흐름 선택
-  - 미포함: HTTP 상태·`ErrorCode`·Form·Password·Identity DTO
+  - `Created`: Login Page Redirect 대상
+  - `Rejected(ErrorCode)`: 검증된 Frontend 공개 오류와 동일 Form 복구 대상
+  - 미포함: Identity 오류 원문·Form·Password·Identity DTO
   - 연동 장애·계약 위반: `BusinessException` 전파
 
 ## 5. MVC 예외 처리기
@@ -297,7 +307,7 @@ flowchart TB
     Body{"2xx Body 변환 성공?"}
     SuccessResponse["ResponseEntity 반환"]
     SuccessContract{"호출별 Status·필수 Body 일치?"}
-    Success["성공값<br/>SignupResult.CREATED·BrowserSessionTokenBundle·void"]
+    Success["성공값<br/>SignupResult.Created·BrowserSessionTokenBundle·void"]
     BodyFailure["502 계약 위반<br/>Content-Type·Body 변환 실패"]
     SuccessFailure["502 계약 위반<br/>Status·필수 Body 불일치"]
 
@@ -305,7 +315,7 @@ flowchart TB
     ErrorBody{"code·message·path 유효?"}
     Resolver["IdentityAuthErrorResolver"]
     PublicContract{"호출별 공개 Code·HTTP Status 일치?"}
-    SignupResult["SignupResult<br/>INVALID_INPUT·DUPLICATE_EMAIL"]
+    SignupResult["SignupResult.Rejected<br/>Frontend ErrorCode"]
     PublicFailure["BusinessException(ErrorCode)<br/>종료할 4xx"]
     CredentialFailure["503 구성·인증 장애<br/>Frontend Basic 거절"]
     ErrorContractFailure["502 계약 위반<br/>오류 JSON 해석·필수값 실패"]

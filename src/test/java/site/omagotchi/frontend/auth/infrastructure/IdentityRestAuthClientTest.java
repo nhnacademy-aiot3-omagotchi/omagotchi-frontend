@@ -87,7 +87,7 @@ class IdentityRestAuthClientTest {
         );
 
         // Then: HTTP 요청 계약과 회원가입 성공 결과
-        assertThat(result).isEqualTo(SignupResult.CREATED);
+        assertThat(result).isEqualTo(new SignupResult.Created());
         server.verify();
     }
 
@@ -284,7 +284,7 @@ class IdentityRestAuthClientTest {
             String ignoredDescription,
             HttpStatus status,
             String code,
-            SignupResult expectedResult
+            ErrorCode expectedErrorCode
     ) {
         // Given: 회원가입 API가 공개하는 4xx 응답
         expectError(SIGNUP_PATH, status, code);
@@ -297,7 +297,7 @@ class IdentityRestAuthClientTest {
         );
 
         // Then: 호출자의 Form 복구용 Application 결과
-        assertThat(result).isEqualTo(expectedResult);
+        assertThat(result).isEqualTo(new SignupResult.Rejected(expectedErrorCode));
         server.verify();
     }
 
@@ -422,19 +422,31 @@ class IdentityRestAuthClientTest {
                         "공통 입력 오류",
                         HttpStatus.BAD_REQUEST,
                         "COMMON_INVALID_REQUEST",
-                        SignupResult.INVALID_INPUT
+                        CommonErrorCode.INVALID_REQUEST
                 ),
                 Arguments.of(
-                        "가입 입력 오류",
+                        "이메일 정책 오류",
                         HttpStatus.BAD_REQUEST,
-                        "ACCOUNT_INVALID_SIGNUP_INPUT",
-                        SignupResult.INVALID_INPUT
+                        "ACCOUNT_INVALID_EMAIL",
+                        AuthErrorCode.INVALID_EMAIL
+                ),
+                Arguments.of(
+                        "비밀번호 정책 오류",
+                        HttpStatus.BAD_REQUEST,
+                        "ACCOUNT_INVALID_PASSWORD",
+                        AuthErrorCode.INVALID_PASSWORD
+                ),
+                Arguments.of(
+                        "이름 정책 오류",
+                        HttpStatus.BAD_REQUEST,
+                        "ACCOUNT_INVALID_NAME",
+                        AuthErrorCode.INVALID_NAME
                 ),
                 Arguments.of(
                         "이메일 중복",
                         HttpStatus.CONFLICT,
                         "ACCOUNT_DUPLICATE_EMAIL",
-                        SignupResult.DUPLICATE_EMAIL
+                        AuthErrorCode.DUPLICATE_EMAIL
                 )
         );
     }
@@ -445,6 +457,11 @@ class IdentityRestAuthClientTest {
                         "이메일 중복 오류의 400 상태",
                         HttpStatus.BAD_REQUEST,
                         "ACCOUNT_DUPLICATE_EMAIL"
+                ),
+                Arguments.of(
+                        "비밀번호 정책 오류의 409 상태",
+                        HttpStatus.CONFLICT,
+                        "ACCOUNT_INVALID_PASSWORD"
                 ),
                 Arguments.of(
                         "공통 입력 오류의 415 상태",

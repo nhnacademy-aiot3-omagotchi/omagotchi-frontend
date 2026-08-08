@@ -36,19 +36,18 @@ public class IdentityRestAuthClient implements IdentityAuthClient {
                             new IdentitySignupRequest(email, password, name)
                     );
                     requireStatus(response, HttpStatus.CREATED, "Signup");
-                    return SignupResult.CREATED;
+                    return new SignupResult.Created();
                 },
                 exception -> {
                     ErrorCode errorCode = errorResolver.resolve(
                             exception,
                             CommonErrorCode.INVALID_REQUEST,
-                            AuthErrorCode.INVALID_SIGNUP_INPUT,
+                            AuthErrorCode.INVALID_EMAIL,
+                            AuthErrorCode.INVALID_PASSWORD,
+                            AuthErrorCode.INVALID_NAME,
                             AuthErrorCode.DUPLICATE_EMAIL
                     );
-                    if (errorCode == AuthErrorCode.DUPLICATE_EMAIL) {
-                        return SignupResult.DUPLICATE_EMAIL;
-                    }
-                    return SignupResult.INVALID_INPUT;
+                    return new SignupResult.Rejected(errorCode);
                 }
         );
     }
