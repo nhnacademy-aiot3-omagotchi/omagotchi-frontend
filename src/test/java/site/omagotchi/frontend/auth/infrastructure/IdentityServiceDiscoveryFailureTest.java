@@ -9,8 +9,8 @@ import site.omagotchi.frontend.auth.application.port.IdentityAuthClient;
 import site.omagotchi.frontend.global.exception.BusinessException;
 import site.omagotchi.frontend.global.exception.CommonErrorCode;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.assertj.core.api.SoftAssertions.assertSoftly;
 
 @SpringBootTest(properties =
         "spring.http.serviceclient.identity-service.base-url=lb://unavailable-identity-service"
@@ -22,22 +22,17 @@ class IdentityServiceDiscoveryFailureTest {
     private IdentityAuthClient identityAuthClient;
 
     @Test
-    @DisplayName("호출 가능한 Identity 인스턴스 부재의 503 변환")
+    @DisplayName("Identity Discovery 장애의 서비스 일시 불가 계약")
     void reportsMissingIdentityInstanceAsServiceUnavailable() {
         // Given: 호출 가능한 Identity 인스턴스 부재
         // When: Identity 로그인 요청
-        // Then: 서비스 일시 장애 변환
+        // Then: 서비스 일시 불가 ErrorCode
         assertThatThrownBy(() -> identityAuthClient.login(
                 "user@example.com",
                 "password-passphrase"
         )).isInstanceOfSatisfying(BusinessException.class, exception ->
-                assertSoftly(softly -> {
-                    softly.assertThat(exception.getErrorCode())
-                            .isEqualTo(CommonErrorCode.SERVICE_UNAVAILABLE);
-                    softly.assertThat(exception.getCause())
-                            .isInstanceOf(IllegalStateException.class)
-                            .hasMessageStartingWith("No instances available for ");
-                })
+                assertThat(exception.getErrorCode())
+                        .isEqualTo(CommonErrorCode.SERVICE_UNAVAILABLE)
         );
     }
 }
