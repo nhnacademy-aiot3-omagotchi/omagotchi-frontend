@@ -4,17 +4,18 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import site.omagotchi.frontend.auth.application.port.IdentityAuthClient;
 import site.omagotchi.frontend.auth.application.result.BrowserSessionTokenBundle;
+import site.omagotchi.frontend.auth.application.result.SignupResult;
 
-// Page·Security 진입점과 Identity Client 사이의 인증 Use Case 경계
-// Presentation의 Infrastructure 직접 의존 방지와 실패 계약의 변경 없는 전달 역할
+// Frontend 인증 Use Case의 Application 진입점
+// 외부 진입점의 Identity HTTP 구현 직접 의존 방지
 @Service
 @RequiredArgsConstructor
 public class AuthenticationService {
 
     private final IdentityAuthClient identityAuthClient;
 
-    public void signUp(String email, String password, String name) {
-        identityAuthClient.signUp(email, password, name);
+    public SignupResult signUp(String email, String password, String name) {
+        return identityAuthClient.signUp(email, password, name);
     }
 
     public BrowserSessionTokenBundle login(String email, String password) {

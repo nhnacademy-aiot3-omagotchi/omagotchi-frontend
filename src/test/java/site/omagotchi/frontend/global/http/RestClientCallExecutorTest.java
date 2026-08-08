@@ -34,10 +34,12 @@ class RestClientCallExecutorTest {
                 () -> {
                     throw failure;
                 },
-                exception -> new BusinessException(
-                        CommonErrorCode.DOWNSTREAM_INVALID_RESPONSE,
-                        exception
-                )
+                exception -> {
+                    throw new BusinessException(
+                            CommonErrorCode.DOWNSTREAM_INVALID_RESPONSE,
+                            exception
+                    );
+                }
         );
 
         // Then: 서비스 일시 장애 변환과 원인 보존
@@ -69,10 +71,12 @@ class RestClientCallExecutorTest {
                 () -> {
                     throw failure;
                 },
-                exception -> new BusinessException(
-                        CommonErrorCode.DOWNSTREAM_INVALID_RESPONSE,
-                        exception
-                )
+                exception -> {
+                    throw new BusinessException(
+                            CommonErrorCode.DOWNSTREAM_INVALID_RESPONSE,
+                            exception
+                    );
+                }
         );
 
         // Then: 서비스 일시 장애 변환과 원인 보존
@@ -87,9 +91,9 @@ class RestClientCallExecutorTest {
     }
 
     @Test
-    @DisplayName("4xx 응답의 호출별 변환 정책 적용")
-    void translatesClientErrorWithCallSpecificPolicy() {
-        // Given: 호출별 공개 정책 판단이 필요한 4xx 응답
+    @DisplayName("4xx 응답의 호출별 처리 결과 반환")
+    void returnsCallSpecificClientErrorResult() {
+        // Given: 호출별 결과 판단이 필요한 4xx 응답
         RestClientResponseException failure = new RestClientResponseException(
                 "Bad Request",
                 HttpStatus.BAD_REQUEST,
@@ -98,24 +102,20 @@ class RestClientCallExecutorTest {
                 new byte[0],
                 StandardCharsets.UTF_8
         );
-        BusinessException translated = new BusinessException(
-                CommonErrorCode.DOWNSTREAM_INVALID_RESPONSE,
-                failure
-        );
 
-        // When: 4xx 변환 정책을 포함한 공통 HTTP 호출 실행
-        ThrowingCallable action = () -> executor.execute(
+        // When: 4xx 처리 정책을 포함한 공통 HTTP 호출 실행
+        String result = executor.execute(
                 () -> {
                     throw failure;
                 },
                 exception -> {
                     assertThat(exception).isSameAs(failure);
-                    return translated;
+                    return "recovered-result";
                 }
         );
 
-        // Then: 호출별 정책이 만든 예외 전파
-        assertThatThrownBy(action).isSameAs(translated);
+        // Then: 호출별 정책이 만든 결과 반환
+        assertThat(result).isEqualTo("recovered-result");
     }
 
     @Test
@@ -131,10 +131,12 @@ class RestClientCallExecutorTest {
                 () -> {
                     throw failure;
                 },
-                exception -> new BusinessException(
-                        CommonErrorCode.DOWNSTREAM_INVALID_RESPONSE,
-                        exception
-                )
+                exception -> {
+                    throw new BusinessException(
+                            CommonErrorCode.DOWNSTREAM_INVALID_RESPONSE,
+                            exception
+                    );
+                }
         );
 
         // Then: 원본 상태 오류 전파
@@ -152,10 +154,12 @@ class RestClientCallExecutorTest {
                 () -> {
                     throw failure;
                 },
-                exception -> new BusinessException(
-                        CommonErrorCode.DOWNSTREAM_INVALID_RESPONSE,
-                        exception
-                )
+                exception -> {
+                    throw new BusinessException(
+                            CommonErrorCode.DOWNSTREAM_INVALID_RESPONSE,
+                            exception
+                    );
+                }
         );
 
         // Then: 원본 RestClient 오류 전파
@@ -180,10 +184,12 @@ class RestClientCallExecutorTest {
                 () -> {
                     throw failure;
                 },
-                exception -> new BusinessException(
-                        CommonErrorCode.DOWNSTREAM_INVALID_RESPONSE,
-                        exception
-                )
+                exception -> {
+                    throw new BusinessException(
+                            CommonErrorCode.DOWNSTREAM_INVALID_RESPONSE,
+                            exception
+                    );
+                }
         );
 
         // Then: 호출 대상 성공 응답 계약 위반의 502 변환
