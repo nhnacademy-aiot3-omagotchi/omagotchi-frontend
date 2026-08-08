@@ -713,12 +713,23 @@ function setOverlayTab(tabButton) {
     });
 }
 
-function logout() {
+async function logout() {
+    const logoutForm = document.querySelector("[data-logout-form]");
+
+    // Server 응답과 무관한 Browser 표시 상태 정리
     sessionOnlyKeys.forEach((key) => {
         sessionStorage.removeItem(key);
     });
 
-    window.location.href = "/";
+    try {
+        await fetch(logoutForm.action, {
+            method: "POST",
+            credentials: "same-origin",
+            body: new FormData(logoutForm)
+        });
+    } finally {
+        window.location.href = "/login";
+    }
 }
 
 document.querySelectorAll("[data-home-overlay]").forEach((link) => {
