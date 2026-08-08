@@ -289,6 +289,7 @@
 <div class="home-overlay-root" data-home-overlay-root aria-live="polite"></div>
 <p class="home-toast" data-home-toast role="status" aria-live="polite"></p>
 <th:block th:replace="~{fragments/home-notification-panel :: notificationPanelTemplate}"></th:block>
+<form action="/logout" th:action="@{/logout}" method="post" data-logout-form hidden></form>
 
 <script src="/js/api.js" th:src="@{/js/api.js}"></script>
 <script src="/js/characterAssets.js" th:src="@{/js/characterAssets.js}"></script>
