@@ -123,7 +123,7 @@ class SignupPageMvcTest {
     void rendersIdentityValidationFailureOnSignupForm() throws Exception {
         // Given: Signup Use Case의 입력 정책 거절
         given(authenticationService.signUp("user@example.com", "short", "오마고치"))
-                .willReturn(SignupResult.INVALID_INPUT);
+                .willReturn(new SignupResult.Rejected(AuthErrorCode.INVALID_PASSWORD));
 
         // When: Frontend 기본 형식 검증 통과 Form 제출
         mockMvc.perform(post("/register")
@@ -135,7 +135,7 @@ class SignupPageMvcTest {
                         view().name("register"),
                         model().attribute(
                                 "authFeedback",
-                                AuthErrorCode.INVALID_SIGNUP_INPUT.message()
+                                AuthErrorCode.INVALID_PASSWORD.message()
                         )
                 );
 
@@ -151,7 +151,7 @@ class SignupPageMvcTest {
                 "user@example.com",
                 "password-passphrase",
                 "오마고치"
-        )).willReturn(SignupResult.CREATED);
+        )).willReturn(new SignupResult.Created());
 
         // When: Signup Form 제출
         mockMvc.perform(post("/register")
@@ -184,7 +184,7 @@ class SignupPageMvcTest {
                 "user@example.com",
                 "password-passphrase",
                 "오마고치"
-        )).willReturn(SignupResult.DUPLICATE_EMAIL);
+        )).willReturn(new SignupResult.Rejected(AuthErrorCode.DUPLICATE_EMAIL));
 
         // When: Signup Form 제출
         MvcResult result = mockMvc.perform(post("/register")

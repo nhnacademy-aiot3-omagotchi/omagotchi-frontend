@@ -1,8 +1,19 @@
 package site.omagotchi.frontend.auth.application.result;
 
-// 회원가입 호출자가 후속 흐름을 선택할 수 있는 Application 결과
-public enum SignupResult {
-    CREATED,
-    INVALID_INPUT,
-    DUPLICATE_EMAIL
+import site.omagotchi.frontend.global.exception.ErrorCode;
+
+import java.util.Objects;
+
+// 회원가입 성공과 Form 복구용 거절을 구분하는 Application 결과
+public sealed interface SignupResult {
+
+    record Created() implements SignupResult {
+    }
+
+    record Rejected(ErrorCode errorCode) implements SignupResult {
+
+        public Rejected {
+            Objects.requireNonNull(errorCode, "errorCode");
+        }
+    }
 }

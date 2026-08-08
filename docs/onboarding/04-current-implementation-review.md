@@ -99,12 +99,12 @@
 ### Signup 복구
 
 - `SignupResult`
-  - Application이 소유하는 성공·입력 거절·중복 Email 결과
+  - Application이 소유하는 `Created`·`Rejected(ErrorCode)` 결과
   - Infrastructure Port 구현과 Presentation의 공통 Application 계약
-  - HTTP·Form·Identity DTO·Password 미포함
+  - Identity 오류 원문·Form·Password·Identity DTO 미포함
 - `SignupPageController`의 결과 분기
-  - `CREATED`: Login Page Redirect
-  - `INVALID_INPUT`·`DUPLICATE_EMAIL`: 동일 Form 복구
+  - `Created`: Login Page Redirect
+  - `Rejected(ErrorCode)`: 동일 Form 복구
   - `authFeedback`·HTTP 상태 설정
   - Password 제거 후 동일 Form 복구
 - 판단

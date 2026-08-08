@@ -12,9 +12,9 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-import site.omagotchi.frontend.auth.application.AuthErrorCode;
 import site.omagotchi.frontend.auth.application.AuthenticationService;
 import site.omagotchi.frontend.auth.application.result.SignupResult;
+import site.omagotchi.frontend.global.exception.ErrorCode;
 import site.omagotchi.frontend.global.exception.ErrorHttpMapper;
 
 import java.security.Principal;
@@ -72,25 +72,21 @@ public class SignupPageController {
                 form.getPassword(),
                 form.getName()
         );
-        if (result == SignupResult.CREATED) {
-            redirectAttributes.addFlashAttribute(
-                    AUTH_FEEDBACK,
-                    "계정이 생성됐습니다. 로그인해주세요."
-            );
-            return "redirect:/login";
+        switch (result) {
+            case SignupResult.Created ignored -> {
+                redirectAttributes.addFlashAttribute(
+                        AUTH_FEEDBACK,
+                        "계정이 생성됐습니다. 로그인해주세요."
+                );
+                return "redirect:/login";
+            }
+            case SignupResult.Rejected(ErrorCode rejectionCode) -> {
+                // Identity 가입 거절의 비밀번호 제외 Form 복구
+                form.setPassword(null);
+                model.addAttribute(AUTH_FEEDBACK, rejectionCode.message());
+                response.setStatus(ErrorHttpMapper.toHttpStatus(rejectionCode.type()).value());
+                return REGISTER_VIEW;
+            }
         }
-
-        AuthErrorCode rejectionCode = switch (result) {
-            case INVALID_INPUT -> AuthErrorCode.INVALID_SIGNUP_INPUT;
-            case DUPLICATE_EMAIL -> AuthErrorCode.DUPLICATE_EMAIL;
-            // 성공 결과의 재분기 방지
-            case CREATED -> throw new IllegalStateException("이미 처리된 Signup 성공 결과");
-        };
-
-        // Identity 가입 거절의 비밀번호 제외 Form 복구
-        form.setPassword(null);
-        model.addAttribute(AUTH_FEEDBACK, rejectionCode.message());
-        response.setStatus(ErrorHttpMapper.toHttpStatus(rejectionCode.type()).value());
-        return REGISTER_VIEW;
     }
 }

@@ -242,9 +242,9 @@ sequenceDiagram
     I-->>IC: 201·4xx 또는 장애·계약 위반
     IC-->>AS: SignupResult 또는 BusinessException
     AS-->>PC: SignupResult 또는 BusinessException
-    alt CREATED
+    alt Created
         PC-->>B: 302 /login
-    else INVALID_INPUT·DUPLICATE_EMAIL
+    else Rejected(ErrorCode)
         PC-->>B: register View + 400/409
     else 장애·계약 위반
         PC-->>B: 공통 HTML 오류
@@ -264,9 +264,13 @@ sequenceDiagram
   - 일반 `USER` 계정 생성
   - 기수 `MANAGER` 소속 생성 없음
 - Application 결과
-  - `CREATED`: Login Page Redirect
-  - `INVALID_INPUT`: `COMMON_INVALID_REQUEST`·`ACCOUNT_INVALID_SIGNUP_INPUT` 대응
-  - `DUPLICATE_EMAIL`: `ACCOUNT_DUPLICATE_EMAIL` 대응
+  - `Created`: Login Page Redirect
+  - `Rejected(ErrorCode)`: 동일 Form 복구에 사용할 Frontend 공개 오류
+    - `COMMON_INVALID_REQUEST`: Identity 필수값 검증 실패
+    - `ACCOUNT_INVALID_EMAIL`: 이메일 정책 위반
+    - `ACCOUNT_INVALID_PASSWORD`: 비밀번호 정책 위반
+    - `ACCOUNT_INVALID_NAME`: 이름 정책 위반
+    - `ACCOUNT_DUPLICATE_EMAIL`: 이메일 중복
 - 예외 유지
   - Identity 5xx·연결 장애: 503 `BusinessException`
   - 응답 계약 위반: 502 `BusinessException`
