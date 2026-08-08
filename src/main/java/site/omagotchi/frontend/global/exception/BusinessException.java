@@ -4,9 +4,7 @@ import lombok.Getter;
 
 import java.util.Objects;
 
-/**
- * Frontend가 외부에 공개할 실패 의미를 확정한 예상 가능한 실패.
- */
+// 현재 작업을 중단하고 진입 경계의 공개 ErrorCode로 응답할 실패
 @Getter
 public class BusinessException extends RuntimeException {
 
