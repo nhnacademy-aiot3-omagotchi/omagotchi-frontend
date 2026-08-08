@@ -13,7 +13,7 @@ import site.omagotchi.frontend.global.exception.CommonErrorCode;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-// 외부 HTTP 호출의 비가용 503 변환과 호출별 4xx 공개 정책 위임
+// 외부 HTTP 호출의 공통 전송 실패 변환과 호출별 4xx 처리 위임
 @Component
 public class RestClientCallExecutor {
 
@@ -22,7 +22,7 @@ public class RestClientCallExecutor {
 
     public <T> T execute(
             Supplier<T> request,
-            Function<RestClientResponseException, BusinessException> responseExceptionTranslator
+            Function<RestClientResponseException, T> clientErrorHandler
     ) {
         try {
             return request.get();
@@ -43,8 +43,8 @@ public class RestClientCallExecutor {
             if (exception.getStatusCode().is5xxServerError()) {
                 throw new BusinessException(CommonErrorCode.SERVICE_UNAVAILABLE, exception);
             }
-            // 호출 대상 4xx: Endpoint별 공개 정책 위임
-            throw responseExceptionTranslator.apply(exception);
+            // 호출 대상 4xx: Endpoint별 결과 복구 또는 예외 변환 위임
+            return clientErrorHandler.apply(exception);
 
         } catch (RestClientException exception) {
             // 2xx 응답 본문·Content-Type 계약 위반만 502 변환

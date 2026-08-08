@@ -17,6 +17,7 @@ import org.springframework.web.client.support.RestClientAdapter;
 import org.springframework.web.service.invoker.HttpServiceProxyFactory;
 import site.omagotchi.frontend.auth.application.AuthErrorCode;
 import site.omagotchi.frontend.auth.application.result.BrowserSessionTokenBundle;
+import site.omagotchi.frontend.auth.application.result.SignupResult;
 import site.omagotchi.frontend.auth.domain.GlobalRole;
 import site.omagotchi.frontend.global.exception.BusinessException;
 import site.omagotchi.frontend.global.exception.CommonErrorCode;
@@ -58,7 +59,7 @@ class IdentityRestAuthClientTest {
         client = new IdentityRestAuthClient(
                 httpService,
                 new RestClientCallExecutor(),
-                new IdentityAuthFailureTranslator(new ApiErrorResponseDecoder())
+                new IdentityAuthErrorResolver(new ApiErrorResponseDecoder())
         );
     }
 
@@ -79,13 +80,14 @@ class IdentityRestAuthClientTest {
                 .andRespond(withStatus(HttpStatus.CREATED));
 
         // When: 회원가입 요청
-        client.signUp(
+        SignupResult result = client.signUp(
                 "user@example.com",
                 "password-passphrase",
                 "오마고치"
         );
 
-        // Then: HTTP 요청 계약 충족
+        // Then: HTTP 요청 계약과 회원가입 성공 결과
+        assertThat(result).isEqualTo(SignupResult.CREATED);
         server.verify();
     }
 
@@ -249,27 +251,53 @@ class IdentityRestAuthClientTest {
         server.verify();
     }
 
+    @Test
+    @DisplayName("Logout API가 공개하지 않는 4xx 오류의 502 변환")
+    void rejectsUnexpectedLogoutError() {
+        // Given: Logout API가 공개하지 않는 4xx 응답
+        expectError(
+                LOGOUT_PATH,
+                HttpStatus.BAD_REQUEST,
+                "COMMON_INVALID_REQUEST"
+        );
+
+        // When: Identity Logout 호출
+        ThrowingCallable action = () -> client.logout("refresh-token");
+
+        // Then: 호출 대상 응답 계약 위반 변환과 원인 보존
+        assertThatThrownBy(action)
+                .isInstanceOfSatisfying(BusinessException.class, exception -> {
+                    assertSoftly(softly -> {
+                        softly.assertThat(exception.getErrorCode())
+                                .isEqualTo(CommonErrorCode.DOWNSTREAM_INVALID_RESPONSE);
+                        softly.assertThat(exception.getCause())
+                                .isInstanceOf(RestClientResponseException.class);
+                    });
+                });
+        server.verify();
+    }
+
     @ParameterizedTest(name = "{0}")
-    @MethodSource("expectedSignupErrors")
-    @DisplayName("회원가입 API가 공개하는 Identity 거절의 Frontend 오류 변환")
-    void mapsExpectedSignupErrors(
+    @MethodSource("expectedSignupResults")
+    @DisplayName("회원가입 API가 공개하는 Identity 거절의 Application 결과 변환")
+    void mapsExpectedSignupResults(
             String ignoredDescription,
             HttpStatus status,
             String code,
-            ErrorCode expectedErrorCode
+            SignupResult expectedResult
     ) {
         // Given: 회원가입 API가 공개하는 4xx 응답
         expectError(SIGNUP_PATH, status, code);
 
         // When: 회원가입 요청
-        ThrowingCallable action = () -> client.signUp(
+        SignupResult result = client.signUp(
                 "user@example.com",
                 "password-passphrase",
                 "오마고치"
         );
 
-        // Then: 동일한 공개 Error Code의 BusinessException 변환
-        assertError(action, expectedErrorCode);
+        // Then: 호출자의 Form 복구용 Application 결과
+        assertThat(result).isEqualTo(expectedResult);
         server.verify();
     }
 
@@ -388,25 +416,25 @@ class IdentityRestAuthClientTest {
         server.verify();
     }
 
-    private static Stream<Arguments> expectedSignupErrors() {
+    private static Stream<Arguments> expectedSignupResults() {
         return Stream.of(
                 Arguments.of(
                         "공통 입력 오류",
                         HttpStatus.BAD_REQUEST,
                         "COMMON_INVALID_REQUEST",
-                        CommonErrorCode.INVALID_REQUEST
+                        SignupResult.INVALID_INPUT
                 ),
                 Arguments.of(
                         "가입 입력 오류",
                         HttpStatus.BAD_REQUEST,
                         "ACCOUNT_INVALID_SIGNUP_INPUT",
-                        AuthErrorCode.INVALID_SIGNUP_INPUT
+                        SignupResult.INVALID_INPUT
                 ),
                 Arguments.of(
                         "이메일 중복",
                         HttpStatus.CONFLICT,
                         "ACCOUNT_DUPLICATE_EMAIL",
-                        AuthErrorCode.DUPLICATE_EMAIL
+                        SignupResult.DUPLICATE_EMAIL
                 )
         );
     }
