@@ -1,5 +1,5 @@
 (() => {
-    const API_BASE = window.OMAGOTCHI_API_BASE || document.documentElement.dataset.apiBase || "/api";
+    const API_BASE = window.OMAGOTCHI_API_BASE || document.documentElement.dataset.apiBase || "/bff/v1";
     const STRICT = Boolean(window.OMAGOTCHI_API_STRICT);
 
     function toUrl(path) {
