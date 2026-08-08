@@ -62,10 +62,28 @@ class IdentityClientCredentialPropertiesTest {
     }
 
     @Test
-    @DisplayName("BCrypt의 UTF-8 72바이트 경계값 허용")
+    @DisplayName("Identity 클라이언트 설정 32자 최소 비밀번호 허용")
+    void acceptsPasswordAtCharacterMinimum() {
+        // Given: 최소 길이와 같은 32자 비밀번호
+        String passwordAtCharacterMinimum = "a".repeat(32);
+
+        // When: 설정 바인딩
+        contextRunner
+                .withPropertyValues(
+                        "clients.identity.username=" + VALID_USERNAME,
+                        "clients.identity.password=" + passwordAtCharacterMinimum
+                )
+                .run(context -> {
+                    // Then: Application Context 기동 성공
+                    then(context).hasNotFailed();
+                });
+    }
+
+    @Test
+    @DisplayName("Identity 클라이언트 설정 UTF-8 72바이트 경계값 허용")
     void acceptsPasswordAtBcryptByteLimit() {
-        // Given: BCrypt 입력 한계와 같은 72바이트 비밀번호
-        String passwordAtBcryptLimit = "a".repeat(72);
+        // Given: UTF-8 입력 한계와 같은 72바이트 비밀번호
+        String passwordAtBcryptLimit = "a".repeat(69) + "가";
 
         // When: 설정 바인딩
         contextRunner
@@ -124,15 +142,15 @@ class IdentityClientCredentialPropertiesTest {
                         "clients.identity.password는 필수입니다."
                 ),
                 Arguments.of(
-                        "너무 짧은 password",
+                        "31자 password",
                         VALID_USERNAME,
-                        "too-short",
+                        "a".repeat(31),
                         "clients.identity.password는 32자 이상이어야 합니다."
                 ),
                 Arguments.of(
-                        "BCrypt 한계를 넘는 password",
+                        "UTF-8 72바이트를 넘는 password",
                         VALID_USERNAME,
-                        "가".repeat(32),
+                        "a".repeat(70) + "가",
                         "clients.identity.password는 UTF-8 기준 72바이트 이하여야 합니다."
                 )
         );
