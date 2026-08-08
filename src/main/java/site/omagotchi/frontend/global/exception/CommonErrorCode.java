@@ -39,7 +39,7 @@ public enum CommonErrorCode implements ErrorCode {
             "COMMON_UNSUPPORTED_MEDIA_TYPE",
             "지원하지 않는 요청 본문 형식입니다."
     ),
-    /** Frontend가 호출한 서비스의 응답 계약 위반. */
+    // 호출 대상 서비스의 응답 계약 위반
     DOWNSTREAM_INVALID_RESPONSE(
             ErrorType.BAD_GATEWAY,
             "COMMON_DOWNSTREAM_INVALID_RESPONSE",
@@ -50,10 +50,8 @@ public enum CommonErrorCode implements ErrorCode {
             "COMMON_SERVICE_UNAVAILABLE",
             "서비스를 일시적으로 사용할 수 없습니다."
     ),
-    /**
-     * 예상하지 못한 실패를 최종 외부 경계에서 숨겨 응답할 때 사용하는 공통 오류.
-     * 마지막 Handler의 응답 전용이며 {@link BusinessException}에 전달하면 안됨.
-     */
+    // 처리 규칙이 없는 실패의 상세 정보 은닉용 최종 응답 오류
+    // BusinessException 전달 금지
     INTERNAL_SERVER_ERROR(
             ErrorType.INTERNAL,
             "COMMON_INTERNAL_SERVER_ERROR",

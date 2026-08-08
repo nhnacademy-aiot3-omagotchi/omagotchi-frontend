@@ -9,6 +9,7 @@ server:
   servlet:
     session:
       cookie:
+        # 로컬 HTTP 실행용 Secure 속성 해제
         secure: false
 
 eureka:

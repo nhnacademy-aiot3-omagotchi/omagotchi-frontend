@@ -1,3 +1,4 @@
+// 관리자 권한·기수 소속 미검증 Browser Prototype 대시보드
 // 관리자 대시보드가 공유하는 로컬 저장소 키
 const OPERATIONS_KEY = "omagotchiCohortOperations";
 const APPLICATIONS_KEY = "omagotchiCohortApplications";
