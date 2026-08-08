@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -18,9 +18,11 @@
             <p class="auth-brand">omagotchi</p>
         </header>
 
-        <form class="login-form auth-panel" action="#" method="post">
+        <form class="login-form auth-panel" method="post" th:action="@{/login}">
             <h1 id="login-title">환영합니다</h1>
-            <p class="auth-subtitle" data-auth-feedback>오마고치와 함께하는 학습</p>
+            <p class="auth-subtitle" data-auth-feedback
+               th:classappend="${authFeedback != null} ? ' auth-error'"
+               th:text="${authFeedback ?: '오마고치와 함께하는 학습'}">오마고치와 함께하는 학습</p>
 
             <div class="auth-segmented" aria-label="인증 메뉴">
                 <span class="is-active">로그인</span>
@@ -29,13 +31,15 @@
 
             <label class="input-group auth-input-group">
                 <span class="sr-only">이메일</span>
-                <input type="email" name="email" placeholder="이메일" autocomplete="username" />
+                <input type="email" placeholder="이메일" autocomplete="username"
+                       name="email" maxlength="254" required />
             </label>
 
             <div class="input-group auth-input-group">
                 <label class="sr-only" for="login-password">비밀번호</label>
                 <div class="password-input-wrap">
-                    <input id="login-password" type="password" name="password" placeholder="비밀번호" autocomplete="current-password" />
+                    <input id="login-password" type="password" name="password" placeholder="비밀번호"
+                           autocomplete="current-password" required />
                     <button class="password-visibility-toggle" type="button" data-password-toggle
                             aria-label="비밀번호 표시" aria-pressed="false">
                         <span class="password-eye" aria-hidden="true"></span>
@@ -52,7 +56,6 @@
     </section>
 </main>
 
-<script src="/js/api.js" th:src="@{/js/api.js}"></script>
 <script src="/js/login.js" th:src="@{/js/login.js}"></script>
 <script src="/js/passwordToggle.js" th:src="@{/js/passwordToggle.js}"></script>
 </body>

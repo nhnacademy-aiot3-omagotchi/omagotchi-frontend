@@ -9,21 +9,17 @@ public class WebConfig implements WebMvcConfigurer {
 
     @Override
     public void addViewControllers(ViewControllerRegistry registry) {
-        // 시작·회원 인증 Page
+        // 시작·인증 보조 Page
         registry.addViewController("/")
                 .setViewName("index");
         registry.addViewController("/index")
                 .setViewName("index");
-        registry.addViewController("/login")
-                .setViewName("login");
         registry.addViewController("/password-change")
                 .setViewName("passwordChange");
-        registry.addViewController("/register")
-                .setViewName("register");
-        registry.addViewController("/username")
-                .setViewName("username");
 
         // 사용자 기능 Page
+        registry.addViewController("/username")
+                .setViewName("username"); // Learning 게임 프로필 연동 전 캐릭터 표시명 목업
         registry.addViewController("/character-selector")
                 .setViewName("characterSelector");
         registry.addViewController("/check-in")
@@ -45,11 +41,7 @@ public class WebConfig implements WebMvcConfigurer {
         registry.addViewController("/space")
                 .setViewName("space");
 
-        // 관리자 Page
-        registry.addViewController("/manager-login")
-                .setViewName("managerLogin");
-        registry.addViewController("/manager-register")
-                .setViewName("managerRegister");
+        // 관리자 Prototype Page
         registry.addViewController("/manager-dashboard")
                 .setViewName("managerDashboard");
     }
