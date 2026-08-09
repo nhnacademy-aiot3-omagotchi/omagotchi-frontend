@@ -13,6 +13,7 @@ export function createAttendance({
     streakList,
     storageKey,
     api,
+    onCheckOutSuccess,
     onChange
 }) {
     let renderedDateKey = getLocalDateKey();
@@ -25,15 +26,22 @@ export function createAttendance({
             hour12: false
         }).format(date);
     }
-    // [API-REPLACE] 서버 출석 기록 조회 API로 교체
+
+    function isWeekend(date) {
+        const day = date.getDay();
+        return day === 0 || day === 6;
+    }
+
+    function moveToPreviousWeekday(date) {
+        while (isWeekend(date)) {
+            date.setDate(date.getDate() - 1);
+        }
+    }
+
     function getLocalHistory() {
         try {
             const saved = JSON.parse(localStorage.getItem(storageKey)) || {};
 
-            // 예전에 저장한 단일 출석 데이터가 있으면 날짜별 구조로 한 번만 바꾼다.
-            // [Mock] 실제 서비스에서는 필요하지 않은 이전 로컬 저장소 마이그레이션입니다. 1~5
-            // [MOCK-DELETE] 로컬 스토리지 이전 형식 마이그레이션
-            // 서버 DB 연동이 완료되면 삭제
             if (saved.checkInAt) {
                 const dateKey = getLocalDateKey(new Date(saved.checkInAt));
                 const migrated = { [dateKey]: saved };
@@ -82,8 +90,7 @@ export function createAttendance({
         serverHistory = normalizeHistory(history);
         render();
     }
-    // 저장
-    // [API-REPLACE] 입실 퇴실 저장 API로 교체
+
     function saveToday(attendance) {
         const history = serverHistory || getLocalHistory();
         history[getLocalDateKey()] = attendance;
@@ -92,7 +99,7 @@ export function createAttendance({
         }
         localStorage.setItem(storageKey, JSON.stringify(history));
     }
-    // 달력 (철석)
+
     function renderCalendar(history) {
         if (!calendarGrid) return;
 
@@ -101,8 +108,9 @@ export function createAttendance({
         const month = today.getMonth();
         const monthLabel = new Intl.DateTimeFormat("ko-KR", { month: "long" }).format(today);
         const daysInMonth = new Date(year, month + 1, 0).getDate();
-        const firstDay = new Date(year, month, 1).getDay();
-        const offset = firstDay;
+        const firstWeekday = Array.from({ length: daysInMonth }, (_, index) => new Date(year, month, index + 1))
+            .find((date) => !isWeekend(date));
+        const offset = firstWeekday ? firstWeekday.getDay() - 1 : 0;
         const fragment = document.createDocumentFragment();
 
         if (calendarTitle) calendarTitle.textContent = `${monthLabel} 출석 기록`;
@@ -120,11 +128,12 @@ export function createAttendance({
 
         for (let day = 1; day <= daysInMonth; day += 1) {
             const date = new Date(year, month, day);
+            if (isWeekend(date)) continue;
+
             const dayNode = document.createElement("span");
             dayNode.className = "calendar-day";
             dayNode.textContent = String(day);
 
-            if (date.getDay() === 0 || date.getDay() === 6) dayNode.classList.add("is-weekend");
             if (day === today.getDate()) dayNode.classList.add("is-today");
             if (history[getLocalDateKey(date)]?.checkInAt) {
                 dayNode.classList.add("is-present");
@@ -134,28 +143,46 @@ export function createAttendance({
         }
         calendarGrid.append(fragment);
     }
-    // 스트릭
-    function renderStreak(history) {
-        if (!streakCount || !streakList) return;
 
+    function getStreakCount(history) {
         const hasAttendance = (date) => Boolean(history[getLocalDateKey(date)]?.checkInAt);
         const cursor = new Date();
         let count = 0;
 
-        if (!hasAttendance(cursor)) cursor.setDate(cursor.getDate() - 1);
+        moveToPreviousWeekday(cursor);
+        if (!hasAttendance(cursor)) {
+            cursor.setDate(cursor.getDate() - 1);
+            moveToPreviousWeekday(cursor);
+        }
         while (hasAttendance(cursor)) {
             count += 1;
             cursor.setDate(cursor.getDate() - 1);
+            moveToPreviousWeekday(cursor);
         }
+
+        return count;
+    }
+
+    function renderStreak(history) {
+        const count = getStreakCount(history);
+
+        if (!streakCount || !streakList) return count;
+
+        const hasAttendance = (date) => Boolean(history[getLocalDateKey(date)]?.checkInAt);
         streakCount.textContent = `${count}일`;
         streakList.replaceChildren();
 
-        const streakDates = Array.from({ length: 7 }, (_, index) => {
-            const date = new Date();
+        const streakDates = [];
+        const cursor = new Date();
+        moveToPreviousWeekday(cursor);
+
+        while (streakDates.length < 5) {
+            const date = new Date(cursor);
             date.setHours(12, 0, 0, 0);
-            date.setDate(date.getDate() - (6 - index));
-            return date;
-        });
+            streakDates.unshift(date);
+            cursor.setDate(cursor.getDate() - 1);
+            moveToPreviousWeekday(cursor);
+        }
         let latestAttendedIndex = -1;
 
         streakDates.forEach((date, index) => {
@@ -169,21 +196,19 @@ export function createAttendance({
             const attended = hasAttendance(date);
 
             if (attended) item.classList.add("is-active");
-            // 연속 출석이 끊긴다면 불 멈추기
             if (count > 0  && attended && index === latestAttendedIndex) {
-                const fire = document.createElement("img");
-                fire.src = "/images/streak/Streak_fire.gif";
-                fire.alt = "";
-                fire.setAttribute("aria-hidden", "true");
-                marker.append(fire);
                 item.classList.add("is-current-streak");
             }
-            label.textContent = index === dates.length - 1 ? "오늘" : `${date.getMonth() + 1}/${date.getDate()}`;
+            label.textContent = getLocalDateKey(date) === getLocalDateKey(new Date())
+                ? "오늘"
+                : `${date.getMonth() + 1}/${date.getDate()}`;
             item.append(marker, label);
             streakList.append(item);
         });
+
+        return count;
     }
-    // 렌더러
+
     function render() {
         const history = getHistory();
         const attendance = history[getLocalDateKey()] || {};
@@ -192,25 +217,21 @@ export function createAttendance({
 
         if (checkInTime) checkInTime.textContent = hasCheckIn ? formatTime(new Date(attendance.checkInAt)) : "아직 입실 전";
         if (checkOutTime) checkOutTime.textContent = hasCheckOut ? formatTime(new Date(attendance.checkOutAt)) : "아직 퇴실 전";
-        // [Mock] 실제 서비스에서는 필요하지 않은 임시 지각/조퇴 표시입니다. 1~2
-        // [MOCK-DELETE] 실제 지각, 조퇴 시간 계산 결과로 교체
         if (earlyLeave) earlyLeave.textContent = hasCheckOut ? "0분" : "기록 없음";
         if (lateMinutes) lateMinutes.textContent = hasCheckIn ? "0분" : "기록 없음";
 
         if (button) {
             button.classList.toggle("is-checked-in", hasCheckIn && !hasCheckOut);
             button.classList.toggle("is-complete", hasCheckOut);
-            button.hidden = !hasCheckIn || hasCheckOut;
+            button.hidden = !hasCheckIn;
             button.textContent = "퇴실하기";
             button.disabled = !hasCheckIn || hasCheckOut;
         }
 
         renderCalendar(history);
-        renderStreak(history);
-        onChange?.();
+        const currentStreakCount = renderStreak(history);
+        onChange?.({ streakCount: currentStreakCount, history });
     }
-    // 토글
-    // [API-REPLACE] 브라우저 시간이 아니라 서버에서 입실 퇴실 시간을 기록해야 함
     async function toggle() {
         const history = getHistory();
         const attendance = history[getLocalDateKey()] || {};
@@ -226,14 +247,16 @@ export function createAttendance({
         if (serverAttendance) {
             saveToday(normalizeAttendance(serverAttendance));
             render();
+            onCheckOutSuccess?.();
             return;
         }
 
         attendance.checkOutAt = new Date().toISOString();
         saveToday(attendance);
         render();
+        onCheckOutSuccess?.();
     }
-    // 새로고침
+
     function refreshDate() {
         const currentDateKey = getLocalDateKey();
         if (currentDateKey === renderedDateKey) return;

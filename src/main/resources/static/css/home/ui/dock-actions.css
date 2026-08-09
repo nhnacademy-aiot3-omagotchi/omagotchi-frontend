@@ -1,0 +1,73 @@
+.home-dock-button,
+.presence-trigger,
+.attendance-button {
+    appearance: none;
+    box-shadow: 0 4px 0 rgba(0, 0, 0, 0.16) !important;
+    transition:
+            background 0.12s ease,
+            transform 0.12s ease;
+}
+
+.home-dock-button:hover,
+.home-dock-button:focus-visible,
+.home-dock-button[aria-expanded="true"],
+.presence-trigger:hover,
+.presence-trigger:focus-visible,
+.presence-trigger[aria-expanded="true"],
+.attendance-button:hover,
+.attendance-button:focus-visible {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 0 rgba(0, 0, 0, 0.16) !important;
+}
+
+.home-dock-button:focus,
+.presence-trigger:focus,
+.attendance-button:focus,
+.bgm-player-actions button:focus {
+    outline: none;
+}
+
+.home-dock-button:focus-visible,
+.presence-trigger:focus-visible,
+.attendance-button:focus-visible,
+.bgm-player-actions button:focus-visible,
+.bgm-volume input:focus-visible {
+    outline: 2px solid rgba(9, 9, 9, 0.5);
+    outline-offset: 2px;
+}
+
+.presence-trigger:hover,
+.presence-trigger:focus-visible,
+.presence-trigger[aria-expanded="true"] {
+    background-color: #dff8eb;
+    box-shadow: 0 4px 0 rgba(0, 0, 0, 0.16) !important;
+    transform: translateY(-1px);
+}
+
+.presence-trigger:active {
+    transform: translateY(1px);
+}
+
+.presence-trigger-copy,
+.presence-trigger:hover .presence-trigger-copy,
+.presence-trigger:focus-visible .presence-trigger-copy,
+.presence-trigger[aria-expanded="true"] .presence-trigger-copy {
+    right: -8px;
+    top: -8px;
+    min-width: 22px;
+    min-height: 22px;
+    background: #ffffff;
+    transform: none;
+    transition: none;
+}
+
+.attendance-button.is-complete,
+.attendance-button.is-complete:hover,
+.attendance-button.is-complete:focus-visible,
+.attendance-button:disabled {
+    background-color: #d8dedb !important;
+    filter: grayscale(1);
+    opacity: 0.68;
+    cursor: not-allowed;
+    transform: none;
+}

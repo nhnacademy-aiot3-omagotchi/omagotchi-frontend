@@ -106,10 +106,10 @@ class FrontendApplicationTests {
 				.andExpect(view().name("write"))
 				.andExpect(content().string(containsString("학습 기록")));
 
-		mockMvc.perform(get("/settings"))
-				.andExpect(status().isOk())
-				.andExpect(view().name("settings"))
-				.andExpect(content().string(containsString("화면 밝기")));
+			mockMvc.perform(get("/settings"))
+					.andExpect(status().isOk())
+					.andExpect(view().name("settings"))
+					.andExpect(content().string(containsString("비밀번호 변경")));
 
 		mockMvc.perform(get("/help"))
 				.andExpect(status().isOk())

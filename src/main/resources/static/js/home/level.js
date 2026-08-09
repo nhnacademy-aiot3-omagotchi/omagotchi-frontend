@@ -81,7 +81,7 @@ export function createLevel({
         const xpInLevel = totalXp % xpPerLevel;
         const progress = Math.min(100, Math.round((xpInLevel / xpPerLevel) * 100));
 
-        if (levelElement) levelElement.textContent = `Lv ${level}`;
+        if (levelElement) levelElement.textContent = String(level);
         if (xpFill) xpFill.style.width = `${progress}%`;
         if (currentXpLabel) currentXpLabel.textContent = `${xpInLevel}xp`;
         if (nextLevelLabel) nextLevelLabel.textContent = `다음 레벨까지 ${xpPerLevel - xpInLevel}xp`;
