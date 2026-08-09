@@ -222,16 +222,30 @@ export function createAttendance({
         const nextAction = "checkOut";
 
         if (button) button.disabled = true;
-        const serverAttendance = await api?.[nextAction]?.();
+        let serverAttendance = null;
+        try {
+            serverAttendance = await api?.[nextAction]?.();
+        } catch (error) {
+            if (button) {
+                button.disabled = false;
+                button.textContent = error.message || "퇴실 실패";
+                window.setTimeout(render, 1800);
+            }
+            return;
+        }
+
         if (serverAttendance) {
             saveToday(normalizeAttendance(serverAttendance));
             render();
             return;
         }
 
-        attendance.checkOutAt = new Date().toISOString();
-        saveToday(attendance);
+        if (button) button.disabled = false;
         render();
+        if (button) {
+            button.textContent = "퇴실 실패";
+            window.setTimeout(render, 1800);
+        }
     }
     // 새로고침
     function refreshDate() {

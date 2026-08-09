@@ -88,12 +88,11 @@ export function isCheckedInToday() {
 
 export async function checkInToday() {
     const serverAttendance = await window.OmagotchiApi?.attendance?.checkIn?.();
-    const attendance = normalizeAttendance(serverAttendance || {
-        serviceDate: getServiceDate(),
-        checkInAt: new Date().toISOString(),
-        status: "PRESENT",
-        spaceStatus: "IN_LAB"
-    });
+    if (!serverAttendance) {
+        throw new Error("출석 API 응답을 확인할 수 없습니다.");
+    }
+
+    const attendance = normalizeAttendance(serverAttendance);
     const dateKey = attendance.serviceDate || getServiceDate();
     let history = {};
 
@@ -106,10 +105,7 @@ export async function checkInToday() {
     history[dateKey] = {
         ...history[dateKey],
         ...attendance,
-        checkInAt: attendance.checkInAt || new Date().toISOString(),
-        serviceDate: dateKey,
-        status: "PRESENT",
-        spaceStatus: "IN_LAB"
+        serviceDate: dateKey
     };
 
     localStorage.setItem(getAttendanceKey(), JSON.stringify(history));

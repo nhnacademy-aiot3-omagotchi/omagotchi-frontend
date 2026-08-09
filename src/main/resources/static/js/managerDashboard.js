@@ -45,6 +45,13 @@ function writeJson(key, value) {
     localStorage.setItem(key, JSON.stringify(value));
 }
 
+function withoutSensitiveJoinCode(cohort) {
+    return {
+        ...cohort,
+        joinCode: null
+    };
+}
+
 // 현재 선택한 기수와 활성 패널 상태
 let cohorts = readJson(OPERATIONS_KEY, []);
 let applications = readJson(APPLICATIONS_KEY, []);
@@ -88,6 +95,7 @@ const elements = {
     communityList: document.querySelector("[data-community-list]"),
     auditList: document.querySelector("[data-audit-list]"),
     codeCard: document.querySelector("[data-code-card]"),
+    issueCodeButton: document.querySelector("[data-issue-code]"),
     editForm: document.querySelector("[data-cohort-edit-form]"),
     sensorThresholdForm: document.querySelector("[data-sensor-threshold-form]"),
     noticeForm: document.querySelector("[data-notice-form]"),
@@ -105,7 +113,7 @@ function currentCohort() {
 }
 
 function saveState() {
-    writeJson(OPERATIONS_KEY, cohorts);
+    writeJson(OPERATIONS_KEY, cohorts.map(withoutSensitiveJoinCode));
     writeJson(APPLICATIONS_KEY, applications);
     writeJson(NOTICES_KEY, notices);
     writeJson(AUDITS_KEY, audits);
@@ -141,6 +149,14 @@ function escapeHtml(value) {
 
 function setBubble(message) {
     elements.bubble.innerHTML = message;
+}
+
+function managerApi(methodName) {
+    return window.OmagotchiApi?.manager?.[methodName];
+}
+
+function hasManagerApi(methodName) {
+    return typeof managerApi(methodName) === "function";
 }
 
 function sensorThresholds(cohort = currentCohort()) {
@@ -223,10 +239,18 @@ function renderOverview() {
 
 function renderCode() {
     const code = currentCohort().joinCode;
+    const canIssueCode = hasManagerApi("issueJoinCode");
+    if (elements.issueCodeButton) {
+        elements.issueCodeButton.disabled = !canIssueCode;
+        elements.issueCodeButton.title = canIssueCode ? "" : "가입 코드 발급 API 연동 후 사용할 수 있습니다.";
+        elements.issueCodeButton.setAttribute("aria-disabled", String(!canIssueCode));
+    }
+
     if (!code?.value) {
-        elements.codeCard.innerHTML = `<div><strong>발급된 가입 코드가 없습니다.</strong><p class="panel-description">새 코드를 발급하면 이전 코드는 즉시 폐기됩니다.</p></div>`;
+        elements.codeCard.innerHTML = `<div><strong>발급된 가입 코드가 없습니다.</strong><p class="panel-description">${canIssueCode ? "새 코드를 발급하면 이전 코드는 즉시 폐기됩니다." : "가입 코드 발급 API 연동 후 사용할 수 있습니다."}</p></div>`;
         return;
     }
+    const canRevokeCode = code.status === "ACTIVE" && hasManagerApi("revokeJoinCode");
     elements.codeCard.innerHTML = `
         <div>
             <div class="code-value"><strong>${escapeHtml(code.value)}</strong><span class="status-badge">${statusLabel(code.status)}</span></div>
@@ -234,7 +258,7 @@ function renderCode() {
         </div>
         <div class="code-actions">
             <button class="is-primary" type="button" data-code-copy>복사</button>
-            <button class="is-danger" type="button" data-code-revoke ${code.status !== "ACTIVE" ? "disabled" : ""}>폐기</button>
+            <button class="is-danger" type="button" data-code-revoke ${canRevokeCode ? "" : "disabled"}>폐기</button>
         </div>`;
 }
 
@@ -402,7 +426,12 @@ elements.editForm.addEventListener("submit", (event) => {
 });
 
 // 가입 코드 발급, 복사 및 폐기
-document.querySelector("[data-issue-code]").addEventListener("click", () => {
+elements.issueCodeButton?.addEventListener("click", () => {
+    if (!hasManagerApi("issueJoinCode")) {
+        setBubble("가입 코드 발급 API<br />연동이 필요합니다.");
+        return;
+    }
+
     const defaultExpiry = new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10);
     openDialog({
         title: "가입 코드 발급",
@@ -411,12 +440,13 @@ document.querySelector("[data-issue-code]").addEventListener("click", () => {
         inputType: "date",
         initialValue: defaultExpiry,
         confirmText: "발급"
-    }, (expiresAt) => {
+    }, async (expiresAt) => {
         if (!expiresAt) return false;
-        const code = `${currentCohort().name.replace(/[^A-Za-z0-9가-힣]/g, "").slice(0, 3).toUpperCase()}${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
-        currentCohort().joinCode = { value: code, status: "ACTIVE", expiresAt, issuedAt: today, used: 0 };
-        addAudit("가입 코드 발급", currentCohort().name, `만료일 ${expiresAt}`);
-        saveState();
+
+        const issuedCode = await managerApi("issueJoinCode")({ expiresAt });
+        if (!issuedCode) return false;
+
+        currentCohort().joinCode = issuedCode;
         renderAll();
         setBubble("새 가입 코드를<br />발급했습니다.");
         return true;
@@ -433,10 +463,16 @@ elements.codeCard.addEventListener("click", async (event) => {
         }
     }
     if (event.target.closest("[data-code-revoke]")) {
-        openDialog({ title: "가입 코드 폐기", message: "현재 코드를 더 이상 사용할 수 없게 합니다.", confirmText: "폐기" }, () => {
-            currentCohort().joinCode.status = "REVOKED";
-            addAudit("가입 코드 폐기", currentCohort().name, currentCohort().joinCode.value);
-            saveState();
+        if (!hasManagerApi("revokeJoinCode")) {
+            setBubble("가입 코드 폐기 API<br />연동이 필요합니다.");
+            return;
+        }
+
+        openDialog({ title: "가입 코드 폐기", message: "현재 코드를 더 이상 사용할 수 없게 합니다.", confirmText: "폐기" }, async () => {
+            const revokedCode = await managerApi("revokeJoinCode")(currentCohort().joinCode.value);
+            if (!revokedCode) return false;
+
+            currentCohort().joinCode = revokedCode;
             renderAll();
             return true;
         });
@@ -606,10 +642,14 @@ elements.communityList.addEventListener("click", (event) => {
 });
 
 // 공통 대화상자 처리
-document.querySelector("[data-dialog-confirm]").addEventListener("click", () => {
+document.querySelector("[data-dialog-confirm]").addEventListener("click", async () => {
     if (!dialogCallback) return closeDialog();
-    const accepted = dialogCallback(elements.dialogInputWrap.hidden ? "" : elements.dialogInput.value);
-    if (accepted !== false) closeDialog();
+    try {
+        const accepted = await dialogCallback(elements.dialogInputWrap.hidden ? "" : elements.dialogInput.value);
+        if (accepted !== false) closeDialog();
+    } catch (error) {
+        setBubble(escapeHtml(error.message || "요청 처리에 실패했습니다."));
+    }
 });
 document.querySelector("[data-dialog-cancel]").addEventListener("click", closeDialog);
 elements.dialog.addEventListener("click", (event) => {

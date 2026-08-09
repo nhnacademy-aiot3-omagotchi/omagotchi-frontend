@@ -77,8 +77,8 @@
         attendance: {
             getHistory: () => optional("/attendance/history"),
             getToday: () => optional("/attendance/today"),
-            checkIn: () => optional("/attendance/check-in", { method: "POST" }),
-            checkOut: () => optional("/attendance/check-out", { method: "POST" })
+            checkIn: () => request("/attendance/check-in", { method: "POST" }),
+            checkOut: () => request("/attendance/check-out", { method: "POST" })
         },
         presence: {
             getLabPresence: () => optional("/presence/lab"),
