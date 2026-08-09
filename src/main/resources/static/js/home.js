@@ -780,10 +780,11 @@ async function logout(logoutButton) {
     if (logoutButton) logoutButton.disabled = true;
 
     try {
+        // MultipartFilter 없이 CSRF Request Parameter를 읽기 위한 URL-encoded Form 전송
         const response = await fetch(logoutForm.action, {
             method: "POST",
             credentials: "same-origin",
-            body: new FormData(logoutForm)
+            body: new URLSearchParams(new FormData(logoutForm))
         });
 
         // 완료되었거나 이미 만료된 Session의 Browser 표시 상태 정리

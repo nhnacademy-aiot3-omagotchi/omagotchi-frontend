@@ -622,10 +622,11 @@ document.querySelector("[data-manager-logout-form]").addEventListener("submit", 
     if (submitButton) submitButton.disabled = true;
 
     try {
+        // MultipartFilter 없이 CSRF Request Parameter를 읽기 위한 URL-encoded Form 전송
         const response = await fetch(event.currentTarget.action, {
             method: "POST",
             credentials: "same-origin",
-            body: new FormData(event.currentTarget)
+            body: new URLSearchParams(new FormData(event.currentTarget))
         });
 
         // 완료되었거나 이미 만료된 Session의 관리자 Prototype 표시 상태 정리
