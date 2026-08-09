@@ -86,7 +86,7 @@ Browser URL 요청
 
 ```java
 registry.addViewController("/home")
-        .setViewName("home");
+        .setViewName("pages/app/home");
 ```
 
 - 사용 조건
@@ -129,7 +129,7 @@ registry.addViewController("/home")
 ```text
 GET /login
 → LoginPageController
-→ login.html
+→ templates/pages/auth/login.html
 → Thymeleaf CSRF hidden input
 → login.js
   → 입력 Animation

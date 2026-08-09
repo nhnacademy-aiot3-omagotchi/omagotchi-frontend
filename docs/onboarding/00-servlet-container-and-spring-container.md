@@ -190,7 +190,7 @@ sequenceDiagram
 GET /home
 → WebConfig의 View Controller
 → View 이름 home
-→ templates/home.html
+→ templates/pages/app/home.html
 ```
 
 - 사용 조건

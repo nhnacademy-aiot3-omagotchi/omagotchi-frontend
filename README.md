@@ -31,10 +31,15 @@ Identity 인증 호출은 Spring HTTP Service Client Group을 사용합니다. �
 ```text
 src/main/resources/
 ├── templates/
-│   ├── *.html
 │   ├── error/
 │   ├── fragments/
-│   └── layouts/
+│   ├── layouts/
+│   └── pages/
+│       ├── app/
+│       ├── auth/
+│       ├── manager/
+│       ├── onboarding/
+│       └── public/
 └── static/
     ├── css/
     ├── js/
@@ -42,7 +47,7 @@ src/main/resources/
     └── images/
 ```
 
-- 화면 Template은 현재 `templates` 바로 아래에 두고 오류·Fragment·Layout만 하위 디렉터리로 구분합니다.
+- 화면 Template은 역할에 따라 `templates/pages/{app,auth,manager,onboarding,public}`로 구분합니다.
 - 공통 Header, Navigation, Footer는 `templates/fragments/`에 둡니다.
 - 규모가 커진 JavaScript 기능은 `js/{feature}/` Module로 분리합니다.
 - Secret과 운영 서버 주소를 소스 코드에 하드코딩하지 않습니다.
@@ -65,7 +70,7 @@ src/main/resources/
 - Signup의 필수 필드·기본 이메일 형식은 Frontend에서 확인하고, 계정·비밀번호 정책은 Identity에서 최종 검증합니다.
 - 일반 Signup은 `/register` Server Form으로 처리하며 Identity에 `USER` 계정만 생성합니다.
 - 인증 Endpoint는 `/login` 하나이며 성공 뒤 기본 이동은 `/home`입니다.
-- 인증된 Session의 `POST /login`은 Identity 호출 전에 현재 화면으로 돌려보내 기존 Token Family를 유지합니다.
+- 인증된 Session의 `POST /login`은 Identity 호출 전에 `/home`으로 돌려보내 기존 Token Family를 유지합니다.
 - Logout은 Thymeleaf CSRF hidden input과 Spring Security `POST /logout`을 사용합니다.
 - 인증된 사용자 화면은 Spring Security가 서버에서 보호합니다.
 - 관리자 Page에는 현재 공통 Session 인증만 적용합니다. Dashboard의 관리자 표시·업무 데이터는 Learning 연동 전 Browser Prototype이며 권한 근거가 아닙니다.

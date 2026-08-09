@@ -10,9 +10,9 @@
 |---|---|---|
 | 제품 요구·수용 기준 | 상위 `docs/10-specifications` | 화면 흐름과 표시 조건 반영 |
 | API 요청·응답 계약 | 대상 Service REST Docs·현재 Code | 필요한 화면 계약으로 변환 |
-| Browser 인증·BFF 경계 | [ADR 0009](../../../docs/30-adr/0009-browser-authentication-and-frontend-development-model.md) | Opaque Session Cookie 처리, Token 비노출 |
-| 내부 호출 경로 | [ADR 0010](../../../docs/30-adr/0010-frontend-bff-internal-api-routing.md), [내부 HTTP 호출 가이드](../../../docs/50-guides/12-internal-http-communication.md) | Service별 직접 Client, 운영 Discovery·LoadBalancer |
-| 오류 계약 | [공통 예외 처리](../../../docs/50-guides/04-error-handling.md), [오류·장애 흐름](03-error-and-failure-flow.md) | 화면·JSON 응답 분리, 안전한 오류 표시 |
+| Browser 인증·BFF 경계 | [ADR 0009](https://github.com/nhnacademy-aiot3-omagotchi/docs/blob/main/30-adr/0009-browser-authentication-and-frontend-development-model.md) | Opaque Session Cookie 처리, Token 비노출 |
+| 내부 호출 경로 | [ADR 0010](https://github.com/nhnacademy-aiot3-omagotchi/docs/blob/main/30-adr/0010-frontend-bff-internal-api-routing.md), [내부 HTTP 호출 가이드](https://github.com/nhnacademy-aiot3-omagotchi/docs/blob/main/50-guides/12-internal-http-communication.md) | Service별 직접 Client, 운영 Discovery·LoadBalancer |
+| 오류 계약 | [공통 예외 처리](https://github.com/nhnacademy-aiot3-omagotchi/docs/blob/main/50-guides/04-error-handling.md), [오류·장애 흐름](03-error-and-failure-flow.md) | 화면·JSON 응답 분리, 안전한 오류 표시 |
 
 - Browser Prototype의 `localStorage`·`sessionStorage` 값
   - 화면 전환 전 임시 표시 상태
@@ -264,7 +264,7 @@ Page Controller 또는 RestController
 - [ ] Prototype fallback 제거 뒤 네트워크 실패가 사용자에게 보이는지 확인
 - [ ] Java Test와 JavaScript Test를 각각 실행하고 결과 기록
 
-- 실행 기준: [통합 테스트 가이드](../../../docs/50-guides/11-integration-test-guide.md)
+- 실행 기준: [통합 테스트 가이드](https://github.com/nhnacademy-aiot3-omagotchi/docs/blob/main/50-guides/11-integration-test-guide.md)
 - Test 통과 범위
   - Frontend 단위 Test와 대상 Service 배포 계약 분리
   - Frontend 단위 Test와 Eureka 연결 분리

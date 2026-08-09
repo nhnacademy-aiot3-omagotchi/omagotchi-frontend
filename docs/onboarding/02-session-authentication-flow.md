@@ -385,9 +385,10 @@ sequenceDiagram
   - 이미 없거나 폐기된 Refresh Token의 멱등 성공
   - 최종 근거: Identity 현재 API 계약·Test
 - Browser 정책
-  - Logout 응답 성공 여부와 무관한 Prototype 표시 상태 제거
-  - Login Page 이동
-  - 만료 Session의 화면 고립 방지
+  - Logout 성공: Tab 단위 Prototype 표시 상태 제거와 Login Page 이동
+  - 이미 만료된 Session의 `401`·`403`: 표시 상태 제거와 Login Page 이동
+  - `5xx`·Network 실패: 표시 상태 유지와 현재 화면의 실패 안내
+  - Server 완료 전 Logout 성공으로 보이는 화면 전환 금지
 
 ## 9. Identity HTTP 경계
 
