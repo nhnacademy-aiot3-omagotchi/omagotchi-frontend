@@ -26,6 +26,8 @@ inputs.forEach((input) => {
 // Server Form 제출 중 중복 입력 방지
 form?.addEventListener("submit", () => {
     const submitButton = form.querySelector("[type='submit']");
-    submitButton.disabled = true;
+    if (submitButton) {
+        submitButton.disabled = true;
+    }
     setFeedback("로그인 정보를 확인하고 있어요.");
 });

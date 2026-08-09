@@ -24,7 +24,8 @@ public record IdentityClientCredentialProperties(
 
     @AssertTrue(message = "clients.identity.password는 32자 이상이어야 합니다.")
     public boolean isPasswordLengthValid() {
-        return password == null || password.length() >= 32;
+        return password == null
+                || password.codePointCount(0, password.length()) >= 32;
     }
 
     @AssertTrue(message = "clients.identity.password는 UTF-8 기준 72바이트 이하여야 합니다.")

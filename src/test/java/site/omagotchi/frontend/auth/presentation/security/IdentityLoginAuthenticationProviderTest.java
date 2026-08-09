@@ -121,6 +121,36 @@ class IdentityLoginAuthenticationProviderTest {
                         .isSameAs(invalidCredentials));
     }
 
+    @Test
+    @DisplayName("빈 Login 자격 증명의 Identity 호출 전 거부")
+    void rejectsBlankCredentialsBeforeIdentityCall() {
+        // Given: Identity 호출 기록용 Client와 Login Provider
+        RecordingIdentityAuthClient identityAuthClient = new RecordingIdentityAuthClient();
+        IdentityLoginAuthenticationProvider provider =
+                new IdentityLoginAuthenticationProvider(
+                        new AuthenticationService(identityAuthClient)
+                );
+
+        // When: 빈 이메일·비밀번호의 자격 증명 검증
+        // Then: Identity 호출 없는 BadCredentialsException
+        assertThatThrownBy(() -> provider.authenticate(
+                UsernamePasswordAuthenticationToken.unauthenticated(
+                        " ",
+                        "password-passphrase"
+                )
+        )).isInstanceOf(BadCredentialsException.class);
+        assertThatThrownBy(() -> provider.authenticate(
+                UsernamePasswordAuthenticationToken.unauthenticated(
+                        "user@example.com",
+                        " "
+                )
+        )).isInstanceOf(BadCredentialsException.class);
+        assertSoftly(softly -> {
+            softly.assertThat(identityAuthClient.loginEmail).isNull();
+            softly.assertThat(identityAuthClient.loginPassword).isNull();
+        });
+    }
+
     // Provider 입력·출력 관찰만을 위한 파일 내부 Identity fake
     private static final class RecordingIdentityAuthClient implements IdentityAuthClient {
 

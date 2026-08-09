@@ -148,6 +148,12 @@ class IdentityClientCredentialPropertiesTest {
                         "clients.identity.password는 32자 이상이어야 합니다."
                 ),
                 Arguments.of(
+                        "UTF-16 길이만 32인 16자 password",
+                        VALID_USERNAME,
+                        "😀".repeat(16),
+                        "clients.identity.password는 32자 이상이어야 합니다."
+                ),
+                Arguments.of(
                         "UTF-8 72바이트를 넘는 password",
                         VALID_USERNAME,
                         "a".repeat(70) + "가",
