@@ -360,9 +360,26 @@ const overlayContent = {
                     <li>경험치가 기준에 도달하면 레벨이 상승합니다.</li>
                     <li>캐릭터를 클릭하면 움직임과 말풍선 반응이 나타납니다.</li>
                     <li>평일 출석 스트릭에 따라 캐릭터 뒤에 날개가 표시됩니다.</li>
-                    <li>1일차에는 dia 날개, 2일차에는 mas 날개, 3일차 이상에는 grand 날개가 장착됩니다.</li>
+                    <li>1일차에는 dia, 2일차에는 mas, 3일차 이상에는 grand 날개가 장착됩니다.</li>
                     <li>진행 메뉴에서 완료한 퀘스트의 보상을 받을 수 있습니다.</li>
                 </ul>
+                <ol class="help-wing-guide" aria-label="출석 스트릭 날개 단계">
+                    <li>
+                        <img src="/images/wing/dia/diamond_1.png" alt="dia 날개" />
+                        <strong>1일차</strong>
+                        <span>dia</span>
+                    </li>
+                    <li>
+                        <img src="/images/wing/mas/master_1.png" alt="mas 날개" />
+                        <strong>2일차</strong>
+                        <span>mas</span>
+                    </li>
+                    <li>
+                        <img src="/images/wing/grand/goorandmaster_1.png" alt="grand 날개" />
+                        <strong>3일차 이상</strong>
+                        <span>grand</span>
+                    </li>
+                </ol>
             </div>
         </details>
 

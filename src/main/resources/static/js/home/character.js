@@ -16,9 +16,9 @@ export function createCharacter({
 
     const streakWings = [
         null,
-        "/images/wing/dia/diamond_1.png",
-        "/images/wing/mas/master_1.png",
-        "/images/wing/grand/goorandmaster_1.png"
+        "/images/wing/dia/diamond_12.gif",
+        "/images/wing/mas/master_12.gif",
+        "/images/wing/grand/goorandmaster_12.gif"
     ];
 
     function getIdleMessage() {

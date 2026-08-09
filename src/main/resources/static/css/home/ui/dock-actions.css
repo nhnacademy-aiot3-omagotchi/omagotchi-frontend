@@ -39,7 +39,7 @@
 .presence-trigger:hover,
 .presence-trigger:focus-visible,
 .presence-trigger[aria-expanded="true"] {
-    background-color: #ffffff;
+    background: #eefbf5 url("/images/app/social.png") center / 32px 32px no-repeat !important;
     box-shadow: 0 4px 0 rgba(0, 0, 0, 0.16) !important;
     transform: translateY(-1px);
 }

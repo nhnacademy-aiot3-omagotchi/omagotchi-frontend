@@ -1042,6 +1042,48 @@ a {
     font-weight: 900;
 }
 
+.help-wing-guide {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+    margin: 16px 0 0;
+    padding: 0;
+    list-style: none;
+}
+
+.help-wing-guide li {
+    display: grid;
+    justify-items: center;
+    gap: 6px;
+    padding: 12px 8px;
+    border: 2px solid rgba(12, 71, 48, 0.22);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.7);
+    text-align: center;
+}
+
+.help-wing-guide img {
+    width: 70px;
+    height: 70px;
+    object-fit: contain;
+    image-rendering: pixelated;
+}
+
+.help-wing-guide strong,
+.help-wing-guide span {
+    font-weight: 900;
+}
+
+.help-wing-guide strong {
+    color: #123c2d;
+    font-size: 13px;
+}
+
+.help-wing-guide span {
+    color: #0e6948;
+    font-size: 12px;
+}
+
 .help-key-list {
     display: grid;
     gap: 8px;
@@ -3469,6 +3511,10 @@ a {
 
     .help-detail li {
         font-size: 14px;
+    }
+
+    .help-wing-guide {
+        grid-template-columns: 1fr;
     }
 
     .help-key-list > div {
