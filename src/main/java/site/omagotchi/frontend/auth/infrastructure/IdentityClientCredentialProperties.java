@@ -6,8 +6,6 @@ import jakarta.validation.constraints.Pattern;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
-import java.nio.charset.StandardCharsets;
-
 // Identity 호출 시 Frontend 프로세스를 증명하는 HTTP Basic 자격 증명
 // 잘못된 공유 자격 증명의 기동 시점 거절
 @Validated
@@ -22,15 +20,16 @@ public record IdentityClientCredentialProperties(
         String password
 ) {
 
-    @AssertTrue(message = "clients.identity.password는 32자 이상이어야 합니다.")
+    // 거부된 Credential 원문을 Binding 오류의 rejected value에 남기지 않는 파생값 검증
+    @AssertTrue(message = "clients.identity.password는 32자 이상 72자 이하여야 합니다.")
     public boolean isPasswordLengthValid() {
-        return password == null
-                || password.codePointCount(0, password.length()) >= 32;
+        return password == null || password.length() >= 32 && password.length() <= 72;
     }
 
-    @AssertTrue(message = "clients.identity.password는 UTF-8 기준 72바이트 이하여야 합니다.")
-    public boolean isPasswordByteLengthValid() {
-        return password == null || password.getBytes(StandardCharsets.UTF_8).length <= 72;
+    // 환경 변수와 HTTP Basic 전송에 안전한 ASCII 난수 문자 범위
+    @AssertTrue(message = "clients.identity.password는 영문자·숫자·'-'·'_'만 사용할 수 있습니다.")
+    public boolean isPasswordCharacterSetValid() {
+        return password == null || password.matches("[A-Za-z0-9_-]+");
     }
 
     @Override

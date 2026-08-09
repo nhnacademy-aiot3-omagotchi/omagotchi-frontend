@@ -15,7 +15,9 @@ SPRING_PROFILES_ACTIVE=local ./mvnw spring-boot:run
 
 로컬 인증 흐름은 Redis와 Identity Service를 함께 사용합니다. `.env.local`의 모든 값을
 실행 환경에 맞게 설정하고 `FRONTEND_USERNAME`·`FRONTEND_PASSWORD`는 Identity와 같은
-Frontend 호출 Credential로 주입합니다. `.env.local`은 Git에 포함하지 않습니다.
+Frontend 호출 Credential로 주입합니다. 비밀번호는 URL-safe ASCII 영문자·숫자·`-`·`_`만
+사용하는 32~72자 난수이며, 공유·운영 환경에서는 `openssl rand -hex 32`로 생성합니다.
+`.env.local`은 Git에 포함하지 않습니다.
 
 별도 `local-stack` Profile은 사용하지 않습니다. 하나의 `local` Profile에서 서비스별 `localhost` 주소와 고정 port를 사용하고, 작업할 기능에 필요한 프로세스를 함께 실행합니다. 인증 흐름에는 Redis와 Identity가 필요하고, 향후 업무 기능 연동에는 대상 Domain Service가 추가됩니다.
 
