@@ -1,3 +1,4 @@
+// 관리자 권한·기수 소속 미검증 Browser Prototype 대시보드
 // 관리자 대시보드가 공유하는 로컬 저장소 키
 const OPERATIONS_KEY = "omagotchiCohortOperations";
 const APPLICATIONS_KEY = "omagotchiCohortApplications";
@@ -604,7 +605,7 @@ elements.communityList.addEventListener("click", (event) => {
     renderAll();
 });
 
-// 공통 대화상자와 로그아웃 처리
+// 공통 대화상자 처리
 document.querySelector("[data-dialog-confirm]").addEventListener("click", () => {
     if (!dialogCallback) return closeDialog();
     const accepted = dialogCallback(elements.dialogInputWrap.hidden ? "" : elements.dialogInput.value);
@@ -615,10 +616,22 @@ elements.dialog.addEventListener("click", (event) => {
     if (event.target === elements.dialog) closeDialog();
 });
 
-document.querySelector("[data-manager-logout]").addEventListener("click", () => {
+document.querySelector("[data-manager-logout-form]").addEventListener("submit", async (event) => {
+    event.preventDefault();
+
+    // Server 응답과 무관한 관리자 Prototype 표시 상태 정리
     ["omagotchiManagerEmail", "omagotchiManagerName", "omagotchiManagerOrganization", "omagotchiManagerCohort", "omagotchiManagerDashboardTab"]
         .forEach((key) => sessionStorage.removeItem(key));
-    window.location.href = "/";
+
+    try {
+        await fetch(event.currentTarget.action, {
+            method: "POST",
+            credentials: "same-origin",
+            body: new FormData(event.currentTarget)
+        });
+    } finally {
+        window.location.href = "/login";
+    }
 });
 
 // 저장 상태를 동기화하고 최초 대시보드 렌더링

@@ -1,5 +1,5 @@
 (() => {
-    const API_BASE = window.OMAGOTCHI_API_BASE || document.documentElement.dataset.apiBase || "/api";
+    const API_BASE = window.OMAGOTCHI_API_BASE || document.documentElement.dataset.apiBase || "/bff/v1";
     const STRICT = Boolean(window.OMAGOTCHI_API_STRICT);
 
     function toUrl(path) {
@@ -71,15 +71,6 @@
     window.OmagotchiApi = {
         request,
         optional,
-        auth: {
-            login: (payload) => optional("/auth/login", { method: "POST", body: payload }),
-            register: (payload) => optional("/auth/register", { method: "POST", body: payload }),
-            updateProfile: (payload) => optional("/me/profile", { method: "PUT", body: payload }),
-            lookupPasswordReset: (payload) => optional("/auth/password-reset/lookup", { method: "POST", body: payload }),
-            resetPassword: (payload) => optional("/auth/password-reset", { method: "POST", body: payload }),
-            managerLogin: (payload) => optional("/manager/auth/login", { method: "POST", body: payload }),
-            managerRegister: (payload) => optional("/manager/auth/register", { method: "POST", body: payload })
-        },
         character: {
             saveSelection: (payload) => optional("/me/character", { method: "PUT", body: payload })
         },

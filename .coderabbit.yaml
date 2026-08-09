@@ -1,0 +1,112 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+# CodeRabbit review policy for the Frontend BFF and server-rendered pages.
+
+language: "ko-KR"
+tone_instructions: >
+  문제를 지적할 때 원인과 영향 범위를 설명하고, 필요하면 공식 문서나 근거를 함께 제안해주세요.
+  단, 추측만으로 변경을 요구하지 말고 실제 요청 흐름과 테스트를 근거로 판단해주세요.
+
+reviews:
+  profile: "chill"
+  request_changes_workflow: false
+  high_level_summary: true
+  changed_files_summary: true
+  collapse_walkthrough: true
+  sequence_diagrams: true
+  assess_linked_issues: true
+  related_issues: false
+  related_prs: true
+  suggested_labels: false
+  auto_apply_labels: false
+  suggested_reviewers: false
+  auto_assign_reviewers: false
+  poem: false
+  enable_prompt_for_ai_agents: false
+
+  pre_merge_checks:
+    docstrings:
+      mode: "off"
+    title:
+      mode: "warning"
+      requirements: "무엇을 왜 바꿨는지 드러내세요. 예: fix(auth): Redis 세션 저장 실패를 503으로 처리"
+
+  auto_review:
+    enabled: false
+    labels: ["review-ready"]
+    auto_incremental_review: true
+    auto_pause_after_reviewed_commits: 2
+    ignore_title_keywords: ["WIP", "wip", "[skip review]"]
+
+  path_filters:
+    - "!**/target/**"
+    - "!**/.mvn/**"
+    - "!mvnw"
+    - "!mvnw.cmd"
+    - "!**/*.min.js"
+    - "!**/*.min.css"
+    - "!**/generated/**"
+    - "!**/*.lock"
+    - "!src/main/resources/static/images/**"
+    - "!src/main/resources/static/audio/**"
+    - "!src/main/resources/static/fonts/**"
+
+  path_instructions:
+    - path: "**/*.java"
+      instructions: |
+        이 서비스는 Browser Session을 소유하는 Spring MVC/Thymeleaf Frontend BFF입니다.
+        Browser에 Access/Refresh Token을 저장하거나 Browser가 Domain Service를 직접 호출하도록 만드는 변경은 지적해주세요.
+        Page 요청의 HTML 처리와 BFF JSON 오류 처리가 섞이지 않는지, 외부 HTTP 실패의 원인과 사용자 공개 오류를 구분하는지 검토해주세요.
+
+    - path: "**/auth/**/*.java"
+      instructions: |
+        Spring Security 표준 생명주기와 Session SecurityContext를 우선 사용하세요.
+        로그인 성공·실패, Logout, CSRF, Session 저장 실패에서 토큰·비밀번호·내부 Credential이 로그나 응답에 노출되지 않는지 확인해주세요.
+        Identity 호출 실패는 사용자 인증 실패와 구분하고, Redis 장애에서 in-memory session이나 Browser Token으로 조용히 우회하지 않는지 검토해주세요.
+
+    - path: "**/presentation/**/*.java"
+      instructions: |
+        Controller는 HTTP/Page 진입점과 Form Binding 책임만 가집니다.
+        Infrastructure 직접 호출, Domain 객체 직접 반환, Controller의 오류 응답 직접 조립을 지적해주세요.
+
+    - path: "**/*.{js,html,css}"
+      instructions: |
+        Template·JavaScript·CSS 변경은 서버 Route, CSRF, 인증 상태, 오류 화면 계약과 일치하는지 검토해주세요.
+        정적 파일만 남고 Runtime Route/API가 제거된 레거시는 동작 기능처럼 소개하거나 연결하지 않는지 확인해주세요.
+        비밀번호·토큰·Credential을 localStorage, sessionStorage, URL, HTML, JavaScript에 저장하거나 출력하면 지적해주세요.
+
+    - path: "**/src/test/**"
+      instructions: |
+        테스트 이름이 검증 동작을 설명하는지, Assertion 없는 테스트와 구현 세부에 결합된 과도한 Mock 검증이 없는지 확인해주세요.
+        인증·오류 경계를 바꾸면 HTML/JSON 응답 경계, CSRF, Session/Redis 실패 경로를 검증하는 테스트가 있는지 살펴주세요.
+
+    - path: "**/pom.xml"
+      instructions: |
+        Java 21, Spring Boot 4.1.0, Spring Cloud 2025.1.2 BOM을 확인해주세요.
+        Spring이 관리하는 의존성에 개별 version을 지정하거나 production dependency를 불필요하게 추가하면 지적해주세요.
+
+    - path: "**/src/main/resources/application*.{yml,yaml,properties}"
+      instructions: |
+        평문 비밀번호, Token, Key, Frontend 프로세스 Credential을 지적해주세요.
+        local과 운영 주소의 분리, Redis Session 안전성, Actuator 노출 범위를 검토해주세요.
+
+    - path: ".github/workflows/**"
+      instructions: |
+        Secret 노출, pull_request_target 오용, 태그로만 고정된 third-party Action, 과도한 GITHUB_TOKEN 권한을 지적해주세요.
+
+chat:
+  auto_reply: false
+
+knowledge_base:
+  web_search:
+    enabled: true
+  code_guidelines:
+    enabled: true
+    filePatterns:
+      - "docs/**/*.md"
+      - "README.md"
+  learnings:
+    scope: "local"
+  issues:
+    scope: "local"
+  pull_requests:
+    scope: "local"

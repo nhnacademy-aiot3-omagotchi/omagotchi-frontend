@@ -1,0 +1,45 @@
+spring:
+  http:
+    clients:
+      connect-timeout: 2s
+      read-timeout: 5s
+    serviceclient:
+      identity-service:
+        base-url: http://localhost:8083
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      username: ""
+      password: ""
+      connect-timeout: 1s
+      timeout: 2s
+      ssl:
+        enabled: false
+  session:
+    timeout: PT30M
+    data:
+      redis:
+        namespace: omagotchi:frontend:test:session
+
+server:
+  port: 0
+  servlet:
+    session:
+      cookie:
+        name: OMAGOTCHI_SESSION
+        secure: false
+
+eureka:
+  client:
+    enabled: false
+
+clients:
+  identity:
+    username: frontend
+    password: test-only-frontend-credential-value
+
+management:
+  health:
+    redis:
+      enabled: false
