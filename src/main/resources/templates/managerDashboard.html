@@ -117,36 +117,95 @@
                         <button class="secondary-button" type="button" data-open-sensor-thresholds>임계치 설정</button>
                     </div>
                 </div>
-                <div class="sensor-grid">
-                    <article><span>온도</span><strong data-sensor-temperature>--</strong><small data-sensor-temperature-range>권장 20~26℃</small></article>
-                    <article><span>습도</span><strong data-sensor-humidity>--</strong><small data-sensor-humidity-range>권장 40~60%</small></article>
-                    <article><span>이산화탄소</span><strong data-sensor-co2>--</strong><small data-sensor-co2-state>수신 대기</small></article>
+                <div class="sensor-environment-list">
+                    <section class="sensor-environment" data-sensor-environment="LAB">
+                        <div class="sensor-environment-heading">
+                            <h3>실습실 환경</h3>
+                            <small data-sensor-updated-for="LAB">수신 데이터 없음</small>
+                        </div>
+                        <div class="sensor-grid">
+                            <article><span>온도</span><strong data-sensor-temperature="LAB">--</strong><small data-sensor-temperature-range="LAB">기준 대기</small></article>
+                            <article><span>습도</span><strong data-sensor-humidity="LAB">--</strong><small data-sensor-humidity-range="LAB">기준 대기</small></article>
+                            <article><span>이산화탄소</span><strong data-sensor-co2="LAB">--</strong><small data-sensor-co2-state="LAB">수신 대기</small></article>
+                        </div>
+                    </section>
+                    <section class="sensor-environment" data-sensor-environment="OFFICE">
+                        <div class="sensor-environment-heading">
+                            <h3>사무실 환경</h3>
+                            <small data-sensor-updated-for="OFFICE">수신 데이터 없음</small>
+                        </div>
+                        <div class="sensor-grid">
+                            <article><span>온도</span><strong data-sensor-temperature="OFFICE">--</strong><small data-sensor-temperature-range="OFFICE">기준 대기</small></article>
+                            <article><span>습도</span><strong data-sensor-humidity="OFFICE">--</strong><small data-sensor-humidity-range="OFFICE">기준 대기</small></article>
+                            <article><span>이산화탄소</span><strong data-sensor-co2="OFFICE">--</strong><small data-sensor-co2-state="OFFICE">수신 대기</small></article>
+                        </div>
+                    </section>
+                    <section class="sensor-environment" data-sensor-environment="MEETING_ROOM">
+                        <div class="sensor-environment-heading">
+                            <h3>회의실 환경</h3>
+                            <small data-sensor-updated-for="MEETING_ROOM">수신 데이터 없음</small>
+                        </div>
+                        <div class="sensor-grid">
+                            <article><span>온도</span><strong data-sensor-temperature="MEETING_ROOM">--</strong><small data-sensor-temperature-range="MEETING_ROOM">기준 대기</small></article>
+                            <article><span>습도</span><strong data-sensor-humidity="MEETING_ROOM">--</strong><small data-sensor-humidity-range="MEETING_ROOM">기준 대기</small></article>
+                            <article><span>이산화탄소</span><strong data-sensor-co2="MEETING_ROOM">--</strong><small data-sensor-co2-state="MEETING_ROOM">수신 대기</small></article>
+                        </div>
+                    </section>
                 </div>
                 <form class="sensor-threshold-form" data-sensor-threshold-form hidden>
                     <div class="sensor-threshold-title">
                         <div>
                             <span>센서 임계치</span>
-                            <strong>실습실 환경 기준 설정</strong>
+                            <strong>공간별 환경 기준 설정</strong>
                         </div>
-                        <small>저장 후 현재 기수의 센서 카드에 바로 반영됩니다.</small>
+                        <label class="sensor-threshold-location">
+                            <span>공간</span>
+                            <select name="location">
+                                <option value="LAB">실습실</option>
+                                <option value="OFFICE">사무실</option>
+                                <option value="MEETING_ROOM">회의실</option>
+                            </select>
+                        </label>
                     </div>
                     <div class="sensor-threshold-fields" role="group" aria-label="센서 임계치 입력">
-                        <div class="sensor-threshold-row sensor-threshold-row-range">
+                        <div class="sensor-threshold-row">
                             <span class="sensor-threshold-name">온도</span>
-                            <label><span>최저</span><input name="temperatureMin" type="number" step="0.1" /></label>
-                            <label><span>최고</span><input name="temperatureMax" type="number" step="0.1" /></label>
-                            <em>권장 범위</em>
+                            <label>
+                                <span>조건</span>
+                                <select name="temperatureOperator">
+                                    <option value="GTE">이상</option>
+                                    <option value="LT">미만</option>
+                                    <option value="GT">초과</option>
+                                    <option value="LTE">이하</option>
+                                </select>
+                            </label>
+                            <label><span>임계값</span><input name="temperatureValue" type="number" step="0.1" /></label>
                         </div>
-                        <div class="sensor-threshold-row sensor-threshold-row-range">
+                        <div class="sensor-threshold-row">
                             <span class="sensor-threshold-name">습도</span>
-                            <label><span>최저</span><input name="humidityMin" type="number" step="1" /></label>
-                            <label><span>최고</span><input name="humidityMax" type="number" step="1" /></label>
-                            <em>권장 범위</em>
+                            <label>
+                                <span>조건</span>
+                                <select name="humidityOperator">
+                                    <option value="GTE">이상</option>
+                                    <option value="LT">미만</option>
+                                    <option value="GT">초과</option>
+                                    <option value="LTE">이하</option>
+                                </select>
+                            </label>
+                            <label><span>임계값</span><input name="humidityValue" type="number" step="1" /></label>
                         </div>
                         <div class="sensor-threshold-row">
                             <span class="sensor-threshold-name">CO₂</span>
-                            <label><span>이상</span><input name="co2Max" type="number" step="1" /></label>
-                            <em>경고 기준</em>
+                            <label>
+                                <span>조건</span>
+                                <select name="co2Operator">
+                                    <option value="GTE">이상</option>
+                                    <option value="LT">미만</option>
+                                    <option value="GT">초과</option>
+                                    <option value="LTE">이하</option>
+                                </select>
+                            </label>
+                            <label><span>임계값</span><input name="co2Value" type="number" step="1" /></label>
                         </div>
                     </div>
                     <div class="sensor-threshold-actions">
