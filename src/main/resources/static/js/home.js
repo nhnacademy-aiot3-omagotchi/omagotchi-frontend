@@ -7,7 +7,6 @@ import { createStudyRecords } from "./home/studyRecords.js";
 import { createTimer } from "./home/timer.js";
 import { escapeHtml, formatDuration } from "./home/utils.js";
 
-// 홈 화면에서 갱신하는 주요 UI 요소
 const timerDisplay = document.querySelector("[data-timer-display]");
 const timerToggle = document.querySelector("[data-timer-toggle]");
 const attendanceButton = document.querySelector("[data-attendance-button]");
@@ -16,6 +15,7 @@ const checkOutTime = document.querySelector("[data-check-out-time]");
 const earlyLeave = document.querySelector("[data-early-leave]");
 const lateMinutes = document.querySelector("[data-late-minutes]");
 const homeCharacter = document.querySelector("[data-home-character]");
+const characterWing = document.querySelector("[data-character-wing]");
 const characterStage = document.querySelector("[data-character-stage]");
 const characterInteraction = document.querySelector("[data-character-interaction]");
 const characterBubble = document.querySelector("[data-character-bubble]");
@@ -40,8 +40,14 @@ const presenceList = document.querySelector("[data-presence-list]");
 const presenceRefresh = document.querySelector("[data-presence-refresh]");
 const presenceUpdated = document.querySelector("[data-presence-updated]");
 const bgmPlayerRoot = document.querySelector("[data-bgm-player]");
+const homePage = document.querySelector(".home-page");
+const musicToggle = document.querySelector("[data-home-music-toggle]");
+const attendancePanelToggle = document.querySelector("[data-attendance-panel-toggle]");
+const homeToast = document.querySelector("[data-home-toast]");
+const attendanceDetail = document.querySelector("[data-attendance-panel-toggle]")?.getAttribute("aria-controls")
+    ? document.getElementById(document.querySelector("[data-attendance-panel-toggle]").getAttribute("aria-controls"))
+    : null;
 
-// 로그인 사용자와 캐릭터 선택 결과 복원
 const currentUserEmail = sessionStorage.getItem("omagotchiEmail")
     || localStorage.getItem("omagotchiLastEmail")
     || "guest";
@@ -76,12 +82,10 @@ if (selectedCharacterName !== storedCharacterName) {
     localStorage.setItem(`omagotchiCharacterName:${currentUserEmail}`, selectedCharacterName);
 }
 
-// 백엔드 연동 전 사용자별 상태를 구분하기 위한 저장소 키
 const attendanceKey = `omagotchiAttendance:${currentUserEmail}`;
 const xpKey = `omagotchiXp:${currentUserEmail}`;
 const studyRecordsKey = `omagotchiStudyRecords:${currentUserEmail}`;
 const timerKey = `omagotchiStudyTimer:${currentUserEmail}`;
-const brightnessKey = "omagotchiHomeBrightness";
 const sessionOnlyKeys = [
     "omagotchiEmail",
     "omagotchiUsername",
@@ -96,13 +100,11 @@ const sessionOnlyKeys = [
 ];
 const api = window.OmagotchiApi;
 
-// 오버레이 안에서 사용하는 목록 상태
 let communityFilter = "all";
 let communityKeyword = "";
 let communityPage = 1;
 const communityPageSize = 3;
 
-// 관리자 화면에서 저장한 기수 정보를 사용자 기수 화면에 반영
 function getHomeManagedCohorts() {
     try {
         return JSON.parse(localStorage.getItem("omagotchiCohortOperations") || "[]");
@@ -135,14 +137,21 @@ function renderHomeCohortCards() {
     }).join("");
 }
 const communityPosts = [];
+let homeToastTimer;
 
-function setBrightness(value) {
-    document.documentElement.style.setProperty("--home-brightness", `${value}%`);
-    localStorage.setItem(brightnessKey, value);
+function showHomeToast(message) {
+    if (!homeToast) return;
+    window.clearTimeout(homeToastTimer);
+    homeToast.textContent = message;
+    homeToast.classList.add("is-visible");
+    homeToastTimer = window.setTimeout(() => {
+        homeToast.classList.remove("is-visible");
+    }, 3200);
 }
 
 const characterController = createCharacter({
     image: homeCharacter,
+    wing: characterWing,
     stage: characterStage,
     interaction: characterInteraction,
     bubble: characterBubble,
@@ -216,7 +225,11 @@ const attendanceController = createAttendance({
     streakList,
     storageKey: attendanceKey,
     api: api?.attendance,
-    onChange: () => presenceController?.render()
+    onCheckOutSuccess: () => showHomeToast("퇴실 처리됐어요. 타이머는 계속 사용할 수 있어요."),
+    onChange: ({ streakCount: currentStreakCount } = {}) => {
+        characterController.setAttendanceStreak(currentStreakCount);
+        presenceController?.render();
+    }
 });
 
 presenceController = createPresence({
@@ -239,7 +252,59 @@ presenceController = createPresence({
     isOverlayOpen: () => document.body.classList.contains("has-home-overlay")
 });
 
-// 홈 메뉴별 오버레이 제목과 본문 템플릿
+function setBgmPanelOpen(open) {
+    homePage?.classList.toggle("is-bgm-open", open);
+    musicToggle?.setAttribute("aria-expanded", String(open));
+}
+
+function setAttendancePanelOpen(open) {
+    homePage?.classList.toggle("is-attendance-panel-open", open);
+    attendancePanelToggle?.setAttribute("aria-expanded", String(open));
+}
+
+musicToggle?.addEventListener("click", () => {
+    const nextOpen = !homePage?.classList.contains("is-bgm-open");
+    setAttendancePanelOpen(false);
+    setBgmPanelOpen(nextOpen);
+});
+
+attendancePanelToggle?.addEventListener("click", () => {
+    const nextOpen = !homePage?.classList.contains("is-attendance-panel-open");
+    setBgmPanelOpen(false);
+    setAttendancePanelOpen(nextOpen);
+});
+
+document.addEventListener("click", (event) => {
+    const target = event.target;
+    if (!(target instanceof Node)) return;
+
+    if (
+        homePage?.classList.contains("is-bgm-open")
+        && bgmPlayerRoot
+        && musicToggle
+        && !bgmPlayerRoot.contains(target)
+        && !musicToggle.contains(target)
+    ) {
+        setBgmPanelOpen(false);
+    }
+
+    if (
+        homePage?.classList.contains("is-attendance-panel-open")
+        && attendanceDetail
+        && attendancePanelToggle
+        && !attendanceDetail.contains(target)
+        && !attendancePanelToggle.contains(target)
+    ) {
+        setAttendancePanelOpen(false);
+    }
+});
+
+document.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape") return;
+    setBgmPanelOpen(false);
+    setAttendancePanelOpen(false);
+});
+
 const overlayTitles = {
     help: "도움말",
     progress: "진행",
@@ -251,7 +316,6 @@ const overlayTitles = {
     settings: "설정",
     password: "비밀번호 변경"
 };
-// 메뉴 오버레이
 const overlayContent = {
     help: `
         <div class="help-accordion">
@@ -262,6 +326,7 @@ const overlayContent = {
                     <li><strong>입실하기</strong>: 오늘 출석을 기록하고 담당 기수 실습실에 입실</li>
                     <li><strong>외출하기</strong>: 잠시 자리를 비운 상태로 변경</li>
                     <li><strong>퇴실하기</strong>: 오늘 공간 이용 종료</li>
+                    <li>출석부와 연속 출석은 평일 기준으로 표시하며 주말은 제외합니다.</li>
                 </ul>
 
                 <h4>사용자 상태</h4>
@@ -294,6 +359,7 @@ const overlayContent = {
                     <li>출석, 학습 기록, 퀘스트 완료로 경험치를 획득합니다.</li>
                     <li>경험치가 기준에 도달하면 레벨이 상승합니다.</li>
                     <li>캐릭터를 클릭하면 움직임과 말풍선 반응이 나타납니다.</li>
+                    <li>평일 출석 스트릭에 따라 캐릭터 뒤에 날개가 표시됩니다.</li>
                     <li>진행 메뉴에서 완료한 퀘스트의 보상을 받을 수 있습니다.</li>
                 </ul>
             </div>
@@ -321,6 +387,7 @@ const overlayContent = {
                     <li>사용자 목록에서 파티원을 초대할 수 있습니다.</li>
                     <li>파티를 만든 후 이용 가능한 회의실에 입장합니다.</li>
                     <li>현재 파티 인원과 각 사용자의 상태를 확인합니다.</li>
+                    <li>홈 하단 채팅 바는 GLOBAL 채팅방과 COHORT 채팅방을 구분합니다.</li>
                 </ul>
             </div>
         </details>
@@ -335,7 +402,7 @@ const overlayContent = {
                     <li><strong>학습 기록</strong>: 저장한 구간을 일간·월간·연간으로 확인하고 수정</li>
                     <li><strong>공간</strong>: 실습실, 회의실, 도서관 이용</li>
                     <li><strong>커뮤</strong>: 공지 및 자유 게시판 이용</li>
-                    <li><strong>설정</strong>: 화면 밝기, 비밀번호 변경, 로그아웃</li>
+                    <li><strong>설정</strong>: 비밀번호 변경, 로그아웃</li>
                 </ul>
             </div>
         </details>
@@ -496,10 +563,6 @@ const overlayContent = {
     `,
     settings: `
         <div class="overlay-settings-list">
-            <label>
-                <span><strong>화면 밝기</strong><em>홈 화면의 초록 배경 밝기를 조절합니다.</em></span>
-                <input type="range" min="84" max="116" value="${localStorage.getItem(brightnessKey) || "100"}" data-overlay-brightness />
-            </label>
             <button type="button" data-open-password-overlay>
                 <span><strong>비밀번호 변경</strong><em>현재 화면에서 로그인 비밀번호를 변경합니다.</em></span>
                 <span>열기</span>
@@ -737,7 +800,6 @@ homeOverlayRoot?.addEventListener("click", (event) => {
     const closeTarget = event.target.closest("[data-close-home-overlay]");
     const tabButton = event.target.closest("[data-overlay-tab]");
     const claimButton = event.target.closest("[data-home-claim]");
-    const brightnessInput = event.target.closest("[data-overlay-brightness]");
     const passwordButton = event.target.closest("[data-open-password-overlay]");
     const logoutButton = event.target.closest("[data-logout]");
     const communityFilterButton = event.target.closest("[data-community-filter]");
@@ -786,11 +848,6 @@ homeOverlayRoot?.addEventListener("click", (event) => {
         return;
     }
 
-    if (brightnessInput) {
-        setBrightness(brightnessInput.value);
-        return;
-    }
-
     if (passwordButton) {
         openHomeOverlay("password");
         return;
@@ -803,18 +860,12 @@ homeOverlayRoot?.addEventListener("click", (event) => {
 
 // 슬라이더와 검색창처럼 입력 즉시 반영되는 이벤트
 homeOverlayRoot?.addEventListener("input", (event) => {
-    const brightnessInput = event.target.closest("[data-overlay-brightness]");
     const communitySearch = event.target.closest("[data-community-search]");
 
     if (communitySearch) {
         communityKeyword = communitySearch.value;
         communityPage = 1;
         renderCommunity();
-        return;
-    }
-
-    if (brightnessInput) {
-        setBrightness(brightnessInput.value);
     }
 });
 
@@ -897,8 +948,6 @@ document.addEventListener("keydown", (event) => {
 });
 
 // 저장된 사용자 설정을 적용한 뒤 최초 화면 렌더링
-const savedBrightness = localStorage.getItem(brightnessKey) || "100";
-setBrightness(savedBrightness);
 characterController.init();
 timerController.init();
 levelController.render();

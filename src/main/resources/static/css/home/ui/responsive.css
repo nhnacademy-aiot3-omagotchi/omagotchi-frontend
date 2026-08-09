@@ -1,0 +1,76 @@
+@media (max-width: 980px) {
+    .character-badge {
+        width: clamp(250px, 32vw, 320px);
+    }
+
+    .character-badge span {
+        width: auto;
+    }
+
+    .xp-area {
+        left: 50%;
+        right: auto;
+        width: clamp(330px, 42vw, 520px);
+        transform: translateX(-50%);
+    }
+
+    .home-chat-bar {
+        left: 14px;
+        right: auto;
+        bottom: 14px;
+        width: 302px;
+    }
+}
+
+@media (max-width: 900px) {
+    .bgm-player {
+        right: 14px;
+        bottom: 82px;
+        width: min(390px, calc(100vw - 28px));
+    }
+
+    .attendance-detail {
+        right: 14px;
+        bottom: 82px;
+        width: calc(100vw - 28px);
+    }
+}
+
+@media (max-width: 760px) {
+    .companion-panel {
+        margin-top: clamp(58px, 10vh, 104px);
+    }
+
+    .character-badge {
+        left: 50%;
+        width: min(320px, calc(100vw - 32px));
+        max-width: calc(100vw - 32px);
+        transform: translateX(-50%);
+    }
+
+    .character-badge span {
+        width: calc(100vw - 118px);
+    }
+
+    .xp-area {
+        left: 16px;
+        right: 16px;
+        bottom: 76px;
+    }
+
+    .home-chat-bar {
+        left: 16px;
+        right: auto;
+        bottom: 132px;
+        width: min(318px, calc(100vw - 32px));
+        grid-template-columns: 82px minmax(0, 1fr);
+    }
+
+    .home-chat-tabs {
+        grid-template-columns: 1fr;
+    }
+
+    .home-character-wing {
+        width: clamp(220px, 58vw, 320px);
+    }
+}

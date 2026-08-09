@@ -7,6 +7,7 @@
 
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon_11.gif" th:href="@{/favicon_11.gif}" />
     <link rel="stylesheet" href="/css/home.css" th:href="@{/css/home.css}" />
+    <link rel="stylesheet" href="/css/home/home-ui.css" th:href="@{/css/home/home-ui.css}" />
     <link rel="stylesheet" href="/css/studyRecords.css" th:href="@{/css/studyRecords.css}" />
     <link rel="stylesheet" href="/css/gameFont.css" th:href="@{/css/gameFont.css}" />
     <link rel="stylesheet" href="/css/spaceRoom.css" th:href="@{/css/spaceRoom.css}" />
@@ -56,7 +57,7 @@
             </a>
         </nav>
 
-        <aside class="bgm-player" data-bgm-player aria-label="배경 음악">
+        <aside class="bgm-player" id="home-bgm-player" data-bgm-player aria-label="배경 음악">
             <div class="bgm-player-copy">
                 <span>BGM</span>
                 <strong data-bgm-title>준비 중</strong>
@@ -155,12 +156,42 @@
             퇴실하기
         </button>
 
+        <button
+                class="home-dock-button home-music-toggle"
+                type="button"
+                data-home-music-toggle
+                aria-expanded="false"
+                aria-controls="home-bgm-player"
+                aria-label="BGM 열기"
+        >
+            <img src="/images/app/music.png" alt="" aria-hidden="true" />
+        </button>
+
+        <button
+                class="home-dock-button home-attendance-toggle"
+                type="button"
+                data-attendance-panel-toggle
+                aria-expanded="false"
+                aria-controls="attendance-detail"
+                aria-label="출석부 열기"
+        >
+            <img src="/images/app/calendar.png" alt="" aria-hidden="true" />
+        </button>
+
         <section class="companion-panel" aria-label="캐릭터 상태">
             <div class="character-badge" data-presence="online">
                 <span data-character-name>오마고치</span>
-                <strong data-character-level>Lv 1</strong>
+                <strong data-character-level>1</strong>
             </div>
             <div class="home-character-stage" data-character-stage>
+                <img
+                        class="home-character-wing"
+                        data-character-wing
+                        src=""
+                        alt=""
+                        aria-hidden="true"
+                        hidden
+                />
                 <p class="character-speech-bubble" data-character-bubble aria-live="polite">
                     오늘도 같이 공부해요!
                 </p>
@@ -187,6 +218,21 @@
                     <span data-next-level>다음 레벨까지 50xp</span>
                 </div>
             </div>
+            <section class="home-chat-bar" aria-label="실시간 채팅">
+                <div class="home-chat-tabs" role="tablist" aria-label="채팅방">
+                    <button type="button" class="is-active" role="tab" aria-selected="true">
+                        <span class="home-chat-tab-icon home-chat-tab-icon-global" aria-hidden="true"></span>
+                        GLOBAL
+                    </button>
+                    <button type="button" role="tab" aria-selected="false">
+                        COHORT
+                    </button>
+                </div>
+                <label class="home-chat-input">
+                    <span class="sr-only">채팅 메시지</span>
+                    <input type="text" placeholder="메시지 입력" disabled />
+                </label>
+            </section>
         </section>
     </section>
 
@@ -220,13 +266,11 @@
                     <span data-calendar-period>이번 달</span>
                 </div>
                 <div class="calendar-grid" aria-label="출석 달력" data-calendar-grid>
-                    <span class="calendar-weekday is-weekend">일</span>
                     <span class="calendar-weekday">월</span>
                     <span class="calendar-weekday">화</span>
                     <span class="calendar-weekday">수</span>
                     <span class="calendar-weekday">목</span>
                     <span class="calendar-weekday">금</span>
-                    <span class="calendar-weekday is-weekend">토</span>
                 </div>
             </section>
 
@@ -243,6 +287,7 @@
 </main>
 
 <div class="home-overlay-root" data-home-overlay-root aria-live="polite"></div>
+<p class="home-toast" data-home-toast role="status" aria-live="polite"></p>
 <th:block th:replace="~{fragments/home-notification-panel :: notificationPanelTemplate}"></th:block>
 
 <script src="/js/api.js" th:src="@{/js/api.js}"></script>

@@ -1,5 +1,6 @@
 export function createCharacter({
     image,
+    wing,
     stage,
     interaction,
     bubble,
@@ -12,8 +13,14 @@ export function createCharacter({
     let clickCount = 0;
     let clickResetTimer = null;
     let studying = false;
-    // 메시지 띄우기
-    // [UI-KEEP] 캐릭터 기본 대사 -> 유지
+
+    const streakWings = [
+        null,
+        "/images/wing/dia/diamond_12.gif",
+        "/images/wing/grand/goorandmaster_12.gif",
+        "/images/wing/mas/master_12.gif"
+    ];
+
     function getIdleMessage() {
         return studying ? "집중하고 있어요!" : "오늘도 같이 공부해요!";
     }
@@ -41,13 +48,37 @@ export function createCharacter({
         studying = isStudying;
         stage?.classList.toggle("is-studying", isStudying);
     }
-    // [UI-KKEEP] 캐릭터 클릭 반응 -> 유지
+
+    function setAttendanceStreak(count = 0) {
+        if (!wing) return;
+
+        const tier = Math.min(Math.max(Number(count) || 0, 0), 3);
+        const nextWing = streakWings[tier];
+
+        if (!nextWing) {
+            wing.hidden = true;
+            wing.removeAttribute("src");
+            stage?.classList.remove("has-streak-wing");
+            return;
+        }
+
+        if (!wing.src.endsWith(nextWing)) {
+            wing.src = nextWing;
+        }
+        wing.hidden = false;
+        stage?.classList.add("has-streak-wing");
+    }
+
     function handleCharacterClick() {
         clickCount += 1;
         const messages = ["좋아요!", "같이 공부해요!", "한 번 더!", "오늘도 성장 중!"];
 
         interaction.classList.remove("is-reacting");
-        window.requestAnimationFrame(() => interaction.classList.add("is-reacting"));
+        stage?.classList.remove("is-reacting");
+        window.requestAnimationFrame(() => {
+            interaction.classList.add("is-reacting");
+            stage?.classList.add("is-reacting");
+        });
 
         if (clickCount === 10) {
             showMessage("그만 눌러!", 5000);
@@ -80,9 +111,10 @@ export function createCharacter({
         interaction?.addEventListener("animationend", (event) => {
             if (event.animationName === "character-play-hop") {
                 interaction.classList.remove("is-reacting");
+                stage?.classList.remove("is-reacting");
             }
         });
     }
 
-    return { init, showMessage, setStudyState };
+    return { init, showMessage, setStudyState, setAttendanceStreak };
 }
