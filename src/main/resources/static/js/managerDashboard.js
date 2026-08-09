@@ -4,13 +4,21 @@ const OPERATIONS_KEY = "omagotchiCohortOperations";
 const APPLICATIONS_KEY = "omagotchiCohortApplications";
 const NOTICES_KEY = "omagotchiCohortNotices";
 const AUDITS_KEY = "omagotchiCohortAudits";
+const SENSOR_LOCATIONS = [
+    { id: "LAB", name: "실습실" },
+    { id: "OFFICE", name: "사무실" },
+    { id: "MEETING_ROOM", name: "회의실" }
+];
+const SENSOR_OPERATORS = {
+    GTE: "이상",
+    LT: "미만",
+    GT: "초과",
+    LTE: "이하"
+};
 const DEFAULT_SENSOR_THRESHOLDS = {
-    temperatureMin: 20,
-    temperatureMax: 26,
-    humidityMin: 40,
-    humidityMax: 60,
-    co2Max: 1000,
-    occupancyMax: 30
+    temperature: { operator: "GT", value: 26 },
+    humidity: { operator: "LT", value: 40 },
+    co2: { operator: "GTE", value: 1000 }
 };
 
 const today = new Date().toISOString().slice(0, 10);
@@ -143,13 +151,97 @@ function setBubble(message) {
     elements.bubble.innerHTML = message;
 }
 
-function sensorThresholds(cohort = currentCohort()) {
-    cohort.sensor ??= {};
-    cohort.sensor.thresholds = {
-        ...DEFAULT_SENSOR_THRESHOLDS,
-        ...(cohort.sensor.thresholds || {})
+function normalizeThresholds(thresholds = {}) {
+    return {
+        temperature: {
+            ...DEFAULT_SENSOR_THRESHOLDS.temperature,
+            ...(thresholds.temperature || {}),
+            operator: thresholds.temperatureOperator || thresholds.temperature?.operator || DEFAULT_SENSOR_THRESHOLDS.temperature.operator,
+            value: Number(thresholds.temperatureValue ?? thresholds.temperature?.value ?? thresholds.temperatureMax ?? DEFAULT_SENSOR_THRESHOLDS.temperature.value)
+        },
+        humidity: {
+            ...DEFAULT_SENSOR_THRESHOLDS.humidity,
+            ...(thresholds.humidity || {}),
+            operator: thresholds.humidityOperator || thresholds.humidity?.operator || DEFAULT_SENSOR_THRESHOLDS.humidity.operator,
+            value: Number(thresholds.humidityValue ?? thresholds.humidity?.value ?? thresholds.humidityMin ?? DEFAULT_SENSOR_THRESHOLDS.humidity.value)
+        },
+        co2: {
+            ...DEFAULT_SENSOR_THRESHOLDS.co2,
+            ...(thresholds.co2 || {}),
+            operator: thresholds.co2Operator || thresholds.co2?.operator || DEFAULT_SENSOR_THRESHOLDS.co2.operator,
+            value: Number(thresholds.co2Value ?? thresholds.co2?.value ?? thresholds.co2Max ?? DEFAULT_SENSOR_THRESHOLDS.co2.value)
+        }
     };
-    return cohort.sensor.thresholds;
+}
+
+function sensorThresholds(cohort = currentCohort(), location = "LAB") {
+    cohort.sensor ??= {};
+    cohort.sensor.thresholds ??= {};
+    const source = cohort.sensor.thresholds[location] || cohort.sensor.thresholds;
+    return normalizeThresholds(source);
+}
+
+function sensorPayloadByLocation(cohort = currentCohort()) {
+    cohort.sensor ??= {};
+    const result = new Map(SENSOR_LOCATIONS.map((location) => [location.id, {}]));
+    const source = Array.isArray(cohort.sensor.locations)
+        ? cohort.sensor.locations
+        : Array.isArray(cohort.sensors)
+            ? cohort.sensors
+            : Array.isArray(cohort.sensorReadings)
+                ? cohort.sensorReadings
+                : [];
+
+    source.forEach((sensor, index) => {
+        const location = String(sensor.location || sensor.locationType || sensor.place || sensor.roomType || SENSOR_LOCATIONS[index]?.id || "").toUpperCase();
+        if (!result.has(location)) return;
+        result.set(location, sensor);
+    });
+
+    if (!source.length) {
+        result.set("LAB", cohort.sensor);
+    }
+
+    return result;
+}
+
+function isThresholdWarning(value, rule) {
+    const numericValue = Number(value);
+    const threshold = Number(rule?.value);
+
+    if (!Number.isFinite(numericValue) || !Number.isFinite(threshold)) return false;
+
+    return {
+        GTE: numericValue >= threshold,
+        LT: numericValue < threshold,
+        GT: numericValue > threshold,
+        LTE: numericValue <= threshold
+    }[rule.operator] || false;
+}
+
+function formatThreshold(metric, rule) {
+    const unit = metric === "temperature" ? "℃" : metric === "humidity" ? "%" : "ppm";
+    return `${SENSOR_OPERATORS[rule.operator] || rule.operator} ${rule.value}${unit}`;
+}
+
+function renderSensorThresholdForm() {
+    const form = elements.sensorThresholdForm;
+    if (!form) return;
+
+    const location = form.elements.namedItem("location")?.value || "LAB";
+    const thresholds = sensorThresholds(currentCohort(), location);
+    const bindings = {
+        temperature: "temperature",
+        humidity: "humidity",
+        co2: "co2"
+    };
+
+    Object.entries(bindings).forEach(([metric, prefix]) => {
+        const operator = form.elements.namedItem(`${prefix}Operator`);
+        const value = form.elements.namedItem(`${prefix}Value`);
+        if (operator) operator.value = thresholds[metric].operator;
+        if (value) value.value = thresholds[metric].value;
+    });
 }
 
 function addAudit(action, target, detail) {
@@ -194,6 +286,7 @@ function renderSummary() {
     const cohort = currentCohort();
     if (!cohort) return;
     cohort.sensor ??= {};
+    const labSensor = sensorPayloadByLocation(cohort).get("LAB") || {};
     const activeMembers = cohort.members.filter((member) => member.status === "ACTIVE");
     const pending = applications.filter((item) => item.cohortId === cohort.id && item.status === "PENDING");
     const attendance = cohort.attendance.filter((item) => item.date === today && item.checkIn !== "-");
@@ -204,8 +297,8 @@ function renderSummary() {
     document.querySelector("[data-summary-members]").textContent = activeMembers.length;
     document.querySelector("[data-summary-applications]").textContent = pending.length;
     document.querySelector("[data-summary-attendance]").textContent = attendance.length;
-    document.querySelector("[data-summary-co2]").textContent = cohort.sensor.co2 == null ? "--" : `${cohort.sensor.co2}ppm`;
-    document.querySelector("[data-summary-sensor-status]").textContent = cohort.sensor.updatedAt || "수신 데이터 없음";
+    document.querySelector("[data-summary-co2]").textContent = labSensor.co2 == null ? "--" : `${labSensor.co2}ppm`;
+    document.querySelector("[data-summary-sensor-status]").textContent = labSensor.updatedAt || "수신 데이터 없음";
     document.querySelector("[data-todo-applications]").textContent = `${pending.length}건`;
     document.querySelector("[data-todo-late]").textContent = `${late.length}명`;
     document.querySelector("[data-todo-community]").textContent = `${reported.length}건`;
@@ -293,31 +386,37 @@ function renderAttendance() {
 function renderSensors() {
     const cohort = currentCohort();
     cohort.sensor ??= {};
-    const sensor = cohort.sensor;
-    const thresholds = sensorThresholds();
-    const temperatureWarning = sensor.temperature != null
-        && (sensor.temperature < thresholds.temperatureMin || sensor.temperature > thresholds.temperatureMax);
-    const humidityWarning = sensor.humidity != null
-        && (sensor.humidity < thresholds.humidityMin || sensor.humidity > thresholds.humidityMax);
-    const co2Warning = sensor.co2 != null && sensor.co2 >= thresholds.co2Max;
-    const occupancyWarning = sensor.occupancy != null && sensor.occupancy > thresholds.occupancyMax;
-    document.querySelector("[data-sensor-temperature]").textContent = sensor.temperature == null ? "--" : `${sensor.temperature}℃`;
-    document.querySelector("[data-sensor-humidity]").textContent = sensor.humidity == null ? "--" : `${sensor.humidity}%`;
-    document.querySelector("[data-sensor-co2]").textContent = sensor.co2 == null ? "--" : `${sensor.co2}ppm`;
-    document.querySelector("[data-sensor-occupancy]").textContent = `${sensor.occupancy ?? 0}명`;
-    document.querySelector("[data-sensor-updated]").textContent = sensor.updatedAt ? `마지막 수신 ${sensor.updatedAt}` : "수신 데이터 없음";
-    document.querySelector("[data-sensor-temperature-range]").textContent = `권장 ${thresholds.temperatureMin}~${thresholds.temperatureMax}℃`;
-    document.querySelector("[data-sensor-humidity-range]").textContent = `권장 ${thresholds.humidityMin}~${thresholds.humidityMax}%`;
-    document.querySelector("[data-sensor-occupancy-range]").textContent = `최대 ${thresholds.occupancyMax}명`;
-    document.querySelector("[data-sensor-co2-state]").textContent = co2Warning ? "환기가 필요합니다" : sensor.co2 == null ? "수신 대기" : "쾌적";
-    document.querySelector("[data-sensor-temperature]").closest("article").classList.toggle("is-warning", temperatureWarning);
-    document.querySelector("[data-sensor-humidity]").closest("article").classList.toggle("is-warning", humidityWarning);
-    document.querySelector("[data-sensor-co2]").closest("article").classList.toggle("is-warning", co2Warning);
-    document.querySelector("[data-sensor-occupancy]").closest("article").classList.toggle("is-warning", occupancyWarning);
-    Object.entries(thresholds).forEach(([key, value]) => {
-        const field = elements.sensorThresholdForm.elements.namedItem(key);
-        if (field) field.value = value;
+    const sensors = sensorPayloadByLocation(cohort);
+    let lastUpdated = "";
+
+    SENSOR_LOCATIONS.forEach((location) => {
+        const sensor = sensors.get(location.id) || {};
+        const thresholds = sensorThresholds(cohort, location.id);
+        const temperatureWarning = isThresholdWarning(sensor.temperature, thresholds.temperature);
+        const humidityWarning = isThresholdWarning(sensor.humidity, thresholds.humidity);
+        const co2Warning = isThresholdWarning(sensor.co2, thresholds.co2);
+
+        const temperature = document.querySelector(`[data-sensor-temperature="${location.id}"]`);
+        const humidity = document.querySelector(`[data-sensor-humidity="${location.id}"]`);
+        const co2 = document.querySelector(`[data-sensor-co2="${location.id}"]`);
+
+        temperature.textContent = sensor.temperature == null ? "--" : `${sensor.temperature}℃`;
+        humidity.textContent = sensor.humidity == null ? "--" : `${sensor.humidity}%`;
+        co2.textContent = sensor.co2 == null ? "--" : `${sensor.co2}ppm`;
+        document.querySelector(`[data-sensor-temperature-range="${location.id}"]`).textContent = formatThreshold("temperature", thresholds.temperature);
+        document.querySelector(`[data-sensor-humidity-range="${location.id}"]`).textContent = formatThreshold("humidity", thresholds.humidity);
+        document.querySelector(`[data-sensor-co2-state="${location.id}"]`).textContent = co2Warning ? "환기가 필요합니다" : sensor.co2 == null ? "수신 대기" : "쾌적";
+        document.querySelector(`[data-sensor-updated-for="${location.id}"]`).textContent = sensor.updatedAt || "수신 데이터 없음";
+
+        temperature.closest("article").classList.toggle("is-warning", temperatureWarning);
+        humidity.closest("article").classList.toggle("is-warning", humidityWarning);
+        co2.closest("article").classList.toggle("is-warning", co2Warning);
+
+        lastUpdated = sensor.updatedAt || lastUpdated;
     });
+
+    document.querySelector("[data-sensor-updated]").textContent = lastUpdated ? `마지막 수신 ${lastUpdated}` : "수신 데이터 없음";
+    renderSensorThresholdForm();
 }
 
 function renderCommunity() {
@@ -525,31 +624,37 @@ elements.attendanceList.addEventListener("click", (event) => {
     });
 });
 
-// 실습실 센서 임계치 수정
+// 공간별 센서 임계치 수정
 document.querySelector("[data-open-sensor-thresholds]").addEventListener("click", () => {
+    renderSensorThresholdForm();
     elements.sensorThresholdForm.hidden = false;
 });
 document.querySelector("[data-cancel-sensor-thresholds]").addEventListener("click", () => {
     elements.sensorThresholdForm.hidden = true;
     renderSensors();
 });
+elements.sensorThresholdForm.elements.namedItem("location")?.addEventListener("change", renderSensorThresholdForm);
 elements.sensorThresholdForm.addEventListener("submit", (event) => {
     event.preventDefault();
     const form = elements.sensorThresholdForm;
+    const location = form.elements.namedItem("location").value;
     const next = {
-        temperatureMin: Number(form.elements.namedItem("temperatureMin").value),
-        temperatureMax: Number(form.elements.namedItem("temperatureMax").value),
-        humidityMin: Number(form.elements.namedItem("humidityMin").value),
-        humidityMax: Number(form.elements.namedItem("humidityMax").value),
-        co2Max: Number(form.elements.namedItem("co2Max").value),
-        occupancyMax: Number(form.elements.namedItem("occupancyMax").value)
+        temperature: {
+            operator: form.elements.namedItem("temperatureOperator").value,
+            value: Number(form.elements.namedItem("temperatureValue").value)
+        },
+        humidity: {
+            operator: form.elements.namedItem("humidityOperator").value,
+            value: Number(form.elements.namedItem("humidityValue").value)
+        },
+        co2: {
+            operator: form.elements.namedItem("co2Operator").value,
+            value: Number(form.elements.namedItem("co2Value").value)
+        }
     };
 
-    const invalid = Object.values(next).some((value) => Number.isNaN(value))
-        || next.temperatureMin > next.temperatureMax
-        || next.humidityMin > next.humidityMax
-        || next.co2Max < 1
-        || next.occupancyMax < 1;
+    const invalid = !SENSOR_LOCATIONS.some((item) => item.id === location)
+        || Object.values(next).some((rule) => !SENSOR_OPERATORS[rule.operator] || !Number.isFinite(rule.value));
 
     if (invalid) {
         setBubble("임계치 값을<br />확인해 주세요.");
@@ -558,11 +663,15 @@ elements.sensorThresholdForm.addEventListener("submit", (event) => {
 
     const cohort = currentCohort();
     cohort.sensor ??= {};
-    cohort.sensor.thresholds = next;
+    cohort.sensor.thresholds = {
+        ...(cohort.sensor.thresholds || {}),
+        [location]: next
+    };
+    const locationName = SENSOR_LOCATIONS.find((item) => item.id === location)?.name || location;
     addAudit(
         "센서 임계치 수정",
-        cohort.name,
-        `온도 ${next.temperatureMin}~${next.temperatureMax}℃, 습도 ${next.humidityMin}~${next.humidityMax}%, CO₂ ${next.co2Max}ppm, 재실 ${next.occupancyMax}명`
+        `${cohort.name} ${locationName}`,
+        `온도 ${formatThreshold("temperature", next.temperature)}, 습도 ${formatThreshold("humidity", next.humidity)}, CO₂ ${formatThreshold("co2", next.co2)}`
     );
     elements.sensorThresholdForm.hidden = true;
     saveState();

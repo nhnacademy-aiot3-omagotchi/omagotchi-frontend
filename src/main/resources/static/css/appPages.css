@@ -236,6 +236,52 @@ textarea {
     padding: 24px;
 }
 
+.help-card-wide {
+    grid-column: 1 / -1;
+}
+
+.streak-wing-guide {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+    margin: 18px 0 0;
+    padding: 0;
+    list-style: none;
+}
+
+.streak-wing-guide li {
+    display: grid;
+    justify-items: center;
+    gap: 8px;
+    padding: 16px 12px;
+    border: 2px solid rgba(9, 9, 9, 0.14);
+    border-radius: 16px;
+    background: #ffffff;
+    text-align: center;
+}
+
+.streak-wing-guide img {
+    width: 88px;
+    height: 88px;
+    object-fit: contain;
+    image-rendering: pixelated;
+}
+
+.streak-wing-guide strong,
+.streak-wing-guide span {
+    font-weight: 900;
+}
+
+.streak-wing-guide strong {
+    color: var(--ink);
+    font-size: 15px;
+}
+
+.streak-wing-guide span {
+    color: #10835a;
+    font-size: 13px;
+}
+
 /* 기수 정보 */
 .cohort-meta {
     display: flex;
@@ -368,6 +414,10 @@ textarea {
     }
 
     .setting-row {
+        grid-template-columns: 1fr;
+    }
+
+    .streak-wing-guide {
         grid-template-columns: 1fr;
     }
 }

@@ -360,8 +360,26 @@ const overlayContent = {
                     <li>경험치가 기준에 도달하면 레벨이 상승합니다.</li>
                     <li>캐릭터를 클릭하면 움직임과 말풍선 반응이 나타납니다.</li>
                     <li>평일 출석 스트릭에 따라 캐릭터 뒤에 날개가 표시됩니다.</li>
+                    <li>1일차에는 셀렌, 2일차에는 이트, 3일차 이상에는 세슘 날개가 장착됩니다.</li>
                     <li>진행 메뉴에서 완료한 퀘스트의 보상을 받을 수 있습니다.</li>
                 </ul>
+                <ol class="help-wing-guide" aria-label="출석 스트릭 날개 단계">
+                    <li>
+                        <img src="/images/wing/dia/셀렌.png" alt="셀렌 날개" />
+                        <strong>1일차</strong>
+                        <span>셀렌</span>
+                    </li>
+                    <li>
+                        <img src="/images/wing/mas/이트.png" alt="이트 날개" />
+                        <strong>2일차</strong>
+                        <span>이트</span>
+                    </li>
+                    <li>
+                        <img src="/images/wing/grand/세슘.png" alt="세슘 날개" />
+                        <strong>3일차 이상</strong>
+                        <span>세슘</span>
+                    </li>
+                </ol>
             </div>
         </details>
 
