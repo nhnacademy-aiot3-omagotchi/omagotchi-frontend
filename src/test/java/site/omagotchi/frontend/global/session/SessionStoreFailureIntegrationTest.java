@@ -79,6 +79,8 @@ class SessionStoreFailureIntegrationTest {
 
         // Then: HTML 오류 Page가 아닌 공통 JSON 503 응답
         assertThat(response.statusCode()).isEqualTo(503);
+        assertThat(response.headers().firstValue(HttpHeaders.CACHE_CONTROL))
+                .contains("no-store");
         assertThat(response.headers().firstValue(HttpHeaders.CONTENT_TYPE))
                 .hasValueSatisfying(contentType -> assertThat(contentType)
                         .startsWith("application/json"));

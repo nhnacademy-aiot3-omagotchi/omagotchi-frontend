@@ -1,6 +1,8 @@
 package site.omagotchi.frontend.global.session;
 
 import io.lettuce.core.RedisCommandTimeoutException;
+import jakarta.servlet.DispatcherType;
+import jakarta.servlet.RequestDispatcher;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.dao.DataAccessResourceFailureException;
@@ -165,21 +167,18 @@ class SessionStoreErrorFilterTest {
     }
 
     @Test
-    @DisplayName("중첩 ERROR dispatch의 Redis 장애에 대한 503 응답 Writer 위임")
-    void delegatesNestedErrorDispatchFailureToResponseWriter() throws Exception {
-        // Given: Spring Session과 같은 중첩 ERROR dispatch 상태
+    @DisplayName("ERROR dispatch의 Redis 장애에 대한 503 응답 Writer 위임")
+    void delegatesErrorDispatchFailureToResponseWriter() throws Exception {
+        // Given: Servlet Container의 별도 ERROR dispatch
         SessionStoreFailureResponseWriter responseWriter =
                 mock(SessionStoreFailureResponseWriter.class);
         SessionStoreErrorFilter filter = new SessionStoreErrorFilter(responseWriter);
         MockHttpServletRequest request = new MockHttpServletRequest("GET", "/home");
-        request.setDispatcherType(jakarta.servlet.DispatcherType.ERROR);
-        request.setAttribute(
-                SessionStoreErrorFilter.class.getName() + ".FILTERED",
-                Boolean.TRUE
-        );
+        request.setDispatcherType(DispatcherType.ERROR);
+        request.setAttribute(RequestDispatcher.ERROR_REQUEST_URI, "/home");
         MockHttpServletResponse response = new MockHttpServletResponse();
 
-        // When: 중첩 ERROR dispatch의 Redis 연결 실패
+        // When: ERROR dispatch의 Redis 연결 실패
         filter.doFilter(request, response, (ignoredRequest, ignoredResponse) -> {
             throw new RedisConnectionFailureException("connection refused");
         });

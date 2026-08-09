@@ -139,6 +139,47 @@ class SessionStoreFailureResponseWriterTest {
                 .contains("서비스를 일시적으로 사용할 수 없습니다");
     }
 
+    @Test
+    @DisplayName("오류 View가 응답 전송 뒤 실패하면 재작성 없이 종료")
+    void doesNotResetCommittedResponseAfterRenderingFails() throws Exception {
+        // Given: 일부 HTML을 전송한 뒤 실패하는 공통 오류 View
+        ViewResolver committedFailingViewResolver = (viewName, locale) -> new View() {
+            @Override
+            public String getContentType() {
+                return "text/html";
+            }
+
+            @Override
+            public void render(
+                    Map<String, ?> model,
+                    HttpServletRequest request,
+                    HttpServletResponse response
+            ) throws Exception {
+                response.getWriter().write("partial error page");
+                response.flushBuffer();
+                throw new IllegalStateException("render failure after commit");
+            }
+        };
+        SessionStoreFailureResponseWriter committedFailingWriter =
+                new SessionStoreFailureResponseWriter(
+                        committedFailingViewResolver,
+                        apiErrorResponseWriter
+                );
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/home");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        // When: Redis Session 장애의 Page 응답 작성
+        committedFailingWriter.write(request, response);
+
+        // Then: 전송된 503 응답의 추가 초기화 없음
+        String responseBody = response.getContentAsString();
+        assertSoftly(softly -> {
+            softly.assertThat(response.isCommitted()).isTrue();
+            softly.assertThat(response.getStatus()).isEqualTo(503);
+            softly.assertThat(responseBody).isEqualTo("partial error page");
+        });
+    }
+
     // 요청 View 이름과 전달 Model 확인용 최소 Thymeleaf Resolver 대역
     private static final class RecordingViewResolver implements ViewResolver {
 

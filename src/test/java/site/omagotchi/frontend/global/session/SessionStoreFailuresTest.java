@@ -1,5 +1,6 @@
 package site.omagotchi.frontend.global.session;
 
+import io.lettuce.core.RedisCommandTimeoutException;
 import org.springframework.data.redis.RedisConnectionFailureException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -36,6 +37,22 @@ class SessionStoreFailuresTest {
         boolean result = SessionStoreFailures.isFailure(first);
 
         // Then: 순환과 무관한 Redis 장애 식별
+        assertThat(result).isTrue();
+    }
+
+    @Test
+    @DisplayName("원인 chain 안의 Redis 명령 시간 초과 식별")
+    void detectsRedisCommandTimeoutInsideCauseChain() {
+        // Given: Redis 명령 시간 초과를 감싼 상위 예외
+        RuntimeException exception = new RuntimeException(
+                "session persistence failure",
+                new RedisCommandTimeoutException("command timed out")
+        );
+
+        // When: Session Store 장애 판별
+        boolean result = SessionStoreFailures.isFailure(exception);
+
+        // Then: Redis 명령 시간 초과 식별
         assertThat(result).isTrue();
     }
 }

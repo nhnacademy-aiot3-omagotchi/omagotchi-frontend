@@ -50,6 +50,12 @@ public class SessionStoreErrorFilter extends OncePerRequestFilter {
         doFilterInternal(request, response, filterChain);
     }
 
+    @Override
+    protected boolean shouldNotFilterErrorDispatch() {
+        // 별도 ERROR dispatch에서 발생한 Redis Session 접근 실패도 동일한 503 경계 적용
+        return false;
+    }
+
     // 장애 분류 결과와 원본 Stack Trace의 단일 기록
     private void logFailure(
             HttpServletRequest request,

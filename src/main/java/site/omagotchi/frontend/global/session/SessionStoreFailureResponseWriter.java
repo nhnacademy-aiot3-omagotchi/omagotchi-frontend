@@ -97,6 +97,10 @@ public class SessionStoreFailureResponseWriter {
             view.render(Map.of("status", status.value()), request, response);
         } catch (Exception renderFailure) {
             log.error("Redis Session Store HTML 오류 화면 작성 실패", renderFailure);
+            // 이미 전송된 응답의 초기화·fallback 재작성 불가
+            if (response.isCommitted()) {
+                return;
+            }
             // 실패한 View가 남긴 부분 응답 제거와 최소 HTML 재작성
             prepareResponse(request, response, status, MediaType.TEXT_HTML);
             response.getWriter().write(fallbackHtml);
