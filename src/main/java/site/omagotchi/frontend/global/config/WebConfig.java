@@ -10,8 +10,8 @@ public class WebConfig implements WebMvcConfigurer {
     @Override
     public void addViewControllers(ViewControllerRegistry registry) {
         registry.addViewController("/")
-                .setViewName("index");
+                .setViewName("pages/public/index");
         registry.addViewController("/index")
-                .setViewName("index");
+                .setViewName("pages/public/index");
     }
 }

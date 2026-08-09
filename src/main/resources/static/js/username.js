@@ -33,8 +33,8 @@ usernameForm.addEventListener("submit", async (event) => {
         return;
     }
 
-    if (username.length > 16) {
-        setUsernameFeedback("사용자 이름은 16자 이하로 입력해주세요.");
+    if (username.length > 12) {
+        setUsernameFeedback("사용자 이름은 12자 이하로 입력해주세요.");
         shakeUsernameCard();
         return;
     }

@@ -8,6 +8,6 @@ public class CheckInController {
 
     @GetMapping("/check-in")
     public String checkIn() {
-        return "check-in";
+        return "pages/onboarding/check-in";
     }
 }

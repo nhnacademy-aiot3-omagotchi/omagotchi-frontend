@@ -28,12 +28,12 @@ class FrontendApplicationTests {
 	void landingPageIsRendered() throws Exception {
 		mockMvc.perform(get("/"))
 				.andExpect(status().isOk())
-				.andExpect(view().name("index"))
+				.andExpect(view().name("pages/public/index"))
 				.andExpect(content().string(containsString("시작하기")));
 
 		mockMvc.perform(get("/index"))
 				.andExpect(status().isOk())
-				.andExpect(view().name("index"))
+				.andExpect(view().name("pages/public/index"))
 				.andExpect(content().string(containsString("시작하기")));
 	}
 
@@ -80,7 +80,7 @@ class FrontendApplicationTests {
 	void homePageIsRendered() throws Exception {
 		mockMvc.perform(get("/home"))
 				.andExpect(status().isOk())
-				.andExpect(view().name("home"))
+				.andExpect(view().name("pages/app/home"))
 				.andExpect(content().string(containsString("오늘 출석")));
 	}
 
@@ -88,32 +88,32 @@ class FrontendApplicationTests {
 	void homeMenuPagesAreRendered() throws Exception {
 		mockMvc.perform(get("/progress"))
 				.andExpect(status().isOk())
-				.andExpect(view().name("progress"))
+				.andExpect(view().name("pages/app/progress"))
 				.andExpect(content().string(containsString("보상 받기")));
 
 		mockMvc.perform(get("/personal"))
 				.andExpect(status().isOk())
-				.andExpect(view().name("personal"))
+				.andExpect(view().name("pages/app/personal"))
 				.andExpect(content().string(containsString("총 학습")));
 
 		mockMvc.perform(get("/cohort"))
 				.andExpect(status().isOk())
-				.andExpect(view().name("cohort"))
+				.andExpect(view().name("pages/app/cohort"))
 				.andExpect(content().string(containsString("기수 현황")));
 
 		mockMvc.perform(get("/write"))
 				.andExpect(status().isOk())
-				.andExpect(view().name("write"))
+				.andExpect(view().name("pages/app/write"))
 				.andExpect(content().string(containsString("학습 기록")));
 
 		mockMvc.perform(get("/settings"))
 				.andExpect(status().isOk())
-				.andExpect(view().name("settings"))
-				.andExpect(content().string(containsString("화면 밝기")));
+				.andExpect(view().name("pages/app/settings"))
+				.andExpect(content().string(containsString("비밀번호 변경")));
 
 		mockMvc.perform(get("/help"))
 				.andExpect(status().isOk())
-				.andExpect(view().name("help"))
+				.andExpect(view().name("pages/app/help"))
 				.andExpect(content().string(containsString("기본 사용 흐름")));
 	}
 
@@ -121,7 +121,7 @@ class FrontendApplicationTests {
 	void spacePageIsRendered() throws Exception {
 		mockMvc.perform(get("/space"))
 				.andExpect(status().isOk())
-				.andExpect(view().name("space"))
+				.andExpect(view().name("pages/app/space"))
 				.andExpect(content().string(containsString("회의실 A")));
 	}
 
@@ -129,7 +129,7 @@ class FrontendApplicationTests {
 	void managerRegisterPageIsRendered() throws Exception {
 		mockMvc.perform(get("/manager-register"))
 				.andExpect(status().isOk())
-				.andExpect(view().name("managerRegister"))
+				.andExpect(view().name("pages/manager/managerRegister"))
 				.andExpect(content().string(containsString("소속 기관")));
 
 		mockMvc.perform(get("/js/managerRegister.js"))
@@ -140,7 +140,7 @@ class FrontendApplicationTests {
 	void managerDashboardIsRendered() throws Exception {
 		mockMvc.perform(get("/manager-dashboard"))
 				.andExpect(status().isOk())
-				.andExpect(view().name("managerDashboard"))
+				.andExpect(view().name("pages/manager/managerDashboard"))
 				.andExpect(content().string(containsString("배정받은 기수만 표시됩니다")));
 
 		mockMvc.perform(get("/css/managerDashboard.css"))

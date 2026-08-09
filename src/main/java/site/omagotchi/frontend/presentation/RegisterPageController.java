@@ -8,11 +8,11 @@ public class RegisterPageController {
     // 사용자 회원가입
     @GetMapping("/register")
     public String registerPage() {
-        return "register";
+        return "pages/auth/register";
     }
     // 사용자 이름 입력
     @GetMapping("/username")
     public String usernamePage() {
-        return "username";
+        return "pages/auth/username";
     }
 }

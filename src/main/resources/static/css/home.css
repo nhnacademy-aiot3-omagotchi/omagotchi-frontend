@@ -14,7 +14,6 @@
     --ink: #090909;
     --white: #ffffff;
     --line: rgba(8, 8, 8, 0.55);
-    --home-brightness: 100%;
 }
 
 html {
@@ -45,7 +44,6 @@ a {
     min-height: 100vh;
     overflow-x: hidden;
     background: var(--home-background);
-    filter: brightness(var(--home-brightness));
 }
 
 /* 타이머 중심의 홈 상단 */
@@ -769,7 +767,6 @@ a {
     inset: 0;
     z-index: 30;
     display: none;
-    filter: brightness(var(--home-brightness));
 }
 
 .home-overlay-root.is-open {
@@ -2573,10 +2570,6 @@ a {
         margin-top: 6px;
         font-size: 14px;
     }
-}
-
-.brightness-control span {
-    display: none;
 }
 
 /* 출석 상세 영역 */

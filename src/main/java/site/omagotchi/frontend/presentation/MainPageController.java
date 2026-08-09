@@ -8,11 +8,11 @@ public class MainPageController {
 
     @GetMapping("/home")
     public String home() {
-        return "home";
+        return "pages/app/home";
     }
 
     @GetMapping("/space")
     public String space() {
-        return "space";
+        return "pages/app/space";
     }
 }
