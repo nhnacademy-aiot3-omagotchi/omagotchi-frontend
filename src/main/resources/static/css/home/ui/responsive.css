@@ -1,6 +1,7 @@
 @media (max-width: 980px) {
     .character-badge {
-        width: clamp(250px, 32vw, 320px);
+        width: fit-content;
+        max-width: min(320px, calc(100vw - 32px));
     }
 
     .character-badge span {
@@ -8,10 +9,20 @@
     }
 
     .xp-area {
-        left: 50%;
-        right: auto;
-        width: clamp(330px, 42vw, 520px);
-        transform: translateX(-50%);
+        left: 22px;
+        right: 22px;
+        width: auto;
+        max-width: none;
+        transform: none;
+    }
+
+    .character-badge strong {
+        left: 22px;
+    }
+
+    .character-badge {
+        left: auto;
+        right: 22px;
     }
 
     .home-chat-bar {
@@ -42,20 +53,33 @@
     }
 
     .character-badge {
-        left: 50%;
-        width: min(320px, calc(100vw - 32px));
-        max-width: calc(100vw - 32px);
-        transform: translateX(-50%);
+        left: auto;
+        right: 16px;
+        bottom: 104px;
+        width: fit-content;
+        min-width: 124px;
+        max-width: calc(100vw - 106px);
+        transform: none;
     }
 
     .character-badge span {
-        width: calc(100vw - 118px);
+        width: auto;
+    }
+
+    .character-badge strong {
+        left: 16px;
+        bottom: 102px;
+        transform: none;
     }
 
     .xp-area {
         left: 16px;
         right: 16px;
         bottom: 76px;
+    }
+
+    .xp-labels {
+        padding-left: 0;
     }
 
     .home-chat-bar {
