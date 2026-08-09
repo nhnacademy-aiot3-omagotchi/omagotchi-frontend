@@ -564,8 +564,8 @@ const overlayContent = {
     settings: `
         <div class="overlay-settings-list">
             <button type="button" data-open-password-overlay>
-                <span><strong>비밀번호 변경</strong><em>현재 화면에서 로그인 비밀번호를 변경합니다.</em></span>
-                <span>열기</span>
+                <span><strong>비밀번호 변경 안내</strong><em>변경 기능의 준비 상태를 확인합니다.</em></span>
+                <span>안내</span>
             </button>
             <button class="is-danger" type="button" data-logout>
                 <span><strong>로그아웃</strong><em>현재 접속 정보를 비우고 처음 화면으로 이동합니다.</em></span>
@@ -574,12 +574,10 @@ const overlayContent = {
         </div>
     `,
     password: `
-        <form class="overlay-write-form overlay-password-form">
-            <input type="password" placeholder="현재 비밀번호" aria-label="현재 비밀번호" />
-            <input type="password" placeholder="새 비밀번호" aria-label="새 비밀번호" />
-            <input type="password" placeholder="새 비밀번호 확인" aria-label="새 비밀번호 확인" />
-            <button type="button" data-close-home-overlay>변경하기</button>
-        </form>
+        <section class="overlay-write-form overlay-password-form">
+            <p>비밀번호 변경 기능은 아직 준비 중입니다.</p>
+            <button type="button" data-close-home-overlay>돌아가기</button>
+        </section>
     `
 };
 
@@ -776,22 +774,28 @@ function setOverlayTab(tabButton) {
     });
 }
 
-async function logout() {
+async function logout(logoutButton) {
     const logoutForm = document.querySelector("[data-logout-form]");
-
-    // Server 응답과 무관한 Browser 표시 상태 정리
-    sessionOnlyKeys.forEach((key) => {
-        sessionStorage.removeItem(key);
-    });
+    const detail = logoutButton?.querySelector("em");
+    if (logoutButton) logoutButton.disabled = true;
 
     try {
-        await fetch(logoutForm.action, {
+        const response = await fetch(logoutForm.action, {
             method: "POST",
             credentials: "same-origin",
             body: new FormData(logoutForm)
         });
-    } finally {
-        window.location.href = "/login";
+
+        // 완료되었거나 이미 만료된 Session의 Browser 표시 상태 정리
+        if (response.ok || response.status === 401 || response.status === 403) {
+            sessionOnlyKeys.forEach((key) => sessionStorage.removeItem(key));
+            window.location.href = "/login";
+            return;
+        }
+        throw new Error("로그아웃 요청에 실패했습니다.");
+    } catch (error) {
+        if (logoutButton) logoutButton.disabled = false;
+        if (detail) detail.textContent = error.message || "로그아웃 요청에 실패했습니다.";
     }
 }
 
@@ -865,7 +869,7 @@ homeOverlayRoot?.addEventListener("click", (event) => {
     }
 
     if (logoutButton) {
-        logout();
+        logout(logoutButton);
     }
 });
 
