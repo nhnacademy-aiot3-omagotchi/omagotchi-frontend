@@ -16,21 +16,18 @@ export function createCharacter({
 
     const streakWings = [
         null,
-        "/images/wing/dia/diamond_12.gif",
-        "/images/wing/grand/goorandmaster_12.gif",
-        "/images/wing/mas/master_12.gif"
+        "/images/wing/dia/셀렌.gif",
+        "/images/wing/mas/이트.gif",
+        "/images/wing/grand/세슘.gif"
     ];
 
-    function getIdleMessage() {
-        return studying ? "집중하고 있어요!" : "오늘도 같이 공부해요!";
-    }
-
-    function showMessage(message, resetDelay = 2200) {
+    function showMessage(message, resetDelay = 3000) {
         if (!bubble) {
             return;
         }
 
         window.clearTimeout(bubbleTimer);
+        bubble.hidden = false;
         bubble.textContent = message;
         bubble.classList.remove("is-changing");
 
@@ -39,7 +36,7 @@ export function createCharacter({
         });
 
         bubbleTimer = window.setTimeout(() => {
-            bubble.textContent = getIdleMessage();
+            bubble.hidden = true;
             bubble.classList.remove("is-changing");
         }, resetDelay);
     }
