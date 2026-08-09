@@ -121,16 +121,33 @@
                     <article><span>온도</span><strong data-sensor-temperature>--</strong><small data-sensor-temperature-range>권장 20~26℃</small></article>
                     <article><span>습도</span><strong data-sensor-humidity>--</strong><small data-sensor-humidity-range>권장 40~60%</small></article>
                     <article><span>이산화탄소</span><strong data-sensor-co2>--</strong><small data-sensor-co2-state>수신 대기</small></article>
-                    <article><span>현재 재실</span><strong data-sensor-occupancy>--</strong><small data-sensor-occupancy-range>입실 기준</small></article>
                 </div>
                 <form class="sensor-threshold-form" data-sensor-threshold-form hidden>
-                    <div class="sensor-threshold-fields">
-                        <label><span>최저 온도</span><input name="temperatureMin" type="number" step="0.1" /></label>
-                        <label><span>최고 온도</span><input name="temperatureMax" type="number" step="0.1" /></label>
-                        <label><span>최저 습도</span><input name="humidityMin" type="number" step="1" /></label>
-                        <label><span>최고 습도</span><input name="humidityMax" type="number" step="1" /></label>
-                        <label><span>CO₂ 경고</span><input name="co2Max" type="number" step="1" /></label>
-                        <label><span>최대 재실</span><input name="occupancyMax" type="number" step="1" min="1" /></label>
+                    <div class="sensor-threshold-title">
+                        <div>
+                            <span>센서 임계치</span>
+                            <strong>실습실 환경 기준 설정</strong>
+                        </div>
+                        <small>저장 후 현재 기수의 센서 카드에 바로 반영됩니다.</small>
+                    </div>
+                    <div class="sensor-threshold-fields" role="group" aria-label="센서 임계치 입력">
+                        <div class="sensor-threshold-row sensor-threshold-row-range">
+                            <span class="sensor-threshold-name">온도</span>
+                            <label><span>최저</span><input name="temperatureMin" type="number" step="0.1" /></label>
+                            <label><span>최고</span><input name="temperatureMax" type="number" step="0.1" /></label>
+                            <em>권장 범위</em>
+                        </div>
+                        <div class="sensor-threshold-row sensor-threshold-row-range">
+                            <span class="sensor-threshold-name">습도</span>
+                            <label><span>최저</span><input name="humidityMin" type="number" step="1" /></label>
+                            <label><span>최고</span><input name="humidityMax" type="number" step="1" /></label>
+                            <em>권장 범위</em>
+                        </div>
+                        <div class="sensor-threshold-row">
+                            <span class="sensor-threshold-name">CO₂</span>
+                            <label><span>이상</span><input name="co2Max" type="number" step="1" /></label>
+                            <em>경고 기준</em>
+                        </div>
                     </div>
                     <div class="sensor-threshold-actions">
                         <button type="submit">저장</button>

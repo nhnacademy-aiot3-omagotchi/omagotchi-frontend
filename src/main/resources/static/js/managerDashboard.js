@@ -8,8 +8,7 @@ const DEFAULT_SENSOR_THRESHOLDS = {
     temperatureMax: 26,
     humidityMin: 40,
     humidityMax: 60,
-    co2Max: 1000,
-    occupancyMax: 30
+    co2Max: 1000
 };
 
 const today = new Date().toISOString().slice(0, 10);
@@ -299,20 +298,16 @@ function renderSensors() {
     const humidityWarning = sensor.humidity != null
         && (sensor.humidity < thresholds.humidityMin || sensor.humidity > thresholds.humidityMax);
     const co2Warning = sensor.co2 != null && sensor.co2 >= thresholds.co2Max;
-    const occupancyWarning = sensor.occupancy != null && sensor.occupancy > thresholds.occupancyMax;
     document.querySelector("[data-sensor-temperature]").textContent = sensor.temperature == null ? "--" : `${sensor.temperature}℃`;
     document.querySelector("[data-sensor-humidity]").textContent = sensor.humidity == null ? "--" : `${sensor.humidity}%`;
     document.querySelector("[data-sensor-co2]").textContent = sensor.co2 == null ? "--" : `${sensor.co2}ppm`;
-    document.querySelector("[data-sensor-occupancy]").textContent = `${sensor.occupancy ?? 0}명`;
     document.querySelector("[data-sensor-updated]").textContent = sensor.updatedAt ? `마지막 수신 ${sensor.updatedAt}` : "수신 데이터 없음";
     document.querySelector("[data-sensor-temperature-range]").textContent = `권장 ${thresholds.temperatureMin}~${thresholds.temperatureMax}℃`;
     document.querySelector("[data-sensor-humidity-range]").textContent = `권장 ${thresholds.humidityMin}~${thresholds.humidityMax}%`;
-    document.querySelector("[data-sensor-occupancy-range]").textContent = `최대 ${thresholds.occupancyMax}명`;
     document.querySelector("[data-sensor-co2-state]").textContent = co2Warning ? "환기가 필요합니다" : sensor.co2 == null ? "수신 대기" : "쾌적";
     document.querySelector("[data-sensor-temperature]").closest("article").classList.toggle("is-warning", temperatureWarning);
     document.querySelector("[data-sensor-humidity]").closest("article").classList.toggle("is-warning", humidityWarning);
     document.querySelector("[data-sensor-co2]").closest("article").classList.toggle("is-warning", co2Warning);
-    document.querySelector("[data-sensor-occupancy]").closest("article").classList.toggle("is-warning", occupancyWarning);
     Object.entries(thresholds).forEach(([key, value]) => {
         const field = elements.sensorThresholdForm.elements.namedItem(key);
         if (field) field.value = value;
@@ -540,15 +535,13 @@ elements.sensorThresholdForm.addEventListener("submit", (event) => {
         temperatureMax: Number(form.elements.namedItem("temperatureMax").value),
         humidityMin: Number(form.elements.namedItem("humidityMin").value),
         humidityMax: Number(form.elements.namedItem("humidityMax").value),
-        co2Max: Number(form.elements.namedItem("co2Max").value),
-        occupancyMax: Number(form.elements.namedItem("occupancyMax").value)
+        co2Max: Number(form.elements.namedItem("co2Max").value)
     };
 
     const invalid = Object.values(next).some((value) => Number.isNaN(value))
         || next.temperatureMin > next.temperatureMax
         || next.humidityMin > next.humidityMax
-        || next.co2Max < 1
-        || next.occupancyMax < 1;
+        || next.co2Max < 1;
 
     if (invalid) {
         setBubble("임계치 값을<br />확인해 주세요.");
@@ -561,7 +554,7 @@ elements.sensorThresholdForm.addEventListener("submit", (event) => {
     addAudit(
         "센서 임계치 수정",
         cohort.name,
-        `온도 ${next.temperatureMin}~${next.temperatureMax}℃, 습도 ${next.humidityMin}~${next.humidityMax}%, CO₂ ${next.co2Max}ppm, 재실 ${next.occupancyMax}명`
+        `온도 ${next.temperatureMin}~${next.temperatureMax}℃, 습도 ${next.humidityMin}~${next.humidityMax}%, CO₂ ${next.co2Max}ppm`
     );
     elements.sensorThresholdForm.hidden = true;
     saveState();
