@@ -90,13 +90,7 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
         waking = true;
-        try {
-            await checkInToday();
-        } catch (error) {
-            waking = false;
-            setMessage(error.message || "출석 기록에 실패했습니다. 다시 시도해 주세요.");
-            return;
-        }
+        await checkInToday();
 
         const image = getCharacterImage(character);
         if (image) {

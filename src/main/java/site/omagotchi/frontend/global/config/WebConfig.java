@@ -9,14 +9,9 @@ public class WebConfig implements WebMvcConfigurer {
 
     @Override
     public void addViewControllers(ViewControllerRegistry registry) {
-        // 시작·인증 보조 Page
         registry.addViewController("/")
-                .setViewName("pages/public/index");
+                .setViewName("index");
         registry.addViewController("/index")
-                .setViewName("pages/public/index");
-        registry.addViewController("/password-change")
-                .setViewName("pages/auth/passwordChange");
-        registry.addViewController("/username")
-                .setViewName("pages/auth/username"); // Learning 게임 프로필 연동 전 캐릭터 표시명 목업
+                .setViewName("index");
     }
 }

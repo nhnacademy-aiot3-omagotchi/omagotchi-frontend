@@ -222,30 +222,16 @@ export function createAttendance({
         const nextAction = "checkOut";
 
         if (button) button.disabled = true;
-        let serverAttendance = null;
-        try {
-            serverAttendance = await api?.[nextAction]?.();
-        } catch (error) {
-            if (button) {
-                button.disabled = false;
-                button.textContent = error.message || "퇴실 실패";
-                window.setTimeout(render, 1800);
-            }
-            return;
-        }
-
+        const serverAttendance = await api?.[nextAction]?.();
         if (serverAttendance) {
             saveToday(normalizeAttendance(serverAttendance));
             render();
             return;
         }
 
-        if (button) button.disabled = false;
+        attendance.checkOutAt = new Date().toISOString();
+        saveToday(attendance);
         render();
-        if (button) {
-            button.textContent = "퇴실 실패";
-            window.setTimeout(render, 1800);
-        }
     }
     // 새로고침
     function refreshDate() {
