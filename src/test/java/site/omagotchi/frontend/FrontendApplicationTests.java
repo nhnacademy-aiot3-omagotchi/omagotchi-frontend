@@ -1,10 +1,16 @@
 package site.omagotchi.frontend;
 
+import jakarta.servlet.DispatcherType;
+import jakarta.servlet.RequestDispatcher;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.http.MediaType;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -14,26 +20,24 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
 
 @SpringBootTest
-@AutoConfigureMockMvc
+@ActiveProfiles("test")
+@AutoConfigureMockMvc(addFilters = false)
 class FrontendApplicationTests {
 
 	@Autowired
 	private MockMvc mockMvc;
 
 	@Test
-	void contextLoads() {
-	}
-
-	@Test
+	@DisplayName("시작 화면 Route는 index Template 반환")
 	void landingPageIsRendered() throws Exception {
 		mockMvc.perform(get("/"))
 				.andExpect(status().isOk())
-				.andExpect(view().name("index"))
+				.andExpect(view().name("pages/public/index"))
 				.andExpect(content().string(containsString("시작하기")));
 
 		mockMvc.perform(get("/index"))
 				.andExpect(status().isOk())
-				.andExpect(view().name("index"))
+				.andExpect(view().name("pages/public/index"))
 				.andExpect(content().string(containsString("시작하기")));
 	}
 
@@ -80,7 +84,7 @@ class FrontendApplicationTests {
 	void homePageIsRendered() throws Exception {
 		mockMvc.perform(get("/home"))
 				.andExpect(status().isOk())
-				.andExpect(view().name("home"))
+				.andExpect(view().name("pages/app/home"))
 				.andExpect(content().string(containsString("오늘 출석")));
 	}
 
@@ -88,32 +92,32 @@ class FrontendApplicationTests {
 	void homeMenuPagesAreRendered() throws Exception {
 		mockMvc.perform(get("/progress"))
 				.andExpect(status().isOk())
-				.andExpect(view().name("progress"))
+				.andExpect(view().name("pages/app/progress"))
 				.andExpect(content().string(containsString("보상 받기")));
 
 		mockMvc.perform(get("/personal"))
 				.andExpect(status().isOk())
-				.andExpect(view().name("personal"))
+				.andExpect(view().name("pages/app/personal"))
 				.andExpect(content().string(containsString("총 학습")));
 
 		mockMvc.perform(get("/cohort"))
 				.andExpect(status().isOk())
-				.andExpect(view().name("cohort"))
+				.andExpect(view().name("pages/app/cohort"))
 				.andExpect(content().string(containsString("기수 현황")));
 
 		mockMvc.perform(get("/write"))
 				.andExpect(status().isOk())
-				.andExpect(view().name("write"))
+				.andExpect(view().name("pages/app/write"))
 				.andExpect(content().string(containsString("학습 기록")));
 
 		mockMvc.perform(get("/settings"))
 				.andExpect(status().isOk())
-				.andExpect(view().name("settings"))
-				.andExpect(content().string(containsString("화면 밝기")));
+				.andExpect(view().name("pages/app/settings"))
+				.andExpect(content().string(containsString("비밀번호 변경")));
 
 		mockMvc.perform(get("/help"))
 				.andExpect(status().isOk())
-				.andExpect(view().name("help"))
+				.andExpect(view().name("pages/app/help"))
 				.andExpect(content().string(containsString("기본 사용 흐름")));
 	}
 
@@ -121,26 +125,24 @@ class FrontendApplicationTests {
 	void spacePageIsRendered() throws Exception {
 		mockMvc.perform(get("/space"))
 				.andExpect(status().isOk())
-				.andExpect(view().name("space"))
+				.andExpect(view().name("pages/app/space"))
 				.andExpect(content().string(containsString("회의실 A")));
 	}
 
 	@Test
-	void managerRegisterPageIsRendered() throws Exception {
-		mockMvc.perform(get("/manager-register"))
-				.andExpect(status().isOk())
-				.andExpect(view().name("managerRegister"))
-				.andExpect(content().string(containsString("소속 기관")));
+	void legacyManagerAuthPagesAreNotRouted() throws Exception {
+		mockMvc.perform(get("/manager-login"))
+				.andExpect(status().isNotFound());
 
-		mockMvc.perform(get("/js/managerRegister.js"))
-				.andExpect(status().isOk());
+		mockMvc.perform(get("/manager-register"))
+				.andExpect(status().isNotFound());
 	}
 
 	@Test
 	void managerDashboardIsRendered() throws Exception {
 		mockMvc.perform(get("/manager-dashboard"))
 				.andExpect(status().isOk())
-				.andExpect(view().name("managerDashboard"))
+				.andExpect(view().name("pages/manager/managerDashboard"))
 				.andExpect(content().string(containsString("배정받은 기수만 표시됩니다")));
 
 		mockMvc.perform(get("/css/managerDashboard.css"))
@@ -154,9 +156,39 @@ class FrontendApplicationTests {
 	}
 
 	@Test
+	@DisplayName("Actuator Health 상태 UP")
 	void actuatorHealthIsUp() throws Exception {
 		mockMvc.perform(get("/actuator/health"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.status").value("UP"));
 	}
+
+	@Test
+	@DisplayName("전용 Template이 없는 ERROR dispatch는 상태 계열 오류 View 반환")
+	void errorDispatchUsesStatusSeriesFallbackView() throws Exception {
+		// Given: 전용 Template이 없는 405·503 ERROR dispatch
+		// When: Boot 기본 오류 Controller가 상태 계열 Template 탐색
+		// Then: 4xx·5xx 공통 View 반환
+		mockMvc.perform(get("/error")
+				.accept(MediaType.TEXT_HTML)
+				.with(errorDispatch(405)))
+				.andExpect(status().isMethodNotAllowed())
+				.andExpect(view().name("error/4xx"));
+
+		mockMvc.perform(get("/error")
+				.accept(MediaType.TEXT_HTML)
+				.with(errorDispatch(503)))
+				.andExpect(status().isServiceUnavailable())
+				.andExpect(view().name("error/5xx"));
+	}
+
+	private static RequestPostProcessor errorDispatch(int status) {
+		return request -> {
+			request.setDispatcherType(DispatcherType.ERROR);
+			request.setAttribute(RequestDispatcher.ERROR_STATUS_CODE, status);
+			request.setAttribute(RequestDispatcher.ERROR_REQUEST_URI, "/test/error");
+			return request;
+		};
+	}
+
 }

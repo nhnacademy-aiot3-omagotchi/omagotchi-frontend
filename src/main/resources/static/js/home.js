@@ -81,7 +81,6 @@ const attendanceKey = `omagotchiAttendance:${currentUserEmail}`;
 const xpKey = `omagotchiXp:${currentUserEmail}`;
 const studyRecordsKey = `omagotchiStudyRecords:${currentUserEmail}`;
 const timerKey = `omagotchiStudyTimer:${currentUserEmail}`;
-const brightnessKey = "omagotchiHomeBrightness";
 const sessionOnlyKeys = [
     "omagotchiEmail",
     "omagotchiUsername",
@@ -135,11 +134,6 @@ function renderHomeCohortCards() {
     }).join("");
 }
 const communityPosts = [];
-
-function setBrightness(value) {
-    document.documentElement.style.setProperty("--home-brightness", `${value}%`);
-    localStorage.setItem(brightnessKey, value);
-}
 
 const characterController = createCharacter({
     image: homeCharacter,
@@ -335,7 +329,7 @@ const overlayContent = {
                     <li><strong>학습 기록</strong>: 저장한 구간을 일간·월간·연간으로 확인하고 수정</li>
                     <li><strong>공간</strong>: 실습실, 회의실, 도서관 이용</li>
                     <li><strong>커뮤</strong>: 공지 및 자유 게시판 이용</li>
-                    <li><strong>설정</strong>: 화면 밝기, 비밀번호 변경, 로그아웃</li>
+                    <li><strong>설정</strong>: 비밀번호 변경, 로그아웃</li>
                 </ul>
             </div>
         </details>
@@ -496,10 +490,6 @@ const overlayContent = {
     `,
     settings: `
         <div class="overlay-settings-list">
-            <label>
-                <span><strong>화면 밝기</strong><em>홈 화면의 초록 배경 밝기를 조절합니다.</em></span>
-                <input type="range" min="84" max="116" value="${localStorage.getItem(brightnessKey) || "100"}" data-overlay-brightness />
-            </label>
             <button type="button" data-open-password-overlay>
                 <span><strong>비밀번호 변경</strong><em>현재 화면에서 로그인 비밀번호를 변경합니다.</em></span>
                 <span>열기</span>
@@ -713,12 +703,23 @@ function setOverlayTab(tabButton) {
     });
 }
 
-function logout() {
+async function logout() {
+    const logoutForm = document.querySelector("[data-logout-form]");
+
+    // Server 응답과 무관한 Browser 표시 상태 정리
     sessionOnlyKeys.forEach((key) => {
         sessionStorage.removeItem(key);
     });
 
-    window.location.href = "/";
+    try {
+        await fetch(logoutForm.action, {
+            method: "POST",
+            credentials: "same-origin",
+            body: new FormData(logoutForm)
+        });
+    } finally {
+        window.location.href = "/login";
+    }
 }
 
 document.querySelectorAll("[data-home-overlay]").forEach((link) => {
@@ -737,7 +738,6 @@ homeOverlayRoot?.addEventListener("click", (event) => {
     const closeTarget = event.target.closest("[data-close-home-overlay]");
     const tabButton = event.target.closest("[data-overlay-tab]");
     const claimButton = event.target.closest("[data-home-claim]");
-    const brightnessInput = event.target.closest("[data-overlay-brightness]");
     const passwordButton = event.target.closest("[data-open-password-overlay]");
     const logoutButton = event.target.closest("[data-logout]");
     const communityFilterButton = event.target.closest("[data-community-filter]");
@@ -786,11 +786,6 @@ homeOverlayRoot?.addEventListener("click", (event) => {
         return;
     }
 
-    if (brightnessInput) {
-        setBrightness(brightnessInput.value);
-        return;
-    }
-
     if (passwordButton) {
         openHomeOverlay("password");
         return;
@@ -801,20 +796,14 @@ homeOverlayRoot?.addEventListener("click", (event) => {
     }
 });
 
-// 슬라이더와 검색창처럼 입력 즉시 반영되는 이벤트
+// 검색창처럼 입력 즉시 반영되는 이벤트
 homeOverlayRoot?.addEventListener("input", (event) => {
-    const brightnessInput = event.target.closest("[data-overlay-brightness]");
     const communitySearch = event.target.closest("[data-community-search]");
 
     if (communitySearch) {
         communityKeyword = communitySearch.value;
         communityPage = 1;
         renderCommunity();
-        return;
-    }
-
-    if (brightnessInput) {
-        setBrightness(brightnessInput.value);
     }
 });
 
@@ -896,9 +885,7 @@ document.addEventListener("keydown", (event) => {
     }
 });
 
-// 저장된 사용자 설정을 적용한 뒤 최초 화면 렌더링
-const savedBrightness = localStorage.getItem(brightnessKey) || "100";
-setBrightness(savedBrightness);
+// 최초 화면 렌더링
 characterController.init();
 timerController.init();
 levelController.render();
