@@ -58,7 +58,7 @@ class SignupPageMvcTest {
                 // Then: 빈 Signup Form과 회원가입 View
                 .andExpectAll(
                         status().isOk(),
-                        view().name("register"),
+                        view().name("pages/auth/register"),
                         model().attributeExists("signupForm")
                 );
     }
@@ -83,17 +83,20 @@ class SignupPageMvcTest {
         mockMvc.perform(post("/register")
                         .param("email", "invalid-email")
                         .param("name", "")
-                        .param("password", ""))
+                        .param("password", " ".repeat(15)))
                 .andExpectAll(
                         status().isBadRequest(),
-                        view().name("register"),
+                        view().name("pages/auth/register"),
                         model().attributeHasFieldErrors(
                                 "signupForm",
                                 "email",
                                 "name",
                                 "password"
                         ),
-                        model().attributeExists("authFeedback")
+                        model().attribute("authFeedback", "입력 내용을 확인해주세요."),
+                        content().string(containsString("이메일 형식이 올바르지 않습니다.")),
+                        content().string(containsString("이름은 필수입니다.")),
+                        content().string(containsString("비밀번호는 필수입니다."))
                 );
 
         // Then: Signup Use Case 미호출
@@ -132,11 +135,12 @@ class SignupPageMvcTest {
                         .param("password", "short"))
                 .andExpectAll(
                         status().isBadRequest(),
-                        view().name("register"),
+                        view().name("pages/auth/register"),
                         model().attribute(
                                 "authFeedback",
                                 AuthErrorCode.INVALID_PASSWORD.message()
-                        )
+                        ),
+                        content().string(not(containsString("short")))
                 );
 
         // Then: Signup Use Case 호출
@@ -193,7 +197,7 @@ class SignupPageMvcTest {
                         .param("password", "password-passphrase"))
                 .andExpectAll(
                         status().isConflict(),
-                        view().name("register"),
+                        view().name("pages/auth/register"),
                         model().attribute("authFeedback", AuthErrorCode.DUPLICATE_EMAIL.message()),
                         content().string(not(containsString("password-passphrase")))
                 )

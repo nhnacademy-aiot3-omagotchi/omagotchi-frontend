@@ -4,6 +4,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import site.omagotchi.frontend.auth.application.AuthErrorCode;
 
 import java.security.Principal;
 
@@ -11,7 +12,7 @@ import java.security.Principal;
 @Controller
 public class LoginPageController {
 
-    private static final String LOGIN_VIEW = "login";
+    private static final String LOGIN_VIEW = "pages/auth/login";
     private static final String AUTH_FEEDBACK = "authFeedback";
 
     @GetMapping("/login")
@@ -24,7 +25,7 @@ public class LoginPageController {
             return "redirect:/home";
         }
         if (error != null) {
-            model.addAttribute(AUTH_FEEDBACK, "이메일 또는 비밀번호가 올바르지 않습니다.");
+            model.addAttribute(AUTH_FEEDBACK, AuthErrorCode.INVALID_CREDENTIALS.message());
         }
         return LOGIN_VIEW;
     }

@@ -90,7 +90,7 @@ class AuthenticationSecurityMvcTest {
         MvcResult result = mockMvc.perform(get("/login"))
                 .andExpectAll(
                         status().isOk(),
-                        view().name("login"),
+                        view().name("pages/auth/login"),
                         header().string(HttpHeaders.CACHE_CONTROL, containsString("no-store")),
                         content().string(containsString("action=\"/login\"")),
                         content().string(containsString("name=\"email\"")),

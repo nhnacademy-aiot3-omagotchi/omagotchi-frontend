@@ -11,38 +11,38 @@ public class WebConfig implements WebMvcConfigurer {
     public void addViewControllers(ViewControllerRegistry registry) {
         // 시작·인증 보조 Page
         registry.addViewController("/")
-                .setViewName("index");
+                .setViewName("pages/public/index");
         registry.addViewController("/index")
-                .setViewName("index");
+                .setViewName("pages/public/index");
         registry.addViewController("/password-change")
-                .setViewName("passwordChange");
+                .setViewName("pages/auth/passwordChange");
 
         // 사용자 기능 Page
         registry.addViewController("/username")
-                .setViewName("username"); // Learning 게임 프로필 연동 전 캐릭터 표시명 목업
+                .setViewName("pages/onboarding/username"); // Learning 게임 프로필 연동 전 캐릭터 표시명 목업
         registry.addViewController("/character-selector")
-                .setViewName("characterSelector");
+                .setViewName("pages/onboarding/characterSelector");
         registry.addViewController("/check-in")
-                .setViewName("check-in");
+                .setViewName("pages/onboarding/check-in");
         registry.addViewController("/progress")
-                .setViewName("progress");
+                .setViewName("pages/app/progress");
         registry.addViewController("/personal")
-                .setViewName("personal");
+                .setViewName("pages/app/personal");
         registry.addViewController("/cohort")
-                .setViewName("cohort");
+                .setViewName("pages/app/cohort");
         registry.addViewController("/write")
-                .setViewName("write");
+                .setViewName("pages/app/write");
         registry.addViewController("/settings")
-                .setViewName("settings");
+                .setViewName("pages/app/settings");
         registry.addViewController("/help")
-                .setViewName("help");
+                .setViewName("pages/app/help");
         registry.addViewController("/home")
-                .setViewName("home");
+                .setViewName("pages/app/home");
         registry.addViewController("/space")
-                .setViewName("space");
+                .setViewName("pages/app/space");
 
         // 관리자 Prototype Page
         registry.addViewController("/manager-dashboard")
-                .setViewName("managerDashboard");
+                .setViewName("pages/manager/managerDashboard");
     }
 }

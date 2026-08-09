@@ -30,17 +30,19 @@
                 <span class="is-active">회원가입</span>
             </div>
 
-            <label class="input-group auth-input-group">
-                <span class="sr-only">이메일</span>
-                <input type="email" placeholder="이메일" autocomplete="username"
+            <div class="input-group auth-input-group">
+                <label class="sr-only" for="email">이메일</label>
+                <input id="email" type="email" placeholder="이메일" autocomplete="username"
                        required th:field="*{email}" />
-            </label>
+                <p class="auth-field-error" th:errors="*{email}">이메일 입력 오류</p>
+            </div>
 
-            <label class="input-group auth-input-group">
-                <span class="sr-only">사용자 이름</span>
-                <input type="text" placeholder="사용자 이름" autocomplete="name"
+            <div class="input-group auth-input-group">
+                <label class="sr-only" for="name">사용자 이름</label>
+                <input id="name" type="text" placeholder="사용자 이름" autocomplete="name"
                        required th:field="*{name}" />
-            </label>
+                <p class="auth-field-error" th:errors="*{name}">이름 입력 오류</p>
+            </div>
 
             <div class="input-group auth-input-group">
                 <label class="sr-only" for="register-password">비밀번호</label>
@@ -52,6 +54,7 @@
                         <span class="password-eye" aria-hidden="true"></span>
                     </button>
                 </div>
+                <p class="auth-field-error" th:errors="*{password}">비밀번호 입력 오류</p>
             </div>
 
             <button class="auth-button register-button auth-submit-button" type="submit">

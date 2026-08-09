@@ -226,6 +226,14 @@ body {
     box-shadow: 0 0 0 4px rgba(32, 216, 135, 0.18);
 }
 
+.auth-field-error {
+    margin: -5px 4px 0;
+    color: #b42318;
+    font-size: 13px;
+    font-weight: 800;
+    line-height: 1.4;
+}
+
 .auth-forgot-link {
     display: block;
     margin: 2px 0 22px;

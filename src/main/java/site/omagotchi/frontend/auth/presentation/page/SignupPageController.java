@@ -3,7 +3,6 @@ package site.omagotchi.frontend.auth.presentation.page;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.support.DefaultMessageSourceResolvable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -24,7 +23,7 @@ import java.security.Principal;
 @RequiredArgsConstructor
 public class SignupPageController {
 
-    private static final String REGISTER_VIEW = "register";
+    private static final String REGISTER_VIEW = "pages/auth/register";
     private static final String AUTH_FEEDBACK = "authFeedback";
 
     private final AuthenticationService authenticationService;
@@ -58,11 +57,7 @@ public class SignupPageController {
         if (bindingResult.hasErrors()) {
             // Form Binding 입력 오류의 400 응답
             form.setPassword(null);
-            String message = bindingResult.getAllErrors().stream()
-                    .findFirst()
-                    .map(DefaultMessageSourceResolvable::getDefaultMessage)
-                    .orElse("입력 내용을 다시 확인해주세요.");
-            model.addAttribute(AUTH_FEEDBACK, message);
+            model.addAttribute(AUTH_FEEDBACK, "입력 내용을 확인해주세요.");
             response.setStatus(HttpStatus.BAD_REQUEST.value());
             return REGISTER_VIEW;
         }

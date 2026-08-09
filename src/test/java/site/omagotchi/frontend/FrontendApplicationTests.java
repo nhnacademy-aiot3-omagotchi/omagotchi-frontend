@@ -19,7 +19,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest
 @ActiveProfiles("test")
-@AutoConfigureMockMvc(addFilters = false)
+@AutoConfigureMockMvc
 class FrontendApplicationTests {
 
 	@Autowired
@@ -30,11 +30,11 @@ class FrontendApplicationTests {
 	void landingPageIsRendered() throws Exception {
 		mockMvc.perform(get("/"))
 				.andExpect(status().isOk())
-				.andExpect(view().name("index"));
+				.andExpect(view().name("pages/public/index"));
 
 		mockMvc.perform(get("/index"))
 				.andExpect(status().isOk())
-				.andExpect(view().name("index"));
+				.andExpect(view().name("pages/public/index"));
 	}
 
 	@Test
