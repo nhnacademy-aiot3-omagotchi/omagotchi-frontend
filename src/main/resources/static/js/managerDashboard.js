@@ -629,7 +629,7 @@ document.querySelector("[data-manager-logout-form]").addEventListener("submit", 
         });
 
         // 완료되었거나 이미 만료된 Session의 관리자 Prototype 표시 상태 정리
-        if (response.ok || response.status === 401 || response.status === 403) {
+        if (response.ok || response.status === 401) {
             ["omagotchiManagerEmail", "omagotchiManagerName", "omagotchiManagerOrganization", "omagotchiManagerCohort", "omagotchiManagerDashboardTab"]
                 .forEach((key) => sessionStorage.removeItem(key));
             window.location.href = "/login";

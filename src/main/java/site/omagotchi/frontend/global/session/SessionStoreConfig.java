@@ -1,9 +1,12 @@
 package site.omagotchi.frontend.global.session;
 
+import jakarta.servlet.DispatcherType;
 import org.springframework.boot.session.autoconfigure.SessionProperties;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+
+import java.util.EnumSet;
 
 // Spring Session Redis 장애 Filter의 Servlet 등록과 실행 순서 설정
 @Configuration(proxyBeanMethods = false)
@@ -20,6 +23,8 @@ public class SessionStoreConfig {
                         new SessionStoreErrorFilter(failureResponseWriter)
                 );
         registration.setName("sessionStoreErrorFilter");
+        // 별도·중첩 ERROR dispatch의 Redis Session 장애 감시 범위 고정
+        registration.setDispatcherTypes(EnumSet.allOf(DispatcherType.class));
         // Spring Session의 조회 전·저장 후 예외를 모두 감싸는 직전 순서
         registration.setOrder(sessionStoreErrorFilterOrder(sessionProperties));
         return registration;

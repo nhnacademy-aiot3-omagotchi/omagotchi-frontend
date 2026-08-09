@@ -1,5 +1,6 @@
 package site.omagotchi.frontend.global.web;
 
+import jakarta.servlet.http.HttpServletResponse;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -8,12 +9,17 @@ import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.web.servlet.ModelAndView;
+import org.springframework.web.servlet.NoHandlerFoundException;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -34,6 +40,9 @@ class BffApiExceptionResolverTest {
     @Autowired
     private MockMvc mockMvc;
 
+    @Autowired
+    private ServletApiErrorResponseWriter responseWriter;
+
     @Test
     @DisplayName("Handler가 없는 BFF 경로의 공통 JSON 404")
     void handlesMissingBffHandlerAsJson() throws Exception {
@@ -47,6 +56,28 @@ class BffApiExceptionResolverTest {
                         jsonPath("$.code").value("COMMON_NOT_FOUND"),
                         jsonPath("$.path").value("/bff/v1/missing")
                 );
+    }
+
+    @Test
+    @DisplayName("Handler가 없는 일반 Page 경로의 BFF JSON 변환 제외")
+    void ignoresMissingNonBffHandler() {
+        // Given: BFF 경계 밖의 미등록 Page 요청과 404 예외
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/pages/missing");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        NoHandlerFoundException exception = new NoHandlerFoundException(
+                "GET",
+                "/pages/missing",
+                HttpHeaders.EMPTY
+        );
+
+        // When: BFF 전용 Resolver의 일반 Page 요청 검사
+        ModelAndView result = new BffApiExceptionResolver(responseWriter)
+                .resolveException(request, response, null, exception);
+
+        // Then: 다음 Resolver에 위임하기 위한 미처리 결과
+        assertThat(result).isNull();
+        assertThat(response.getStatus()).isEqualTo(HttpServletResponse.SC_OK);
+        assertThat(response.getContentAsByteArray()).isEmpty();
     }
 
     @Test

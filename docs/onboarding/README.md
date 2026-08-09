@@ -109,9 +109,7 @@ flowchart LR
    - Signup·Login·Logout, Redis와 Identity 경계
 4. [오류·장애 흐름](03-error-and-failure-flow.md)
    - HTML·JSON 오류 경계, Identity·Redis 실패
-5. [현재 구현 점검](04-current-implementation-review.md)
-   - 완료 범위, 남은 위험, Test 보장 범위
-6. [기능 연동 개발 가이드](05-feature-integration-guide.md)
+5. [기능 연동 개발 가이드](05-feature-integration-guide.md)
    - Prototype 전환, SSR·JSON BFF 선택, Session·CSRF·내부 HTTP·검증 기준
 
 ## 5. Code 탐색 시작점

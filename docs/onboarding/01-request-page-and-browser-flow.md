@@ -197,8 +197,8 @@ Browser JavaScript
   - 현재 저장소 내 주입 위치: 없음
   - 미설정 기본 효과: 실패 은닉과 `null` fallback
 - 실제 BFF 전환 기준
-  - Browser → `/bff/v1/**` 기능 Endpoint
-  - Frontend → Session Access JWT 기반 Domain Service 호출
+  - 호출 경로: Browser → `/bff/v1/**` → Frontend BFF → Domain Service
+  - JWT Relay: Browser 비노출·Frontend Session의 Access JWT 사용
   - 운영 Discovery·Client-side Load Balancing
   - 로컬 명시적 `localhost` 주소
 

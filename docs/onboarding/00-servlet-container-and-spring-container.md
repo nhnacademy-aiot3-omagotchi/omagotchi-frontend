@@ -25,13 +25,19 @@
 ```text
 FrontendApplication.main(...)
 → SpringApplication.run(...)
-→ ApplicationContext 생성
-→ Component Scan·Configuration 처리
-→ Bean 생성·주입
-→ Embedded Tomcat 생성
-→ Servlet·Filter 등록
+→ ServletWebServerApplicationContext 생성·Bean 정의 등록
+→ ApplicationContext refresh 시작
+  → Embedded Tomcat 생성
+  → ServletContext 초기화·Servlet·Filter 등록
+  → 남은 Non-lazy Singleton Bean 생성·주입
+→ ApplicationContext refresh 완료·Web Server Lifecycle 시작
 → Port Listen
 ```
+
+- 순서 해석
+  - Embedded Tomcat 생성: 전체 Singleton Bean 생성 완료 전 `onRefresh()` 단계
+  - Servlet·Filter 등록: Tomcat의 `ServletContext` 초기화 과정
+  - Port Listen: Context refresh 완료 뒤 Web Server Lifecycle 시작 단계
 
 - `FrontendApplication`
   - Spring Boot Bootstrap

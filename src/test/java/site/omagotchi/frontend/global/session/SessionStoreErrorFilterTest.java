@@ -167,9 +167,9 @@ class SessionStoreErrorFilterTest {
     }
 
     @Test
-    @DisplayName("ERROR dispatch의 Redis 장애에 대한 503 응답 Writer 위임")
-    void delegatesErrorDispatchFailureToResponseWriter() throws Exception {
-        // Given: Servlet Container의 별도 ERROR dispatch
+    @DisplayName("별도 ERROR dispatch의 Redis 장애에 대한 503 응답 Writer 위임")
+    void delegatesSeparateErrorDispatchFailureToResponseWriter() throws Exception {
+        // Given: REQUEST dispatch 종료 뒤 시작된 별도 ERROR dispatch
         SessionStoreFailureResponseWriter responseWriter =
                 mock(SessionStoreFailureResponseWriter.class);
         SessionStoreErrorFilter filter = new SessionStoreErrorFilter(responseWriter);
@@ -178,9 +178,32 @@ class SessionStoreErrorFilterTest {
         request.setAttribute(RequestDispatcher.ERROR_REQUEST_URI, "/home");
         MockHttpServletResponse response = new MockHttpServletResponse();
 
-        // When: ERROR dispatch의 Redis 연결 실패
+        // When: 별도 ERROR dispatch의 Redis 연결 실패
         filter.doFilter(request, response, (ignoredRequest, ignoredResponse) -> {
             throw new RedisConnectionFailureException("connection refused");
+        });
+
+        // Then: Session 장애 응답 Writer 위임
+        verify(responseWriter).write(request, response);
+    }
+
+    @Test
+    @DisplayName("중첩 ERROR dispatch의 Redis 장애에 대한 503 응답 Writer 위임")
+    void delegatesNestedErrorDispatchFailureToResponseWriter() throws Exception {
+        // Given: REQUEST dispatch 처리 중 같은 요청으로 진입하는 중첩 ERROR dispatch
+        SessionStoreFailureResponseWriter responseWriter =
+                mock(SessionStoreFailureResponseWriter.class);
+        SessionStoreErrorFilter filter = new SessionStoreErrorFilter(responseWriter);
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/home");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        // When: 첫 Filter Chain 종료 전 중첩 ERROR dispatch의 Redis 연결 실패
+        filter.doFilter(request, response, (outerRequest, outerResponse) -> {
+            request.setDispatcherType(DispatcherType.ERROR);
+            request.setAttribute(RequestDispatcher.ERROR_REQUEST_URI, "/home");
+            filter.doFilter(outerRequest, outerResponse, (ignoredRequest, ignoredResponse) -> {
+                throw new RedisConnectionFailureException("connection refused");
+            });
         });
 
         // Then: Session 장애 응답 Writer 위임

@@ -787,7 +787,7 @@ async function logout(logoutButton) {
         });
 
         // 완료되었거나 이미 만료된 Session의 Browser 표시 상태 정리
-        if (response.ok || response.status === 401 || response.status === 403) {
+        if (response.ok || response.status === 401) {
             sessionOnlyKeys.forEach((key) => sessionStorage.removeItem(key));
             window.location.href = "/login";
             return;
