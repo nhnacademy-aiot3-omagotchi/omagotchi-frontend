@@ -84,7 +84,7 @@ export function createLevel({
         if (levelElement) levelElement.textContent = String(level);
         if (xpFill) xpFill.style.width = `${progress}%`;
         if (currentXpLabel) currentXpLabel.textContent = `${xpInLevel}xp`;
-        if (nextLevelLabel) nextLevelLabel.textContent = `${xpInLevel}/${xpPerLevel}`;
+        if (nextLevelLabel) nextLevelLabel.textContent = `${xpInLevel}  /  ${xpPerLevel}`;
     }
 
     // 경험치 +
