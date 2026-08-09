@@ -1,5 +1,3 @@
-// FIXME: 단일 로그인·회원가입 전환 후 제거 예정인 레거시 분리 화면.
-
 // 관리자 로그인 화면 요소
 const form = document.querySelector(".login-form");
 const card = document.querySelector(".login-card");

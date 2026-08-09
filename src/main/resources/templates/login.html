@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Omagotchi 로그인</title>
+
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon_11.gif" th:href="@{/favicon_11.gif}" />
+    <link rel="stylesheet" href="/css/auth.css" th:href="@{/css/auth.css}" />
+    <link rel="stylesheet" href="/css/passwordToggle.css" th:href="@{/css/passwordToggle.css}" />
+    <link rel="stylesheet" href="/css/cursor.css" th:href="@{/css/cursor.css}" />
+</head>
+<body>
+<main class="login-page auth-page">
+    <section class="login-card auth-card" aria-labelledby="login-title">
+        <header class="auth-card-header">
+            <a class="auth-back-link" href="/" aria-label="인덱스로 돌아가기">←</a>
+            <p class="auth-brand">omagotchi</p>
+        </header>
+
+        <form class="login-form auth-panel" action="#" method="post">
+            <h1 id="login-title">환영합니다</h1>
+            <p class="auth-subtitle" data-auth-feedback>오마고치와 함께하는 학습</p>
+
+            <div class="auth-segmented" aria-label="인증 메뉴">
+                <span class="is-active">로그인</span>
+                <a href="/register">회원가입</a>
+            </div>
+
+            <label class="input-group auth-input-group">
+                <span class="sr-only">이메일</span>
+                <input type="email" name="email" placeholder="이메일" autocomplete="username" />
+            </label>
+
+            <div class="input-group auth-input-group">
+                <label class="sr-only" for="login-password">비밀번호</label>
+                <div class="password-input-wrap">
+                    <input id="login-password" type="password" name="password" placeholder="비밀번호" autocomplete="current-password" />
+                    <button class="password-visibility-toggle" type="button" data-password-toggle
+                            aria-label="비밀번호 표시" aria-pressed="false">
+                        <span class="password-eye" aria-hidden="true"></span>
+                    </button>
+                </div>
+            </div>
+
+            <a class="auth-forgot-link" href="/password-change">비밀번호를 잊으셨나요?</a>
+
+            <button class="login-button auth-submit-button" type="submit">
+                로그인하기
+            </button>
+        </form>
+    </section>
+</main>
+
+<script src="/js/api.js" th:src="@{/js/api.js}"></script>
+<script src="/js/login.js" th:src="@{/js/login.js}"></script>
+<script src="/js/passwordToggle.js" th:src="@{/js/passwordToggle.js}"></script>
+</body>
+</html>

@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Omagotchi Settings</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon_11.gif" th:href="@{/favicon_11.gif}" />
+    <link rel="stylesheet" href="/css/appPages.css" th:href="@{/css/appPages.css}" />
+    <link rel="stylesheet" href="/css/cursor.css" th:href="@{/css/cursor.css}" />
+</head>
+<body>
+<main class="app-page">
+    <section class="app-shell">
+        <header class="app-topbar">
+            <div class="app-title">
+                <h1>설정</h1>
+                <p>화면 밝기와 계정 관련 설정을 관리합니다.</p>
+            </div>
+            <a href="/home">홈으로</a>
+        </header>
+
+        <section class="panel">
+            <div class="settings-list">
+                <label class="setting-row">
+                    <span>
+                        <strong>화면 밝기</strong>
+                        <span>홈 화면의 초록 배경 밝기를 조절합니다.</span>
+                    </span>
+                    <input type="range" min="84" max="116" value="100" />
+                </label>
+                <div class="setting-row">
+                    <span>
+                        <strong>비밀번호 변경</strong>
+                        <span>로그인 비밀번호를 변경합니다.</span>
+                    </span>
+                    <a href="/password-change">이동</a>
+                </div>
+            </div>
+        </section>
+    </section>
+</main>
+</body>
+</html>

@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Omagotchi Personal</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon_11.gif" th:href="@{/favicon_11.gif}" />
+    <link rel="stylesheet" href="/css/appPages.css" th:href="@{/css/appPages.css}" />
+    <link rel="stylesheet" href="/css/cursor.css" th:href="@{/css/cursor.css}" />
+</head>
+<body>
+<main class="app-page">
+    <section class="app-shell">
+        <header class="app-topbar">
+            <div class="app-title">
+                <h1>내 정보</h1>
+                <p>캐릭터, 학습 시간, 연속 출석 상태를 확인합니다.</p>
+            </div>
+            <a href="/home">홈으로</a>
+        </header>
+
+        <section class="panel">
+            <div class="panel-header">
+                <h2>요약</h2>
+                <span class="status-pill">Lv 1</span>
+            </div>
+            <div class="stat-grid">
+                <article class="stat-card">
+                    <h3>총 학습</h3>
+                    <strong>0분</strong>
+                    <p>타이머 기록 기준</p>
+                </article>
+                <article class="stat-card">
+                    <h3>세션</h3>
+                    <strong>0회</strong>
+                    <p>완료한 학습 세션</p>
+                </article>
+                <article class="stat-card">
+                    <h3>연속 출석</h3>
+                    <strong>0일</strong>
+                    <p>입실 기록 기준</p>
+                </article>
+                <article class="stat-card">
+                    <h3>이번 주</h3>
+                    <strong>0분</strong>
+                    <p>주간 학습 시간</p>
+                </article>
+            </div>
+        </section>
+    </section>
+</main>
+</body>
+</html>

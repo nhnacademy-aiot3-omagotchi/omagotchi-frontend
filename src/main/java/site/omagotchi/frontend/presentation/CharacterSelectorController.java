@@ -8,6 +8,6 @@ public class CharacterSelectorController {
     // 캐릭터 선택 화면
     @GetMapping("/character-selector")
     public String characterSelector() {
-        return "pages/onboarding/characterSelector";
+        return "characterSelector";
     }
 }

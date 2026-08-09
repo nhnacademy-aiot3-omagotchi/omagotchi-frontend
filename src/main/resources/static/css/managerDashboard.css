@@ -127,11 +127,7 @@ button {
     font-weight: 800;
 }
 
-.manager-account > form {
-    margin: 0;
-}
-
-.manager-account > form button {
+.manager-account > button {
     border-color: var(--line);
     background: #fff;
     color: var(--ink);
