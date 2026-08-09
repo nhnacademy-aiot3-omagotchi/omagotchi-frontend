@@ -189,8 +189,8 @@ sequenceDiagram
 ```text
 GET /home
 → WebConfig의 View Controller
-→ View 이름 home
-→ templates/home.html
+→ View 이름 pages/app/home
+→ templates/pages/app/home.html
 ```
 
 - 사용 조건

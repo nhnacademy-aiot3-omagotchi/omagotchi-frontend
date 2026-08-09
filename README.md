@@ -31,10 +31,15 @@ Identity 인증 호출은 Spring HTTP Service Client Group을 사용합니다. �
 ```text
 src/main/resources/
 ├── templates/
-│   ├── *.html
 │   ├── error/
 │   ├── fragments/
-│   └── layouts/
+│   ├── layouts/
+│   └── pages/
+│       ├── app/
+│       ├── auth/
+│       ├── manager/
+│       ├── onboarding/
+│       └── public/
 └── static/
     ├── css/
     ├── js/
@@ -42,7 +47,7 @@ src/main/resources/
     └── images/
 ```
 
-- 화면 Template은 현재 `templates` 바로 아래에 두고 오류·Fragment·Layout만 하위 디렉터리로 구분합니다.
+- 화면 Template은 `templates/pages/**`에 두고 오류·Fragment·Layout은 하위 전용 디렉터리로 구분합니다.
 - 공통 Header, Navigation, Footer는 `templates/fragments/`에 둡니다.
 - 규모가 커진 JavaScript 기능은 `js/{feature}/` Module로 분리합니다.
 - Secret과 운영 서버 주소를 소스 코드에 하드코딩하지 않습니다.

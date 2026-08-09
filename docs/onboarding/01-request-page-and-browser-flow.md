@@ -86,7 +86,7 @@ Browser URL 요청
 
 ```java
 registry.addViewController("/home")
-        .setViewName("home");
+        .setViewName("pages/app/home");
 ```
 
 - 사용 조건

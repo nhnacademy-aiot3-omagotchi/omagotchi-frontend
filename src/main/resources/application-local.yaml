@@ -2,8 +2,6 @@ spring:
   config:
     # 로컬 환경 변수 파일. 누락 시 기동 실패
     import: "file:./.env.local[.properties]"
-    activate:
-      on-profile: local
 
 server:
   servlet:

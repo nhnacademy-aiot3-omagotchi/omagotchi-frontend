@@ -34,12 +34,18 @@
                 <span class="sr-only">이메일</span>
                 <input type="email" placeholder="이메일" autocomplete="username"
                        required th:field="*{email}" />
+                <span class="auth-field-error" th:if="${#fields.hasErrors('email')}" th:errors="*{email}">
+                    이메일 오류
+                </span>
             </label>
 
             <label class="input-group auth-input-group">
                 <span class="sr-only">사용자 이름</span>
                 <input type="text" placeholder="사용자 이름" autocomplete="name"
                        required th:field="*{name}" />
+                <span class="auth-field-error" th:if="${#fields.hasErrors('name')}" th:errors="*{name}">
+                    이름 오류
+                </span>
             </label>
 
             <div class="input-group auth-input-group">
@@ -52,6 +58,9 @@
                         <span class="password-eye" aria-hidden="true"></span>
                     </button>
                 </div>
+                <span class="auth-field-error" th:if="${#fields.hasErrors('password')}" th:errors="*{password}">
+                    비밀번호 오류
+                </span>
             </div>
 
             <button class="auth-button register-button auth-submit-button" type="submit">

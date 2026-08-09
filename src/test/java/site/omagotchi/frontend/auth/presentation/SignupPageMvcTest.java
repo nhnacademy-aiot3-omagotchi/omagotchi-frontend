@@ -93,7 +93,30 @@ class SignupPageMvcTest {
                                 "name",
                                 "password"
                         ),
-                        model().attributeExists("authFeedback")
+                        model().attributeExists("authFeedback"),
+                        content().string(containsString("이메일 형식이 올바르지 않습니다.")),
+                        content().string(containsString("이름은 필수입니다.")),
+                        content().string(containsString("비밀번호는 필수입니다."))
+                );
+
+        // Then: Signup Use Case 미호출
+        verifyNoInteractions(authenticationService);
+    }
+
+    @Test
+    @DisplayName("공백 비밀번호의 400 Form 재표시")
+    void rendersSignupValidationFailureForBlankPassword() throws Exception {
+        // When: 공백만 있는 비밀번호로 Signup Form 제출
+        mockMvc.perform(post("/register")
+                        .param("email", "user@example.com")
+                        .param("name", "오마고치")
+                        .param("password", "   "))
+                .andExpectAll(
+                        status().isBadRequest(),
+                        view().name("pages/auth/register"),
+                        model().attributeHasFieldErrors("signupForm", "password"),
+                        model().attributeExists("authFeedback"),
+                        content().string(containsString("비밀번호는 필수입니다."))
                 );
 
         // Then: Signup Use Case 미호출

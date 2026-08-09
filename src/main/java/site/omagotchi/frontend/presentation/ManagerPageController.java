@@ -5,16 +5,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 
 @Controller
 public class ManagerPageController {
-    // 관리자 로그인
-    @GetMapping("/manager-login")
-    public String managerLoginPage() {
-        return "pages/manager/managerLogin";
-    }
-    // 관리자 회원가입
-    @GetMapping("/manager-register")
-    public String managerRegisterPage() {
-        return "pages/manager/managerRegister";
-    }
     // 관리자 대시보드
     @GetMapping("/manager-dashboard")
     public String managerDashboardPage() {

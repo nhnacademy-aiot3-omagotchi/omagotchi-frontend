@@ -1,6 +1,7 @@
 package site.omagotchi.frontend.global.session;
 
 import io.lettuce.core.RedisCommandTimeoutException;
+import jakarta.servlet.RequestDispatcher;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.dao.DataAccessResourceFailureException;
@@ -173,6 +174,7 @@ class SessionStoreErrorFilterTest {
         SessionStoreErrorFilter filter = new SessionStoreErrorFilter(responseWriter);
         MockHttpServletRequest request = new MockHttpServletRequest("GET", "/home");
         request.setDispatcherType(jakarta.servlet.DispatcherType.ERROR);
+        request.setAttribute(RequestDispatcher.ERROR_REQUEST_URI, "/home");
         request.setAttribute(
                 SessionStoreErrorFilter.class.getName() + ".FILTERED",
                 Boolean.TRUE

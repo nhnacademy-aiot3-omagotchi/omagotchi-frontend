@@ -130,14 +130,12 @@ class FrontendApplicationTests {
 	}
 
 	@Test
-	void managerRegisterPageIsRendered() throws Exception {
-		mockMvc.perform(get("/manager-register"))
-				.andExpect(status().isOk())
-				.andExpect(view().name("pages/manager/managerRegister"))
-				.andExpect(content().string(containsString("소속 기관")));
+	void legacyManagerAuthPagesAreNotRouted() throws Exception {
+		mockMvc.perform(get("/manager-login"))
+				.andExpect(status().isNotFound());
 
-		mockMvc.perform(get("/js/managerRegister.js"))
-				.andExpect(status().isOk());
+		mockMvc.perform(get("/manager-register"))
+				.andExpect(status().isNotFound());
 	}
 
 	@Test

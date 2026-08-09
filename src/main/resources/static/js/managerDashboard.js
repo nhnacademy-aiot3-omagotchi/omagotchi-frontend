@@ -619,18 +619,24 @@ elements.dialog.addEventListener("click", (event) => {
 document.querySelector("[data-manager-logout-form]").addEventListener("submit", async (event) => {
     event.preventDefault();
 
-    // Server 응답과 무관한 관리자 Prototype 표시 상태 정리
-    ["omagotchiManagerEmail", "omagotchiManagerName", "omagotchiManagerOrganization", "omagotchiManagerCohort", "omagotchiManagerDashboardTab"]
-        .forEach((key) => sessionStorage.removeItem(key));
-
     try {
-        await fetch(event.currentTarget.action, {
+        const response = await fetch(event.currentTarget.action, {
             method: "POST",
             credentials: "same-origin",
             body: new FormData(event.currentTarget)
         });
-    } finally {
+
+        if (!response.ok && !response.redirected) {
+            setBubble(escapeHtml("로그아웃에 실패했습니다. 잠시 후 다시 시도해주세요."));
+            return;
+        }
+
+        // Server Logout 완료 뒤 관리자 Prototype 표시 상태 정리
+        ["omagotchiManagerEmail", "omagotchiManagerName", "omagotchiManagerOrganization", "omagotchiManagerCohort", "omagotchiManagerDashboardTab"]
+            .forEach((key) => sessionStorage.removeItem(key));
         window.location.href = "/login";
+    } catch {
+        setBubble(escapeHtml("로그아웃에 실패했습니다. 네트워크 상태를 확인해주세요."));
     }
 });
 

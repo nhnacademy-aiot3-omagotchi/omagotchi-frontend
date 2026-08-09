@@ -3,6 +3,7 @@ package site.omagotchi.frontend.auth.presentation.security;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.http.HttpHeaders;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -58,8 +59,8 @@ class AuthenticatedLoginRequestFilterTest {
     }
 
     @Test
-    @DisplayName("인증된 Login 요청의 Home Redirect")
-    void redirectsAuthenticatedLoginRequestToHome() throws Exception {
+    @DisplayName("인증된 Login 요청의 기존 화면 Redirect")
+    void redirectsAuthenticatedLoginRequestToPreviousPage() throws Exception {
         // Given: 인증된 SecurityContext와 Login 요청
         SecurityContextHolder.getContext().setAuthentication(
                 UsernamePasswordAuthenticationToken.authenticated(
@@ -68,17 +69,55 @@ class AuthenticatedLoginRequestFilterTest {
                         List.of()
                 )
         );
+        MockHttpServletRequest request = new MockHttpServletRequest("POST", "/login");
+        request.setScheme("https");
+        request.setServerName("omagotchi.example");
+        request.setServerPort(443);
+        request.addHeader(HttpHeaders.REFERER, "https://omagotchi.example/progress?tab=quests");
         MockHttpServletResponse response = new MockHttpServletResponse();
         AtomicBoolean chainInvoked = new AtomicBoolean();
 
         // When: 인증된 Login 요청 처리
         filter.doFilter(
-                new MockHttpServletRequest("POST", "/login"),
+                request,
                 response,
-                (request, filterResponse) -> chainInvoked.set(true)
+                (ignoredRequest, filterResponse) -> chainInvoked.set(true)
         );
 
-        // Then: Identity 호출 Filter 이전 Home Redirect
+        // Then: Identity 호출 Filter 이전 기존 화면 Redirect
+        assertSoftly(softly -> {
+            softly.assertThat(response.getRedirectedUrl()).isEqualTo("/progress?tab=quests");
+            softly.assertThat(chainInvoked).isFalse();
+        });
+    }
+
+    @Test
+    @DisplayName("인증된 Login 요청의 외부 Referer 무시")
+    void ignoresExternalRefererForAuthenticatedLoginRequest() throws Exception {
+        // Given: 인증된 SecurityContext와 외부 Referer Login 요청
+        SecurityContextHolder.getContext().setAuthentication(
+                UsernamePasswordAuthenticationToken.authenticated(
+                        "user-id",
+                        null,
+                        List.of()
+                )
+        );
+        MockHttpServletRequest request = new MockHttpServletRequest("POST", "/login");
+        request.setScheme("https");
+        request.setServerName("omagotchi.example");
+        request.setServerPort(443);
+        request.addHeader(HttpHeaders.REFERER, "https://evil.example/phishing");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        AtomicBoolean chainInvoked = new AtomicBoolean();
+
+        // When: 인증된 Login 요청 처리
+        filter.doFilter(
+                request,
+                response,
+                (ignoredRequest, filterResponse) -> chainInvoked.set(true)
+        );
+
+        // Then: 외부 Redirect 없이 Home fallback
         assertSoftly(softly -> {
             softly.assertThat(response.getRedirectedUrl()).isEqualTo("/home");
             softly.assertThat(chainInvoked).isFalse();

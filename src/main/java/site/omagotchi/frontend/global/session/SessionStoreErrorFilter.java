@@ -50,6 +50,11 @@ public class SessionStoreErrorFilter extends OncePerRequestFilter {
         doFilterInternal(request, response, filterChain);
     }
 
+    @Override
+    protected boolean shouldNotFilterErrorDispatch() {
+        return false;
+    }
+
     // 장애 분류 결과와 원본 Stack Trace의 단일 기록
     private void logFailure(
             HttpServletRequest request,
