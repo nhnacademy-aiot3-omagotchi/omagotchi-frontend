@@ -68,6 +68,14 @@
         return source;
     }
 
+    function withDateRange(path, range = {}) {
+        const query = new URLSearchParams();
+        if (range.from) query.set("from", range.from);
+        if (range.to) query.set("to", range.to);
+        const queryString = query.toString();
+        return queryString ? `${path}?${queryString}` : path;
+    }
+
     window.OmagotchiApi = {
         request,
         optional,
@@ -105,7 +113,18 @@
             createPost: (payload) => optional("/community/posts", { method: "POST", body: payload })
         },
         manager: {
-            getDashboard: () => optional("/manager/dashboard")
+            getDashboard: () => optional("/manager/dashboard"),
+            // TEMPORARY: Learning Service 연동 전 관리자 공부 통계 화면 검증용 Mock 경로입니다.
+            // 실제 연동 시 목록은 /v1/cohorts/{cohortId}/study-statistics,
+            // 상세는 위 경로의 /members/{cohortMembershipId}/records로 복원합니다.
+            getStudyStatistics: (_cohortId, range) => optional(withDateRange(
+                "/mock-api/study-stats",
+                range
+            )),
+            getStudyMemberRecords: (_cohortId, cohortMembershipId, range) => optional(withDateRange(
+                `/mock-api/study-stats/members/${encodeURIComponent(cohortMembershipId)}/records`,
+                range
+            ))
         }
     };
 })();

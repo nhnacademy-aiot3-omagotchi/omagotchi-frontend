@@ -5,7 +5,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title layout:title-pattern="$CONTENT_TITLE">Omagotchi 기수 운영</title>
+    <title>Omagotchi 기수 운영</title>
     <link rel="icon" type="image/png" sizes="48x48" href="/favicon.png" th:href="@{/favicon.png}" />
     <link rel="stylesheet" href="/css/managerDashboard.css"
           th:href="@{/css/managerDashboard.css}" />
@@ -36,17 +36,7 @@
                 <select data-cohort-select aria-label="관리할 기수 선택"></select>
                 <small>배정받은 기수만 표시됩니다.</small>
             </section>
-            <nav aria-label="기수 관리자 메뉴">
-                <button class="is-active" type="button" data-dashboard-tab="overview">운영 요약</button>
-                <button type="button" data-dashboard-tab="codes">가입 코드</button>
-                <button type="button" data-dashboard-tab="applications">참가 신청</button>
-                <button type="button" data-dashboard-tab="members">소속 관리</button>
-                <button type="button" data-dashboard-tab="attendance">출결 관리</button>
-                <button type="button" data-dashboard-tab="sensors">공간·센서</button>
-                <button type="button" data-dashboard-tab="community">커뮤니티</button>
-                <button type="button" data-dashboard-tab="studyStats">공부 통계</button>
-                <button type="button" data-dashboard-tab="audits">작업 이력</button>
-            </nav>
+            <nav aria-label="기수 관리자 메뉴" data-dashboard-navigation></nav>
         </aside>
 
         <div class="manager-content" layout:fragment="content"></div>
