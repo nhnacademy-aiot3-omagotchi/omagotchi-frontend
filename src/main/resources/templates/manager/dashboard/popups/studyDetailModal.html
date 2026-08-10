@@ -97,6 +97,32 @@
                 </div>
             </section>
 
+            <template data-detail-timeline-bar-template>
+                <button type="button" class="study-timeline-bar" data-timeline-record>
+                    <span data-detail-timeline-duration></span>
+                </button>
+            </template>
+            <template data-detail-record-template>
+                <article class="study-detail-record" data-detail-record-id>
+                    <span class="study-detail-record-index" data-detail-record-index></span>
+                    <div>
+                        <strong data-detail-record-range></strong>
+                        <small>실제 공부 구간</small>
+                    </div>
+                    <div>
+                        <strong data-detail-record-duration></strong>
+                        <small>인정 학습 시간</small>
+                    </div>
+                    <div>
+                        <strong data-detail-record-updated-at></strong>
+                        <small>최종 수정</small>
+                    </div>
+                </article>
+            </template>
+            <template data-detail-record-empty-template>
+                <p class="study-detail-empty">선택한 날짜에는 공부 기록이 없습니다.</p>
+            </template>
+
             <footer class="study-detail-footer">
                 <button type="button" data-detail-close>닫기</button>
             </footer>

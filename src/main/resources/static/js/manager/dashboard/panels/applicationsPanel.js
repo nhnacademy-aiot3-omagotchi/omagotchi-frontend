@@ -1,9 +1,28 @@
 (() => {
-    function create({ root, store, statusLabel, escapeHtml, openDialog }) {
+    function createApplicationRow(template, item, statusLabel) {
+        const row = template.content.firstElementChild.cloneNode(true);
+        const pending = item.status === "PENDING";
+        const approve = row.querySelector("[data-approve]");
+        const reject = row.querySelector("[data-reject]");
+
+        row.querySelector("[data-application-name]").textContent = item.name ?? "";
+        row.querySelector("[data-application-email]").textContent = item.email ?? "";
+        row.querySelector("[data-application-requested-at]").textContent = item.requestedAt ?? "";
+        row.querySelector("[data-application-status]").textContent = statusLabel(item.status);
+        approve.dataset.approve = String(item.id);
+        reject.dataset.reject = String(item.id);
+        approve.disabled = !pending;
+        reject.disabled = !pending;
+        return row;
+    }
+
+    function create({ root, store, statusLabel, openDialog }) {
         if (!root) throw new Error("Applications panel root is required.");
 
         const count = root.querySelector("[data-application-count]");
         const list = root.querySelector("[data-application-list]");
+        const rowTemplate = root.querySelector("[data-application-row-template]");
+        const emptyTemplate = root.querySelector("[data-application-empty-template]");
 
         function getRows() {
             const state = store.getState();
@@ -13,17 +32,13 @@
         function activate() {
             const rows = getRows();
             count.textContent = `${rows.filter((item) => item.status === "PENDING").length}건`;
-            list.innerHTML = rows.length ? rows.map((item) => `
-                <tr>
-                    <td><strong>${escapeHtml(item.name)}</strong></td>
-                    <td>${escapeHtml(item.email)}</td>
-                    <td>${escapeHtml(item.requestedAt)}</td>
-                    <td><span class="status-badge">${statusLabel(item.status)}</span></td>
-                    <td><div class="table-actions">
-                        <button class="is-primary" type="button" data-approve="${item.id}" ${item.status !== "PENDING" ? "disabled" : ""}>승인</button>
-                        <button class="is-danger" type="button" data-reject="${item.id}" ${item.status !== "PENDING" ? "disabled" : ""}>거절</button>
-                    </div></td>
-                </tr>`).join("") : `<tr><td class="empty-row" colspan="5">참가 신청이 없습니다.</td></tr>`;
+            if (!rows.length) {
+                list.replaceChildren(emptyTemplate.content.cloneNode(true));
+                return;
+            }
+            const fragment = document.createDocumentFragment();
+            rows.forEach((item) => fragment.append(createApplicationRow(rowTemplate, item, statusLabel)));
+            list.replaceChildren(fragment);
         }
 
         list.addEventListener("click", (event) => {

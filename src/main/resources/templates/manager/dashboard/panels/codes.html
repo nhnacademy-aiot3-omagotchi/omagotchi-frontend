@@ -5,4 +5,20 @@
     </div>
     <p class="panel-description">원문 코드는 발급 시 한 번만 확인하는 정책을 화면에 반영했습니다. 프로토타입에서는 사용자 가입 연결 확인을 위해 브라우저에 저장합니다.</p>
     <div class="code-card" data-code-card></div>
+    <template data-code-empty-template>
+        <div>
+            <strong>발급된 가입 코드가 없습니다.</strong>
+            <p style="margin: 8px 0 0; color: var(--muted); font-size: 12px; line-height: 1.65;">새 코드를 발급하면 이전 코드는 즉시 폐기됩니다.</p>
+        </div>
+    </template>
+    <template data-code-card-template>
+        <div>
+            <div class="code-value"><strong data-code-value></strong><span class="status-badge" data-code-status></span></div>
+            <div class="code-meta"><span data-code-expires-at></span><span data-code-issued-at></span><span data-code-used></span></div>
+        </div>
+        <div class="code-actions">
+            <button class="is-primary" type="button" data-code-copy>복사</button>
+            <button class="is-danger" type="button" data-code-revoke>폐기</button>
+        </div>
+    </template>
 </section>

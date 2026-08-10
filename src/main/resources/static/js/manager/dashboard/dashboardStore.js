@@ -25,6 +25,7 @@
         sensor: {},
         joinCode: null
     });
+    const STORAGE_KEYS_TO_CLEAR = Object.freeze(Object.values(STORAGE_KEYS));
     const SESSION_KEYS_TO_CLEAR = Object.freeze(Object.values(SESSION_KEYS));
     const MEMBER_STATUSES = new Set(["ACTIVE", "INACTIVE", "ENDED"]);
     const ATTENDANCE_STATUSES = new Set(["NORMAL", "LATE", "ABSENT", "EARLY_LEAVE"]);
@@ -43,6 +44,19 @@
     const SENSOR_OPERATORS = new Set(Object.keys(SENSOR_OPERATOR_LABELS));
     const SENSOR_METRICS = Object.freeze(["temperature", "humidity", "co2"]);
     const SENSOR_UNITS = Object.freeze({ temperature: "℃", humidity: "%", co2: "ppm" });
+    const KST_DATE_FORMATTER = new Intl.DateTimeFormat("en-US", {
+        timeZone: "Asia/Seoul",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit"
+    });
+
+    function currentKstAggregationDate(date) {
+        const shifted = new Date(date.getTime() - 4 * 60 * 60 * 1000);
+        const parts = KST_DATE_FORMATTER.formatToParts(shifted);
+        const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+        return `${values.year}-${values.month}-${values.day}`;
+    }
 
     function validSensorThresholds(thresholds) {
         for (const metric of SENSOR_METRICS) {
@@ -89,7 +103,7 @@
 
         const initialDate = now();
         let state = {
-            today: initialDate.toISOString().slice(0, 10),
+            today: currentKstAggregationDate(initialDate),
             manager: {
                 email: readSession(SESSION_KEYS.email),
                 name: readSession(SESSION_KEYS.name, "관리자"),
@@ -213,7 +227,7 @@
             next.selectedCohortId = command.cohortId;
             return commit(command.type, next, {
                 changes: ["selection", "shell", "all"],
-                message: `${currentCohort(next).name} 업무만<br />표시하고 있습니다.`,
+                message: `${currentCohort(next).name} 업무만\n표시하고 있습니다.`,
                 writes: [{ storage: session, key: SESSION_KEYS.cohort, value: command.cohortId }]
             });
         }
@@ -237,10 +251,25 @@
             });
         }
 
-        function clearSession() {
-            const writes = SESSION_KEYS_TO_CLEAR.map((key) => ({ storage: session, key, value: null }));
-            writeAtomically(writes);
-            return Object.freeze({ ok: true, message: "" });
+        function clearSession(command) {
+            const next = {
+                today: state.today,
+                manager: { email: "", name: "관리자", organization: "" },
+                cohorts: [],
+                applications: [],
+                notices: [],
+                audits: [],
+                selectedCohortId: "",
+                activePanel: "overview"
+            };
+            const writes = [
+                ...SESSION_KEYS_TO_CLEAR.map((key) => ({ storage: session, key, value: null })),
+                ...STORAGE_KEYS_TO_CLEAR.map((key) => ({ storage: local, key, value: null }))
+            ];
+            return commit(command.type, next, {
+                changes: ["selection", "shell", "all"],
+                writes
+            });
         }
 
         function updateCohort(command) {
@@ -252,7 +281,7 @@
             appendAudit(next, "기수 정보 수정", cohort.name, "설명과 정원 변경");
             return commit(command.type, next, {
                 changes: ["cohortInfo", "audits"],
-                message: "기수 정보를<br />저장했습니다."
+                message: "기수 정보를\n저장했습니다."
             });
         }
 
@@ -271,7 +300,7 @@
             appendAudit(next, "가입 코드 발급", cohort.name, `만료일 ${command.expiresAt}`);
             return commit(command.type, next, {
                 changes: ["joinCode", "audits"],
-                message: "새 가입 코드를<br />발급했습니다."
+                message: "새 가입 코드를\n발급했습니다."
             });
         }
 
@@ -310,7 +339,7 @@
             appendAudit(next, "참가 신청 승인", application.email, "PENDING → ACTIVE");
             return commit(command.type, next, {
                 changes: ["shell", "members", "applications", "audits"],
-                message: `${application.name} 님을<br />승인했습니다.`,
+                message: `${application.name} 님을\n승인했습니다.`,
                 writes: operationWrites(next, [{ storage: local, key: joinedKey, value: joinedValue }])
             });
         }
@@ -403,7 +432,7 @@
             );
             return commit(command.type, next, {
                 changes: ["sensors", "audits"],
-                message: "센서 임계치를<br />저장했습니다."
+                message: "센서 임계치를\n저장했습니다."
             });
         }
 

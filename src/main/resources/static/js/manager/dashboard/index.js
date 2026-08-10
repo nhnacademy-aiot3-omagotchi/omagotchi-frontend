@@ -4,8 +4,21 @@ let dialogCallback = null;
 const SENSOR_LOCATION_ORDER = Object.freeze(["LAB", "OFFICE", "MEETING_ROOM"]);
 
 async function hydrateDashboard() {
-    const dashboard = await window.OmagotchiApi?.manager?.getDashboard?.();
-    if (dashboard) store.dispatch({ type: "HYDRATE_DASHBOARD", dashboard });
+    try {
+        const dashboard = await window.OmagotchiApi?.manager?.getDashboard?.();
+        if (dashboard) {
+            if (Array.isArray(dashboard.cohorts)) {
+                dashboard.cohorts.forEach((cohort) => {
+                    cohort.members = Array.isArray(cohort.members) ? cohort.members : [];
+                    cohort.attendance = Array.isArray(cohort.attendance) ? cohort.attendance : [];
+                });
+            }
+            store.dispatch({ type: "HYDRATE_DASHBOARD", dashboard });
+        }
+    } catch (error) {
+        console.error("대시보드 데이터를 불러오지 못했습니다.", error);
+        setBubble("대시보드 데이터를\n불러오지 못했습니다.");
+    }
 }
 
 const elements = {
@@ -43,15 +56,6 @@ function statusLabel(status) {
     }[status] || status;
 }
 
-function escapeHtml(value) {
-    return String(value ?? "")
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#039;");
-}
-
 function labSensorFor(cohort) {
     const fallback = cohort.sensor || {};
     let source = [];
@@ -76,7 +80,12 @@ function labSensorFor(cohort) {
 }
 
 function setBubble(message) {
-    elements.bubble.innerHTML = message;
+    const fragment = document.createDocumentFragment();
+    String(message ?? "").split("\n").forEach((line, index) => {
+        if (index) fragment.append(document.createElement("br"));
+        fragment.append(document.createTextNode(line));
+    });
+    elements.bubble.replaceChildren(fragment);
 }
 
 function openDialog({ title, message, inputLabel, inputType = "text", initialValue = "", confirmText = "확인" }, callback) {
@@ -105,9 +114,15 @@ function renderSession() {
 }
 
 function renderCohortSelect({ cohorts, selectedCohortId }) {
-    elements.cohortSelect.innerHTML = cohorts.map((cohort) => (
-        `<option value="${escapeHtml(cohort.id)}" ${cohort.id === selectedCohortId ? "selected" : ""}>${escapeHtml(cohort.name)}</option>`
-    )).join("");
+    const fragment = document.createDocumentFragment();
+    cohorts.forEach((cohort) => {
+        const option = document.createElement("option");
+        option.value = String(cohort.id ?? "");
+        option.textContent = cohort.name ?? "";
+        option.selected = cohort.id === selectedCohortId;
+        fragment.append(option);
+    });
+    elements.cohortSelect.replaceChildren(fragment);
 }
 
 function renderSummary(state) {
@@ -166,7 +181,6 @@ window.OmagotchiDashboardPanels.start({
     navigation: elements.navigation,
     shared: {
         statusLabel,
-        escapeHtml,
         openDialog,
         setBubble,
         fetchStatistics: (cohortId, range) => (

@@ -201,7 +201,7 @@
             event.preventDefault();
             const { location, thresholds } = readThresholdForm(elements.form);
             if (!isValidThresholds(location, thresholds)) {
-                setBubble("임계치 값을<br />확인해 주세요.");
+                setBubble("임계치 값을\n확인해 주세요.");
                 return;
             }
 

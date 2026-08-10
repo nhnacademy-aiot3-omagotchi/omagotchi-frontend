@@ -16,4 +16,21 @@
             <tbody data-application-list></tbody>
         </table>
     </div>
+    <template data-application-row-template>
+        <tr>
+            <td><strong data-application-name></strong></td>
+            <td data-application-email></td>
+            <td data-application-requested-at></td>
+            <td><span class="status-badge" data-application-status></span></td>
+            <td>
+                <div class="table-actions">
+                    <button class="is-primary" type="button" data-approve>승인</button>
+                    <button class="is-danger" type="button" data-reject>거절</button>
+                </div>
+            </td>
+        </tr>
+    </template>
+    <template data-application-empty-template>
+        <tr><td class="empty-row" colspan="5">참가 신청이 없습니다.</td></tr>
+    </template>
 </section>

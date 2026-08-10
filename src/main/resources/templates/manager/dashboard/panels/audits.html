@@ -15,4 +15,15 @@
             <tbody data-audit-list></tbody>
         </table>
     </div>
+    <template data-audit-row-template>
+        <tr>
+            <td data-audit-occurred-at></td>
+            <td data-audit-action></td>
+            <td data-audit-target></td>
+            <td data-audit-detail></td>
+        </tr>
+    </template>
+    <template data-audit-empty-template>
+        <tr><td class="empty-row" colspan="4">기록된 작업 이력이 없습니다.</td></tr>
+    </template>
 </section>

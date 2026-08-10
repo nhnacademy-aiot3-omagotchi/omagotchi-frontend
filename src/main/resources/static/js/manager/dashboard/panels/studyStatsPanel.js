@@ -2,15 +2,6 @@
     const PAGE_SIZE = 5;
     const DEFAULT_BOUNDARY_NOTE = "Asia/Seoul 오전 4시를 하루의 시작으로 집계합니다.";
 
-    function escapeHtml(value) {
-        return String(value ?? "")
-            .replaceAll("&", "&amp;")
-            .replaceAll("<", "&lt;")
-            .replaceAll(">", "&gt;")
-            .replaceAll('"', "&quot;")
-            .replaceAll("'", "&#039;");
-    }
-
     function isoDateInZone(date, timeZone = "Asia/Seoul") {
         return new Intl.DateTimeFormat("en-CA", {
             timeZone,
@@ -43,6 +34,40 @@
         }).format(new Date(value));
     }
 
+    function createEmptyRow(template, message) {
+        const row = template.content.firstElementChild.cloneNode(true);
+        row.querySelector("[data-studystats-empty-message]").textContent = message;
+        return row;
+    }
+
+    function createPageButton(template, pageNumber, currentPage) {
+        const button = template.content.firstElementChild.cloneNode(true);
+        button.classList.toggle("is-active", pageNumber === currentPage);
+        button.dataset.goPage = String(pageNumber);
+        button.textContent = String(pageNumber + 1);
+        return button;
+    }
+
+    function createMemberRow(template, member) {
+        const row = template.content.firstElementChild.cloneNode(true);
+        const membershipId = String(member.cohortMembershipId ?? "");
+        const name = String(member.name ?? "");
+        const email = String(member.email ?? "");
+
+        row.querySelector("[data-studystats-member-name]").textContent = name;
+        row.querySelector("[data-studystats-member-email]").textContent = email;
+        row.querySelector("[data-studystats-today]").textContent = formatDuration(member.todayStudySeconds);
+        row.querySelector("[data-studystats-period-total]").textContent = formatDuration(member.periodStudySeconds);
+        row.querySelector("[data-studystats-active-days]").textContent = `${Number(member.activeStudyDays) || 0}일`;
+        row.querySelector("[data-studystats-last-studied]").textContent = formatDateTime(member.lastStudiedAt);
+        row.querySelectorAll("[data-view-detail]").forEach((button) => {
+            button.dataset.viewDetail = membershipId;
+            button.dataset.viewName = name;
+            button.dataset.viewEmail = email;
+        });
+        return row;
+    }
+
     function create({ root, fetchStatistics, getMemberProfiles, openMemberDetail }) {
         if (!root) {
             throw new Error("Study statistics panel root is required.");
@@ -65,7 +90,10 @@
             boundaryNote: root.querySelector("[data-study-boundary-note]"),
             trendChart: root.querySelector("#trendChart"),
             topStudentsChart: root.querySelector("#topStudentsChart"),
-            durationDistributionChart: root.querySelector("#durationDistributionChart")
+            durationDistributionChart: root.querySelector("#durationDistributionChart"),
+            rowTemplate: root.querySelector("[data-studystats-row-template]"),
+            emptyTemplate: root.querySelector("[data-studystats-empty-template]"),
+            pageTemplate: root.querySelector("[data-studystats-page-template]")
         };
 
         let active = false;
@@ -143,32 +171,34 @@
         function renderPagination(totalPages) {
             if (!elements.pageNumbers) return;
             if (totalPages <= 1) {
-                elements.pageNumbers.innerHTML = "";
+                elements.pageNumbers.replaceChildren();
                 return;
             }
 
             const start = Math.max(0, Math.min(page - 2, totalPages - 5));
             const end = Math.min(totalPages, start + 5);
-            elements.pageNumbers.innerHTML = Array.from(
-                { length: end - start },
-                (_, offset) => start + offset
-            )
-                .map((pageNumber) => `
-                    <button type="button"
-                            class="page-btn ${pageNumber === page ? "is-active" : ""}"
-                            data-go-page="${pageNumber}">${pageNumber + 1}</button>`)
-                .join("");
+            const fragment = document.createDocumentFragment();
+            for (let pageNumber = start; pageNumber < end; pageNumber += 1) {
+                fragment.append(createPageButton(elements.pageTemplate, pageNumber, page));
+            }
+            elements.pageNumbers.replaceChildren(fragment);
         }
 
         function renderTable() {
             if (!elements.list) return;
             if (loading) {
-                elements.list.innerHTML = `<tr><td class="empty-row" colspan="7">공부 통계를 불러오는 중입니다.</td></tr>`;
+                elements.list.replaceChildren(createEmptyRow(
+                    elements.emptyTemplate,
+                    "공부 통계를 불러오는 중입니다."
+                ));
                 renderPagination(0);
                 return;
             }
             if (!statistics) {
-                elements.list.innerHTML = `<tr><td class="empty-row" colspan="7">공부 통계를 불러오지 못했습니다.</td></tr>`;
+                elements.list.replaceChildren(createEmptyRow(
+                    elements.emptyTemplate,
+                    "공부 통계를 불러오지 못했습니다."
+                ));
                 renderPagination(0);
                 return;
             }
@@ -178,31 +208,16 @@
             page = Math.min(page, totalPages - 1);
             const currentPage = members.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
 
-            elements.list.innerHTML = currentPage.length ? currentPage.map((member) => `
-                <tr>
-                    <td>
-                        <button type="button" class="study-member-link"
-                                data-view-detail="${member.cohortMembershipId}"
-                                data-view-name="${escapeHtml(member.name)}"
-                                data-view-email="${escapeHtml(member.email)}">
-                            <strong>${escapeHtml(member.name)}</strong>
-                        </button>
-                    </td>
-                    <td><small>${escapeHtml(member.email)}</small></td>
-                    <td>${escapeHtml(formatDuration(member.todayStudySeconds))}</td>
-                    <td>${escapeHtml(formatDuration(member.periodStudySeconds))}</td>
-                    <td>${member.activeStudyDays}일</td>
-                    <td>${escapeHtml(formatDateTime(member.lastStudiedAt))}</td>
-                    <td>
-                        <div class="table-actions">
-                            <button type="button" class="secondary-button"
-                                    data-view-detail="${member.cohortMembershipId}"
-                                    data-view-name="${escapeHtml(member.name)}"
-                                    data-view-email="${escapeHtml(member.email)}">상세 보기</button>
-                        </div>
-                    </td>
-                </tr>
-            `).join("") : `<tr><td class="empty-row" colspan="7">조회된 수강생이 없습니다.</td></tr>`;
+            if (!currentPage.length) {
+                elements.list.replaceChildren(createEmptyRow(
+                    elements.emptyTemplate,
+                    "조회된 수강생이 없습니다."
+                ));
+            } else {
+                const fragment = document.createDocumentFragment();
+                currentPage.forEach((member) => fragment.append(createMemberRow(elements.rowTemplate, member)));
+                elements.list.replaceChildren(fragment);
+            }
 
             renderPagination(totalPages);
             root.querySelectorAll(".sortable").forEach((heading) => {

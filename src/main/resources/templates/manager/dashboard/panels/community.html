@@ -10,4 +10,14 @@
         <button class="secondary-button" type="button" data-cancel-notice>취소</button>
     </form>
     <div class="community-list" data-community-list></div>
+    <template data-community-item-template>
+        <article class="community-item">
+            <span class="status-badge" data-community-type></span>
+            <div><h3 data-community-title></h3><p data-community-content></p></div>
+            <button type="button" data-community-action></button>
+        </article>
+    </template>
+    <template data-community-empty-template>
+        <p class="scope-note">등록된 게시글이 없습니다.</p>
+    </template>
 </section>

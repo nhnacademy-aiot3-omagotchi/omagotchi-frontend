@@ -17,4 +17,19 @@
             <tbody data-member-list></tbody>
         </table>
     </div>
+    <template data-member-row-template>
+        <tr>
+            <td><strong data-member-name></strong></td>
+            <td data-member-email></td>
+            <td data-member-role></td>
+            <td><span class="status-badge" data-member-status-label></span></td>
+            <td>
+                <div class="table-actions">
+                    <small data-member-manager-note hidden>시스템 관리자만 변경 가능</small>
+                    <button type="button" data-member-status hidden></button>
+                    <button class="is-danger" type="button" data-member-end hidden>소속 종료</button>
+                </div>
+            </td>
+        </tr>
+    </template>
 </section>

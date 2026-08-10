@@ -3,25 +3,29 @@
 
     function findAttendanceRecord(cohort, memberId, date) {
         return cohort.attendance.find(
-            (item) => item.memberId === memberId && item.date === date
+            (item) => String(item.memberId) === String(memberId) && item.date === date
         );
     }
 
-    function memberRow(member, record, { statusLabel, escapeHtml }) {
-        return `<tr>
-            <td><strong>${escapeHtml(member.name)}</strong><small>${escapeHtml(member.email)}</small></td>
-            <td>${record?.checkIn || "-"}</td><td>${record?.checkOut || "-"}</td>
-            <td>${statusLabel(record?.autoStatus || "PENDING")}</td>
-            <td><span class="status-badge">${statusLabel(record?.finalStatus || "PENDING")}</span></td>
-            <td><div class="table-actions"><button type="button" data-attendance-edit="${member.id}">상태 변경</button></div></td>
-        </tr>`;
+    function createAttendanceRow(template, member, record, statusLabel) {
+        const row = template.content.firstElementChild.cloneNode(true);
+        row.querySelector("[data-attendance-member-name]").textContent = member.name ?? "";
+        row.querySelector("[data-attendance-member-email]").textContent = member.email ?? "";
+        row.querySelector("[data-attendance-check-in]").textContent = record?.checkIn || "-";
+        row.querySelector("[data-attendance-check-out]").textContent = record?.checkOut || "-";
+        row.querySelector("[data-attendance-auto-status]").textContent = statusLabel(record?.autoStatus || "PENDING");
+        row.querySelector("[data-attendance-final-status]").textContent = statusLabel(record?.finalStatus || "PENDING");
+        row.querySelector("[data-attendance-edit]").dataset.attendanceEdit = String(member.id);
+        return row;
     }
 
-    function create({ root, store, statusLabel, escapeHtml, openDialog }) {
+    function create({ root, store, statusLabel, openDialog }) {
         if (!root) throw new Error("Attendance panel root is required.");
 
         const dateInput = root.querySelector("[data-attendance-date]");
         const list = root.querySelector("[data-attendance-list]");
+        const rowTemplate = root.querySelector("[data-attendance-row-template]");
+        const emptyTemplate = root.querySelector("[data-attendance-empty-template]");
         const today = store.getState().today;
         let pendingEdit = null;
         dateInput.value = today;
@@ -33,16 +37,18 @@
         function activate() {
             const date = dateInput.value || today;
             const cohort = getCohort();
-            const rows = [];
+            const fragment = document.createDocumentFragment();
+            let rowCount = 0;
 
             for (const member of cohort.members) {
                 if (member.role === "MANAGER" || member.status === "ENDED") continue;
                 const record = findAttendanceRecord(cohort, member.id, date);
-                rows.push(memberRow(member, record, { statusLabel, escapeHtml }));
+                fragment.append(createAttendanceRow(rowTemplate, member, record, statusLabel));
+                rowCount += 1;
             }
 
-            list.innerHTML = rows.join("")
-                || `<tr><td class="empty-row" colspan="6">조회할 구성원이 없습니다.</td></tr>`;
+            if (!rowCount) fragment.append(emptyTemplate.content.cloneNode(true));
+            list.replaceChildren(fragment);
         }
 
         function submitStatus(value) {

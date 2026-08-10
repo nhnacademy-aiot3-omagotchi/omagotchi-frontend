@@ -3,15 +3,6 @@
  * 외부에는 openStudyDetailModal만 공개하고 기간·날짜·타임라인 상태는 이 모듈이 관리한다.
  */
 (() => {
-    function escapeHtml(value) {
-        return String(value ?? "")
-            .replaceAll("&", "&amp;")
-            .replaceAll("<", "&lt;")
-            .replaceAll(">", "&gt;")
-            .replaceAll('"', "&quot;")
-            .replaceAll("'", "&#039;");
-    }
-
     function addDays(isoDate, amount) {
         const date = new Date(`${isoDate}T00:00:00Z`);
         date.setUTCDate(date.getUTCDate() + amount);
@@ -99,6 +90,28 @@
         }).format(new Date(value));
     }
 
+    function createTimelineBar(template, record, position) {
+        const bar = template.content.firstElementChild.cloneNode(true);
+        const label = `${formatKstTime(record.startTime)}부터 ${formatKstTime(record.endTime)}, ${formatDuration(record.studySeconds)}`;
+        bar.style.left = `${position.left.toFixed(4)}%`;
+        bar.style.width = `${position.width.toFixed(4)}%`;
+        bar.dataset.timelineRecord = String(record.id);
+        bar.setAttribute("aria-label", label);
+        bar.title = label;
+        bar.querySelector("[data-detail-timeline-duration]").textContent = formatTimelineDuration(record.studySeconds);
+        return bar;
+    }
+
+    function createDetailRecord(template, record, index) {
+        const article = template.content.firstElementChild.cloneNode(true);
+        article.dataset.detailRecordId = String(record.id);
+        article.querySelector("[data-detail-record-index]").textContent = String(index + 1);
+        article.querySelector("[data-detail-record-range]").textContent = `${formatKstTime(record.startTime)} ~ ${formatKstTime(record.endTime)}`;
+        article.querySelector("[data-detail-record-duration]").textContent = formatDuration(record.studySeconds);
+        article.querySelector("[data-detail-record-updated-at]").textContent = formatKstDateTime(record.updatedAt);
+        return article;
+    }
+
     function initializeStudyDetailModal() {
         const dialog = document.querySelector("[data-study-detail-dialog]");
         if (!dialog) return;
@@ -124,6 +137,9 @@
             timelineEmpty: dialog.querySelector("[data-detail-timeline-empty]"),
             selectedCount: dialog.querySelector("[data-detail-selected-count]"),
             list: dialog.querySelector("[data-study-detail-list]"),
+            timelineBarTemplate: dialog.querySelector("[data-detail-timeline-bar-template]"),
+            recordTemplate: dialog.querySelector("[data-detail-record-template]"),
+            recordEmptyTemplate: dialog.querySelector("[data-detail-record-empty-template]"),
             closeButtons: [...dialog.querySelectorAll("[data-detail-close]")]
         };
 
@@ -279,37 +295,22 @@
             elements.selectedCount.textContent = `${records.length}개 세션`;
             elements.timelineEmpty.hidden = records.length > 0;
 
-            elements.timelineTrack.innerHTML = records.map((record) => {
+            const timelineFragment = document.createDocumentFragment();
+            records.forEach((record) => {
                 const position = timelinePosition(record);
-                if (!position) return "";
-                const label = `${formatKstTime(record.startTime)}부터 ${formatKstTime(record.endTime)}, ${formatDuration(record.studySeconds)}`;
-                return `
-                    <button type="button" class="study-timeline-bar"
-                            style="left: ${position.left.toFixed(4)}%; width: ${position.width.toFixed(4)}%;"
-                            data-timeline-record="${escapeHtml(record.id)}"
-                            aria-label="${escapeHtml(label)}" title="${escapeHtml(label)}">
-                        <span>${escapeHtml(formatTimelineDuration(record.studySeconds))}</span>
-                    </button>
-                `;
-            }).join("");
+                if (position) timelineFragment.append(createTimelineBar(elements.timelineBarTemplate, record, position));
+            });
+            elements.timelineTrack.replaceChildren(timelineFragment);
 
-            elements.list.innerHTML = records.length ? records.map((record, index) => `
-                <article class="study-detail-record" data-detail-record-id="${escapeHtml(record.id)}">
-                    <span class="study-detail-record-index">${index + 1}</span>
-                    <div>
-                        <strong>${escapeHtml(formatKstTime(record.startTime))} ~ ${escapeHtml(formatKstTime(record.endTime))}</strong>
-                        <small>실제 공부 구간</small>
-                    </div>
-                    <div>
-                        <strong>${escapeHtml(formatDuration(record.studySeconds))}</strong>
-                        <small>인정 학습 시간</small>
-                    </div>
-                    <div>
-                        <strong>${escapeHtml(formatKstDateTime(record.updatedAt))}</strong>
-                        <small>최종 수정</small>
-                    </div>
-                </article>
-            `).join("") : `<p class="study-detail-empty">선택한 날짜에는 공부 기록이 없습니다.</p>`;
+            if (!records.length) {
+                elements.list.replaceChildren(elements.recordEmptyTemplate.content.cloneNode(true));
+                return;
+            }
+            const recordFragment = document.createDocumentFragment();
+            records.forEach((record, index) => {
+                recordFragment.append(createDetailRecord(elements.recordTemplate, record, index));
+            });
+            elements.list.replaceChildren(recordFragment);
         }
 
         function render() {
@@ -341,7 +342,7 @@
             state.selectedDate = date;
             renderTrendChart();
             renderSelectedDate();
-            Type    }
+        }
 
         async function loadRecords() {
             const sequence = ++state.requestSequence;

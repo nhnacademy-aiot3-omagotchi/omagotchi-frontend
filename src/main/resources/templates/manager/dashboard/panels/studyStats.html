@@ -91,4 +91,29 @@
     <div class="pagination-wrap">
         <div class="page-numbers" data-page-numbers aria-label="공부 통계 페이지"></div>
     </div>
+    <template data-studystats-row-template>
+        <tr>
+            <td>
+                <button type="button" class="study-member-link" data-view-detail>
+                    <strong data-studystats-member-name></strong>
+                </button>
+            </td>
+            <td><small data-studystats-member-email></small></td>
+            <td data-studystats-today></td>
+            <td data-studystats-period-total></td>
+            <td data-studystats-active-days></td>
+            <td data-studystats-last-studied></td>
+            <td>
+                <div class="table-actions">
+                    <button type="button" class="secondary-button" data-view-detail>상세 보기</button>
+                </div>
+            </td>
+        </tr>
+    </template>
+    <template data-studystats-empty-template>
+        <tr><td class="empty-row" colspan="7" data-studystats-empty-message></td></tr>
+    </template>
+    <template data-studystats-page-template>
+        <button type="button" class="page-btn" data-go-page></button>
+    </template>
 </section>

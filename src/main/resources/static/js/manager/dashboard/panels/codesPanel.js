@@ -1,9 +1,11 @@
 (() => {
-    function create({ root, store, statusLabel, escapeHtml, openDialog, setBubble }) {
+    function create({ root, store, statusLabel, openDialog, setBubble }) {
         if (!root) throw new Error("Codes panel root is required.");
 
         const issueButton = root.querySelector("[data-issue-code]");
         const codeCard = root.querySelector("[data-code-card]");
+        const cardTemplate = root.querySelector("[data-code-card-template]");
+        const emptyTemplate = root.querySelector("[data-code-empty-template]");
 
         function getCode() {
             return store.getState().currentCohort.joinCode;
@@ -12,18 +14,16 @@
         function activate() {
             const code = getCode();
             if (!code?.value) {
-                codeCard.innerHTML = `<div><strong>발급된 가입 코드가 없습니다.</strong><p style="margin: 8px 0 0; color: var(--muted); font-size: 12px; line-height: 1.65;">새 코드를 발급하면 이전 코드는 즉시 폐기됩니다.</p></div>`;
+                codeCard.replaceChildren(emptyTemplate.content.cloneNode(true));
                 return;
             }
-            codeCard.innerHTML = `
-                <div>
-                    <div class="code-value"><strong>${escapeHtml(code.value)}</strong><span class="status-badge">${statusLabel(code.status)}</span></div>
-                    <div class="code-meta"><span>만료 ${escapeHtml(code.expiresAt)}</span><span>발급 ${escapeHtml(code.issuedAt)}</span><span>사용 ${code.used || 0}회</span></div>
-                </div>
-                <div class="code-actions">
-                    <button class="is-primary" type="button" data-code-copy>복사</button>
-                    <button class="is-danger" type="button" data-code-revoke ${code.status !== "ACTIVE" ? "disabled" : ""}>폐기</button>
-                </div>`;
+            codeCard.replaceChildren(cardTemplate.content.cloneNode(true));
+            codeCard.querySelector("[data-code-value]").textContent = code.value;
+            codeCard.querySelector("[data-code-status]").textContent = statusLabel(code.status);
+            codeCard.querySelector("[data-code-expires-at]").textContent = `만료 ${code.expiresAt ?? ""}`;
+            codeCard.querySelector("[data-code-issued-at]").textContent = `발급 ${code.issuedAt ?? ""}`;
+            codeCard.querySelector("[data-code-used]").textContent = `사용 ${Number(code.used) || 0}회`;
+            codeCard.querySelector("[data-code-revoke]").disabled = code.status !== "ACTIVE";
         }
 
         issueButton.addEventListener("click", () => {
@@ -46,9 +46,9 @@
                 const code = getCode();
                 try {
                     await navigator.clipboard.writeText(code.value);
-                    setBubble("가입 코드를<br />복사했습니다.");
+                    setBubble("가입 코드를\n복사했습니다.");
                 } catch {
-                    setBubble(`가입 코드<br />${code.value}`);
+                    setBubble(`가입 코드\n${code.value}`);
                 }
             }
             if (event.target.closest("[data-code-revoke]")) {

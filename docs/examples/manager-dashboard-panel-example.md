@@ -90,7 +90,8 @@ src/main/resources/static/js/manager/dashboard/panels/inactiveMembersPanel.js
 
         function getInactiveMembers() {
             return store.getState().currentCohort.members.filter((member) => (
-                member.role === "STUDENT" && member.status !== "ACTIVE"
+                member.role === "STUDENT"
+                && ["INACTIVE", "ENDED"].includes(member.status)
             ));
         }
 

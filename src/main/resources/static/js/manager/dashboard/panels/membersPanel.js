@@ -1,9 +1,33 @@
 (() => {
-    function create({ root, store, statusLabel, escapeHtml, openDialog }) {
+    function createMemberRow(template, member, statusLabel) {
+        const row = template.content.firstElementChild.cloneNode(true);
+        const managerNote = row.querySelector("[data-member-manager-note]");
+        const statusButton = row.querySelector("[data-member-status]");
+        const endButton = row.querySelector("[data-member-end]");
+        const isManager = member.role === "MANAGER";
+
+        row.querySelector("[data-member-name]").textContent = member.name ?? "";
+        row.querySelector("[data-member-email]").textContent = member.email ?? "";
+        row.querySelector("[data-member-role]").textContent = statusLabel(member.role);
+        row.querySelector("[data-member-status-label]").textContent = statusLabel(member.status);
+        managerNote.hidden = !isManager;
+        statusButton.hidden = isManager;
+        endButton.hidden = isManager;
+        if (!isManager) {
+            statusButton.dataset.memberStatus = String(member.id);
+            statusButton.textContent = member.status === "ACTIVE" ? "비활성화" : "활성화";
+            endButton.dataset.memberEnd = String(member.id);
+            endButton.disabled = member.status === "ENDED";
+        }
+        return row;
+    }
+
+    function create({ root, store, statusLabel, openDialog }) {
         if (!root) throw new Error("Members panel root is required.");
 
         const search = root.querySelector("[data-member-search]");
         const list = root.querySelector("[data-member-list]");
+        const rowTemplate = root.querySelector("[data-member-row-template]");
 
         function getMembers() {
             return store.getState().currentCohort.members;
@@ -14,19 +38,9 @@
             const rows = getMembers().filter((member) => (
                 member.name.toLowerCase().includes(query) || member.email.toLowerCase().includes(query)
             ));
-            list.innerHTML = rows.map((member) => `
-                <tr>
-                    <td><strong>${escapeHtml(member.name)}</strong></td>
-                    <td>${escapeHtml(member.email)}</td>
-                    <td>${statusLabel(member.role)}</td>
-                    <td><span class="status-badge">${statusLabel(member.status)}</span></td>
-                    <td><div class="table-actions">
-                        ${member.role === "MANAGER"
-                            ? `<small>시스템 관리자만 변경 가능</small>`
-                            : `<button type="button" data-member-status="${member.id}">${member.status === "ACTIVE" ? "비활성화" : "활성화"}</button>
-                               <button class="is-danger" type="button" data-member-end="${member.id}" ${member.status === "ENDED" ? "disabled" : ""}>소속 종료</button>`}
-                    </div></td>
-                </tr>`).join("");
+            const fragment = document.createDocumentFragment();
+            rows.forEach((member) => fragment.append(createMemberRow(rowTemplate, member, statusLabel)));
+            list.replaceChildren(fragment);
         }
 
         search.addEventListener("input", activate);

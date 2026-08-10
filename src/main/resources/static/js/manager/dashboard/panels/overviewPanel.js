@@ -65,8 +65,9 @@
                 1,
                 Number(elements.form.elements.namedItem("capacity").value) || cohort.capacity
             );
+            const result = store.dispatch({ type: "UPDATE_COHORT", description, capacity });
+            if (!result.ok) return;
             elements.form.hidden = true;
-            store.dispatch({ type: "UPDATE_COHORT", description, capacity });
         });
 
         return Object.freeze({ activate });

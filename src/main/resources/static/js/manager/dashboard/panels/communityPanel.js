@@ -1,12 +1,26 @@
 (() => {
-    function create({ root, store, escapeHtml }) {
+    function createCommunityItem(template, item) {
+        const article = template.content.firstElementChild.cloneNode(true);
+        const action = article.querySelector("[data-community-action]");
+        article.classList.toggle("is-reported", Boolean(item.reports));
+        article.querySelector("[data-community-type]").textContent = item.type === "NOTICE" ? "공지" : "자유";
+        article.querySelector("[data-community-title]").textContent = `${item.pinned ? "고정 · " : ""}${item.title ?? ""}`;
+        article.querySelector("[data-community-content]").textContent = `${item.content ?? ""} · 신고 ${Number(item.reports) || 0}건`;
+        action.dataset.communityAction = String(item.id);
+        action.textContent = item.pinned ? "고정 해제" : item.reports ? "신고 확인" : "고정";
+        return article;
+    }
+
+    function create({ root, store }) {
         if (!root) throw new Error("Community panel root is required.");
 
         const elements = {
             open: root.querySelector("[data-open-notice-form]"),
             form: root.querySelector("[data-notice-form]"),
             cancel: root.querySelector("[data-cancel-notice]"),
-            list: root.querySelector("[data-community-list]")
+            list: root.querySelector("[data-community-list]"),
+            itemTemplate: root.querySelector("[data-community-item-template]"),
+            emptyTemplate: root.querySelector("[data-community-empty-template]")
         };
 
         function getRows() {
@@ -16,12 +30,13 @@
 
         function activate() {
             const rows = [...getRows()].sort((a, b) => Number(b.pinned) - Number(a.pinned));
-            elements.list.innerHTML = rows.length ? rows.map((item) => `
-                <article class="community-item ${item.reports ? "is-reported" : ""}">
-                    <span class="status-badge">${item.type === "NOTICE" ? "공지" : "자유"}</span>
-                    <div><h3>${item.pinned ? "고정 · " : ""}${escapeHtml(item.title)}</h3><p>${escapeHtml(item.content)} · 신고 ${item.reports || 0}건</p></div>
-                    <button type="button" data-community-action="${item.id}">${item.pinned ? "고정 해제" : item.reports ? "신고 확인" : "고정"}</button>
-                </article>`).join("") : `<p class="scope-note">등록된 게시글이 없습니다.</p>`;
+            if (!rows.length) {
+                elements.list.replaceChildren(elements.emptyTemplate.content.cloneNode(true));
+                return;
+            }
+            const fragment = document.createDocumentFragment();
+            rows.forEach((item) => fragment.append(createCommunityItem(elements.itemTemplate, item)));
+            elements.list.replaceChildren(fragment);
         }
 
         elements.open.addEventListener("click", () => {
