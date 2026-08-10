@@ -212,6 +212,53 @@ const levelController = createLevel({
 });
 
 let presenceController;
+function confirmCheckOut() {
+    return new Promise((resolve) => {
+        const backdrop = document.createElement("section");
+        backdrop.className = "home-confirm-backdrop";
+        backdrop.innerHTML = `
+            <article class="home-confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="home-confirm-title">
+                <h2 id="home-confirm-title">퇴실하시겠습니까?</h2>
+                <p>퇴실하면 오늘의 퇴실 시간이 기록됩니다.</p>
+                <div class="home-confirm-actions">
+                    <button type="button" data-confirm-cancel>아니오</button>
+                    <button type="button" data-confirm-ok>예</button>
+                </div>
+            </article>
+        `;
+
+        function close(result) {
+            document.removeEventListener("keydown", handleKeydown);
+            backdrop.remove();
+            resolve(result);
+        }
+
+        function handleKeydown(event) {
+            if (event.key === "Escape") {
+                close(false);
+            }
+        }
+
+        backdrop.addEventListener("click", (event) => {
+            const target = event.target;
+            if (!(target instanceof Element)) return;
+
+            if (target === backdrop || target.closest("[data-confirm-cancel]")) {
+                close(false);
+                return;
+            }
+
+            if (target.closest("[data-confirm-ok]")) {
+                close(true);
+            }
+        });
+
+        document.addEventListener("keydown", handleKeydown);
+        document.body.append(backdrop);
+        backdrop.querySelector("[data-confirm-cancel]")?.focus();
+    });
+}
+
 const attendanceController = createAttendance({
     button: attendanceButton,
     checkInTime,
@@ -226,6 +273,7 @@ const attendanceController = createAttendance({
     storageKey: attendanceKey,
     api: api?.attendance,
     onCheckOutSuccess: () => showHomeToast("퇴실 처리됐어요. 타이머는 계속 사용할 수 있어요."),
+    confirmCheckOut,
     onChange: ({ streakCount: currentStreakCount } = {}) => {
         characterController.setAttendanceStreak(currentStreakCount);
         presenceController?.render();
@@ -441,7 +489,38 @@ const overlayContent = {
         </details>
 
         <details>
-            <summary>8. 키보드 조작</summary>
+            <summary>8. 홈 하단 버튼</summary>
+            <div class="help-detail">
+                <ul>
+                    <li>홈 화면 아래의 고정 버튼으로 자주 쓰는 기능을 빠르게 열 수 있습니다.</li>
+                </ul>
+                <ol class="help-dock-guide" aria-label="홈 하단 버튼 안내">
+                    <li>
+                        <img src="/images/app/music.png" alt="BGM 버튼" />
+                        <strong>BGM</strong>
+                        <span>음악 재생, 다음 곡, 셔플, 플레이리스트를 확인합니다.</span>
+                    </li>
+                    <li>
+                        <img src="/images/app/calendar.png" alt="출석부 버튼" />
+                        <strong>출석부</strong>
+                        <span>오늘 입실/퇴실 시간과 월별 출석 기록을 확인합니다.</span>
+                    </li>
+                    <li>
+                        <img src="/images/app/social.png" alt="재실 인원 버튼" />
+                        <strong>재실 인원</strong>
+                        <span>현재 실습실에 있는 인원과 상태를 확인합니다.</span>
+                    </li>
+                    <li>
+                        <img src="/images/app/exit.png" alt="퇴실 버튼" />
+                        <strong>퇴실</strong>
+                        <span>하루 학습을 마치고 퇴실 기록을 남깁니다.</span>
+                    </li>
+                </ol>
+            </div>
+        </details>
+
+        <details>
+            <summary>9. 키보드 조작</summary>
             <div class="help-detail">
                 <dl class="help-key-list">
                     <div><dt><kbd>U</kbd> <kbd>u</kbd> <kbd>ㅕ</kbd></dt><dd>실습실 재실 인원 열기 또는 닫기</dd></div>
@@ -453,7 +532,7 @@ const overlayContent = {
         </details>
 
         <details>
-            <summary>9. 자주 묻는 질문</summary>
+            <summary>10. 자주 묻는 질문</summary>
             <div class="help-detail help-faq">
                 <details>
                     <summary>입실과 출석은 같은 기능인가요?</summary>

@@ -1051,7 +1051,27 @@ a {
     list-style: none;
 }
 
+.help-dock-guide {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px;
+    margin: 16px 0 0;
+    padding: 0;
+    list-style: none;
+}
+
 .help-wing-guide li {
+    display: grid;
+    justify-items: center;
+    gap: 6px;
+    padding: 12px 8px;
+    border: 2px solid rgba(12, 71, 48, 0.22);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.7);
+    text-align: center;
+}
+
+.help-dock-guide li {
     display: grid;
     justify-items: center;
     gap: 6px;
@@ -1069,12 +1089,22 @@ a {
     image-rendering: pixelated;
 }
 
+.help-dock-guide img {
+    width: 42px;
+    height: 42px;
+    object-fit: contain;
+    image-rendering: pixelated;
+}
+
 .help-wing-guide strong,
-.help-wing-guide span {
+.help-wing-guide span,
+.help-dock-guide strong,
+.help-dock-guide span {
     font-weight: 900;
 }
 
-.help-wing-guide strong {
+.help-wing-guide strong,
+.help-dock-guide strong {
     color: #123c2d;
     font-size: 13px;
 }
@@ -1082,6 +1112,12 @@ a {
 .help-wing-guide span {
     color: #0e6948;
     font-size: 12px;
+}
+
+.help-dock-guide span {
+    color: rgba(0, 0, 0, 0.64);
+    font-size: 12px;
+    line-height: 1.35;
 }
 
 .help-key-list {
@@ -1170,6 +1206,73 @@ a {
     font-size: 14px;
     font-weight: 700;
     line-height: 1.55;
+}
+
+.home-confirm-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 80;
+    display: grid;
+    place-items: center;
+    padding: 24px;
+    background: rgba(0, 0, 0, 0.38);
+}
+
+.home-confirm-dialog {
+    width: min(360px, calc(100vw - 48px));
+    display: grid;
+    gap: 14px;
+    padding: 22px;
+    border: 3px solid #090909;
+    border-radius: 16px;
+    background: #ffffff;
+    color: #090909;
+    text-align: center;
+    box-shadow: 0 8px 0 rgba(0, 0, 0, 0.2);
+}
+
+.home-confirm-dialog h2 {
+    margin: 0;
+    font-size: 24px;
+    font-weight: 900;
+    line-height: 1.2;
+}
+
+.home-confirm-dialog p {
+    margin: 0;
+    color: rgba(0, 0, 0, 0.64);
+    font-size: 14px;
+    font-weight: 800;
+    line-height: 1.45;
+}
+
+.home-confirm-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    margin-top: 4px;
+}
+
+.home-confirm-actions button {
+    min-height: 46px;
+    border: 2px solid #090909;
+    border-radius: 10px;
+    background: #ffffff;
+    color: #090909;
+    font-size: 15px;
+    font-weight: 900;
+    cursor: pointer;
+    box-shadow: 0 3px 0 rgba(0, 0, 0, 0.16);
+}
+
+.home-confirm-actions [data-confirm-ok] {
+    background: #111111;
+    color: #ffffff;
+}
+
+.home-confirm-actions button:hover,
+.home-confirm-actions button:focus-visible {
+    transform: translateY(-1px);
 }
 
 /* 기수 가입 코드 입력 */
@@ -3513,7 +3616,8 @@ a {
         font-size: 14px;
     }
 
-    .help-wing-guide {
+    .help-wing-guide,
+    .help-dock-guide {
         grid-template-columns: 1fr;
     }
 
