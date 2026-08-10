@@ -89,11 +89,11 @@
     }
 
     .home-character-stage {
-        min-height: clamp(180px, 25vh, 240px);
+        min-height: clamp(210px, 29vh, 280px);
     }
 
     .home-character-button {
-        width: clamp(148px, 20vh, 205px);
+        width: clamp(190px, 26vh, 265px);
     }
 
     .home-character-wing {
@@ -128,11 +128,11 @@
     }
 
     .home-character-stage {
-        min-height: clamp(150px, 22vh, 190px);
+        min-height: clamp(190px, 27vh, 240px);
     }
 
     .home-character-button {
-        width: clamp(128px, 18vh, 164px);
+        width: clamp(170px, 24vh, 230px);
     }
 
     .home-character-wing {
@@ -202,11 +202,11 @@
     }
 
     .home-character-stage {
-        min-height: clamp(118px, 18vh, 148px);
+        min-height: clamp(160px, 24vh, 210px);
     }
 
     .home-character-button {
-        width: clamp(104px, 15vh, 132px);
+        width: clamp(145px, 22vh, 195px);
     }
 
     .home-character-wing {
