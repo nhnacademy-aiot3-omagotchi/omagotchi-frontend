@@ -87,6 +87,7 @@ Browser
 sequenceDiagram
     participant B as Browser
     participant SRF as SessionRepositoryFilter
+    participant CF as CsrfFilter
     participant ALF as AuthenticatedLoginRequestFilter
     participant UPAF as UsernamePasswordAuthenticationFilter
     participant AP as IdentityLoginAuthenticationProvider
@@ -97,7 +98,9 @@ sequenceDiagram
 
     B->>SRF: POST /login + Session Cookie + CSRF
     SRF->>SRF: Servlet HttpSession 접근을 Spring Session 구현으로 교체
-    SRF->>ALF: Spring Security Filter Chain
+    SRF->>CF: Spring Security Filter Chain
+    CF->>CF: 제출 Token과 Session의 기대 Token 비교
+    CF->>ALF: 검증된 Login Request
     ALF->>ALF: 기존 SecurityContext 확인
     alt 인증된 Session
         ALF-->>B: 302 /home
@@ -110,6 +113,7 @@ sequenceDiagram
         UPAF->>CSS: onAuthentication(...)
         CSS->>HS: 기존 익명 Session ID 교체
         CSS->>HS: Token Bundle을 별도 Session attribute로 기록
+        CSS->>HS: Login 전 CSRF Token 폐기·교체 준비
         CSS->>CSS: Authentication details의 Token Bundle 제거
         UPAF->>HS: Access·Refresh Token 없는 SecurityContext 저장
         UPAF-->>B: 302 /home
@@ -369,7 +373,7 @@ sequenceDiagram
     LF->>IH: 현재 Session Token Bundle
     IH->>I: Refresh Token family 폐기 시도
     alt Identity 정상 응답
-        I-->>IH: 2xx
+        I-->>IH: 204 No Content
     else Identity 장애·계약 위반
         IH->>IH: 원본 Cause 기록
     end
@@ -386,7 +390,8 @@ sequenceDiagram
   - 최종 근거: Identity 현재 API 계약·Test
 - Browser 정책
   - Logout 성공: Tab 단위 Prototype 표시 상태 제거와 Login Page 이동
-  - 이미 만료된 Session의 `401`·`403`: 표시 상태 제거와 Login Page 이동
+  - 이미 만료된 Session의 `401`: 표시 상태 제거와 Login Page 이동
+  - `403`: CSRF·인가 실패일 수 있으므로 Logout 성공으로 간주하지 않음
   - `5xx`·Network 실패: 표시 상태 유지와 현재 화면의 실패 안내
   - Server 완료 전 Logout 성공으로 보이는 화면 전환 금지
 
