@@ -14,6 +14,7 @@ export function createAttendance({
     storageKey,
     api,
     onCheckOutSuccess,
+    confirmCheckOut,
     onChange
 }) {
     let renderedDateKey = getLocalDateKey();
@@ -225,6 +226,8 @@ export function createAttendance({
             button.classList.toggle("is-complete", hasCheckOut);
             button.hidden = !hasCheckIn;
             button.textContent = "퇴실하기";
+            button.setAttribute("aria-label", hasCheckOut ? "퇴실 완료" : "퇴실하기");
+            button.setAttribute("title", hasCheckOut ? "퇴실 완료" : "퇴실하기");
             button.disabled = !hasCheckIn || hasCheckOut;
         }
 
@@ -241,6 +244,11 @@ export function createAttendance({
         }
 
         const nextAction = "checkOut";
+        const confirmed = await confirmCheckOut?.();
+        if (confirmed === false) {
+            render();
+            return;
+        }
 
         if (button) button.disabled = true;
         const serverAttendance = await api?.[nextAction]?.();
