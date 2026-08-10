@@ -95,6 +95,8 @@
                     data-presence-trigger
                     aria-expanded="false"
                     aria-controls="presence-panel"
+                    aria-label="재실 인원 보기"
+                    title="재실 인원 보기"
             >
                 <span class="presence-trigger-copy">
                     <strong>실습실 재실 인원</strong>
@@ -152,7 +154,7 @@
             <p class="timer-policy" data-timer-status aria-live="polite"></p>
         </section>
 
-        <button class="attendance-button" type="button" data-attendance-button hidden>
+        <button class="attendance-button" type="button" data-attendance-button title="퇴실하기" aria-label="퇴실하기" hidden>
             퇴실하기
         </button>
 
@@ -163,6 +165,7 @@
                 aria-expanded="false"
                 aria-controls="home-bgm-player"
                 aria-label="BGM 열기"
+                title="BGM 열기"
         >
             <img src="/images/app/music.png" alt="" aria-hidden="true" />
         </button>
@@ -174,6 +177,7 @@
                 aria-expanded="false"
                 aria-controls="attendance-detail"
                 aria-label="출석부 열기"
+                title="출석부 열기"
         >
             <img src="/images/app/calendar.png" alt="" aria-hidden="true" />
         </button>

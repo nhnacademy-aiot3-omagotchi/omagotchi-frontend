@@ -249,7 +249,27 @@ textarea {
     list-style: none;
 }
 
+.dock-action-guide {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+    margin: 18px 0 0;
+    padding: 0;
+    list-style: none;
+}
+
 .streak-wing-guide li {
+    display: grid;
+    justify-items: center;
+    gap: 8px;
+    padding: 16px 12px;
+    border: 2px solid rgba(9, 9, 9, 0.14);
+    border-radius: 16px;
+    background: #ffffff;
+    text-align: center;
+}
+
+.dock-action-guide li {
     display: grid;
     justify-items: center;
     gap: 8px;
@@ -267,19 +287,36 @@ textarea {
     image-rendering: pixelated;
 }
 
+.dock-action-guide img {
+    width: 48px;
+    height: 48px;
+    object-fit: contain;
+    image-rendering: pixelated;
+}
+
 .streak-wing-guide strong,
-.streak-wing-guide span {
+.streak-wing-guide span,
+.dock-action-guide strong,
+.dock-action-guide span {
     font-weight: 900;
 }
 
-.streak-wing-guide strong {
+.streak-wing-guide strong,
+.dock-action-guide strong {
     color: var(--ink);
     font-size: 15px;
 }
 
-.streak-wing-guide span {
+.streak-wing-guide span,
+.dock-action-guide span {
     color: #10835a;
     font-size: 13px;
+}
+
+.dock-action-guide span {
+    max-width: 180px;
+    color: var(--muted-ink);
+    line-height: 1.35;
 }
 
 /* 기수 정보 */
@@ -417,7 +454,8 @@ textarea {
         grid-template-columns: 1fr;
     }
 
-    .streak-wing-guide {
+    .streak-wing-guide,
+    .dock-action-guide {
         grid-template-columns: 1fr;
     }
 }
