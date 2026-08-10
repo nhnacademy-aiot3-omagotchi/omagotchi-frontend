@@ -2463,7 +2463,7 @@ a {
     z-index: 2;
     display: grid;
     place-items: center;
-    width: clamp(170px, 17vw, 250px);
+    width: clamp(220px, 21vw, 320px);
     aspect-ratio: 1;
     padding: 0;
     border: 0;
