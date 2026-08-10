@@ -8,6 +8,10 @@
             transform 0.12s ease;
 }
 
+.presence-trigger {
+    position: relative;
+}
+
 .home-dock-button:hover,
 .home-dock-button:focus-visible,
 .home-dock-button[aria-expanded="true"],
@@ -34,6 +38,45 @@
 .bgm-volume input:focus-visible {
     outline: 2px solid rgba(9, 9, 9, 0.5);
     outline-offset: 2px;
+}
+
+.home-dock-button::after,
+.presence-trigger::after,
+.attendance-button::after {
+    content: attr(aria-label);
+    position: absolute;
+    left: 50%;
+    bottom: calc(100% + 10px);
+    z-index: 2;
+    min-width: max-content;
+    max-width: 180px;
+    padding: 7px 9px;
+    border: 2px solid #090909;
+    border-radius: 8px;
+    background: #ffffff;
+    color: #090909;
+    font-size: 12px;
+    font-weight: 900;
+    line-height: 1;
+    text-indent: 0;
+    white-space: nowrap;
+    box-shadow: 0 3px 0 rgba(0, 0, 0, 0.16);
+    opacity: 0;
+    pointer-events: none;
+    transform: translate(-50%, 4px);
+    transition:
+            opacity 0.12s ease,
+            transform 0.12s ease;
+}
+
+.home-dock-button:hover::after,
+.home-dock-button:focus-visible::after,
+.presence-trigger:hover::after,
+.presence-trigger:focus-visible::after,
+.attendance-button:hover::after,
+.attendance-button:focus-visible::after {
+    opacity: 1;
+    transform: translate(-50%, 0);
 }
 
 .presence-trigger:hover,
