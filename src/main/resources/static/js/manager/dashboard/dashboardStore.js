@@ -28,6 +28,33 @@
     const SESSION_KEYS_TO_CLEAR = Object.freeze(Object.values(SESSION_KEYS));
     const MEMBER_STATUSES = new Set(["ACTIVE", "INACTIVE", "ENDED"]);
     const ATTENDANCE_STATUSES = new Set(["NORMAL", "LATE", "ABSENT", "EARLY_LEAVE"]);
+    const SENSOR_LOCATION_NAMES = Object.freeze({
+        LAB: "실습실",
+        OFFICE: "사무실",
+        MEETING_ROOM: "회의실"
+    });
+    const SENSOR_LOCATION_IDS = new Set(Object.keys(SENSOR_LOCATION_NAMES));
+    const SENSOR_OPERATOR_LABELS = Object.freeze({
+        GTE: "이상",
+        LT: "미만",
+        GT: "초과",
+        LTE: "이하"
+    });
+    const SENSOR_OPERATORS = new Set(Object.keys(SENSOR_OPERATOR_LABELS));
+    const SENSOR_METRICS = Object.freeze(["temperature", "humidity", "co2"]);
+    const SENSOR_UNITS = Object.freeze({ temperature: "℃", humidity: "%", co2: "ppm" });
+
+    function validSensorThresholds(thresholds) {
+        for (const metric of SENSOR_METRICS) {
+            const rule = thresholds?.[metric];
+            if (!SENSOR_OPERATORS.has(rule?.operator) || !Number.isFinite(rule?.value)) return false;
+        }
+        return true;
+    }
+
+    function formatSensorThreshold(metric, rule) {
+        return `${SENSOR_OPERATOR_LABELS[rule.operator]} ${rule.value}${SENSOR_UNITS[metric]}`;
+    }
 
     function clone(value) {
         if (typeof structuredClone === "function") return structuredClone(value);
@@ -356,30 +383,23 @@
         function saveSensorThresholds(command) {
             const next = clone(state);
             const cohort = currentCohort(next);
+            const location = command.location || "LAB";
             const thresholds = command.thresholds;
-            const thresholdValues = [
-                thresholds?.temperatureMin,
-                thresholds?.temperatureMax,
-                thresholds?.humidityMin,
-                thresholds?.humidityMax,
-                thresholds?.co2Max,
-                thresholds?.occupancyMax
-            ];
             if (
                 !cohort.id
-                || thresholdValues.some((value) => !Number.isFinite(value))
-                || thresholds.temperatureMin > thresholds.temperatureMax
-                || thresholds.humidityMin > thresholds.humidityMax
-                || thresholds.co2Max < 1
-                || thresholds.occupancyMax < 1
+                || !SENSOR_LOCATION_IDS.has(location)
+                || !validSensorThresholds(thresholds)
             ) return rejected();
             cohort.sensor ??= {};
-            cohort.sensor.thresholds = clone(thresholds);
+            cohort.sensor.thresholds = {
+                ...(cohort.sensor.thresholds || {}),
+                [location]: clone(thresholds)
+            };
             appendAudit(
                 next,
                 "센서 임계치 수정",
-                cohort.name,
-                `온도 ${thresholds.temperatureMin}~${thresholds.temperatureMax}℃, 습도 ${thresholds.humidityMin}~${thresholds.humidityMax}%, CO₂ ${thresholds.co2Max}ppm, 재실 ${thresholds.occupancyMax}명`
+                `${cohort.name} ${SENSOR_LOCATION_NAMES[location]}`,
+                `온도 ${formatSensorThreshold("temperature", thresholds.temperature)}, 습도 ${formatSensorThreshold("humidity", thresholds.humidity)}, CO₂ ${formatSensorThreshold("co2", thresholds.co2)}`
             );
             return commit(command.type, next, {
                 changes: ["sensors", "audits"],

@@ -1,6 +1,7 @@
 (() => {
 const store = window.OmagotchiDashboardStore.create();
 let dialogCallback = null;
+const SENSOR_LOCATION_ORDER = Object.freeze(["LAB", "OFFICE", "MEETING_ROOM"]);
 
 async function hydrateDashboard() {
     const dashboard = await window.OmagotchiApi?.manager?.getDashboard?.();
@@ -51,6 +52,29 @@ function escapeHtml(value) {
         .replaceAll("'", "&#039;");
 }
 
+function labSensorFor(cohort) {
+    const fallback = cohort.sensor || {};
+    let source = [];
+    if (Array.isArray(fallback.locations)) source = fallback.locations;
+    else if (Array.isArray(cohort.sensors)) source = cohort.sensors;
+    else if (Array.isArray(cohort.sensorReadings)) source = cohort.sensorReadings;
+    if (!source.length) return fallback;
+
+    for (let index = 0; index < source.length; index += 1) {
+        const sensor = source[index];
+        const location = String(
+            sensor.location
+            || sensor.locationType
+            || sensor.place
+            || sensor.roomType
+            || SENSOR_LOCATION_ORDER[index]
+            || ""
+        ).toUpperCase();
+        if (location === "LAB") return sensor;
+    }
+    return {};
+}
+
 function setBubble(message) {
     elements.bubble.innerHTML = message;
 }
@@ -88,7 +112,7 @@ function renderCohortSelect({ cohorts, selectedCohortId }) {
 
 function renderSummary(state) {
     const cohort = state.currentCohort;
-    const sensor = cohort.sensor || {};
+    const sensor = labSensorFor(cohort);
     const activeMembers = cohort.members.filter((member) => member.status === "ACTIVE");
     const pending = state.applications.filter(
         (item) => item.cohortId === cohort.id && item.status === "PENDING"

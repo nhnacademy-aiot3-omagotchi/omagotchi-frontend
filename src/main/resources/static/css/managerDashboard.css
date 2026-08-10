@@ -644,13 +644,14 @@ td small {
     gap: 8px;
 }
 
-/* 실습실 센서 현황 */
+/* 공간별 센서 현황 */
 .sensor-environment-list {
     display: grid;
     gap: 14px;
 }
 
 .sensor-environment {
+    min-width: 0;
     display: grid;
     gap: 12px;
     padding: 16px;
@@ -694,35 +695,18 @@ td small {
 
 .sensor-threshold-form {
     display: grid;
-    gap: 16px;
-    margin-top: 16px;
-    padding: 18px;
+    gap: 14px;
+    margin-top: 14px;
+    padding: 16px;
     border: 1px solid var(--line);
-    border-radius: 8px;
-    background: linear-gradient(180deg, #fbfffd, var(--green-050));
-    box-shadow: inset 0 0 0 1px rgba(23, 138, 89, 0.04);
+    border-radius: 7px;
+    background: #f8fbf9;
 }
 
-.sensor-threshold-title {
-    display: flex;
-    align-items: flex-end;
-    justify-content: space-between;
-    gap: 16px;
-}
-
-.sensor-threshold-title div {
+.sensor-threshold-location {
+    width: min(240px, 100%);
     display: grid;
-    gap: 4px;
-}
-
-.sensor-threshold-title span {
-    color: var(--green-700);
-    font-size: 11px;
-    font-weight: 900;
-}
-
-.sensor-threshold-title strong {
-    font-size: 20px;
+    gap: 5px;
 }
 
 .sensor-threshold-fields {
@@ -731,15 +715,11 @@ td small {
 }
 
 .sensor-threshold-row {
+    min-width: 0;
     display: grid;
-    grid-template-columns: 128px 240px 190px;
+    grid-template-columns: minmax(80px, 0.5fr) repeat(2, minmax(140px, 1fr));
     align-items: center;
     gap: 10px;
-    min-height: 50px;
-    padding: 9px 11px;
-    border: 1px solid var(--line);
-    border-radius: 7px;
-    background: #ffffff;
 }
 
 .sensor-threshold-name {
@@ -748,64 +728,11 @@ td small {
     font-weight: 900;
 }
 
-.sensor-threshold-row em {
-    justify-self: end;
-    color: var(--muted);
-    font-size: 11px;
-    font-style: normal;
-    font-weight: 800;
-}
-
-.sensor-threshold-form label {
+.sensor-threshold-row label {
     display: grid;
     grid-template-columns: 44px minmax(0, 1fr);
     align-items: center;
     gap: 8px;
-}
-
-.sensor-threshold-location {
-    display: inline-grid;
-    grid-template-columns: 32px 112px;
-    align-items: center;
-    gap: 8px;
-}
-
-.sensor-threshold-form select,
-.sensor-threshold-form input {
-    min-height: 36px;
-    width: 100%;
-    border: 1px solid var(--line);
-    border-radius: 6px;
-    background: #ffffff;
-    color: var(--ink);
-    font-size: 13px;
-    font-weight: 800;
-}
-
-.sensor-threshold-form select {
-    padding: 0 30px 0 10px;
-    appearance: none;
-    background-image:
-            linear-gradient(45deg, transparent 50%, var(--green-800) 50%),
-            linear-gradient(135deg, var(--green-800) 50%, transparent 50%);
-    background-position:
-            calc(100% - 16px) 15px,
-            calc(100% - 11px) 15px;
-    background-size: 5px 5px, 5px 5px;
-    background-repeat: no-repeat;
-}
-
-.sensor-threshold-form input {
-    padding: 0 10px;
-    text-align: right;
-    font-weight: 800;
-}
-
-.sensor-threshold-form select:focus,
-.sensor-threshold-form input:focus {
-    border-color: var(--green-700);
-    outline: 2px solid rgba(23, 138, 89, 0.14);
-    outline-offset: 0;
 }
 
 .sensor-threshold-actions {
@@ -1035,18 +962,6 @@ td small {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
-    .sensor-threshold-fields {
-        grid-template-columns: 1fr;
-    }
-
-    .sensor-threshold-row {
-        grid-template-columns: 96px minmax(160px, 1fr) minmax(150px, 0.8fr);
-    }
-
-    .sensor-threshold-row em {
-        grid-column: 2 / -1;
-        justify-self: start;
-    }
 }
 
 @media (max-width: 680px) {
@@ -1138,22 +1053,9 @@ td small {
         grid-template-columns: 1fr 1fr;
     }
 
-    .sensor-threshold-fields {
-        grid-template-columns: 1fr;
-    }
-
-    .sensor-threshold-title {
-        align-items: flex-start;
-        flex-direction: column;
-    }
-
     .sensor-threshold-row {
         grid-template-columns: 1fr;
         align-items: stretch;
-    }
-
-    .sensor-threshold-form label {
-        grid-template-columns: 48px minmax(0, 1fr);
     }
 
     .community-item {
