@@ -84,7 +84,7 @@
             totalTime: root.querySelector("[data-kpi-total-time]"),
             participation: root.querySelector("[data-kpi-participation]"),
             averageTime: root.querySelector("[data-kpi-avg-time]"),
-            noRecord: root.querySelector("[data-kpi-no-record]"),
+            currentlyStudying: root.querySelector("[data-kpi-current-studying]"),
             trendTitle: root.querySelector("[data-trend-chart-title]"),
             topTitle: root.querySelector("[data-top-chart-title]"),
             boundaryNote: root.querySelector("[data-study-boundary-note]"),
@@ -246,7 +246,7 @@
             elements.totalTime.textContent = formatDuration(summary?.todayTotalStudySeconds);
             elements.participation.textContent = `${participantCount} / ${activeStudentCount}명 (${participationRate}%)`;
             elements.averageTime.textContent = formatDuration(summary?.averageTodayParticipantStudySeconds);
-            elements.noRecord.textContent = `${Number(summary?.todayNoRecordStudentCount) || 0}명`;
+            elements.currentlyStudying.textContent = `${Number(summary?.currentlyStudyingStudentCount) || 0}명`;
 
             const periodDays = selectedPeriodDays();
             elements.trendTitle.textContent = `최근 ${periodDays}일 기수 학습량 추이`;
