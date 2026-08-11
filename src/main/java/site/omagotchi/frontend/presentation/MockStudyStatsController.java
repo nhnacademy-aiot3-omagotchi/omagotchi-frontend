@@ -65,12 +65,16 @@ public class MockStudyStatsController {
         long todayParticipantCount = members.stream()
                 .filter(member -> member.todayStudySeconds() > 0)
                 .count();
+        long currentlyStudyingStudentCount = members.stream()
+                .filter(member -> member.todayStudySeconds() > 0)
+                .filter(member -> member.cohortMembershipId() % 5 == 0)
+                .count();
         Summary summary = new Summary(
                 todayTotalStudySeconds,
                 periodTotalStudySeconds,
                 members.size(),
                 todayParticipantCount,
-                members.size() - todayParticipantCount,
+                currentlyStudyingStudentCount,
                 todayParticipantCount == 0 ? 0 : todayTotalStudySeconds / todayParticipantCount
         );
 
@@ -308,7 +312,7 @@ public class MockStudyStatsController {
             long periodTotalStudySeconds,
             long activeStudentCount,
             long todayParticipantCount,
-            long todayNoRecordStudentCount,
+            long currentlyStudyingStudentCount,
             long averageTodayParticipantStudySeconds
     ) {
     }
