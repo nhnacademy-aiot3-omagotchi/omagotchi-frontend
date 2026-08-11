@@ -1,0 +1,36 @@
+<section class="dashboard-panel" data-dashboard-panel="applications" th:fragment="panel">
+    <div class="panel-heading">
+        <div><span>참가 신청</span><h2>승인 대기 목록</h2></div>
+        <span class="count-badge" data-application-count>0건</span>
+    </div>
+    <div class="table-wrap">
+        <table>
+            <colgroup>
+                <col style="width: 15%;" />
+                <col style="width: 35%;" />
+                <col style="width: 25%;" />
+                <col style="width: 10%;" />
+                <col style="width: 15%;" />
+            </colgroup>
+            <thead><tr><th>신청자</th><th>이메일</th><th>신청 시각</th><th>상태</th><th>처리</th></tr></thead>
+            <tbody data-application-list></tbody>
+        </table>
+    </div>
+    <template data-application-row-template>
+        <tr>
+            <td><strong data-application-name></strong></td>
+            <td data-application-email></td>
+            <td data-application-requested-at></td>
+            <td><span class="status-badge" data-application-status></span></td>
+            <td>
+                <div class="table-actions">
+                    <button class="is-primary" type="button" data-approve>승인</button>
+                    <button class="is-danger" type="button" data-reject>거절</button>
+                </div>
+            </td>
+        </tr>
+    </template>
+    <template data-application-empty-template>
+        <tr><td class="empty-row" colspan="5">참가 신청이 없습니다.</td></tr>
+    </template>
+</section>

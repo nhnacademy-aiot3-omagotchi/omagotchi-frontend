@@ -1,0 +1,23 @@
+<section class="dashboard-panel" data-dashboard-panel="community" th:fragment="panel">
+    <div class="panel-heading">
+        <div><span>커뮤니티</span><h2>공지와 신고 관리</h2></div>
+        <button type="button" data-open-notice-form>공지 작성</button>
+    </div>
+    <form class="notice-form" data-notice-form hidden>
+        <input name="title" type="text" placeholder="공지 제목" />
+        <textarea name="content" placeholder="공지 내용을 입력하세요"></textarea>
+        <button type="submit">공지 등록</button>
+        <button class="secondary-button" type="button" data-cancel-notice>취소</button>
+    </form>
+    <div class="community-list" data-community-list></div>
+    <template data-community-item-template>
+        <article class="community-item">
+            <span class="status-badge" data-community-type></span>
+            <div><h3 data-community-title></h3><p data-community-content></p></div>
+            <button type="button" data-community-action></button>
+        </article>
+    </template>
+    <template data-community-empty-template>
+        <p class="scope-note">등록된 게시글이 없습니다.</p>
+    </template>
+</section>

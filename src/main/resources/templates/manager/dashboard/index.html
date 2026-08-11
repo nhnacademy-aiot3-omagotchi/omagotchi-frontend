@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{manager/dashboard/layouts/layout}">
+<head>
+    <title>Omagotchi 기수 운영</title>
+    <link rel="stylesheet" href="/css/cursor.css" th:href="@{/css/cursor.css}" />
+</head>
+<body>
+<div class="manager-content" layout:fragment="content">
+            <section class="manager-hero">
+                <div>
+                    <span class="eyebrow" data-manager-organization>NHN Academy</span>
+                    <h1><span data-current-cohort-name>AIoT 3기</span> 운영 현황</h1>
+                    <p>가입 신청, 소속, 출결과 실습실 환경을 배정된 기수 범위에서 관리합니다.</p>
+                </div>
+                <div class="manager-character-panel">
+                    <div class="manager-speech" data-dashboard-bubble>처리할 업무를<br />확인해 볼까요?</div>
+                    <img src="/images/manager_character.gif" alt="기수 관리자 오마고치" />
+                </div>
+            </section>
+
+            <section class="summary-grid" aria-label="기수 운영 요약">
+                <article><span>활성 구성원</span><strong data-summary-members>0</strong><small>현재 소속 인원</small></article>
+                <article><span>승인 대기</span><strong data-summary-applications>0</strong><small>처리가 필요한 신청</small></article>
+                <article><span>오늘 출석</span><strong data-summary-attendance>0</strong><small>입실 완료 인원</small></article>
+                <article><span>실습실 CO₂</span><strong data-summary-co2>--</strong><small data-summary-sensor-status>수신 확인 중</small></article>
+            </section>
+
+            <th:block th:replace="~{manager/dashboard/panels/overview :: panel}"></th:block>
+            <th:block th:replace="~{manager/dashboard/panels/codes :: panel}"></th:block>
+            <th:block th:replace="~{manager/dashboard/panels/applications :: panel}"></th:block>
+            <th:block th:replace="~{manager/dashboard/panels/members :: panel}"></th:block>
+            <th:block th:replace="~{manager/dashboard/panels/attendance :: panel}"></th:block>
+            <th:block th:replace="~{manager/dashboard/panels/sensors :: panel}"></th:block>
+            <th:block th:replace="~{manager/dashboard/panels/community :: panel}"></th:block>
+            <th:block th:replace="~{manager/dashboard/panels/studyStats :: panel}"></th:block>
+            <th:block th:replace="~{manager/dashboard/panels/audits :: panel}"></th:block>
+
+            <!-- 통합 모달/팝업 영역 -->
+            <div id="manager-modals">
+                <th:block th:replace="~{manager/dashboard/popups/studyDetailModal :: modal}"></th:block>
+            </div>
+</div>
+<th:block layout:fragment="pageScripts">
+    <script src="/vendor/chartjs/4.5.1/chart.umd.min.js" th:src="@{/vendor/chartjs/4.5.1/chart.umd.min.js}"></script>
+    <script src="/js/api.js" th:src="@{/js/api.js}"></script>
+    <script src="/js/manager/dashboard/dashboardStore.js" th:src="@{/js/manager/dashboard/dashboardStore.js}"></script>
+    <script src="/js/manager/dashboard/dashboardPanelRegistry.js" th:src="@{/js/manager/dashboard/dashboardPanelRegistry.js}"></script>
+    <script src="/js/manager/dashboard/panels/overviewPanel.js" th:src="@{/js/manager/dashboard/panels/overviewPanel.js}"></script>
+    <script src="/js/manager/dashboard/panels/codesPanel.js" th:src="@{/js/manager/dashboard/panels/codesPanel.js}"></script>
+    <script src="/js/manager/dashboard/panels/applicationsPanel.js" th:src="@{/js/manager/dashboard/panels/applicationsPanel.js}"></script>
+    <script src="/js/manager/dashboard/panels/membersPanel.js" th:src="@{/js/manager/dashboard/panels/membersPanel.js}"></script>
+    <script src="/js/manager/dashboard/panels/attendancePanel.js" th:src="@{/js/manager/dashboard/panels/attendancePanel.js}"></script>
+    <script src="/js/manager/dashboard/panels/sensorsPanel.js" th:src="@{/js/manager/dashboard/panels/sensorsPanel.js}"></script>
+    <script src="/js/manager/dashboard/panels/communityPanel.js" th:src="@{/js/manager/dashboard/panels/communityPanel.js}"></script>
+    <script src="/js/manager/dashboard/panels/auditsPanel.js" th:src="@{/js/manager/dashboard/panels/auditsPanel.js}"></script>
+    <script src="/js/manager/dashboard/panels/studyStatsPanel.js" th:src="@{/js/manager/dashboard/panels/studyStatsPanel.js}"></script>
+    <script src="/js/manager/dashboard/popups/studyDetailModal.js" th:src="@{/js/manager/dashboard/popups/studyDetailModal.js}"></script>
+    <script src="/js/manager/dashboard/index.js" th:src="@{/js/manager/dashboard/index.js}"></script>
+</th:block>
+</body>
+</html>

@@ -140,8 +140,7 @@ class FrontendApplicationTests {
 	void managerDashboardIsRendered() throws Exception {
 		mockMvc.perform(get("/manager-dashboard"))
 				.andExpect(status().isOk())
-				.andExpect(view().name("managerDashboard"))
-				.andExpect(content().string(containsString("배정받은 기수만 표시됩니다")));
+				.andExpect(view().name("manager/dashboard/index"));
 
 		mockMvc.perform(get("/css/managerDashboard.css"))
 				.andExpect(status().isOk());
@@ -149,7 +148,10 @@ class FrontendApplicationTests {
 		mockMvc.perform(get("/css/managerAuth.css"))
 				.andExpect(status().isOk());
 
-		mockMvc.perform(get("/js/managerDashboard.js"))
+		mockMvc.perform(get("/js/manager/dashboard/index.js"))
+				.andExpect(status().isOk());
+
+		mockMvc.perform(get("/js/manager/dashboard/popups/studyDetailModal.js"))
 				.andExpect(status().isOk());
 	}
 

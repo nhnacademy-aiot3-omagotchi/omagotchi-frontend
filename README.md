@@ -35,3 +35,5 @@ src/main/resources/
 - 기능별 CSS와 JavaScript는 각각의 `{feature}/` 디렉터리로 구분합니다.
 - Secret과 운영 서버 주소를 소스 코드에 하드코딩하지 않습니다.
 - 백엔드 API 연동 방식은 로컬 개발 환경 이슈에서 별도로 정합니다.
+
+- [관리자 대시보드 패널 작성](docs/manager-dashboard-panel-guide.md)
