@@ -180,7 +180,10 @@
                 setWarning(view.temperature, temperatureWarning);
                 setWarning(view.humidity, humidityWarning);
                 setWarning(view.co2, co2Warning);
-                lastUpdated = sensor.updatedAt || lastUpdated;
+                
+                if (sensor.updatedAt && (!lastUpdated || new Date(sensor.updatedAt) > new Date(lastUpdated))) {
+                    lastUpdated = sensor.updatedAt;
+                }
             }
 
             elements.updated.textContent = lastUpdated ? `마지막 수신 ${lastUpdated}` : "수신 데이터 없음";
