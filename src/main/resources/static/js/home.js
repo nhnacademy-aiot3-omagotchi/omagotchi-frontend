@@ -871,26 +871,14 @@ function setOverlayTab(tabButton) {
     });
 }
 
-async function logout(logoutButton) {
+function logout(logoutButton) {
     const logoutForm = document.querySelector("[data-logout-form]");
     const detail = logoutButton?.querySelector("em");
     if (logoutButton) logoutButton.disabled = true;
 
     try {
-        // MultipartFilter 없이 CSRF Request Parameter를 읽기 위한 URL-encoded Form 전송
-        const response = await fetch(logoutForm.action, {
-            method: "POST",
-            credentials: "same-origin",
-            body: new URLSearchParams(new FormData(logoutForm))
-        });
-
-        // 완료되었거나 이미 만료된 Session의 Browser 표시 상태 정리
-        if (response.ok || response.status === 401) {
-            sessionOnlyKeys.forEach((key) => sessionStorage.removeItem(key));
-            window.location.href = "/login";
-            return;
-        }
-        throw new Error("로그아웃 요청에 실패했습니다.");
+        sessionOnlyKeys.forEach((key) => sessionStorage.removeItem(key));
+        logoutForm.requestSubmit();
     } catch (error) {
         if (logoutButton) logoutButton.disabled = false;
         if (detail) detail.textContent = error.message || "로그아웃 요청에 실패했습니다.";

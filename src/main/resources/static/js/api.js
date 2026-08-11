@@ -1,6 +1,15 @@
 (() => {
     const API_BASE = window.OMAGOTCHI_API_BASE || document.documentElement.dataset.apiBase || "/bff/v1";
     const STRICT = Boolean(window.OMAGOTCHI_API_STRICT);
+    const PROTOTYPE_FALLBACK_STATUSES = new Set([404]);
+
+    class ApiRequestError extends Error {
+        constructor(status, message) {
+            super(message);
+            this.name = "ApiRequestError";
+            this.status = status;
+        }
+    }
 
     function toUrl(path) {
         return `${API_BASE}${path.startsWith("/") ? path : `/${path}`}`;
@@ -33,7 +42,7 @@
             const message = typeof payload === "object" && payload?.message
                 ? payload.message
                 : `API request failed: ${response.status}`;
-            throw new Error(message);
+            throw new ApiRequestError(response.status, message);
         }
 
         return payload;
@@ -43,7 +52,9 @@
         try {
             return await request(path, options);
         } catch (error) {
-            if (STRICT) {
+            const fallbackAllowed = error instanceof ApiRequestError
+                && PROTOTYPE_FALLBACK_STATUSES.has(error.status);
+            if (STRICT || !fallbackAllowed) {
                 throw error;
             }
             console.info("[API] Fallback active:", path, error.message);
@@ -66,6 +77,14 @@
         };
         source.onerror = (event) => handlers.error?.(event, source);
         return source;
+    }
+
+    function withDateRange(path, range = {}) {
+        const query = new URLSearchParams();
+        if (range.from) query.set("from", range.from);
+        if (range.to) query.set("to", range.to);
+        const queryString = query.toString();
+        return queryString ? `${path}?${queryString}` : path;
     }
 
     window.OmagotchiApi = {
@@ -96,7 +115,18 @@
             createPost: (payload) => optional("/community/posts", { method: "POST", body: payload })
         },
         manager: {
-            getDashboard: () => optional("/manager/dashboard")
+            getDashboard: () => optional("/manager/dashboard"),
+            // TEMPORARY: Learning Service 연동 전 관리자 공부 통계 화면 검증용 Mock 경로입니다.
+            // 실제 연동 시 목록은 /v1/cohorts/{cohortId}/study-statistics,
+            // 상세는 위 경로의 /members/{cohortMembershipId}/records로 복원합니다.
+            getStudyStatistics: (_cohortId, range) => optional(withDateRange(
+                "/mock-api/study-stats",
+                range
+            )),
+            getStudyMemberRecords: (_cohortId, cohortMembershipId, range) => optional(withDateRange(
+                `/mock-api/study-stats/members/${encodeURIComponent(cohortMembershipId)}/records`,
+                range
+            ))
         }
     };
 })();

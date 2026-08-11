@@ -43,6 +43,6 @@ public class WebConfig implements WebMvcConfigurer {
 
         // 관리자 Prototype Page
         registry.addViewController("/manager-dashboard")
-                .setViewName("pages/manager/managerDashboard");
+                .setViewName("manager/dashboard/index");
     }
 }

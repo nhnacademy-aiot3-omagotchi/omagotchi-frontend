@@ -1,0 +1,30 @@
+<section class="dashboard-panel is-active" data-dashboard-panel="overview" th:fragment="panel">
+    <div class="panel-heading">
+        <div><span>기수 정보</span><h2>운영 개요</h2></div>
+        <button class="secondary-button" type="button" data-edit-cohort>정보 수정</button>
+    </div>
+    <div class="overview-grid">
+        <article class="cohort-info-card">
+            <dl>
+                <div><dt>기수명</dt><dd data-cohort-name>AIoT x기</dd></div>
+                <div><dt>운영 기간</dt><dd data-cohort-period>-</dd></div>
+                <div><dt>운영 상태</dt><dd><span class="status-badge" data-cohort-status>확인 중</span></dd></div>
+                <div><dt>정원</dt><dd data-cohort-capacity>-</dd></div>
+            </dl>
+        </article>
+        <article class="today-card">
+            <span>오늘 확인할 업무</span>
+            <ul>
+                <li><strong data-todo-applications>0건</strong> 참가 신청 처리</li>
+                <li><strong data-todo-late>0명</strong> 지각·미입실 확인</li>
+                <li><strong data-todo-community>0건</strong> 커뮤니티 신고 확인</li>
+            </ul>
+        </article>
+    </div>
+    <form class="cohort-edit-form" data-cohort-edit-form hidden>
+        <label><span>기수 설명</span><input name="description" type="text" /></label>
+        <label><span>정원</span><input name="capacity" type="number" min="1" /></label>
+        <button type="submit">저장</button>
+        <button class="secondary-button" type="button" data-cancel-cohort-edit>취소</button>
+    </form>
+</section>

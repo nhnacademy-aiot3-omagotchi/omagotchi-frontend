@@ -170,7 +170,7 @@ home.html
 - 하위 Module
   - UI 상태·Event 분리
   - 일부 `/bff/v1/**` 요청 시도
-  - 실패 시 Browser Prototype fallback
+  - 미구현 Endpoint의 404만 Browser Prototype fallback
 
 ## 7. Prototype `/bff/v1/**` Adapter
 
@@ -179,7 +179,7 @@ Browser JavaScript
 → api.js optional(...)
 → 같은 Origin /bff/v1/**
 → Frontend BFF JSON 경계
-→ 기능 Endpoint 미등록으로 실패
+→ 기능 Endpoint 미등록으로 404 응답
 → optional(...)의 null 반환
 → Browser Prototype 계속 사용
 ```
@@ -192,10 +192,10 @@ Browser JavaScript
   - Session Cookie 자동 포함
   - Bearer Access JWT 미포함
   - Frontend가 Session 인증 처리
-- Strict Flag
-  - 이름: `window.OMAGOTCHI_API_STRICT`
-  - 현재 저장소 내 주입 위치: 없음
-  - 미설정 기본 효과: 실패 은닉과 `null` fallback
+- Fallback 기준
+  - 404: Browser Prototype용 `null` 반환
+  - 401·403·5xx·Network 오류: 호출부 전달
+  - `window.OMAGOTCHI_API_STRICT=true`: 404 포함 전체 오류 전달
 - 실제 BFF 전환 기준
   - 호출 경로: Browser → `/bff/v1/**` → Frontend BFF → Domain Service
   - JWT Relay: Browser 비노출·Frontend Session의 Access JWT 사용

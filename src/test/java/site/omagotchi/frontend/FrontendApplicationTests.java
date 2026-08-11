@@ -2,6 +2,7 @@ package site.omagotchi.frontend;
 
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.RequestDispatcher;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,9 +12,12 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.context.WebApplicationContext;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
 
@@ -24,6 +28,16 @@ class FrontendApplicationTests {
 
 	@Autowired
 	private MockMvc mockMvc;
+	@Autowired
+	private WebApplicationContext applicationContext;
+	private MockMvc unfilteredMockMvc;
+
+	@BeforeEach
+	void setUpUnfilteredMockMvc() {
+		unfilteredMockMvc = MockMvcBuilders
+				.webAppContextSetup(applicationContext)
+				.build();
+	}
 
 	@Test
 	@DisplayName("시작 화면 Route는 index Template 반환")
@@ -38,6 +52,39 @@ class FrontendApplicationTests {
 	}
 
 	@Test
+	@DisplayName("인증되지 않은 관리자 Dashboard 요청은 Login으로 이동")
+	void managerDashboardRequiresAuthentication() throws Exception {
+		mockMvc.perform(get("/manager-dashboard"))
+				.andExpect(status().is3xxRedirection())
+				.andExpect(redirectedUrl("/login"));
+	}
+
+	@Test
+	@DisplayName("관리자 Dashboard Route는 Module Dashboard 반환")
+	void managerDashboardUsesModularView() throws Exception {
+		unfilteredMockMvc.perform(get("/manager-dashboard"))
+				.andExpect(status().isOk())
+				.andExpect(view().name("manager/dashboard/index"));
+
+		mockMvc.perform(get("/css/managerDashboard.css"))
+				.andExpect(status().isOk());
+
+		mockMvc.perform(get("/js/manager/dashboard/index.js"))
+				.andExpect(status().isOk());
+
+		mockMvc.perform(get("/js/manager/dashboard/popups/studyDetailModal.js"))
+				.andExpect(status().isOk());
+	}
+
+	@Test
+	@DisplayName("관리자 공부 통계 Mock은 BFF 경로로 제공")
+	void managerStudyStatisticsMockUsesBffPath() throws Exception {
+		unfilteredMockMvc.perform(get("/bff/v1/mock-api/study-stats"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.members").isArray());
+	}
+
+	@Test
 	@DisplayName("Actuator Health 상태 UP")
 	void actuatorHealthIsUp() throws Exception {
 		mockMvc.perform(get("/actuator/health"))
@@ -48,9 +95,6 @@ class FrontendApplicationTests {
 	@Test
 	@DisplayName("전용 Template이 없는 ERROR dispatch는 상태 계열 오류 View 반환")
 	void errorDispatchUsesStatusSeriesFallbackView() throws Exception {
-		// Given: 전용 Template이 없는 405·503 ERROR dispatch
-		// When: Boot 기본 오류 Controller가 상태 계열 Template 탐색
-		// Then: 4xx·5xx 공통 View 반환
 		mockMvc.perform(get("/error")
 				.accept(MediaType.TEXT_HTML)
 				.with(errorDispatch(405)))
