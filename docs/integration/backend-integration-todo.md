@@ -25,8 +25,8 @@
 | 출석 상태값 | `PRESENT`, `LATE`, `ABSENT`, `EARLY_LEAVE` 등 | `PRESENT`, `LATE`, `ABSENT`, `LEFT_EARLY`, `LATE_LEFT_EARLY`, `MISSING_CHECK_OUT` | 조퇴 enum 이름 통일 또는 매핑 |
 | 학습 기록 경로 | `/api/study-records` | `/api/v1/cohorts/{cohortId}/study-records` | `cohortId` 기반으로 API 래퍼 수정 |
 | 학습 기록 모델 | 구간 기록 `durationSeconds`, `elapsedSeconds`, `tags` | `date`, `startTime`, `endTime`, `studySeconds`, `version` | 현재 프론트 구간 기록 UI와 백엔드 모델 간 변환 방식 결정 |
-| 타이머 쓰기 | 단순 start/pause 예상 | `X-Command-Id` 헤더 필요 | 프론트에서 요청마다 UUID 생성 필요 |
-| 학습 기록 삭제 | 미정 | `X-Command-Id`, `X-RESOURCE-VERSION` 필요 | 삭제 UI 추가 시 version 관리 필요 |
+| 타이머 쓰기 | 단순 start/pause 예상 | 별도 명령 ID 헤더 없음 | 멱등성 보장은 후속 범위이므로 일반 인증 요청으로 호출 |
+| 학습 기록 삭제 | 미정 | `X-RESOURCE-VERSION` 필요 | 삭제 UI 추가 시 version 관리 필요 |
 | 홈 요약 | `/api/home/summary` 예상 | `/gamification/home` | API base가 `/api`가 아닌 예외 처리 필요 |
 | 퀘스트 | `/api/quests/...` 예상 | `/gamification/quests/...` | API 래퍼 분리 또는 base path 예외 처리 |
 | 프로필 | `/api/me` 또는 `/api/me/profile` | `/api/users/me/profile`, `/api/users/me/nickname` | 사용자 정보 API 경로 수정 |

@@ -68,6 +68,10 @@
         return `${date.getUTCMonth() + 1}.${date.getUTCDate()}`;
     }
 
+    function trendBackgroundColors(dates, selectedDate) {
+        return dates.map((date) => date === selectedDate ? "#176044" : "#9ad9ba");
+    }
+
     function formatKstTime(value) {
         if (!value) return "-";
         return new Intl.DateTimeFormat("ko-KR", {
@@ -162,6 +166,7 @@
         };
 
         let trendChart = null;
+        let trendDates = [];
 
         function selectedDateRecords() {
             return state.records
@@ -198,9 +203,11 @@
         function renderTrendChart() {
             trendChart?.destroy();
             trendChart = null;
+            trendDates = [];
             if (!elements.chart) return;
 
             const totals = dailyTotals();
+            trendDates = totals.map((item) => item.date);
             const hasRecords = totals.some((item) => item.seconds > 0);
             elements.chartEmpty.hidden = state.loading || Boolean(state.error) || hasRecords;
             elements.chart.hidden = !hasRecords;
@@ -213,7 +220,7 @@
                     datasets: [{
                         label: "학습 시간",
                         data: totals.map((item) => Number((item.seconds / 3600).toFixed(2))),
-                        backgroundColor: totals.map((item) => item.date === state.selectedDate ? "#176044" : "#9ad9ba"),
+                        backgroundColor: trendBackgroundColors(trendDates, state.selectedDate),
                         hoverBackgroundColor: "#20b978",
                         borderRadius: 5,
                         maxBarThickness: 28
@@ -258,6 +265,14 @@
                     }
                 }
             });
+        }
+
+        function updateTrendSelection() {
+            const dataset = trendChart?.data.datasets[0];
+            if (!dataset) return;
+
+            dataset.backgroundColor = trendBackgroundColors(trendDates, state.selectedDate);
+            trendChart.update("none");
         }
 
         function timelinePosition(record) {
@@ -338,9 +353,9 @@
         }
 
         function selectDate(date) {
-            if (!date || date < state.from || date > state.to) return;
+            if (!date || date < state.from || date > state.to || date === state.selectedDate) return;
             state.selectedDate = date;
-            renderTrendChart();
+            updateTrendSelection();
             renderSelectedDate();
         }
 
@@ -388,6 +403,7 @@
             state.requestSequence += 1;
             trendChart?.destroy();
             trendChart = null;
+            trendDates = [];
             dialog.hidden = true;
             state.previousFocus?.focus?.();
         }
