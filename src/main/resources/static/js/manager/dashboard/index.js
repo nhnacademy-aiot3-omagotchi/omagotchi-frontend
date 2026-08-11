@@ -169,9 +169,13 @@ elements.dialog.addEventListener("click", (event) => {
     if (event.target === elements.dialog) closeDialog();
 });
 
-document.querySelector("[data-manager-logout]").addEventListener("click", () => {
-    store.dispatch({ type: "CLEAR_SESSION" });
-    window.location.href = "/";
+document.querySelector("[data-manager-logout-form]").addEventListener("submit", () => {
+    try {
+        store.dispatch({ type: "CLEAR_SESSION" });
+    } catch (error) {
+        // Browser 저장소 정리에 실패해도 Spring Security Logout Form은 제출한다.
+        console.warn("관리자 Prototype 상태를 정리하지 못했습니다.", error);
+    }
 });
 
 renderSession();

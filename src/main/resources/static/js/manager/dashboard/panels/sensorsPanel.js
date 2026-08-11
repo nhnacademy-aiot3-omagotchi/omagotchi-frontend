@@ -180,7 +180,7 @@
                 setWarning(view.temperature, temperatureWarning);
                 setWarning(view.humidity, humidityWarning);
                 setWarning(view.co2, co2Warning);
-                
+
                 if (sensor.updatedAt && (!lastUpdated || new Date(sensor.updatedAt) > new Date(lastUpdated))) {
                     lastUpdated = sensor.updatedAt;
                 }

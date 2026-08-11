@@ -1,13 +1,13 @@
 // 로그인 화면 요소
 const form = document.querySelector(".login-form");
-const card = document.querySelector(".login-card");
 const character = document.querySelector(".omagotchi-character");
 const bubble = document.querySelector("[data-auth-feedback]") || document.querySelector(".speech-bubble");
 const inputs = document.querySelectorAll(".input-group input");
 
 function setFeedback(message) {
     if (bubble) {
-        bubble.innerHTML = message;
+        bubble.textContent = message;
+        bubble.classList.remove("auth-error");
     }
 }
 
@@ -19,57 +19,15 @@ inputs.forEach((input) => {
 
     input.addEventListener("input", () => {
         character?.classList.add("happy");
-
-        setTimeout(() => {
-            character?.classList.remove("happy");
-        }, 600);
+        setTimeout(() => character?.classList.remove("happy"), 600);
     });
 });
 
-// [Mock] 실제 서비스에서는 필요하지 않은 임시 로그인 처리입니다. 1~18
-// 로그인 목업 처리
-form.addEventListener("submit", async (event) => {
-    const email = form.email.value.trim();
-    const password = form.password.value.trim();
-
-    if (!email || !password) {
-        event.preventDefault();
-
-        setFeedback("이메일과 비밀번호를 다시 확인해주세요.");
-
-        card.classList.add("shake");
-
-        setTimeout(() => {
-            card.classList.remove("shake");
-        }, 350);
-
-        return;
+// Server Form 제출 중 중복 입력 방지
+form?.addEventListener("submit", () => {
+    const submitButton = form.querySelector("[type='submit']");
+    if (submitButton) {
+        submitButton.disabled = true;
     }
-
-    event.preventDefault();
-    setFeedback("좋아요. 실습실로 이동할게요.");
-    const session = await window.OmagotchiApi?.auth?.login?.({ email, password });
-    const user = session?.user || session;
-    const nextUrl = session?.redirectUrl;
-    sessionStorage.setItem("omagotchiEmail", email);
-    sessionStorage.setItem("omagotchiLoginPassword", password);
-    const username = user?.name || user?.username;
-    if (username) {
-        sessionStorage.setItem("omagotchiUsername", username);
-    } else {
-        const storedUsername = localStorage.getItem(`omagotchiUsername:${email}`);
-        if (storedUsername) {
-            sessionStorage.setItem("omagotchiUsername", storedUsername);
-        }
-    }
-    localStorage.setItem("omagotchiLastEmail", email);
-
-    if (!localStorage.getItem(`omagotchiPassword:${email}`)) {
-        localStorage.setItem(`omagotchiPassword:${email}`, password);
-    }
-
-    setTimeout(() => {
-        const hasSelectedCharacter = localStorage.getItem(`omagotchiHasCharacter:${email}`) === "true";
-            window.location.href = nextUrl || (hasSelectedCharacter ? "/check-in" : "/character-selector");
-    }, 700);
+    setFeedback("로그인 정보를 확인하고 있어요.");
 });

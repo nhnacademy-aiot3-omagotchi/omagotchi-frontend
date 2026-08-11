@@ -24,7 +24,7 @@ import java.util.stream.IntStream;
 // 데이터 표시를 위해 임시적으로 작성한 컨트롤러
 // 추후 삭제해야 함
 @RestController
-@RequestMapping("/api/mock-api/study-stats")
+@RequestMapping("/bff/v1/mock-api/study-stats")
 public class MockStudyStatsController {
 
     private static final int STUDENT_COUNT = 50;

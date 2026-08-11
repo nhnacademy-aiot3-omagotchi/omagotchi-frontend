@@ -1,0 +1,18 @@
+spring:
+  config:
+    # 로컬 환경 변수 파일. 누락 시 기동 실패
+    import: "file:./.env.local[.properties]"
+    activate:
+      on-profile: local
+
+server:
+  servlet:
+    session:
+      cookie:
+        # 로컬 HTTP 실행용 Secure 속성 해제
+        secure: false
+
+eureka:
+  client:
+    # 로컬 고정 주소 사용
+    enabled: false

@@ -1,0 +1,57 @@
+<!-- FIXME: 단일 로그인·회원가입 전환 후 제거 예정인 레거시 분리 화면. -->
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Omagotchi 기수 관리자 로그인</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon_11.gif" th:href="@{/favicon_11.gif}" />
+    <link rel="stylesheet" href="/css/managerAuth.css" th:href="@{/css/managerAuth.css}" />
+    <link rel="stylesheet" href="/css/passwordToggle.css" th:href="@{/css/passwordToggle.css}" />
+    <link rel="stylesheet" href="/css/imageProtection.css" th:href="@{/css/imageProtection.css}" />
+    <link rel="stylesheet" href="/css/cursor.css" th:href="@{/css/cursor.css}" />
+</head>
+<body>
+<main class="manager-auth-page">
+    <a class="manager-auth-back" href="/">← 시작 화면</a>
+    <section class="manager-auth-shell login-card">
+        <div class="manager-auth-character">
+            <div class="speech-bubble">여러분들이 여태 하셨던 것들을<br />한번 코드리뷰 식으로 확인해 볼건데<br />너무 부담 갖지는 말고</div>
+            <img class="manager-character-img" src="/images/manager_character.gif" alt="기수 관리자 오마고치" />
+            <div>
+                <span>COHORT MANAGER</span>
+                <h1>기수 운영을 시작합니다</h1>
+                <p>배정받은 기수의 참가 신청, 출결과 실습실 환경을 관리합니다.</p>
+            </div>
+        </div>
+        <div class="manager-auth-form-panel">
+            <form class="login-form" action="#" method="post">
+                <span class="form-kicker">기수 관리자</span>
+                <h2>로그인</h2>
+                <p>일반 사용자와 같은 계정으로 로그인하며, 활성 관리자 소속이 있는 기수만 표시됩니다.</p>
+                <label class="input-group"><span>이메일</span><input type="email" name="email" placeholder="manager@example.com" autocomplete="username" /></label>
+                <div class="input-group">
+                    <label for="manager-login-password">비밀번호</label>
+                    <div class="password-input-wrap">
+                        <input id="manager-login-password" type="password" name="password" placeholder="비밀번호를 입력하세요" autocomplete="current-password" />
+                        <button class="password-visibility-toggle" type="button" data-password-toggle
+                                aria-label="비밀번호 표시" aria-pressed="false">
+                            <span class="password-eye" aria-hidden="true"></span>
+                        </button>
+                    </div>
+                </div>
+                <button class="manager-auth-submit" type="submit">대시보드 열기</button>
+                <div class="manager-auth-links">
+                    <span>계정이 없다면 <a href="/manager-register">관리자 계정 등록</a></span>
+                    <a href="/login">사용자 로그인</a>
+                </div>
+            </form>
+        </div>
+    </section>
+</main>
+<script src="/js/api.js" th:src="@{/js/api.js}"></script>
+<script src="/js/managerLogin.js" th:src="@{/js/managerLogin.js}"></script>
+<script src="/js/passwordToggle.js" th:src="@{/js/passwordToggle.js}"></script>
+<script src="/js/imageProtection.js" th:src="@{/js/imageProtection.js}"></script>
+</body>
+</html>

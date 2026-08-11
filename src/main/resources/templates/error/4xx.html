@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>요청 오류 - Omagotchi</title>
+
+    <link rel="icon" type="image/png" sizes="48x48" href="/favicon.png" th:href="@{/favicon.png}" />
+    <link rel="stylesheet" href="/css/error.css" th:href="@{/css/error.css}" />
+    <link rel="stylesheet" href="/css/imageProtection.css" th:href="@{/css/imageProtection.css}" />
+    <link rel="stylesheet" href="/css/cursor.css" th:href="@{/css/cursor.css}" />
+</head>
+<body>
+<main class="error-page">
+    <section class="error-content" aria-labelledby="error-title">
+        <p class="error-code" th:text="${status != null ? status : '4XX'}">4XX</p>
+
+        <div class="error-character-stage">
+            <p class="error-bubble">요청을 다시 확인해 주세요.</p>
+            <img src="/images/characters/default/omagotchi.png"
+                 alt="요청 내용을 확인하는 오마고치" />
+        </div>
+
+        <div class="error-message">
+            <h1 id="error-title">요청을 처리할 수 없습니다</h1>
+            <p>입력 내용이나 요청 방법을 확인해 주세요.</p>
+        </div>
+
+        <nav class="error-actions" aria-label="오류 화면 이동">
+            <button type="button" data-error-back>이전 화면</button>
+            <a href="/">처음 화면</a>
+        </nav>
+    </section>
+</main>
+
+<script src="/js/error.js" th:src="@{/js/error.js}"></script>
+<script src="/js/imageProtection.js" th:src="@{/js/imageProtection.js}"></script>
+</body>
+</html>

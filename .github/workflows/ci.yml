@@ -4,6 +4,7 @@ on:
   pull_request:
     branches:
       - main
+      - dev
 
 permissions:
   contents: read
@@ -25,8 +26,19 @@ jobs:
           java-version: "21"
           cache: maven
 
-      - name: Run tests
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          package-manager-cache: false
+
+      - name: Run Java tests
         shell: bash
         run: |
           chmod +x mvnw
           ./mvnw -B -ntp verify
+
+      - name: Check JavaScript syntax
+        run: |
+          find src/main/resources/static/js -type f -name '*.js' -print0 \
+            | xargs -0 -n1 node --check
