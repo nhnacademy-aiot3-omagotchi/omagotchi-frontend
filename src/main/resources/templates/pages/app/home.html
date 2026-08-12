@@ -9,7 +9,7 @@
     <link rel="stylesheet" href="/css/home.css" th:href="@{/css/home.css}" />
     <link rel="stylesheet" href="/css/home/home-ui.css" th:href="@{/css/home/home-ui.css}" />
     <link rel="stylesheet" href="/css/home/react-stage.css" th:href="@{/css/home/react-stage.css}" />
-    <link rel="stylesheet" href="/css/studyRecords.css" th:href="@{/css/studyRecords.css}" />
+    <link rel="stylesheet" href="/css/studyRecords.css?v=20260812-1" th:href="@{/css/studyRecords.css(v='20260812-1')}" />
     <link rel="stylesheet" href="/css/gameFont.css" th:href="@{/css/gameFont.css}" />
     <link rel="stylesheet" href="/css/spaceRoom.css" th:href="@{/css/spaceRoom.css}" />
     <link rel="stylesheet" href="/css/notificationPanel.css" th:href="@{/css/notificationPanel.css}" />
@@ -17,6 +17,9 @@
     <link rel="stylesheet" th:href="@{/css/homeAttendance.css}">
     <link rel="stylesheet" th:href="@{/css/homeAttendanceSync.css}" href="/css/homeAttendanceSync.css">
     <link rel="stylesheet" href="/css/cursor.css" th:href="@{/css/cursor.css}" />
+    <link rel="stylesheet" href="/css/home/home-responsive.css?v=20260812-4" th:href="@{/css/home/home-responsive.css(v='20260812-4')}" />
+    <link rel="stylesheet" href="/css/home/home-overlay-theme.css?v=20260812-7" th:href="@{/css/home/home-overlay-theme.css(v='20260812-7')}" />
+    <link rel="stylesheet" href="/css/home/home-quick-panels.css?v=20260812-5" th:href="@{/css/home/home-quick-panels.css(v='20260812-5')}" />
 </head>
 <body>
 <main class="home-page">
@@ -25,6 +28,13 @@
     </section>
 
     <section class="attendance-detail" id="attendance-detail" aria-labelledby="attendance-title">
+        <header class="quick-panel-header attendance-detail-header">
+            <span class="quick-panel-icon" aria-hidden="true"><img src="/images/app/calendar.png" alt="" /></span>
+            <div>
+                <h2>출석 현황</h2>
+            </div>
+            <button class="quick-panel-close" type="button" data-attendance-panel-close aria-label="출석부 닫기">×</button>
+        </header>
         <div class="attendance-layout">
             <section class="attendance-summary" aria-labelledby="attendance-title">
                 <h2 id="attendance-title">오늘 출석</h2>
@@ -86,9 +96,8 @@
 <script src="/js/api.js" th:src="@{/js/api.js}"></script>
 <script src="/js/characterAssets.js" th:src="@{/js/characterAssets.js}"></script>
 <script src="/js/spaceRoom.js" th:src="@{/js/spaceRoom.js}"></script>
-<script type="module" src="/js/home-react/home-app.js" th:src="@{/js/home-react/home-app.js}"></script>
-<script type="module" src="/js/home.js" th:src="@{/js/home.js}"></script>
+<script type="module" src="/js/home-react/home-app.js?v=20260812-3" th:src="@{/js/home-react/home-app.js(v='20260812-3')}"></script>
+<script type="module" src="/js/home.js?v=20260812-7" th:src="@{/js/home.js(v='20260812-7')}"></script>
 <script src="/js/imageProtection.js" th:src="@{/js/imageProtection.js}"></script>
-<script src="/js/scrollCue.js" th:src="@{/js/scrollCue.js}"></script>
 </body>
 </html>

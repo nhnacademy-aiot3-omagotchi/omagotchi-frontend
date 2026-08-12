@@ -3,6 +3,7 @@ import { escapeHtml, formatDuration } from "./utils.js";
 const HEAT_THRESHOLDS = [2, 4, 6, 8].map((hours) => hours * 60 * 60);
 const HEAT_LEGEND_LEVELS = [0, 1, 2, 3, 4, 5];
 const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
+const WEEKDAYS_LONG = ["일요일", "월요일", "화요일", "수요일", "목요일", "금요일", "토요일"];
 
 function createId(prefix) {
     if (window.crypto?.randomUUID) {
@@ -60,6 +61,20 @@ function filterRecords(records, viewMode, referenceDate) {
 }
 
 function formatPeriod(viewMode, date) {
+    const shortYear = String(date.getFullYear()).slice(-2).padStart(2, "0");
+
+    if (viewMode === "yearly") {
+        return `${shortYear}년`;
+    }
+
+    if (viewMode === "monthly") {
+        return `${shortYear}년 ${date.getMonth() + 1}월`;
+    }
+
+    return `${shortYear}년 ${date.getMonth() + 1}월 ${date.getDate()}일 ${WEEKDAYS[date.getDay()]}`;
+}
+
+function formatPeriodLabel(viewMode, date) {
     if (viewMode === "yearly") {
         return `${date.getFullYear()}년`;
     }
@@ -68,12 +83,7 @@ function formatPeriod(viewMode, date) {
         return `${date.getFullYear()}년 ${date.getMonth() + 1}월`;
     }
 
-    return new Intl.DateTimeFormat("ko-KR", {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-        weekday: "short"
-    }).format(date);
+    return `${date.getFullYear()}년 ${date.getMonth() + 1}월 ${date.getDate()}일 ${WEEKDAYS_LONG[date.getDay()]}`;
 }
 
 function movePeriod(viewMode, date, amount) {
@@ -472,7 +482,8 @@ export function createStudyRecords({ storageKey, getElapsedSeconds, api }) {
                     </div>
                     <div class="study-period-navigation">
                         <button type="button" data-study-period-move="-1" aria-label="이전 기간">←</button>
-                        <strong>${formatPeriod(viewMode, referenceDate)}</strong>
+                        <strong aria-label="${formatPeriodLabel(viewMode, referenceDate)}"
+                                title="${formatPeriodLabel(viewMode, referenceDate)}">${formatPeriod(viewMode, referenceDate)}</strong>
                         <button type="button" data-study-period-today>오늘</button>
                         <button type="button" data-study-period-move="1" aria-label="다음 기간">→</button>
                     </div>

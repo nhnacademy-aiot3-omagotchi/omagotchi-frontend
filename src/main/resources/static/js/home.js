@@ -3,9 +3,9 @@ import { createBgmPlayer } from "./home/bgm.js";
 import { createCharacter } from "./home/character.js";
 import { createLevel } from "./home/level.js";
 import { createPresence } from "./home/presence.js";
-import { createStudyRecords } from "./home/studyRecords.js";
+import { createStudyRecords } from "./home/studyRecords.js?v=20260812-1";
 import { createTimer } from "./home/timer.js";
-import { escapeHtml, formatDuration } from "./home/utils.js";
+import { escapeHtml, formatDuration, getLocalDateKey } from "./home/utils.js";
 
 const timerDisplay = document.querySelector("[data-timer-display]");
 const timerToggle = document.querySelector("[data-timer-toggle]");
@@ -40,11 +40,14 @@ const presenceCapacity = document.querySelector("[data-presence-capacity]");
 const presenceSearch = document.querySelector("[data-presence-search]");
 const presenceList = document.querySelector("[data-presence-list]");
 const presenceRefresh = document.querySelector("[data-presence-refresh]");
+const presenceClose = document.querySelector("[data-presence-close]");
 const presenceUpdated = document.querySelector("[data-presence-updated]");
 const bgmPlayerRoot = document.querySelector("[data-bgm-player]");
 const homePage = document.querySelector(".home-page");
 const musicToggle = document.querySelector("[data-home-music-toggle]");
+const musicClose = document.querySelector("[data-home-music-close]");
 const attendancePanelToggle = document.querySelector("[data-attendance-panel-toggle]");
+const attendancePanelClose = document.querySelector("[data-attendance-panel-close]");
 const homeToast = document.querySelector("[data-home-toast]");
 const attendanceDetail = document.querySelector("[data-attendance-panel-toggle]")?.getAttribute("aria-controls")
     ? document.getElementById(document.querySelector("[data-attendance-panel-toggle]").getAttribute("aria-controls"))
@@ -137,6 +140,101 @@ function renderHomeCohortCards() {
                 <span class="overlay-pill">${cohort.status === "ACTIVE" ? "운영 중" : "모집 중"}</span>
             </article>`;
     }).join("");
+}
+
+function getPersonalSnapshot() {
+    let records = [];
+    let attendanceHistory = {};
+
+    try {
+        const storedRecords = JSON.parse(localStorage.getItem(studyRecordsKey) || "[]");
+        records = Array.isArray(storedRecords) ? storedRecords : [];
+    } catch {
+        records = [];
+    }
+
+    try {
+        attendanceHistory = JSON.parse(localStorage.getItem(attendanceKey) || "{}");
+    } catch {
+        attendanceHistory = {};
+    }
+
+    const recordedSeconds = records.reduce(
+        (total, record) => total + (Number(record.durationSeconds) || 0),
+        0
+    );
+    const sessionCount = new Set(records.map((record) => record.sessionId || record.id)).size;
+    const cursor = new Date();
+    const isWeekend = (date) => [0, 6].includes(date.getDay());
+    const moveToPreviousWeekday = (date) => {
+        while (isWeekend(date)) date.setDate(date.getDate() - 1);
+    };
+    let streak = 0;
+
+    moveToPreviousWeekday(cursor);
+    if (!attendanceHistory[getLocalDateKey(cursor)]?.checkInAt) {
+        cursor.setDate(cursor.getDate() - 1);
+        moveToPreviousWeekday(cursor);
+    }
+    while (attendanceHistory[getLocalDateKey(cursor)]?.checkInAt) {
+        streak += 1;
+        cursor.setDate(cursor.getDate() - 1);
+        moveToPreviousWeekday(cursor);
+    }
+
+    const managedCohort = getHomeManagedCohorts().find((cohort) => (
+        cohort.members?.some((member) => (
+            member.status === "ACTIVE"
+            && [member.email, member.id].includes(currentUserEmail)
+        ))
+    ));
+
+    return {
+        accountId: currentUserEmail === "guest" ? "로그인 정보 없음" : currentUserEmail,
+        nickname: currentUserName || "미설정",
+        characterName: selectedCharacterName || "오마고치",
+        characterImage: selectedCharacterImage,
+        level: characterLevel?.textContent || "1",
+        studyTime: formatDuration(Math.max(recordedSeconds, timerController.getElapsedSeconds())),
+        sessions: sessionCount,
+        streak,
+        cohort: managedCohort?.name || "미연결"
+    };
+}
+
+function renderPersonalOverlay() {
+    const snapshot = getPersonalSnapshot();
+
+    return `
+        <section class="player-profile" aria-label="플레이어 스탯">
+            <header class="player-profile-identity">
+                <span class="player-profile-avatar"><img src="${escapeHtml(snapshot.characterImage)}" alt="" /></span>
+                <div>
+                    <h3>${escapeHtml(snapshot.nickname)}</h3>
+                    <p>${escapeHtml(snapshot.accountId)}</p>
+                </div>
+                <strong>LV ${escapeHtml(snapshot.level)}</strong>
+            </header>
+            <div class="player-profile-main">
+                <section class="player-profile-stats" aria-labelledby="player-stat-title">
+                    <h3 id="player-stat-title">학습 스탯</h3>
+                    <dl>
+                        <div><dt>총 학습 시간</dt><dd>${escapeHtml(snapshot.studyTime)}</dd></div>
+                        <div><dt>완료 세션</dt><dd>${snapshot.sessions}회</dd></div>
+                        <div><dt>연속 출석</dt><dd>${snapshot.streak}일</dd></div>
+                    </dl>
+                </section>
+                <section class="player-profile-info" aria-labelledby="player-info-title">
+                    <h3 id="player-info-title">플레이어 정보</h3>
+                    <dl>
+                        <div><dt>닉네임</dt><dd>${escapeHtml(snapshot.nickname)}</dd></div>
+                        <div><dt>캐릭터명</dt><dd>${escapeHtml(snapshot.characterName)}</dd></div>
+                        <div><dt>참여 기수</dt><dd>${escapeHtml(snapshot.cohort)}</dd></div>
+                    </dl>
+                </section>
+            </div>
+        </section>
+    `;
 }
 const communityPosts = [];
 let homeToastTimer;
@@ -316,14 +414,25 @@ function setAttendancePanelOpen(open) {
 
 musicToggle?.addEventListener("click", () => {
     const nextOpen = !homePage?.classList.contains("is-bgm-open");
+    presenceController.close();
     setAttendancePanelOpen(false);
     setBgmPanelOpen(nextOpen);
 });
 
+musicClose?.addEventListener("click", () => setBgmPanelOpen(false));
+
 attendancePanelToggle?.addEventListener("click", () => {
     const nextOpen = !homePage?.classList.contains("is-attendance-panel-open");
+    presenceController.close();
     setBgmPanelOpen(false);
     setAttendancePanelOpen(nextOpen);
+});
+
+attendancePanelClose?.addEventListener("click", () => setAttendancePanelOpen(false));
+presenceClose?.addEventListener("click", () => presenceController.close());
+presenceTrigger?.addEventListener("click", () => {
+    setBgmPanelOpen(false);
+    setAttendancePanelOpen(false);
 });
 
 document.addEventListener("click", (event) => {
@@ -357,16 +466,15 @@ document.addEventListener("keydown", (event) => {
     setAttendancePanelOpen(false);
 });
 
-const overlayTitles = {
-    help: "도움말",
-    progress: "진행",
-    personal: "내 정보",
-    cohort: "기수",
-    write: "학습 기록",
-    space: "공간",
-    community: "커뮤",
-    settings: "설정",
-    password: "비밀번호 변경"
+const overlayMeta = {
+    help: { title: "도움말", description: "오마고치 이용 방법을 확인하세요.", icon: "/images/app/help.png" },
+    progress: { title: "진행", description: "퀘스트와 성장 기록을 한눈에 확인하세요.", icon: "/images/app/quest.png" },
+    personal: { title: "내 정보", description: "나의 학습과 캐릭터 성장 현황입니다.", icon: "/images/app/userList.png" },
+    cohort: { title: "기수", description: "참여 중인 기수와 가입 상태를 관리하세요.", icon: "/images/app/cohort.png" },
+    write: { title: "학습 기록", description: "집중한 시간을 돌아보고 학습 흐름을 정리하세요.", icon: "/images/app/studyrecord.png" },
+    space: { title: "공간", description: "함께 공부할 공간을 선택하고 입장하세요.", icon: "/images/app/door.png" },
+    community: { title: "커뮤", description: "공지와 이야기를 확인하고 동료들과 소통하세요.", icon: "/images/app/commu.png" },
+    settings: { title: "설정", description: "계정과 서비스 이용 환경을 관리하세요.", icon: "/images/app/set.png" }
 };
 const overlayContent = {
     help: `
@@ -567,14 +675,14 @@ const overlayContent = {
         </div>
     `,
     progress: `
-        <div class="overlay-tabs" aria-label="진행 탭">
-            <button class="is-active" type="button" data-overlay-tab="quests">퀘스트</button>
-            <button type="button" data-overlay-tab="achievements">업적</button>
-            <button type="button" data-overlay-tab="leaders">랭킹</button>
-            <button type="button" data-overlay-tab="timeline">타임라인</button>
-            <button type="button" data-overlay-tab="stats">통계</button>
+        <div class="overlay-tabs" role="tablist" aria-label="진행 탭">
+            <button class="is-active" type="button" role="tab" aria-selected="true" data-overlay-tab="quests"><span aria-hidden="true">▣</span>퀘스트</button>
+            <button type="button" role="tab" aria-selected="false" data-overlay-tab="achievements"><span aria-hidden="true">★</span>업적</button>
+            <button type="button" role="tab" aria-selected="false" data-overlay-tab="leaders"><span aria-hidden="true">▥</span>랭킹</button>
+            <button type="button" role="tab" aria-selected="false" data-overlay-tab="timeline"><span aria-hidden="true">↶</span>타임라인</button>
+            <button type="button" role="tab" aria-selected="false" data-overlay-tab="stats"><span aria-hidden="true">▥</span>통계</button>
         </div>
-        <section class="overlay-tab-panel is-active" data-overlay-panel="quests">
+        <section class="overlay-tab-panel is-active" role="tabpanel" data-overlay-panel="quests">
             <div class="overlay-section-label"><strong>일일</strong><span></span><em>익일 4시에 초기화</em></div>
             <article class="overlay-quest">
                 <header>
@@ -585,22 +693,26 @@ const overlayContent = {
                 </header>
             </article>
         </section>
-        <section class="overlay-tab-panel" data-overlay-panel="achievements" hidden>
+        <section class="overlay-tab-panel" role="tabpanel" data-overlay-panel="achievements" hidden>
+            <div class="overlay-section-label"><strong>업적</strong><span></span><em>달성 기록</em></div>
             <div class="overlay-card-grid">
                 <article><h3>등록된 업적이 없습니다.</h3><p>백엔드에서 업적 목록을 내려주면 이 영역에 표시됩니다.</p></article>
             </div>
         </section>
-        <section class="overlay-tab-panel" data-overlay-panel="leaders" hidden>
+        <section class="overlay-tab-panel" role="tabpanel" data-overlay-panel="leaders" hidden>
+            <div class="overlay-section-label"><strong>명예의 전당</strong><span></span><em>전체 학습 시간</em></div>
             <ol class="overlay-list overlay-leader-list" aria-label="학습 시간 랭킹">
                 <li data-empty-ranking><strong>-</strong><span>랭킹 데이터가 없습니다.</span><em>0분</em></li>
             </ol>
         </section>
-        <section class="overlay-tab-panel" data-overlay-panel="timeline" hidden>
+        <section class="overlay-tab-panel" role="tabpanel" data-overlay-panel="timeline" hidden>
+            <div class="overlay-section-label"><strong>타임라인</strong><span></span><em>최근 활동</em></div>
             <div class="overlay-card-grid">
                 <article><h3>활동 기록이 없습니다.</h3><p>출석과 학습 기록이 생성되면 이 영역에 표시됩니다.</p></article>
             </div>
         </section>
-        <section class="overlay-tab-panel" data-overlay-panel="stats" hidden>
+        <section class="overlay-tab-panel" role="tabpanel" data-overlay-panel="stats" hidden>
+            <div class="overlay-section-label"><strong>학습 통계</strong><span></span><em>나의 기록</em></div>
             <div class="overlay-stat-grid">
                 <article><h3>오늘 집중</h3><strong>0분</strong></article>
                 <article><h3>세션</h3><strong>0회</strong></article>
@@ -609,35 +721,7 @@ const overlayContent = {
             </div>
         </section>
     `,
-    personal: `
-        <div class="profile-summary-grid">
-            <article class="profile-summary-card profile-summary-card--timer">
-                <span class="profile-summary-label">총 학습</span>
-                <strong class="profile-summary-value">${formatDuration(timerController.getElapsedSeconds())}</strong>
-                <span class="profile-summary-note">현재 타이머 기준</span>
-            </article>
-            <article class="profile-summary-card">
-                <span class="profile-summary-label">세션</span>
-                <strong class="profile-summary-value">0회</strong>
-                <span class="profile-summary-note">완료한 학습 세션</span>
-            </article>
-            <article class="profile-summary-card">
-                <span class="profile-summary-label">연속 출석</span>
-                <strong class="profile-summary-value">0일</strong>
-                <span class="profile-summary-note">입실 기록 기준</span>
-            </article>
-            <article class="profile-summary-card">
-                <span class="profile-summary-label">캐릭터</span>
-                <strong class="profile-summary-value">${characterLevel?.textContent || "Lv 1"}</strong>
-                <span class="profile-summary-note">${selectedCharacterName}</span>
-            </article>
-            <article class="profile-summary-card">
-                <span class="profile-summary-label">참여 기수</span>
-                <strong class="profile-summary-value">없음</strong>
-                <span class="profile-summary-note">승인된 기수 정보가 없습니다.</span>
-            </article>
-        </div>
-    `,
+    personal: renderPersonalOverlay,
     cohort: `
         <div class="overlay-card-grid">
             ${renderHomeCohortCards()}
@@ -654,19 +738,19 @@ const overlayContent = {
         <div class="overlay-community">
             <header class="overlay-community-toolbar">
                 <div class="overlay-community-tabs" aria-label="게시판 구분">
-                    <button class="is-active" type="button" data-community-filter="all">전체</button>
-                    <button type="button" data-community-filter="notice">공지</button>
-                    <button type="button" data-community-filter="free">자유</button>
+                    <button class="is-active" type="button" aria-pressed="true" data-community-filter="all">전체</button>
+                    <button type="button" aria-pressed="false" data-community-filter="notice">공지</button>
+                    <button type="button" aria-pressed="false" data-community-filter="free">자유</button>
                 </div>
                 <label class="overlay-community-search">
-                    <span>검색</span>
-                    <input type="search" placeholder="제목이나 내용을 검색하세요" data-community-search />
+                    <span class="sr-only">게시글 검색</span>
+                    <input type="search" placeholder="게시글 검색" data-community-search />
                 </label>
-                <button class="overlay-community-write" type="button" aria-label="글쓰기" title="글쓰기" data-community-write>✎</button>
+                <button class="overlay-community-write" type="button" data-community-write>글쓰기</button>
             </header>
 
             <section class="overlay-community-notice" aria-label="고정 공지">
-                <strong>고정 공지</strong>
+                <strong>공지</strong>
                 <div>
                     <h3>등록된 고정 공지가 없습니다.</h3>
                     <p>기수 관리자가 작성한 공지가 이 영역에 표시됩니다.</p>
@@ -683,22 +767,16 @@ const overlayContent = {
         </div>
     `,
     settings: `
-        <div class="overlay-settings-list">
-            <button type="button" data-open-password-overlay>
-                <span><strong>비밀번호 변경 안내</strong><em>변경 기능의 준비 상태를 확인합니다.</em></span>
-                <span>안내</span>
-            </button>
-            <button class="is-danger" type="button" data-logout>
-                <span><strong>로그아웃</strong><em>현재 접속 정보를 비우고 처음 화면으로 이동합니다.</em></span>
-                <span>나가기</span>
-            </button>
+        <div class="overlay-settings-panel">
+            <section class="overlay-settings-section" aria-labelledby="settings-account-title">
+                <h3 id="settings-account-title">계정</h3>
+                <div class="overlay-settings-row">
+                    <span><strong>비밀번호 변경</strong><em>현재 준비 중인 기능입니다.</em></span>
+                    <span class="overlay-settings-status">준비 중</span>
+                </div>
+                <button class="overlay-settings-logout" type="button" data-logout>로그아웃</button>
+            </section>
         </div>
-    `,
-    password: `
-        <section class="overlay-write-form overlay-password-form">
-            <p>비밀번호 변경 기능은 아직 준비 중입니다.</p>
-            <button type="button" data-close-home-overlay>돌아가기</button>
-        </section>
     `
 };
 
@@ -719,6 +797,7 @@ function getFilteredCommunityPosts() {
 function renderCommunity() {
     const list = homeOverlayRoot?.querySelector("[data-community-list]");
     const pageLabel = homeOverlayRoot?.querySelector("[data-community-page-label]");
+    const pagination = homeOverlayRoot?.querySelector(".overlay-community-pagination");
     const pageButtons = homeOverlayRoot?.querySelectorAll("[data-community-page]");
 
     if (!list || !pageLabel) {
@@ -733,6 +812,7 @@ function renderCommunity() {
         communityPage * communityPageSize
     );
 
+    const hasSearchCondition = communityFilter !== "all" || communityKeyword.trim();
     list.innerHTML = pagePosts.length
         ? pagePosts.map((post) => `
             <li>
@@ -752,19 +832,22 @@ function renderCommunity() {
         `).join("")
         : `
             <li class="overlay-community-empty">
-                <strong>검색 결과가 없습니다.</strong>
-                <p>검색어나 게시판 구분을 다시 확인해 주세요.</p>
+                <strong>${hasSearchCondition ? "검색 결과가 없습니다." : "아직 게시글이 없습니다."}</strong>
+                <p>${hasSearchCondition ? "검색어나 게시판 구분을 다시 확인해 주세요." : "첫 번째 이야기를 남겨 보세요."}</p>
             </li>
         `;
 
     pageLabel.textContent = `${communityPage} / ${pageCount}`;
+    if (pagination) pagination.hidden = pageCount <= 1;
     pageButtons?.forEach((button) => {
         const direction = Number(button.dataset.communityPage);
         button.disabled = direction < 0 ? communityPage === 1 : communityPage === pageCount;
     });
 
     homeOverlayRoot.querySelectorAll("[data-community-filter]").forEach((button) => {
-        button.classList.toggle("is-active", button.dataset.communityFilter === communityFilter);
+        const isActive = button.dataset.communityFilter === communityFilter;
+        button.classList.toggle("is-active", isActive);
+        button.setAttribute("aria-pressed", String(isActive));
     });
 }
 
@@ -835,30 +918,23 @@ function closeHomeOverlay() {
         return;
     }
 
-    homeOverlayRoot.innerHTML = "";
+    window.OmagotchiHomeOverlay?.close();
     homeOverlayRoot.classList.remove("is-open");
     document.body.classList.remove("has-home-overlay");
 }
 
 function openHomeOverlay(type) {
-    if (!homeOverlayRoot || !overlayContent[type]) {
+    const meta = overlayMeta[type];
+    const content = typeof overlayContent[type] === "function"
+        ? overlayContent[type]()
+        : overlayContent[type];
+
+    if (!homeOverlayRoot || !content || !meta) {
         return;
     }
 
     presenceController.close();
-    homeOverlayRoot.innerHTML = `
-        <section class="home-overlay-backdrop" data-close-home-overlay>
-            <article class="home-overlay home-overlay--${type}" role="dialog" aria-modal="true" aria-labelledby="home-overlay-title">
-                <button class="home-overlay-close" type="button" data-close-home-overlay aria-label="닫기">×</button>
-                <header>
-                    <h2 id="home-overlay-title">${overlayTitles[type]}</h2>
-                </header>
-                <div class="home-overlay-body">
-                    ${overlayContent[type]}
-                </div>
-            </article>
-        </section>
-    `;
+    window.OmagotchiHomeOverlay?.open({ type, meta, content });
     homeOverlayRoot.classList.add("is-open");
     document.body.classList.add("has-home-overlay");
 
@@ -886,6 +962,7 @@ function setOverlayTab(tabButton) {
 
     overlay.querySelectorAll("[data-overlay-tab]").forEach((button) => {
         button.classList.toggle("is-active", button === tabButton);
+        button.setAttribute("aria-selected", String(button === tabButton));
     });
 
     overlay.querySelectorAll("[data-overlay-panel]").forEach((panel) => {
@@ -925,7 +1002,6 @@ homeOverlayRoot?.addEventListener("click", (event) => {
     const closeTarget = event.target.closest("[data-close-home-overlay]");
     const tabButton = event.target.closest("[data-overlay-tab]");
     const claimButton = event.target.closest("[data-home-claim]");
-    const passwordButton = event.target.closest("[data-open-password-overlay]");
     const logoutButton = event.target.closest("[data-logout]");
     const communityFilterButton = event.target.closest("[data-community-filter]");
     const communityPageButton = event.target.closest("[data-community-page]");
@@ -970,11 +1046,6 @@ homeOverlayRoot?.addEventListener("click", (event) => {
         quest?.classList.add("is-claimed");
         levelController.addXp(Number(claimButton.dataset.xpReward) || 0);
         claimButton.disabled = true;
-        return;
-    }
-
-    if (passwordButton) {
-        openHomeOverlay("password");
         return;
     }
 
