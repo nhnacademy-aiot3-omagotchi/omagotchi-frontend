@@ -27,6 +27,8 @@ const nextLevelLabel = document.querySelector("[data-next-level]");
 const calendarGrid = document.querySelector(".calendar-grid");
 const calendarTitle = document.querySelector("[data-calendar-title]");
 const calendarPeriod = document.querySelector("[data-calendar-period]");
+const calendarPrev = document.querySelector("[data-calendar-prev]");
+const calendarNext = document.querySelector("[data-calendar-next]");
 const streakCount = document.querySelector("[data-streak-count]");
 const streakList = document.querySelector("[data-streak-list]");
 const homeOverlayRoot = document.querySelector("[data-home-overlay-root]");
@@ -268,6 +270,8 @@ const attendanceController = createAttendance({
     calendarGrid,
     calendarTitle,
     calendarPeriod,
+    calendarPrev,
+    calendarNext,
     streakCount,
     streakList,
     storageKey: attendanceKey,
@@ -606,12 +610,32 @@ const overlayContent = {
         </section>
     `,
     personal: `
-        <div class="overlay-stat-grid">
-            <article><h3>총 학습</h3><strong>${formatDuration(timerController.getElapsedSeconds())}</strong><p>현재 타이머 기준</p></article>
-            <article><h3>세션</h3><strong>0회</strong><p>완료한 학습 세션</p></article>
-            <article><h3>연속 출석</h3><strong>0일</strong><p>입실 기록 기준</p></article>
-            <article><h3>캐릭터</h3><strong>${characterLevel?.textContent || "Lv 1"}</strong><p>${selectedCharacterName}</p></article>
-            <article><h3>참여 기수</h3><strong>없음</strong><p>승인된 기수 정보가 없습니다.</p></article>
+        <div class="profile-summary-grid">
+            <article class="profile-summary-card profile-summary-card--timer">
+                <span class="profile-summary-label">총 학습</span>
+                <strong class="profile-summary-value">${formatDuration(timerController.getElapsedSeconds())}</strong>
+                <span class="profile-summary-note">현재 타이머 기준</span>
+            </article>
+            <article class="profile-summary-card">
+                <span class="profile-summary-label">세션</span>
+                <strong class="profile-summary-value">0회</strong>
+                <span class="profile-summary-note">완료한 학습 세션</span>
+            </article>
+            <article class="profile-summary-card">
+                <span class="profile-summary-label">연속 출석</span>
+                <strong class="profile-summary-value">0일</strong>
+                <span class="profile-summary-note">입실 기록 기준</span>
+            </article>
+            <article class="profile-summary-card">
+                <span class="profile-summary-label">캐릭터</span>
+                <strong class="profile-summary-value">${characterLevel?.textContent || "Lv 1"}</strong>
+                <span class="profile-summary-note">${selectedCharacterName}</span>
+            </article>
+            <article class="profile-summary-card">
+                <span class="profile-summary-label">참여 기수</span>
+                <strong class="profile-summary-value">없음</strong>
+                <span class="profile-summary-note">승인된 기수 정보가 없습니다.</span>
+            </article>
         </div>
     `,
     cohort: `

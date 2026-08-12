@@ -39,6 +39,20 @@ export function getCurrentUserKey() {
         || localStorage.getItem("omagotchiLastEmail")
         || "guest";
 }
+
+// [API-REPLACE] GET /api/users/me/profile의 approvedCohort 기준으로 교체
+export function getApprovedCohortId(userKey = getCurrentUserKey()) {
+    try {
+        const joinedCohorts = JSON.parse(localStorage.getItem(`omagotchiJoinedCohorts:${userKey}`) || "[]") || [];
+        return joinedCohorts[0] || null;
+    } catch {
+        return null;
+    }
+}
+
+export function canCheckIn(userKey = getCurrentUserKey()) {
+    return Boolean(getApprovedCohortId(userKey));
+}
 // [API-REPLACE] GET /api/attendance/today 같은 조회 API로 교체
 function getAttendanceKey(userKey = getCurrentUserKey()) {
     return `${ATTENDANCE_PREFIX}${userKey}`;
@@ -87,6 +101,10 @@ export function isCheckedInToday() {
 }
 
 export async function checkInToday() {
+    if (!canCheckIn()) {
+        throw new Error("승인된 기수에 가입한 뒤 입실할 수 있습니다.");
+    }
+
     const serverAttendance = await window.OmagotchiApi?.attendance?.checkIn?.();
     const attendance = normalizeAttendance(serverAttendance || {
         serviceDate: getServiceDate(),

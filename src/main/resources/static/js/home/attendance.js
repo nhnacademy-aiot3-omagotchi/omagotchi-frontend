@@ -9,6 +9,8 @@ export function createAttendance({
     calendarGrid,
     calendarTitle,
     calendarPeriod,
+    calendarPrev,
+    calendarNext,
     streakCount,
     streakList,
     storageKey,
@@ -19,6 +21,9 @@ export function createAttendance({
 }) {
     let renderedDateKey = getLocalDateKey();
     let serverHistory = null;
+    let visibleMonth = new Date();
+    visibleMonth.setDate(1);
+    visibleMonth.setHours(12, 0, 0, 0);
 
     function formatTime(date) {
         return new Intl.DateTimeFormat("ko-KR", {
@@ -67,7 +72,10 @@ export function createAttendance({
         const source = payload?.history || payload?.records || payload || {};
         if (Array.isArray(source)) {
             return source.reduce((history, entry) => {
-                const dateKey = entry.date || entry.serviceDate || getLocalDateKey(new Date(entry.checkInAt || entry.checkedInAt));
+                const dateKey = entry.date
+                    || entry.serviceDate
+                    || entry.attendanceDate
+                    || getLocalDateKey(new Date(entry.checkInAt || entry.checkedInAt));
                 history[dateKey] = normalizeAttendance(entry);
                 return history;
             }, {});
@@ -88,7 +96,11 @@ export function createAttendance({
         const history = await api.getHistory();
         if (!history) return;
 
-        serverHistory = normalizeHistory(history);
+        // 서버 출석 API가 빈 응답을 주는 개발 단계에서는 깨우기 화면의 local fallback을 유지한다.
+        serverHistory = {
+            ...getLocalHistory(),
+            ...normalizeHistory(history)
+        };
         render();
     }
 
@@ -105,9 +117,9 @@ export function createAttendance({
         if (!calendarGrid) return;
 
         const today = new Date();
-        const year = today.getFullYear();
-        const month = today.getMonth();
-        const monthLabel = new Intl.DateTimeFormat("ko-KR", { month: "long" }).format(today);
+        const year = visibleMonth.getFullYear();
+        const month = visibleMonth.getMonth();
+        const monthLabel = new Intl.DateTimeFormat("ko-KR", { month: "long" }).format(visibleMonth);
         const daysInMonth = new Date(year, month + 1, 0).getDate();
         const firstWeekday = Array.from({ length: daysInMonth }, (_, index) => new Date(year, month, index + 1))
             .find((date) => !isWeekend(date));
@@ -135,7 +147,13 @@ export function createAttendance({
             dayNode.className = "calendar-day";
             dayNode.textContent = String(day);
 
-            if (day === today.getDate()) dayNode.classList.add("is-today");
+            if (
+                day === today.getDate()
+                && month === today.getMonth()
+                && year === today.getFullYear()
+            ) {
+                dayNode.classList.add("is-today");
+            }
             if (history[getLocalDateKey(date)]?.checkInAt) {
                 dayNode.classList.add("is-present");
                 dayNode.setAttribute("aria-label", `${day}일 출석`);
@@ -274,6 +292,14 @@ export function createAttendance({
 
     function init() {
         button?.addEventListener("click", toggle);
+        calendarPrev?.addEventListener("click", () => {
+            visibleMonth.setMonth(visibleMonth.getMonth() - 1);
+            render();
+        });
+        calendarNext?.addEventListener("click", () => {
+            visibleMonth.setMonth(visibleMonth.getMonth() + 1);
+            render();
+        });
         render();
         loadServerHistory();
         window.setInterval(refreshDate, 30_000);
