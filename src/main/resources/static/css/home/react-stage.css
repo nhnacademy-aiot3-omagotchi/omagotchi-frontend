@@ -38,21 +38,6 @@
     pointer-events: auto;
 }
 
-.home-action-dock {
-    position: fixed;
-    right: 22px;
-    bottom: 22px;
-    z-index: 32;
-    display: flex;
-    flex-direction: row-reverse;
-    align-items: flex-end;
-    gap: 18px;
-}
-
-.home-bottom-hud {
-    display: contents;
-}
-
 .home-chat-bar {
     width: auto;
     min-height: 0;
@@ -1343,11 +1328,16 @@
     }
 }
 
-/* Final Home stage contract: one responsive layout for every viewport ratio. */
+/*
+ * Base fluid-stage contract.
+ * home-responsive.css is loaded after this file and owns the final
+ * viewport-specific layout overrides.
+ */
 .home-page {
     height: auto;
     min-height: 100svh;
-    overflow-y: auto;
+    overflow-x: hidden;
+    overflow-y: visible;
 }
 
 .home-hero {
@@ -1820,12 +1810,6 @@ body:has(.home-page) {
 body:has(.home-page)::after {
     display: none !important;
     opacity: 0 !important;
-}
-
-.home-page {
-    min-height: 100svh;
-    overflow-x: hidden;
-    overflow-y: visible;
 }
 
 .home-hero::after {
