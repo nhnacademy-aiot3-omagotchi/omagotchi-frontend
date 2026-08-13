@@ -1,6 +1,9 @@
 import React, { useState, useSyncExternalStore } from "react";
 import { createRoot } from "react-dom/client";
 import { flushSync } from "react-dom";
+import { HomeDockButton } from "./components/HomeDockButton.jsx";
+import { StatusHud } from "./components/StatusHud.jsx";
+import { TimerPanel } from "./components/TimerPanel.jsx";
 
 const menuItems = [
   { href: "/help", overlay: "help", label: "도움말", icon: "/images/app/help.png" },
@@ -182,32 +185,17 @@ function PresenceHud() {
   );
 }
 
-function TimerPanel() {
-  return (
-    <section className="timer-panel" aria-label="학습 타이머">
-      <time className="timer-display" dateTime="PT0S" data-timer-display>00:00:00</time>
-      <div className="timer-actions">
-        <button type="button" data-timer-toggle>시작</button>
-      </div>
-      <p className="timer-policy" data-timer-status aria-live="polite"></p>
-    </section>
-  );
-}
-
 function ChatDockButton({ chatOpen, onToggle }) {
   return (
-    <button
-      className="home-dock-button home-chat-toggle"
-      type="button"
-      aria-expanded={chatOpen}
-      aria-controls="home-chat-input-panel"
-      aria-label={chatOpen ? "채팅 입력 닫기" : "채팅 입력 열기"}
+    <HomeDockButton
+      className="home-chat-toggle"
+      label="채팅"
+      iconSrc="/images/app/commu.png"
+      expanded={chatOpen}
+      controls="home-chat-input-panel"
       title={chatOpen ? "채팅 입력 닫기" : "채팅 입력 열기"}
       onClick={onToggle}
-    >
-      <img src="/images/app/commu.png" alt="" aria-hidden="true" />
-      <span className="home-dock-label">채팅</span>
-    </button>
+    />
   );
 }
 
@@ -218,30 +206,24 @@ function ActionDock({ chatOpen, onChatToggle }) {
       <button className="attendance-button" type="button" data-attendance-button title="퇴실하기" aria-label="퇴실하기" hidden>
         퇴실하기
       </button>
-      <button
-        className="home-dock-button home-music-toggle"
-        type="button"
+      <HomeDockButton
+        className="home-music-toggle"
+        label="BGM"
+        iconSrc="/images/app/music.png"
         data-home-music-toggle
-        aria-expanded="false"
-        aria-controls="home-bgm-player"
-        aria-label="BGM 열기"
+        expanded={false}
+        controls="home-bgm-player"
         title="BGM 열기"
-      >
-        <img src="/images/app/music.png" alt="" aria-hidden="true" />
-        <span className="home-dock-label">BGM</span>
-      </button>
-      <button
-        className="home-dock-button home-attendance-toggle"
-        type="button"
+      />
+      <HomeDockButton
+        className="home-attendance-toggle"
+        label="출석"
+        iconSrc="/images/app/calendar.png"
         data-attendance-panel-toggle
-        aria-expanded="false"
-        aria-controls="attendance-detail"
-        aria-label="출석부 열기"
+        expanded={false}
+        controls="attendance-detail"
         title="출석부 열기"
-      >
-        <img src="/images/app/calendar.png" alt="" aria-hidden="true" />
-        <span className="home-dock-label">출석</span>
-      </button>
+      />
       <PresenceHud />
     </div>
   );
@@ -309,26 +291,6 @@ function CharacterStage() {
               alt="오마고치 캐릭터"
             />
           </button>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function StatusHud() {
-  return (
-    <section className="home-status-cluster" aria-label="캐릭터 성장 상태">
-      <div className="character-badge" data-presence="online">
-        <strong data-character-level>1</strong>
-        <span data-character-name>오마고치</span>
-      </div>
-      <div className="xp-area" aria-label="경험치">
-        <div className="xp-bar">
-          <span data-xp-fill style={{ width: "0%" }}></span>
-        </div>
-        <div className="xp-labels">
-          <span data-current-xp>0xp</span>
-          <span data-next-level>다음 레벨까지 50xp</span>
         </div>
       </div>
     </section>

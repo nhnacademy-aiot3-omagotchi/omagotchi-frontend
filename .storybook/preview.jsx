@@ -1,3 +1,10 @@
+import "../src/main/resources/static/css/gameFont.css";
+import "../src/main/resources/static/css/home.css";
+import "../src/main/resources/static/css/home/home-ui.css";
+import "../src/main/resources/static/css/home/react-stage.css";
+import "../src/main/resources/static/css/home/home-responsive.css";
+import "../src/main/resources/static/css/home/home-quick-panels.css";
+
 /** @type { import('@storybook/react-vite').Preview } */
 const preview = {
   parameters: {
