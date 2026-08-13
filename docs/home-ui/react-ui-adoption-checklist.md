@@ -246,7 +246,72 @@ src/main/frontend/home-react/
 - 5개 QA 뷰포트에서 텍스트 잘림과 가로 스크롤을 확인할 수 있다.
 - 기존 Home build 결과와 기능이 유지된다.
 
-### 3단계 — Radix Dialog 한 개 시험
+### 3단계 — 출석부 실제 기능 연결
+
+Storybook의 `AttendanceBook`을 첫 실제 적용 대상으로 사용한다. 시각 검증용 출석일,
+입실·퇴실 시간과 스트릭 값은 실제 화면으로 가져오지 않고, 기존 출석 Controller와 서버
+응답을 props로 변환한다.
+
+반드시 보존할 계약:
+
+```text
+data-attendance-*
+attendanceState.js의 출석 가능 여부 판정
+입실·퇴실 Controller 호출 흐름
+서버가 반환하는 승인 기수와 출석 기록
+```
+
+완료 기준:
+
+- 입실 전, 학습 중, 퇴실 완료, 빈 기록, 로딩과 서버 오류 상태가 구분된다.
+- 브라우저 저장소의 mock 값이 서버 성공 상태를 대신하지 않는다.
+- 기존 입실·퇴실 버튼과 월 이동이 동작한다.
+- 1440, 1024, 840, 768, 390, 320px에서 외곽 이탈과 가로 스크롤이 없다.
+- Storybook Story와 실제 Home 회귀 테스트가 함께 통과한다.
+
+### 4단계 — 로그인·회원가입 실제 화면 연결
+
+`AuthScreen`의 디자인을 기존 Thymeleaf 인증 화면에 적용한다. 이 단계에서는 인증 방식을
+React 상태나 브라우저 저장소로 바꾸지 않는다.
+
+반드시 보존할 계약:
+
+```text
+form action과 method
+input name과 autocomplete
+CSRF와 Session 인증 흐름
+Identity Service 오류 응답과 성공 redirect
+```
+
+완료 기준:
+
+- 로그인, 회원가입, 필드 오류, 서버 오류와 처리 중 상태가 구분된다.
+- 비밀번호와 인증 상태를 localStorage·sessionStorage에 저장하지 않는다.
+- 키보드만으로 모든 필드를 이동하고 제출할 수 있다.
+- Identity Service 실행 상태와 장애 상태를 각각 확인한다.
+- 768, 390, 320px에서 입력창과 버튼이 화면을 벗어나지 않는다.
+
+### 5단계 — Home 메뉴 내부를 한 화면씩 연결
+
+`HomeMenuPanel` 7종은 한 번에 교체하지 않고 아래 순서로 한 메뉴씩 적용한다.
+
+```text
+설정 → 내 정보 → 기수 → 학습 기록 → 공간 → 커뮤 → 진행
+```
+
+설정과 내 정보는 비교적 단순하므로 먼저 연결한다. 학습 기록, 공간과 커뮤는 기존
+JavaScript가 DOM을 직접 갱신하므로 뒤에서 처리하고, 탭과 여러 상태를 가진 진행 화면은
+Radix Tabs 시험 직전에 연결한다.
+
+각 메뉴의 완료 기준:
+
+- 한 메뉴당 별도 커밋으로 변경 범위를 제한한다.
+- Story mock을 실제 화면에서 import하지 않는다.
+- `window.OmagotchiHomeOverlay`, `data-*` 이벤트 위임과 닫기 동작을 보존한다.
+- 기본, 빈 값, 로딩, 오류와 모바일 상태를 확인한다.
+- 해당 메뉴를 연결한 뒤 다른 Home 메뉴의 회귀를 함께 확인한다.
+
+### 6단계 — Radix Dialog 한 개 시험
 
 현재 오버레이는 React의 `HomeOverlayHost`와 Vanilla JS의 `home.js`가 함께 관리한다.
 다음 계약을 먼저 보존한다.
@@ -275,7 +340,7 @@ data-overlay-tab / data-overlay-panel
 - 모바일에서 배경 스크롤이 잠기고 Dialog 내부만 스크롤된다.
 - 기존 `home.js` 기능과 `data-*` 계약이 유지된다.
 
-### 4단계 — Radix Tabs 한 개 시험
+### 7단계 — Radix Tabs 한 개 시험
 
 진행 오버레이의 퀘스트·업적·랭킹 전환 한 곳에만 적용한다. 기존
 `data-overlay-tab`, `data-overlay-panel`을 바로 삭제하지 않고 `home.js` 사용 여부를 먼저
@@ -287,7 +352,7 @@ data-overlay-tab / data-overlay-panel
 - 선택 탭과 표시 패널이 항상 일치한다.
 - 새로고침과 오버레이 재진입 시 기본 탭이 명확하다.
 
-### 5단계 — Motion 최소 적용
+### 8단계 — Motion 최소 적용
 
 - Dialog 등장·퇴장과 경험치 변화에만 적용한다.
 - 버튼의 1~2px 눌림은 우선 CSS로 구현한다.
@@ -342,7 +407,8 @@ npm run build-storybook
 - [x] `npm run build:home`, `npm run build-storybook` 통과
 - [ ] `./mvnw test`와 실제 Spring Home 기능 회귀 확인
 
-Radix와 Motion 적용은 이 변경을 검증한 다음 별도 작업으로 진행한다.
+다음 작업은 출석부 실제 기능 연결이며, 인증과 Home 메뉴를 점진적으로 연결한 뒤 Radix와
+Motion을 별도 작업으로 적용한다.
 
 ## 공식 문서
 

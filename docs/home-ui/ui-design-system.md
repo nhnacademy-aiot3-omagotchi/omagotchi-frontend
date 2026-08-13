@@ -88,6 +88,10 @@ src/main/resources/static/css/
 
 ## 실제 화면 적용 순서
 
+화면별 우선순위와 보존할 기능 계약은
+[React 게임 UI 도입 실행 체크리스트의 구현 순서](react-ui-adoption-checklist.md#구현-순서)를
+기준으로 한다.
+
 1. Storybook에서 기본·오류·로딩·빈 값·모바일 상태를 검토한다.
 2. 팀이 외형과 문구를 확정한다.
 3. Thymeleaf 또는 React Island가 요구하는 `name`, `action`, `data-*`, 오류 DOM 계약을
