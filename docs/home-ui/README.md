@@ -30,6 +30,7 @@
 | [Home UI React Island 리팩토링 기록](mobile-view-research.md) | 초기 React Island 리팩토링 범위와 조사 기록 |
 | [Home 반응형 레이아웃 리팩토링 기록](home-responsive-layout-refactor.md) | 반응형·overlay 변경 이력 |
 | [Home 하단 HUD 반응형 리팩토링 기록](home-bottom-hud-refactor.md) | 하단 HUD와 빠른 실행 영역 변경 이력 |
+| [Storybook 공통 UI·화면 Pattern 리팩토링 기록](storybook-ui-pattern-refactor.md) | 디자인 토큰, 출석·인증·메뉴 Story와 반응형 검증 작업 기록 |
 
 파일명에 `mobile`이 남은 `mobile-view-research.md`는 당시 조사 범위를 보존한 작업 기록이다.
 신규 문서는 특정 기기 이름보다 `home`, `responsive`, `component`, `storybook`처럼 실제

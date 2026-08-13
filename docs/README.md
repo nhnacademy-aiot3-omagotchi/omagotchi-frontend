@@ -65,6 +65,7 @@
 | [Home UI React Island 리팩토링 기록](home-ui/mobile-view-research.md) | 초기 리팩토링 범위와 레이아웃 방향 |
 | [홈 반응형 레이아웃 리팩터링 기록](home-ui/home-responsive-layout-refactor.md) | 반응형·오버레이 변경 이력 |
 | [Home 하단 HUD 반응형 리팩토링 기록](home-ui/home-bottom-hud-refactor.md) | 하단 HUD 변경 이력 |
+| [Storybook 공통 UI·화면 Pattern 리팩토링 기록](home-ui/storybook-ui-pattern-refactor.md) | 공통 UI, 화면 Pattern과 반응형 검증 변경 이력 |
 
 ## 작업용 Prompt
 
