@@ -32,6 +32,8 @@
 | [Session 인증 흐름](onboarding/02-session-authentication-flow.md) | Signup, Login, Logout, Redis Session |
 | [오류·장애 흐름](onboarding/03-error-and-failure-flow.md) | HTML·JSON 오류와 외부 장애 처리 |
 | [기능 연동 개발 가이드](onboarding/05-feature-integration-guide.md) | Prototype을 실제 BFF/API로 전환하는 기준 |
+| [Home UI 문서 인덱스](home-ui/README.md) | Home React Island, 반응형, Storybook 문서 분류 |
+| [Home React·Storybook 구조 가이드](home-ui/home-react-storybook-structure.md) | React 소스, Story, CSS, Controller와 빌드 산출물의 경로·책임 |
 | [관리자 대시보드 패널 작성 가이드](manager-dashboard-panel-guide.md) | 관리자 패널의 구조와 확장 규칙 |
 | [관리자 대시보드 패널 작성 예시](examples/manager-dashboard-panel-example.md) | 신규 패널 구현 예시 |
 
@@ -48,20 +50,20 @@
 | [MVP 로드맵](mvp-roadmap.md) | MVP 범위와 우선순위 |
 | [Backend 연동 협의 정리](backend-integration-todo.md) | API 후보와 Backend 협의 항목 |
 | [React Island 학습·작업 로드맵](react-island-learning-roadmap.md) | 점진 이전 순서와 학습 범위 |
-| [게임 UI 프레임워크 도입 검토안](mobile/react-ui-library.md) | UI 도구와 외부 에셋 검토 초안 |
-| [React 게임 UI 도입 실행 체크리스트](mobile/react-ui-adoption-checklist.md) | 설치 순서, 선행 작업과 검증 기준 |
+| [게임 UI 프레임워크 도입 검토안](home-ui/react-ui-library.md) | UI 도구와 외부 에셋 검토 초안 |
+| [React 게임 UI 도입 실행 체크리스트](home-ui/react-ui-adoption-checklist.md) | 설치 순서, 선행 작업과 검증 기준 |
 
-## Home·모바일 작업 기록
+## Home UI 작업 기록
 
 이 문서들은 현재 규칙의 배경과 변경 이력을 설명한다. 새 구현 기준은
 [Frontend 구현 명세](frontend-implementation-spec.md)와 코드에서 확인한다.
 
 | 문서 | 용도 |
 | --- | --- |
-| [Home UI 전환 검토 기록](mobile/home-ui-decision-history.md) | 모바일 Route 분리 대신 React Island를 선택한 이유 |
-| [Home UI React Island 리팩토링 기록](mobile/mobile-view-research.md) | 초기 리팩토링 범위와 레이아웃 방향 |
-| [홈 반응형 레이아웃 리팩터링 기록](mobile/home-responsive-layout-refactor.md) | 반응형·오버레이 변경 이력 |
-| [Home 하단 HUD 반응형 리팩토링 기록](mobile/home-bottom-hud-refactor.md) | 하단 HUD 변경 이력 |
+| [Home UI 전환 검토 기록](home-ui/home-ui-decision-history.md) | 모바일 Route 분리 대신 React Island를 선택한 이유 |
+| [Home UI React Island 리팩토링 기록](home-ui/mobile-view-research.md) | 초기 리팩토링 범위와 레이아웃 방향 |
+| [홈 반응형 레이아웃 리팩터링 기록](home-ui/home-responsive-layout-refactor.md) | 반응형·오버레이 변경 이력 |
+| [Home 하단 HUD 반응형 리팩토링 기록](home-ui/home-bottom-hud-refactor.md) | 하단 HUD 변경 이력 |
 
 ## 작업용 Prompt
 

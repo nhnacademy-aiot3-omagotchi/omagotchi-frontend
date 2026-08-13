@@ -169,8 +169,9 @@ Kenney, itch.io와 OpenGameArt 에셋은 npm 의존성이 아니며 실제 사�
 ## 7. 참고 사항 (Notes)
 
 - 2026-08-13: Storybook 10.5.7, Radix UI 1.6.7, Motion 13.1.0 개발환경 설치 완료
-- 실행 문서: [React 게임 UI 도입 실행 체크리스트](../mobile/react-ui-adoption-checklist.md)
-- 검토 문서: [게임 UI 프레임워크 도입 검토안](../mobile/react-ui-library.md)
+- 구조 문서: [Home React·Storybook 구조 가이드](../home-ui/home-react-storybook-structure.md)
+- 실행 문서: [React 게임 UI 도입 실행 체크리스트](../home-ui/react-ui-adoption-checklist.md)
+- 검토 문서: [게임 UI 프레임워크 도입 검토안](../home-ui/react-ui-library.md)
 - 관련 ADR: `0002-home-ui-react-island-fluid-stage.md`
 - 관련 React 소스: `src/main/frontend/home-react/main.jsx`
 - 관련 기존 JavaScript: `src/main/resources/static/js/home.js`

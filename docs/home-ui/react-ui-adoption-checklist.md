@@ -3,6 +3,7 @@
 - 작성일: 2026-08-13
 - 상태: 실행 가이드
 - 검토 배경: [게임 UI 프레임워크 도입 검토안](react-ui-library.md)
+- 구조 가이드: [Home React·Storybook 구조 가이드](home-react-storybook-structure.md)
 
 ## 목적
 
@@ -78,7 +79,7 @@ npm run storybook
 확인한다.
 
 2026-08-13 기준 Storybook, Radix UI와 Motion의 개발환경 구성이 완료됐다. Home에서는
-버튼, 타이머, 상태 HUD, 캐릭터, 상단 메뉴, 채팅, 액션 도크, 재실 HUD, BGM, 오버레이와
+버튼, 타이머, 상태 HUD, 캐릭터, 상단 메뉴, 채팅, 액션 도크, 재실 HUD, BGM, 오버레이,
 전체 Stage와 공통 스크롤 영역을 컴포넌트로 분리하고 38개 Story를 등록했다. 이 변경의
 `package.json`, `package-lock.json`과 `.storybook` 설정이 병합된 뒤부터 팀원은
 `npm ci`로 같은 환경을 설치할 수 있다. Radix UI와 Motion은 설치만 완료됐으며 실제 Home
