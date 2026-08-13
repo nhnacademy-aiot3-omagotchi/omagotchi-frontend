@@ -30,6 +30,7 @@ SPRING_PROFILES_ACTIVE=local ./mvnw spring-boot:run
 
 - 로컬 설정 파일: `.env.local`
 - Git 추적 제외: `.env.local`
+- Redis 논리 DB: `SESSION_REDIS_DATABASE`, 로컬 기본값 `0`
 - Identity 주소: `IDENTITY_SERVICE_BASE_URL=http://localhost:8083`
 - 서비스 인증 정보: Identity와 동일한 `FRONTEND_USERNAME`·`FRONTEND_PASSWORD`
 - 운영 Identity 주소: `lb://identity-service`
