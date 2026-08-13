@@ -92,17 +92,27 @@ document.addEventListener("DOMContentLoaded", () => {
         waking = true;
         try {
             await checkInToday();
-        } catch (error) {
+        } catch {
             waking = false;
             character.classList.remove("is-shaking");
-            setMessage(error.message || "기수 가입 승인 후 입실할 수 있습니다.");
+            const isEligibilityError = !canCheckIn();
+            setMessage(isEligibilityError
+                ? "승인된 기수에 가입한 뒤 입실할 수 있습니다."
+                : "입실 처리에 실패했어요. 잠시 후 다시 시도해 주세요.");
             wakeButtons.forEach((button) => {
-                button.disabled = true;
-                button.setAttribute("aria-disabled", "true");
+                button.disabled = isEligibilityError;
+                if (isEligibilityError) {
+                    button.setAttribute("aria-disabled", "true");
+                } else {
+                    button.removeAttribute("aria-disabled");
+                }
             });
-            window.setTimeout(() => {
-                window.location.assign("/home#cohort");
-            }, 1400);
+            if (isEligibilityError) {
+                character.setAttribute("aria-disabled", "true");
+                window.setTimeout(() => {
+                    window.location.assign("/home#cohort");
+                }, 1400);
+            }
             return;
         }
 
