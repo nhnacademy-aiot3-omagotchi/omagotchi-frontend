@@ -1,5 +1,7 @@
 # React Island 점진 이전 학습 및 작업 로드맵
 
+- 상태: 작업 계획 — 점진 이전 진행 중
+
 ## 목적
 
 이 문서는 현재 Omagotchi 프론트엔드를 React로 한 번에 전환하지 않고, 기존 Spring MVC + Thymeleaf + Vanilla JS 구조 위에서 React island 방식으로 점진 이전하기 위해 무엇을 공부하고 어떤 순서로 작업해야 하는지 정리한다.

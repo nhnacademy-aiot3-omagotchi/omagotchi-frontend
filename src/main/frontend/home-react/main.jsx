@@ -12,9 +12,29 @@ const menuItems = [
   { href: "/home#community", overlay: "community", label: "커뮤", icon: "/images/app/commu.png" },
   { href: "/settings", overlay: "settings", label: "설정", icon: "/images/app/set.png" }
 ];
+const overlayTypes = new Set(menuItems.map(({ overlay }) => overlay));
 
 let overlaySnapshot = null;
 const overlayListeners = new Set();
+
+function isValidOverlayPayload(payload) {
+  if (!payload || typeof payload !== "object") {
+    return false;
+  }
+
+  const { type, meta, content } = payload;
+
+  return (
+    typeof type === "string" &&
+    overlayTypes.has(type) &&
+    meta !== null &&
+    typeof meta === "object" &&
+    typeof meta.icon === "string" &&
+    typeof meta.title === "string" &&
+    typeof meta.description === "string" &&
+    typeof content === "string"
+  );
+}
 
 const homeOverlayStore = {
   subscribe(listener) {
@@ -25,8 +45,13 @@ const homeOverlayStore = {
     return overlaySnapshot;
   },
   open(nextOverlay) {
+    if (!isValidOverlayPayload(nextOverlay)) {
+      return false;
+    }
+
     overlaySnapshot = nextOverlay;
     flushSync(() => overlayListeners.forEach((listener) => listener()));
+    return true;
   },
   close() {
     overlaySnapshot = null;

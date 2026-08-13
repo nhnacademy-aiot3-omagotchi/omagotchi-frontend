@@ -135,7 +135,10 @@ npm run storybook
 
 ```js
 const config = {
-  stories: ["../src/main/frontend/**/*.stories.@(js|jsx)"],
+  stories: [
+    "../src/main/frontend/**/*.mdx",
+    "../src/main/frontend/**/*.stories.@(js|jsx|mjs|ts|tsx)"
+  ],
   staticDirs: ["../src/main/resources/static"]
 };
 ```
