@@ -1,21 +1,13 @@
 import React, { useState, useSyncExternalStore } from "react";
 import { createRoot } from "react-dom/client";
 import { flushSync } from "react-dom";
+import { CharacterStage } from "./components/CharacterStage.jsx";
 import { HomeDockButton } from "./components/HomeDockButton.jsx";
 import { StatusHud } from "./components/StatusHud.jsx";
 import { TimerPanel } from "./components/TimerPanel.jsx";
+import { HOME_MENU_ITEMS, TopMenu } from "./components/TopMenu.jsx";
 
-const menuItems = [
-  { href: "/help", overlay: "help", label: "도움말", icon: "/images/app/help.png" },
-  { href: "/progress#quests", overlay: "progress", label: "진행", icon: "/images/app/quest.png", alert: true },
-  { href: "/personal", overlay: "personal", label: "내 정보", icon: "/images/app/userList.png" },
-  { href: "/cohort", overlay: "cohort", label: "기수", icon: "/images/app/cohort.png" },
-  { href: "/write", overlay: "write", label: "학습 기록", icon: "/images/app/studyrecord.png" },
-  { href: "/space#lab", overlay: "space", label: "공간", icon: "/images/app/door.png" },
-  { href: "/home#community", overlay: "community", label: "커뮤", icon: "/images/app/commu.png" },
-  { href: "/settings", overlay: "settings", label: "설정", icon: "/images/app/set.png" }
-];
-const overlayTypes = new Set(menuItems.map(({ overlay }) => overlay));
+const overlayTypes = new Set(HOME_MENU_ITEMS.map(({ overlay }) => overlay));
 
 let overlaySnapshot = null;
 const overlayListeners = new Set();
@@ -63,30 +55,6 @@ const homeOverlayStore = {
 };
 
 window.OmagotchiHomeOverlay = homeOverlayStore;
-
-function TopMenu() {
-  return (
-    <>
-      <h1 id="home-title">Omagotchi</h1>
-      <nav className="home-menu" aria-label="주요 메뉴">
-        {menuItems.map((item) => (
-          <a
-            key={item.overlay}
-            className={item.alert ? "has-menu-alert" : undefined}
-            href={item.href}
-            aria-label={item.label}
-            data-home-overlay={item.overlay}
-          >
-            <span>
-              <img src={item.icon} alt="" width="32" />
-            </span>
-            {item.label}
-          </a>
-        ))}
-      </nav>
-    </>
-  );
-}
 
 function BgmPlayer() {
   return (
@@ -269,29 +237,6 @@ function ChatDrawer({ chatOpen, setChatOpen }) {
           <span className="sr-only">채팅 메시지</span>
           <input type="text" placeholder="메시지 입력" disabled />
         </label>
-      </div>
-    </section>
-  );
-}
-
-function CharacterStage() {
-  return (
-    <section className="companion-panel" aria-label="캐릭터 상태">
-      <div className="home-character-stage" data-character-stage>
-        <img className="home-character-wing" data-character-wing alt="" aria-hidden="true" hidden />
-        <div className="home-character-anchor">
-          <p className="character-speech-bubble" data-character-bubble aria-live="polite" hidden>
-            오늘도 같이 공부해요!
-          </p>
-          <button className="home-character-button" type="button" data-character-interaction aria-label="오마고치와 놀아주기">
-            <img
-              className="home-character"
-              data-home-character
-              src="/images/characters/default/omagotchi.png"
-              alt="오마고치 캐릭터"
-            />
-          </button>
-        </div>
       </div>
     </section>
   );
