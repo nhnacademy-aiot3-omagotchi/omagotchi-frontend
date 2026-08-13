@@ -529,7 +529,6 @@
     }
 
     .bgm-player,
-    .attendance-detail,
     .presence-panel {
         position: fixed;
         z-index: 1000 !important;
