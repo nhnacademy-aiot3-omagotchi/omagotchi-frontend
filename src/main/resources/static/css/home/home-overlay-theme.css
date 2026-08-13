@@ -1144,7 +1144,6 @@
         grid-template-columns: minmax(0, 1fr) 46px;
     }
 
-    .overlay-community-tabs,
     .overlay-community-tabs {
         grid-column: 1 / -1;
     }
