@@ -44,7 +44,21 @@ export function getCurrentUserKey() {
 export function getApprovedCohortId(userKey = getCurrentUserKey()) {
     try {
         const joinedCohorts = JSON.parse(localStorage.getItem(`omagotchiJoinedCohorts:${userKey}`) || "[]") || [];
-        return joinedCohorts[0] || null;
+        const managedCohorts = JSON.parse(localStorage.getItem("omagotchiCohortOperations") || "[]") || [];
+
+        if (!Array.isArray(joinedCohorts) || !Array.isArray(managedCohorts)) {
+            return null;
+        }
+
+        return joinedCohorts.find((cohortId) => (
+            managedCohorts.some((cohort) => (
+                String(cohort.id) === String(cohortId)
+                && cohort.members?.some((member) => (
+                    member.status === "ACTIVE"
+                    && [member.id, member.email].some((identifier) => String(identifier) === String(userKey))
+                ))
+            ))
+        )) || null;
     } catch {
         return null;
     }
