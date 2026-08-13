@@ -1,13 +1,12 @@
 # 백엔드 연동 협의 정리
 
-프론트엔드에서 백엔드 연동 전 맞춰야 할 항목을 정리한 문서다.  
+프론트엔드에서 백엔드 연동 전 맞춰야 할 항목을 정리한 문서다.
+
 현재 화면은 일부 기능이 `localStorage`, `sessionStorage`, 목업 데이터로 동작하므로, 실제 연동 시 아래 항목을 백엔드와 먼저 합의해야 한다.
 
 ## 0. 백엔드 현재 명세 확인 결과
 
-백엔드에서 공유한 명세:
-
-- `/Users/chosun-nhn13/Desktop/NHN/project/learning-service/omagotchi-learning-service/docs/frontend-api-spec.md`
+백엔드에서 공유한 명세는 Learning Service 저장소의 `docs/frontend-api-spec.md`다.
 
 현재 백엔드 명세 기준으로 프론트 문서와 바로 맞춰야 할 차이는 아래다.
 

@@ -56,7 +56,8 @@ Bootstrap은 버튼, 폼, 카드, 테이블, 모달, 그리드 등 일반적인 
 - 햄버거 메뉴와 실습실 이동 버튼은 현재 홈 화면 위치를 유지한다.
 - Home 화면은 `/home` 단일 진입점을 유지하며 React island와 fluid layout으로 세로, 가로, 낮은 높이 화면을 처리한다.
 - API 연동 시 React 컴포넌트는 UI 상태 표현을 담당하고, Backend 호출은 BFF/API helper 계층에서 분리한다.
-- React island 점진 이전 학습 및 작업 기준은 `docs/react-island-learning-roadmap.md`를 따른다.
+- React island 점진 이전 학습 및 작업 기준은
+  [React Island 학습·작업 로드맵](react-island-learning-roadmap.md)을 따른다.
 
 ## Ranking Dashboard Requirements
 
