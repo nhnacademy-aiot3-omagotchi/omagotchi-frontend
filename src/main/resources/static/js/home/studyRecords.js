@@ -4,6 +4,7 @@ const HEAT_THRESHOLDS = [2, 4, 6, 8].map((hours) => hours * 60 * 60);
 const HEAT_LEGEND_LEVELS = [0, 1, 2, 3, 4, 5];
 const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
 const WEEKDAYS_LONG = ["일요일", "월요일", "화요일", "수요일", "목요일", "금요일", "토요일"];
+const STUDY_DAY_START_HOUR = 7;
 
 function createId(prefix) {
     if (window.crypto?.randomUUID) {
@@ -38,6 +39,14 @@ function toDateKey(date) {
     const month = String(date.getMonth() + 1).padStart(2, "0");
     const day = String(date.getDate()).padStart(2, "0");
     return `${year}-${month}-${day}`;
+}
+
+function toStudyDateKey(date) {
+    const studyDate = new Date(date);
+    if (studyDate.getHours() < STUDY_DAY_START_HOUR) {
+        studyDate.setDate(studyDate.getDate() - 1);
+    }
+    return toDateKey(studyDate);
 }
 
 function filterRecords(records, viewMode, referenceDate) {
@@ -171,7 +180,7 @@ function createMonthTotals(records) {
 // 구간 기록의 계산, 저장, 편집 화면을 한 곳에서 관리한다.
 export function createStudyRecords({ storageKey, getElapsedSeconds, api }) {
     const sessionId = createId("timer");
-    let lastRecordedElapsed = 0;
+    let lastRecordedElapsed = null;
     let editingId = null;
     let container = null;
     let viewMode = "daily";
@@ -190,17 +199,44 @@ export function createStudyRecords({ storageKey, getElapsedSeconds, api }) {
         localStorage.setItem(storageKey, JSON.stringify(records));
     }
 
+    function getRecordedElapsedBaseline() {
+        const currentStudyDate = toStudyDateKey(new Date());
+        return readRecords().reduce((latest, record) => {
+            const recordedAt = parseRecordedAt(record);
+            const recordStudyDate = record.studyDate
+                || (recordedAt ? toStudyDateKey(recordedAt) : null);
+            const elapsedSeconds = Number(record.elapsedSeconds) || 0;
+            return recordStudyDate === currentStudyDate
+                ? Math.max(latest, elapsedSeconds)
+                : latest;
+        }, 0);
+    }
+
+    function getUnrecordedSeconds() {
+        const elapsedSeconds = getElapsedSeconds();
+        const recordedElapsed = Math.max(
+            lastRecordedElapsed || 0,
+            getRecordedElapsedBaseline()
+        );
+        return Math.max(0, elapsedSeconds - recordedElapsed);
+    }
+
     async function loadRecords() {
         const records = await api?.list?.();
         if (!Array.isArray(records)) return;
 
         writeRecords(records);
+        lastRecordedElapsed = null;
         render();
     }
     // [API-REPLACE] ID 순서 기록 시각은 서버가 최종 결정하도록 변경
     function addRecord() {
         const elapsedSeconds = getElapsedSeconds();
-        const durationSeconds = elapsedSeconds - lastRecordedElapsed;
+        const recordedElapsed = Math.max(
+            lastRecordedElapsed || 0,
+            getRecordedElapsedBaseline()
+        );
+        const durationSeconds = elapsedSeconds - recordedElapsed;
 
         if (elapsedSeconds <= 0) {
             return { ok: false, message: "타이머를 먼저 시작해 주세요." };
@@ -221,6 +257,7 @@ export function createStudyRecords({ storageKey, getElapsedSeconds, api }) {
             tags: [],
             durationSeconds,
             elapsedSeconds,
+            studyDate: toStudyDateKey(new Date(now)),
             recordedAt: now,
             updatedAt: now
         };
@@ -465,6 +502,8 @@ export function createStudyRecords({ storageKey, getElapsedSeconds, api }) {
         const records = readRecords();
         const visibleRecords = filterRecords(records, viewMode, referenceDate);
         const totalSeconds = sumDuration(visibleRecords);
+        const periodLabel = formatPeriodLabel(viewMode, referenceDate);
+        const periodText = formatPeriod(viewMode, referenceDate);
 
         container.innerHTML = `
             <section class="study-records" aria-label="학습 기록">
@@ -482,8 +521,10 @@ export function createStudyRecords({ storageKey, getElapsedSeconds, api }) {
                     </div>
                     <div class="study-period-navigation">
                         <button type="button" data-study-period-move="-1" aria-label="이전 기간">←</button>
-                        <strong aria-label="${formatPeriodLabel(viewMode, referenceDate)}"
-                                title="${formatPeriodLabel(viewMode, referenceDate)}">${formatPeriod(viewMode, referenceDate)}</strong>
+                        <strong title="${escapeHtml(periodLabel)}">
+                            <span aria-hidden="true">${escapeHtml(periodText)}</span>
+                            <span class="sr-only">${escapeHtml(periodLabel)}</span>
+                        </strong>
                         <button type="button" data-study-period-today>오늘</button>
                         <button type="button" data-study-period-move="1" aria-label="다음 기간">→</button>
                     </div>
@@ -603,6 +644,7 @@ export function createStudyRecords({ storageKey, getElapsedSeconds, api }) {
 
     return {
         addRecord,
+        getUnrecordedSeconds,
         mount: (target) => {
             mount(target);
             loadRecords();

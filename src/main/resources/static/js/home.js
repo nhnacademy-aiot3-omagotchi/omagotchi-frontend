@@ -195,7 +195,7 @@ function getPersonalSnapshot() {
         characterName: selectedCharacterName || "오마고치",
         characterImage: selectedCharacterImage,
         level: characterLevel?.textContent || "1",
-        studyTime: formatDuration(Math.max(recordedSeconds, timerController.getElapsedSeconds())),
+        studyTime: formatDuration(recordedSeconds + studyRecordsController.getUnrecordedSeconds()),
         sessions: sessionCount,
         streak,
         cohort: managedCohort?.name || "미연결"
@@ -375,6 +375,7 @@ const attendanceController = createAttendance({
     storageKey: attendanceKey,
     api: api?.attendance,
     onCheckOutSuccess: () => showHomeToast("퇴실 처리됐어요. 타이머는 계속 사용할 수 있어요."),
+    onCheckOutError: () => showHomeToast("퇴실 처리에 실패했어요. 잠시 후 다시 시도해 주세요."),
     confirmCheckOut,
     onChange: ({ streakCount: currentStreakCount } = {}) => {
         characterController.setAttendanceStreak(currentStreakCount);
@@ -414,7 +415,7 @@ function setAttendancePanelOpen(open) {
 
 musicToggle?.addEventListener("click", () => {
     const nextOpen = !homePage?.classList.contains("is-bgm-open");
-    presenceController.close();
+    presenceController?.close();
     setAttendancePanelOpen(false);
     setBgmPanelOpen(nextOpen);
 });
@@ -423,13 +424,13 @@ musicClose?.addEventListener("click", () => setBgmPanelOpen(false));
 
 attendancePanelToggle?.addEventListener("click", () => {
     const nextOpen = !homePage?.classList.contains("is-attendance-panel-open");
-    presenceController.close();
+    presenceController?.close();
     setBgmPanelOpen(false);
     setAttendancePanelOpen(nextOpen);
 });
 
 attendancePanelClose?.addEventListener("click", () => setAttendancePanelOpen(false));
-presenceClose?.addEventListener("click", () => presenceController.close());
+presenceClose?.addEventListener("click", () => presenceController?.close());
 presenceTrigger?.addEventListener("click", () => {
     setBgmPanelOpen(false);
     setAttendancePanelOpen(false);
@@ -933,7 +934,7 @@ function openHomeOverlay(type) {
         return;
     }
 
-    presenceController.close();
+    presenceController?.close();
     window.OmagotchiHomeOverlay?.open({ type, meta, content });
     homeOverlayRoot.classList.add("is-open");
     document.body.classList.add("has-home-overlay");
@@ -1148,5 +1149,5 @@ characterController.init();
 timerController.init();
 levelController.render();
 attendanceController.init();
-presenceController.init();
+presenceController?.init();
 bgmPlayer.init();

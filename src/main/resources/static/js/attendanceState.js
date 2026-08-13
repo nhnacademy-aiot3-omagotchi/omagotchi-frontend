@@ -115,17 +115,25 @@ export function isCheckedInToday() {
 }
 
 export async function checkInToday() {
+    // 이 검사는 UX 안내용이다. 최종 입실 권한은 서버의 check-in API가 검증한다.
     if (!canCheckIn()) {
         throw new Error("승인된 기수에 가입한 뒤 입실할 수 있습니다.");
     }
 
-    const serverAttendance = await window.OmagotchiApi?.attendance?.checkIn?.();
-    const attendance = normalizeAttendance(serverAttendance || {
-        serviceDate: getServiceDate(),
-        checkInAt: new Date().toISOString(),
-        status: "PRESENT",
-        spaceStatus: "IN_LAB"
-    });
+    const checkIn = window.OmagotchiApi?.attendance?.checkIn;
+    if (typeof checkIn !== "function") {
+        throw new Error("Attendance check-in API is unavailable");
+    }
+
+    const serverAttendance = await checkIn();
+    if (!serverAttendance || typeof serverAttendance !== "object") {
+        throw new Error("Attendance check-in API returned an invalid response");
+    }
+
+    const attendance = normalizeAttendance(serverAttendance);
+    if (!attendance.checkInAt) {
+        throw new Error("Attendance check-in response is missing checkInAt");
+    }
     const dateKey = attendance.serviceDate || getServiceDate();
     let history = {};
 
@@ -138,7 +146,7 @@ export async function checkInToday() {
     history[dateKey] = {
         ...history[dateKey],
         ...attendance,
-        checkInAt: attendance.checkInAt || new Date().toISOString(),
+        checkInAt: attendance.checkInAt,
         serviceDate: dateKey,
         status: "PRESENT",
         spaceStatus: "IN_LAB"

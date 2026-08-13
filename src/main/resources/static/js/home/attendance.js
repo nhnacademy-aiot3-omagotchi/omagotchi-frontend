@@ -16,6 +16,7 @@ export function createAttendance({
     storageKey,
     api,
     onCheckOutSuccess,
+    onCheckOutError,
     confirmCheckOut,
     onChange
 }) {
@@ -96,11 +97,8 @@ export function createAttendance({
         const history = await api.getHistory();
         if (!history) return;
 
-        // 서버 출석 API가 빈 응답을 주는 개발 단계에서는 깨우기 화면의 local fallback을 유지한다.
-        serverHistory = {
-            ...getLocalHistory(),
-            ...normalizeHistory(history)
-        };
+        // 서버 응답이 도착한 뒤에는 서버 이력을 정본으로 사용한다.
+        serverHistory = normalizeHistory(history);
         render();
     }
 
@@ -269,18 +267,21 @@ export function createAttendance({
         }
 
         if (button) button.disabled = true;
-        const serverAttendance = await api?.[nextAction]?.();
-        if (serverAttendance) {
+        try {
+            if (typeof api?.[nextAction] !== "function") {
+                throw new Error("Attendance check-out API is unavailable");
+            }
+            const serverAttendance = await api[nextAction]();
+            if (!serverAttendance || typeof serverAttendance !== "object") {
+                throw new Error("Attendance check-out API returned an invalid response");
+            }
             saveToday(normalizeAttendance(serverAttendance));
             render();
             onCheckOutSuccess?.();
-            return;
+        } catch {
+            render();
+            onCheckOutError?.();
         }
-
-        attendance.checkOutAt = new Date().toISOString();
-        saveToday(attendance);
-        render();
-        onCheckOutSuccess?.();
     }
 
     function refreshDate() {
