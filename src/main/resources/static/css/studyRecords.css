@@ -676,6 +676,43 @@
     }
 }
 
+/* Keep short-viewport adjustments before narrower width overrides. */
+@media (max-width: 900px) and (max-height: 500px) {
+    .study-record-toolbar {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        justify-content: stretch;
+        gap: 8px;
+    }
+
+    .study-record-tabs,
+    .study-period-navigation {
+        width: 100%;
+    }
+
+    .study-period-navigation {
+        display: grid;
+        grid-template-columns: 44px minmax(0, 1fr) auto 44px;
+        gap: 6px;
+    }
+
+    .study-period-navigation button {
+        min-height: 44px;
+    }
+
+    .study-period-navigation button[data-study-period-move] {
+        width: 44px;
+        min-width: 44px;
+    }
+
+    .study-period-navigation strong {
+        min-width: 0;
+        align-self: center;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+}
+
 @media (max-width: 480px) {
     .app-title {
         min-width: 0;
@@ -768,41 +805,5 @@
 
     .study-period-navigation strong {
         font-size: 12px;
-    }
-}
-
-@media (max-width: 900px) and (max-height: 500px) {
-    .study-record-toolbar {
-        display: grid;
-        grid-template-columns: minmax(0, 1fr);
-        justify-content: stretch;
-        gap: 8px;
-    }
-
-    .study-record-tabs,
-    .study-period-navigation {
-        width: 100%;
-    }
-
-    .study-period-navigation {
-        display: grid;
-        grid-template-columns: 44px minmax(0, 1fr) auto 44px;
-        gap: 6px;
-    }
-
-    .study-period-navigation button {
-        min-height: 44px;
-    }
-
-    .study-period-navigation button[data-study-period-move] {
-        width: 44px;
-        min-width: 44px;
-    }
-
-    .study-period-navigation strong {
-        min-width: 0;
-        align-self: center;
-        overflow: hidden;
-        text-overflow: ellipsis;
     }
 }
