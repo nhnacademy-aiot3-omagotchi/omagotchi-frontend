@@ -59,7 +59,7 @@
     place-items: center;
     align-content: center;
     gap: 2px;
-    padding: 6px 4px 5px;
+    padding: 6px 4px 5px !important;
 }
 
 .home-action-dock .home-dock-button:hover,
@@ -86,6 +86,7 @@
     color: #ffffff;
     font-family: var(--game-font);
     font-size: 9px;
+    font-weight: 400;
     line-height: 1;
     white-space: nowrap;
 }
@@ -100,7 +101,7 @@
 
 .home-action-dock .presence-trigger {
     border: 0 !important;
-    background: transparent;
+    background: transparent !important;
     box-shadow: none !important;
 }
 
@@ -119,19 +120,13 @@
 .home-action-dock .attendance-button {
     position: relative !important;
     display: grid;
-    place-items: end center;
-    padding: 6px 4px 5px;
-    background: #17754f url("/images/app/exit.png") center 7px / 28px 28px no-repeat !important;
-    color: transparent !important;
-    text-indent: -9999px;
-}
-
-.home-action-dock .attendance-button::after {
-    content: "퇴실";
-    color: #ffffff;
-    font-family: var(--game-font);
-    font-size: 9px;
-    line-height: 1;
+    grid-template-rows: minmax(25px, 1fr) auto;
+    place-items: center;
+    align-content: center;
+    gap: 2px;
+    padding: 6px 4px 5px !important;
+    background: #17754f !important;
+    color: #ffffff !important;
     text-indent: 0;
 }
 

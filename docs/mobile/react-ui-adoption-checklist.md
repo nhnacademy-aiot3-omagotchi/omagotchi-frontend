@@ -18,7 +18,7 @@
 | React DOM | 19.2.8 설치됨 | 유지 |
 | Vite | 7.3.6 설치됨 | 유지 |
 | React Vite Plugin | 5.2.0 설치됨 | 유지 |
-| Storybook | 10.5.7 설치됨 | 공통 컴포넌트 Story 작성 전 대기 |
+| Storybook | 10.5.7 설치·Home Story 38개 등록 | PC·모바일 시각 QA에 사용 |
 | Radix UI | 1.6.7 설치됨 | Dialog·Tabs 시험 적용 전 대기 |
 | Motion | 13.1.0 설치됨 | 최소 애니메이션 적용 전 대기 |
 | Phaser·XState·Rive | 미설치 | 현재 설치하지 않음 |
@@ -77,10 +77,12 @@ npm run storybook
 삭제한 뒤 `npm install`을 실행하지 않는다. 오류가 나면 먼저 Node.js와 npm 버전을
 확인한다.
 
-2026-08-13 기준 Storybook, Radix UI와 Motion의 개발환경 구성이 완료됐다. 이 변경의
+2026-08-13 기준 Storybook, Radix UI와 Motion의 개발환경 구성이 완료됐다. Home에서는
+버튼, 타이머, 상태 HUD, 캐릭터, 상단 메뉴, 채팅, 액션 도크, 재실 HUD, BGM, 오버레이와
+전체 Stage와 공통 스크롤 영역을 컴포넌트로 분리하고 38개 Story를 등록했다. 이 변경의
 `package.json`, `package-lock.json`과 `.storybook` 설정이 병합된 뒤부터 팀원은
-`npm ci`로 같은 환경을 설치할 수 있다. 실제 공통 컴포넌트 분리와 UI 적용은 다음
-작업에서 진행한다.
+`npm ci`로 같은 환경을 설치할 수 있다. Radix UI와 Motion은 설치만 완료됐으며 실제 Home
+적용은 Storybook 상태 검증 후 별도 변경으로 진행한다.
 
 ## 설치 전에 결정할 것
 
@@ -146,15 +148,22 @@ const config = {
 `staticDirs`가 있어야 Story에서 `/images/...`로 참조하는 현재 캐릭터와 아이콘을 표시할 수
 있다. CLI가 만든 framework와 addons 설정은 지우지 않고 위 항목을 병합한다.
 
-첫 Story 대상과 상태:
+현재 Home Story 대상과 상태:
 
 | 컴포넌트 | 필수 Story |
 | --- | --- |
-| `GameButton` | 기본, hover, focus, disabled, loading |
-| `GamePanel` | 기본, 긴 제목, 좁은 폭 |
-| `GameDialog` | 기본, 긴 콘텐츠, 스크롤, 닫기 |
-| `GameTabs` | 기본, 키보드 이동, 긴 탭 이름 |
-| `ProgressBar` | 0%, 50%, 100%, 긴 라벨 |
+| `HomeDockButton` | 기본, 확장, 비활성 |
+| `TimerPanel` | 대기, 실행, 점검 |
+| `StatusHud` | 신규 캐릭터, 성장 중, 레벨업 임박 |
+| `CharacterStage` | 기본, 대화, 날개 장착 |
+| `TopMenu` | 기본, 알림 없음, 복수 알림 |
+| `ChatDrawer` | 닫힘, 열림, 입력 가능 |
+| `ActionDock` | 기본, 채팅 열림, 입실 완료 |
+| `PresenceHud` | 닫힘, 열림, 빈 목록 |
+| `BgmPlayer` | 준비, 재생, 플레이리스트 열림 |
+| `HomeOverlay` | 도움말, 성장 현황, 설정 |
+| `HomeStage` | 데스크톱, 모바일 세로·가로, 학습 중 |
+| `ScrollPanel` | 짧은 콘텐츠, 긴 세로 목록, 가로 스크롤, 모바일 |
 
 ### 3. Motion
 
@@ -318,11 +327,12 @@ npm run build-storybook
 
 첫 번째 변경은 아래까지만 포함한다.
 
-- [ ] `main.jsx`에서 공통 UI 컴포넌트 분리
+- [x] `main.jsx`에서 공통 UI 컴포넌트 분리
 - [ ] 디자인 토큰 정리
-- [ ] Storybook 설치와 정적 리소스 연결
-- [ ] `GameButton`, `GamePanel`, `ProgressBar` Story 작성
-- [ ] `npm run build:home`, `npm run build-storybook`, `./mvnw test` 통과
+- [x] Storybook 설치와 정적 리소스·실제 Home CSS 연결
+- [x] Home 공통 컴포넌트 12종, 상태 Story 38개 작성
+- [x] `npm run build:home`, `npm run build-storybook` 통과
+- [ ] `./mvnw test`와 실제 Spring Home 기능 회귀 확인
 
 Radix와 Motion 적용은 이 변경을 검증한 다음 별도 작업으로 진행한다.
 

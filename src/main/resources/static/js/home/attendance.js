@@ -238,10 +238,15 @@ export function createAttendance({
         if (lateMinutes) lateMinutes.textContent = hasCheckIn ? "0분" : "기록 없음";
 
         if (button) {
+            const buttonLabel = button.querySelector("[data-attendance-label]");
             button.classList.toggle("is-checked-in", hasCheckIn && !hasCheckOut);
             button.classList.toggle("is-complete", hasCheckOut);
             button.hidden = !hasCheckIn;
-            button.textContent = "퇴실하기";
+            if (buttonLabel) {
+                buttonLabel.textContent = hasCheckOut ? "완료" : "퇴실";
+            } else {
+                button.textContent = "퇴실하기";
+            }
             button.setAttribute("aria-label", hasCheckOut ? "퇴실 완료" : "퇴실하기");
             button.setAttribute("title", hasCheckOut ? "퇴실 완료" : "퇴실하기");
             button.disabled = !hasCheckIn || hasCheckOut;

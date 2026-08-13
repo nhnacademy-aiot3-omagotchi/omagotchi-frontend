@@ -251,6 +251,69 @@
     gap: clamp(14px, 2vw, 20px);
 }
 
+/* Storybook과 Home 패널에서 공유하는 독립 스크롤 영역 */
+.home-scroll-panel {
+    width: 100%;
+    max-height: var(--home-scroll-max-height, 280px);
+    overflow: auto;
+    padding: 12px;
+    border: 1px solid rgba(232, 255, 245, 0.4);
+    border-radius: 14px;
+    background: rgba(5, 93, 55, 0.72);
+    color: #ffffff;
+    scrollbar-gutter: stable;
+    scrollbar-width: thin;
+    scrollbar-color: #a8e4c8 rgba(4, 63, 39, 0.48);
+}
+
+.home-scroll-panel:focus-visible {
+    outline: 3px solid #ffffff;
+    outline-offset: 3px;
+}
+
+.home-scroll-panel::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+.home-scroll-panel::-webkit-scrollbar-track {
+    border-radius: 999px;
+    background: rgba(4, 63, 39, 0.48);
+}
+
+.home-scroll-panel::-webkit-scrollbar-thumb {
+    border: 2px solid rgba(4, 63, 39, 0.48);
+    border-radius: 999px;
+    background: #a8e4c8;
+}
+
+.home-scroll-list {
+    display: grid;
+    gap: 8px;
+}
+
+.home-scroll-strip {
+    width: max-content;
+    display: flex;
+    gap: 8px;
+}
+
+.home-scroll-card {
+    min-width: 150px;
+    display: grid;
+    gap: 4px;
+    padding: 12px;
+    border: 1px solid rgba(16, 40, 31, 0.14);
+    border-radius: 10px;
+    background: #ffffff;
+    color: #10281f;
+}
+
+.home-scroll-card span {
+    font-size: 12px;
+    opacity: 0.72;
+}
+
 .overlay-tabs {
     position: sticky;
     top: 0;
