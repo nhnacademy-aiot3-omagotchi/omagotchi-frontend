@@ -26,6 +26,17 @@
     gap: 14px;
 }
 
+.study-record-load-error {
+    margin: 0;
+    padding: 12px 14px;
+    border: 1px solid #d99a76;
+    border-radius: 8px;
+    background: #fff1e8;
+    color: #7b351f;
+    font-size: 13px;
+    font-weight: 800;
+}
+
 .study-record-tabs {
     gap: 4px;
     padding: 4px;

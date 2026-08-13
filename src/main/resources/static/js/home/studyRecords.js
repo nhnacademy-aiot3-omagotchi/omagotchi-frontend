@@ -49,11 +49,35 @@ function toStudyDateKey(date) {
     return toDateKey(studyDate);
 }
 
+function getRecordStudyDateKey(record) {
+    const recordedAt = parseRecordedAt(record);
+    const storedStudyDate = String(record.studyDate || "");
+
+    if (/^\d{4}-\d{2}-\d{2}$/.test(storedStudyDate)) {
+        return storedStudyDate;
+    }
+
+    return recordedAt ? toStudyDateKey(recordedAt) : null;
+}
+
+function parseRecordStudyDate(record) {
+    const dateKey = getRecordStudyDateKey(record);
+    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateKey || "");
+
+    if (!match) {
+        return null;
+    }
+
+    const [, year, month, day] = match.map(Number);
+    const date = new Date(year, month - 1, day, 12);
+    return Number.isNaN(date.getTime()) ? null : date;
+}
+
 function filterRecords(records, viewMode, referenceDate) {
     return records.filter((record) => {
-        const recordedAt = parseRecordedAt(record);
+        const studyDate = parseRecordStudyDate(record);
 
-        if (!recordedAt || recordedAt.getFullYear() !== referenceDate.getFullYear()) {
+        if (!studyDate || studyDate.getFullYear() !== referenceDate.getFullYear()) {
             return false;
         }
 
@@ -61,11 +85,11 @@ function filterRecords(records, viewMode, referenceDate) {
             return true;
         }
 
-        if (recordedAt.getMonth() !== referenceDate.getMonth()) {
+        if (studyDate.getMonth() !== referenceDate.getMonth()) {
             return false;
         }
 
-        return viewMode === "monthly" || isSameDay(recordedAt, referenceDate);
+        return viewMode === "monthly" || isSameDay(studyDate, referenceDate);
     });
 }
 
@@ -119,13 +143,12 @@ function sumDuration(records) {
 
 function groupDailyTotals(records) {
     return records.reduce((totals, record) => {
-        const date = parseRecordedAt(record);
+        const key = getRecordStudyDateKey(record);
 
-        if (!date) {
+        if (!key) {
             return totals;
         }
 
-        const key = toDateKey(date);
         totals.set(key, (totals.get(key) || 0) + (Number(record.durationSeconds) || 0));
         return totals;
     }, new Map());
@@ -167,7 +190,7 @@ function createMonthTotals(records) {
     }));
 
     records.forEach((record) => {
-        const date = parseRecordedAt(record);
+        const date = parseRecordStudyDate(record);
 
         if (date) {
             totals[date.getMonth()].seconds += Number(record.durationSeconds) || 0;
@@ -185,6 +208,7 @@ export function createStudyRecords({ storageKey, getElapsedSeconds, api }) {
     let container = null;
     let viewMode = "daily";
     let referenceDate = new Date();
+    let loadErrorMessage = "";
     // [API-REPLACE] 학습 기록 목록 조회 API로 교체
     function readRecords() {
         try {
@@ -222,12 +246,18 @@ export function createStudyRecords({ storageKey, getElapsedSeconds, api }) {
     }
 
     async function loadRecords() {
-        const records = await api?.list?.();
-        if (!Array.isArray(records)) return;
+        try {
+            const records = await api?.list?.();
+            if (!Array.isArray(records)) return;
 
-        writeRecords(records);
-        lastRecordedElapsed = null;
-        render();
+            writeRecords(records);
+            lastRecordedElapsed = null;
+            loadErrorMessage = "";
+            render();
+        } catch {
+            loadErrorMessage = "학습 기록을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.";
+            render();
+        }
     }
     // [API-REPLACE] ID 순서 기록 시각은 서버가 최종 결정하도록 변경
     function addRecord() {
@@ -529,6 +559,9 @@ export function createStudyRecords({ storageKey, getElapsedSeconds, api }) {
                         <button type="button" data-study-period-move="1" aria-label="다음 기간">→</button>
                     </div>
                 </header>
+                ${loadErrorMessage
+                    ? `<p class="study-record-load-error" role="status">${escapeHtml(loadErrorMessage)}</p>`
+                    : ""}
                 <header class="study-records-summary">
                     <div>
                         <span>선택 기간의 구간</span>

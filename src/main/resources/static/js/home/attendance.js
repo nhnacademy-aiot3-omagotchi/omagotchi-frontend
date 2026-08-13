@@ -276,11 +276,20 @@ export function createAttendance({
             if (typeof api?.[nextAction] !== "function") {
                 throw new Error("Attendance check-out API is unavailable");
             }
-            const serverAttendance = await api[nextAction]();
-            if (!serverAttendance || typeof serverAttendance !== "object") {
+            const response = await api[nextAction]();
+            if (!response || typeof response !== "object") {
                 throw new Error("Attendance check-out API returned an invalid response");
             }
-            saveToday(normalizeAttendance(serverAttendance));
+            const serverAttendance = normalizeAttendance(response);
+            if (!serverAttendance.checkOutAt) {
+                throw new Error("Attendance check-out response is missing checkOutAt");
+            }
+            saveToday({
+                ...attendance,
+                ...serverAttendance,
+                checkInAt: serverAttendance.checkInAt || attendance.checkInAt,
+                checkOutAt: serverAttendance.checkOutAt
+            });
             render();
             onCheckOutSuccess?.();
         } catch {
