@@ -5,6 +5,7 @@ import "../src/main/resources/static/css/home/react-stage.css";
 import "../src/main/resources/static/css/home/home-responsive.css";
 import "../src/main/resources/static/css/home/home-overlay-theme.css";
 import "../src/main/resources/static/css/home/home-quick-panels.css";
+import "../src/main/resources/static/css/ui/design-system.css";
 
 /** @type { import('@storybook/react-vite').Preview } */
 const preview = {

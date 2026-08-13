@@ -34,6 +34,7 @@
 | [기능 연동 개발 가이드](onboarding/05-feature-integration-guide.md) | Prototype을 실제 BFF/API로 전환하는 기준 |
 | [Home UI 문서 인덱스](home-ui/README.md) | Home React Island, 반응형, Storybook 문서 분류 |
 | [Home React·Storybook 구조 가이드](home-ui/home-react-storybook-structure.md) | React 소스, Story, CSS, Controller와 빌드 산출물의 경로·책임 |
+| [공통 UI 디자인 시스템·Storybook 가이드](home-ui/ui-design-system.md) | 공통 색상·컴포넌트와 출석·인증 Story의 적용 기준 |
 | [관리자 대시보드 패널 작성 가이드](manager-dashboard-panel-guide.md) | 관리자 패널의 구조와 확장 규칙 |
 | [관리자 대시보드 패널 작성 예시](examples/manager-dashboard-panel-example.md) | 신규 패널 구현 예시 |
 

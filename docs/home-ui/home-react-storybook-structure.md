@@ -28,10 +28,17 @@ view/
 │   └── components/
 │       ├── ComponentName.jsx           실제 Home에서 사용하는 UI
 │       └── ComponentName.stories.jsx   같은 UI의 Storybook 상태
+├── src/main/frontend/ui/
+│   ├── GameButton.jsx                  화면 공통 기초 UI
+│   ├── AttendanceBook.jsx              출석 Pattern 시안
+│   ├── AuthScreen.jsx                  인증 Pattern 시안
+│   ├── HomeMenuPanel.jsx               Home 메뉴 7종 내부 Pattern 시안
+│   └── *.stories.jsx                   공통 UI 상태·반응형 검증
 ├── src/main/resources/
 │   ├── templates/pages/app/home.html   Home 진입점·script 로드 순서
 │   └── static/
 │       ├── css/home/                   Home UI·반응형·패널 CSS
+│       ├── css/ui/design-system.css    공통 색상 토큰·UI Pattern CSS
 │       ├── images/                     Storybook도 함께 사용하는 정적 에셋
 │       └── js/
 │           ├── home.js                 기존 Home 기능 조립
@@ -49,6 +56,8 @@ view/
 | --- | --- | --- |
 | `src/main/frontend/home-react/components/*.jsx` | UI DOM, props, 접근성 속성 | 가능 |
 | 같은 폴더의 `*.stories.jsx` | 상태별 예제와 Storybook 전용 데이터 | 가능 |
+| `src/main/frontend/ui/*.jsx` | 여러 사용자 화면에서 쓸 공통 UI·Pattern | 가능 |
+| `src/main/resources/static/css/ui/design-system.css` | 공통 색상 토큰·컴포넌트 외형·반응형 | 가능 |
 | `src/main/frontend/home-react/main.jsx` | React root mount, 전역 overlay store | 필요한 경우만 |
 | `src/main/resources/static/css/home/*.css` | 실제 Home과 Storybook이 공유하는 외형·반응형 | 가능 |
 | `src/main/resources/static/js/home.js` | 기존 기능 Controller 연결 | 계약 확인 후 가능 |
@@ -88,7 +97,8 @@ components/TimerPanel.stories.jsx
 새 Story를 별도 `src/stories/`에 만들지 않는다. 현재 `.storybook/main.js`는
 `src/main/frontend/**/*.stories.*`를 탐색한다.
 
-2026-08-13 기준 Home 공통 컴포넌트는 12종이고 Story는 38개다.
+2026-08-13 기준 Home 전용 컴포넌트는 12종이고 Story는 38개다. 공통 UI와 출석·인증
+Pattern을 포함하면 전체 19개 Story 그룹, 74개 Story다.
 
 | 컴포넌트 | 역할 |
 | --- | --- |
@@ -126,6 +136,7 @@ home/react-stage.css
 home/home-responsive.css
 home/home-overlay-theme.css
 home/home-quick-panels.css
+ui/design-system.css
 ```
 
 CSS 책임은 다음처럼 나눈다.
@@ -134,6 +145,7 @@ CSS 책임은 다음처럼 나눈다.
 - `home-responsive.css`: 화면 폭·높이·비율에 따른 최종 배치
 - `home-overlay-theme.css`: overlay별 외형과 크기
 - `home-quick-panels.css`: BGM·출석·재실·Action Dock 외형
+- `ui/design-system.css`: 사용자 화면 공통 색상 토큰, 버튼·카드·입력창과 출석·인증 Pattern
 
 Story에서만 모양을 맞추기 위해 제품 CSS와 다른 대규모 inline style을 만들지 않는다.
 Story decorator의 inline style은 배경, 캔버스 최소 높이와 정렬 같은 검증 환경에만 쓴다.
@@ -173,15 +185,19 @@ Backend만 수정하고 Frontend를 실행하지 않는 팀원은 npm 설치를 
 ## 현재 적용 상태와 다음 단계
 
 - Storybook, Radix UI와 Motion 패키지 설치 완료
-- Home 공통 컴포넌트 12종과 Story 38개 작성 완료
+- Home 전용 컴포넌트 12종·Story 38개 작성 완료
+- 공통 버튼·카드·입력창과 출석부·로그인·회원가입·Home 메뉴 내부 Pattern 추가, 전체 74개 Story 등록
+- 기준 초록 `#2FC47C`과 크림·하늘색·살구색·라일락 보조 토큰 구성
+- 출석·인증·Home 메뉴 내부 Pattern은 Storybook 검증 단계이며 실제 기능에는 아직 미적용
 - Storybook preview에 실제 Home의 반응형·overlay·quick panel CSS 로드 순서 반영
 - `ActionDock`의 재실·출석·BGM·퇴실·채팅 버튼을 같은 아이콘·라벨 DOM 구조로 통일
 - 출석 Controller가 `data-attendance-label`을 보존하면서 `퇴실`·`완료` 상태를 갱신
 - `ScrollPanel`에 세로·가로·모바일 Story와 Firefox·WebKit 스크롤 스타일 적용
-- Home·Storybook production build 통과
+- Home·Storybook production build 통과, Story 74개 Vitest 렌더링 테스트 통과
 - Radix UI와 Motion은 실제 Home에 아직 적용하지 않음
 - 다음 검증은 실제 Spring `/home`의 타이머, BGM, 출석, 재실, 채팅과 overlay 회귀 확인
 
 구조적 도입 결정은
 [ADR 0003](../adr/0003-react-game-ui-tools-incremental-adoption.md), 실행 순서는
-[React 게임 UI 도입 실행 체크리스트](react-ui-adoption-checklist.md)를 함께 확인한다.
+[React 게임 UI 도입 실행 체크리스트](react-ui-adoption-checklist.md), 공통 UI 적용은
+[공통 UI 디자인 시스템·Storybook 가이드](ui-design-system.md)를 함께 확인한다.

@@ -19,7 +19,7 @@
 | React DOM | 19.2.8 설치됨 | 유지 |
 | Vite | 7.3.6 설치됨 | 유지 |
 | React Vite Plugin | 5.2.0 설치됨 | 유지 |
-| Storybook | 10.5.7 설치·Home Story 38개 등록 | PC·모바일 시각 QA에 사용 |
+| Storybook | 10.5.7 설치·전체 Story 74개 등록 | PC·모바일 시각 QA에 사용 |
 | Radix UI | 1.6.7 설치됨 | Dialog·Tabs 시험 적용 전 대기 |
 | Motion | 13.1.0 설치됨 | 최소 애니메이션 적용 전 대기 |
 | Phaser·XState·Rive | 미설치 | 현재 설치하지 않음 |
@@ -80,7 +80,8 @@ npm run storybook
 
 2026-08-13 기준 Storybook, Radix UI와 Motion의 개발환경 구성이 완료됐다. Home에서는
 버튼, 타이머, 상태 HUD, 캐릭터, 상단 메뉴, 채팅, 액션 도크, 재실 HUD, BGM, 오버레이,
-전체 Stage와 공통 스크롤 영역을 컴포넌트로 분리하고 38개 Story를 등록했다. 이 변경의
+전체 Stage와 공통 스크롤 영역을 컴포넌트로 분리했다. 이후 기준색 토큰, 공통 버튼·카드·
+입력창, 출석부, 인증과 Home 메뉴 7종 내부 Pattern을 추가해 전체 74개 Story를 등록했다. 이 변경의
 `package.json`, `package-lock.json`과 `.storybook` 설정이 병합된 뒤부터 팀원은
 `npm ci`로 같은 환경을 설치할 수 있다. Radix UI와 Motion은 설치만 완료됐으며 실제 Home
 적용은 Storybook 상태 검증 후 별도 변경으로 진행한다.
@@ -165,6 +166,11 @@ const config = {
 | `HomeOverlay` | 도움말, 성장 현황, 설정 |
 | `HomeStage` | 데스크톱, 모바일 세로·가로, 학습 중 |
 | `ScrollPanel` | 짧은 콘텐츠, 긴 세로 목록, 가로 스크롤, 모바일 |
+| `UI/Foundation` | 기준 초록과 크림·하늘색·살구색·라일락 보조색 |
+| `UI/Button`·`UI/Card`·`UI/Field` | 기본, 상태별 변형, 오류·로딩·비활성 |
+| `AttendanceBook` | 입실 전, 학습 중, 퇴실 완료, 로딩, 빈 기록, 모바일 |
+| `AuthScreen` | 로그인, 오류, 로딩, 회원가입, 필드 오류, 모바일 |
+| `HomeMenuPanel` | 진행, 내 정보, 기수, 학습 기록, 공간, 커뮤, 설정, 모바일 |
 
 ### 3. Motion
 
@@ -329,9 +335,10 @@ npm run build-storybook
 첫 번째 변경은 아래까지만 포함한다.
 
 - [x] `main.jsx`에서 공통 UI 컴포넌트 분리
-- [ ] 디자인 토큰 정리
+- [x] 기준 초록과 보조색 디자인 토큰 정리
 - [x] Storybook 설치와 정적 리소스·실제 Home CSS 연결
 - [x] Home 공통 컴포넌트 12종, 상태 Story 38개 작성
+- [x] 공통 UI·출석·인증·Home 메뉴 Pattern 추가, 전체 Story 74개 작성
 - [x] `npm run build:home`, `npm run build-storybook` 통과
 - [ ] `./mvnw test`와 실제 Spring Home 기능 회귀 확인
 
