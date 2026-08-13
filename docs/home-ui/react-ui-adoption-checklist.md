@@ -313,6 +313,9 @@ Radix Tabs 시험 직전에 연결한다.
 
 ### 6단계 — Radix Dialog 한 개 시험
 
+진행 상태: Storybook 공통 `GameDialog`와 `AttendanceBook` 조합 검증 완료. 실제 Home
+Overlay 적용은 기존 Portal·`data-*` 경계 확인 후 진행한다.
+
 현재 오버레이는 React의 `HomeOverlayHost`와 Vanilla JS의 `home.js`가 함께 관리한다.
 다음 계약을 먼저 보존한다.
 
@@ -342,6 +345,9 @@ data-overlay-tab / data-overlay-panel
 
 ### 7단계 — Radix Tabs 한 개 시험
 
+진행 상태: Storybook `HomeMenuPanel`의 진행 시안에서 방향키 이동과 선택 Panel 일치를
+검증했다. 실제 진행 Overlay 연결은 기존 이벤트 위임을 분리한 뒤 진행한다.
+
 진행 오버레이의 퀘스트·업적·랭킹 전환 한 곳에만 적용한다. 기존
 `data-overlay-tab`, `data-overlay-panel`을 바로 삭제하지 않고 `home.js` 사용 여부를 먼저
 제거하거나 어댑터로 유지한다.
@@ -353,6 +359,9 @@ data-overlay-tab / data-overlay-panel
 - 새로고침과 오버레이 재진입 시 기본 탭이 명확하다.
 
 ### 8단계 — Motion 최소 적용
+
+진행 상태: Storybook `GameDialog`의 등장·퇴장에만 적용했다. `useReducedMotion()`으로
+사용자 설정을 존중하며 실제 Home Bundle에는 아직 연결하지 않았다.
 
 - Dialog 등장·퇴장과 경험치 변화에만 적용한다.
 - 버튼의 1~2px 눌림은 우선 CSS로 구현한다.
@@ -404,6 +413,8 @@ npm run build-storybook
 - [x] Storybook 설치와 정적 리소스·실제 Home CSS 연결
 - [x] Home 공통 컴포넌트 12종, 상태 Story 38개 작성
 - [x] 공통 UI·출석·인증·Home 메뉴 Pattern 추가, 전체 Story 74개 작성
+- [x] Radix `GameDialog`·`GameTabs`와 상태 Story 6개 추가
+- [x] Dialog에 Motion 등장·퇴장과 reduced motion 대응 적용
 - [x] `npm run build:home`, `npm run build-storybook` 통과
 - [ ] `./mvnw test`와 실제 Spring Home 기능 회귀 확인
 

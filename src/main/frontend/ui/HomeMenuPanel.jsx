@@ -1,6 +1,7 @@
 import React from "react";
 import { GameButton } from "./GameButton.jsx";
 import { GameField } from "./GameField.jsx";
+import { GameTabs } from "./GameTabs.jsx";
 
 const menuMeta = {
   progress: { title: "진행", description: "퀘스트와 성장 기록", icon: "/images/app/quest.png" },
@@ -17,15 +18,27 @@ function Stat({ label, value, tone = "mint" }) {
 }
 
 function ProgressPanel() {
+  const progressItems = [
+    {
+      value: "quest",
+      label: "퀘스트",
+      content: (
+        <section className="ui-menu-section">
+          <header><div><span className="ui-menu-eyebrow">오늘의 퀘스트</span><h3>집중 학습 3시간 달성</h3></div><strong>76%</strong></header>
+          <progress value="76" max="100">76%</progress>
+          <p>42분 더 집중하면 경험치 120을 받을 수 있어요.</p>
+        </section>
+      )
+    },
+    { value: "achievement", label: "업적", content: <section className="ui-menu-section"><h3>연속 출석 4일</h3><p>학습 습관이 안정적으로 이어지고 있어요.</p></section> },
+    { value: "ranking", label: "랭킹", content: <section className="ui-menu-section"><h3>이번 주 기수 내 12위</h3><p>지난주보다 3계단 올랐어요.</p></section> },
+    { value: "statistics", label: "통계", content: <section className="ui-menu-section"><h3>이번 주 8시간 40분</h3><p>하루 평균 1시간 44분 집중했어요.</p></section> }
+  ];
+
   return (
     <>
-      <nav className="ui-menu-tabs" aria-label="진행 항목"><button className="is-active" type="button">퀘스트</button><button type="button">업적</button><button type="button">랭킹</button><button type="button">통계</button></nav>
       <div className="ui-menu-stats"><Stat label="오늘 집중" value="2시간 18분" /><Stat label="연속 출석" value="4일" tone="cream" /><Stat label="이번 주" value="8시간 40분" tone="sky" /></div>
-      <section className="ui-menu-section">
-        <header><div><span className="ui-menu-eyebrow">오늘의 퀘스트</span><h3>집중 학습 3시간 달성</h3></div><strong>76%</strong></header>
-        <progress value="76" max="100">76%</progress>
-        <p>42분 더 집중하면 경험치 120을 받을 수 있어요.</p>
-      </section>
+      <GameTabs items={progressItems} defaultValue="quest" ariaLabel="진행 항목" />
     </>
   );
 }

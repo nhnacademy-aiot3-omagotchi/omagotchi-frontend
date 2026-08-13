@@ -17,13 +17,15 @@ export function AttendanceBook({
   today = 13,
   streak = 3,
   loading = false,
-  empty = false
+  empty = false,
+  embedded = false,
+  closeControl
 }) {
   const summary = statusContent[status] || statusContent.before;
   const activeDays = empty ? [] : presentDays;
 
   return (
-    <main className="ui-story-canvas">
+    <main className={embedded ? "ui-attendance-shell" : "ui-story-canvas"}>
       <section className="ui-attendance" aria-labelledby="attendance-title" aria-busy={loading || undefined}>
         <header className="ui-attendance__header">
           <span className="ui-attendance__header-icon" aria-hidden="true">▣</span>
@@ -31,7 +33,9 @@ export function AttendanceBook({
             <h1 id="attendance-title">출석 현황</h1>
             <p>오늘의 출석과 이번 달 학습 흐름을 확인하세요.</p>
           </div>
-          <GameButton variant="secondary" className="ui-attendance__close" aria-label="출석 현황 닫기">×</GameButton>
+          {closeControl
+            ? closeControl(<GameButton variant="secondary" className="ui-attendance__close" aria-label="출석 현황 닫기">×</GameButton>)
+            : <GameButton variant="secondary" className="ui-attendance__close" aria-label="출석 현황 닫기">×</GameButton>}
         </header>
 
         <div className="ui-attendance__layout">

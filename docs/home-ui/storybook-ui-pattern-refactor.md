@@ -137,3 +137,41 @@ npm run build-storybook
 
 화면별 보존 계약과 완료 기준은
 [React 게임 UI 도입 실행 체크리스트](react-ui-adoption-checklist.md#구현-순서)를 따른다.
+
+## 2026-08-14 후속 작업 — 백엔드 비의존 UI
+
+백엔드 API 버전과 Gateway route가 확정되기 전에도 진행 가능한 UI 작업을 별도 범위로
+분리했다. 이번 후속 작업은 API 경로, JWT, Session, Identity Service와 기존 Home의
+`data-*` 계약을 변경하지 않는다.
+
+### 추가한 공통 동작 컴포넌트
+
+| 컴포넌트 | 기반 | 검증 범위 |
+| --- | --- | --- |
+| `GameDialog` | Radix Dialog, Motion | 포커스 이동·복귀, Esc·배경 닫기, 모바일 내부 스크롤, reduced motion |
+| `GameTabs` | Radix Tabs | 방향키 이동, 선택 탭·패널 일치, 긴 이름과 모바일 가로 스크롤 |
+
+- `AttendanceBook`은 `embedded` 상태를 지원해 Storybook Dialog 안에서 검증할 수 있다.
+- `HomeMenuPanel`의 진행 시안은 `GameTabs`로 퀘스트·업적·랭킹·통계를 전환한다.
+- Radix `asChild`가 버튼 ref를 전달할 수 있도록 `GameButton`을 `forwardRef`로 변경했다.
+- Dialog 등장·퇴장에만 Motion을 사용하고 `useReducedMotion()`을 따른다.
+
+### 브라우저 검증 결과
+
+- Dialog가 열리면 닫기 버튼으로 포커스 이동
+- Esc로 닫은 뒤 열기 버튼으로 포커스 복귀
+- Tabs에서 오른쪽 방향키 입력 시 선택 탭과 콘텐츠가 함께 변경
+- 모바일 Dialog에서 가로 넘침 없음
+- 화면 높이를 넘는 콘텐츠는 Dialog 내부에서만 세로 스크롤
+
+### 계속 대기하는 백엔드 연동 범위
+
+- `/bff/v1/**` 출석·학습 기록 endpoint와 실제 응답 DTO
+- 기수 승인과 입실 가능 여부의 서버 판정
+- Prototype `localStorage` fallback 제거
+- Gateway의 Domain API v1·v2 route 반영
+- Storybook mock을 실제 서비스 데이터로 교체하는 작업
+
+공통 컴포넌트는 현재 Storybook에서 동작을 검증하는 단계다. 실제 Home Overlay에 적용할
+때는 `window.OmagotchiHomeOverlay`, `[data-home-overlay-root]`와 기존 이벤트 위임을 먼저
+보존해야 한다.

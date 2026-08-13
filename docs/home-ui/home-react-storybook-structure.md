@@ -30,6 +30,8 @@ view/
 │       └── ComponentName.stories.jsx   같은 UI의 Storybook 상태
 ├── src/main/frontend/ui/
 │   ├── GameButton.jsx                  화면 공통 기초 UI
+│   ├── GameDialog.jsx                  Radix Dialog·Motion 공통 shell
+│   ├── GameTabs.jsx                    Radix Tabs 공통 전환 UI
 │   ├── AttendanceBook.jsx              출석 Pattern 시안
 │   ├── AuthScreen.jsx                  인증 Pattern 시안
 │   ├── HomeMenuPanel.jsx               Home 메뉴 7종 내부 Pattern 시안
@@ -97,8 +99,8 @@ components/TimerPanel.stories.jsx
 새 Story를 별도 `src/stories/`에 만들지 않는다. 현재 `.storybook/main.js`는
 `src/main/frontend/**/*.stories.*`를 탐색한다.
 
-2026-08-13 기준 Home 전용 컴포넌트는 12종이고 Story는 38개다. 공통 UI와 출석·인증
-Pattern을 포함하면 전체 19개 Story 그룹, 74개 Story다.
+2026-08-14 기준 Home 전용 컴포넌트는 12종이고 Story는 38개다. 공통 UI와 출석·인증
+Pattern, `GameDialog`·`GameTabs`를 포함하면 전체 21개 Story 그룹, 80개 Story다.
 
 | 컴포넌트 | 역할 |
 | --- | --- |

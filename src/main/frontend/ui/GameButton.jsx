@@ -1,19 +1,20 @@
-import React from "react";
+import React, { forwardRef } from "react";
 
-export function GameButton({
+export const GameButton = forwardRef(function GameButton({
   children,
   variant = "primary",
   loading = false,
   className = "",
   disabled,
   ...buttonProps
-}) {
+}, ref) {
   const classes = ["ui-button", `ui-button--${variant}`, loading ? "is-loading" : "", className]
     .filter(Boolean)
     .join(" ");
 
   return (
     <button
+      ref={ref}
       {...buttonProps}
       type={buttonProps.type ?? "button"}
       className={classes}
@@ -23,4 +24,4 @@ export function GameButton({
       {loading ? "처리 중…" : children}
     </button>
   );
-}
+});

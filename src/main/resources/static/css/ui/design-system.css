@@ -39,6 +39,98 @@
     font-family: var(--ui-font-body);
 }
 
+.ui-sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+}
+
+.ui-dialog-overlay {
+    position: fixed;
+    z-index: 2000;
+    inset: 0;
+    background: rgba(8, 39, 28, 0.62);
+    backdrop-filter: blur(4px);
+}
+
+.ui-dialog-content {
+    position: fixed;
+    z-index: 2001;
+    inset: 0;
+    min-width: 0;
+    display: grid;
+    place-items: center;
+    padding: clamp(10px, 3vw, 32px);
+    overflow: auto;
+    pointer-events: none;
+}
+
+.ui-dialog-content > * {
+    pointer-events: auto;
+}
+
+.ui-attendance-shell {
+    width: min(100%, 1120px);
+    min-width: 0;
+    max-height: calc(100dvh - clamp(20px, 6vw, 64px));
+    overflow: auto;
+    border-radius: 28px;
+}
+
+.ui-game-tabs {
+    min-width: 0;
+    display: grid;
+    gap: 12px;
+}
+
+.ui-game-tabs__list {
+    min-width: 0;
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    padding: 4px;
+    border-radius: 14px;
+    background: var(--ui-emerald-50);
+    scrollbar-width: thin;
+}
+
+.ui-game-tabs__trigger {
+    min-height: 40px;
+    flex: 1 0 auto;
+    padding: 0 14px;
+    border: 0;
+    border-radius: 10px;
+    background: transparent;
+    color: var(--ui-ink-muted);
+    font: inherit;
+    font-weight: 800;
+    cursor: pointer;
+}
+
+.ui-game-tabs__trigger[data-state="active"] {
+    background: var(--ui-emerald-800);
+    color: #fff;
+}
+
+.ui-game-tabs__trigger:focus-visible {
+    outline: 3px solid rgba(47, 196, 124, 0.34);
+    outline-offset: 2px;
+}
+
+.ui-game-tabs__content {
+    min-width: 0;
+}
+
+.ui-game-tabs__content:focus-visible {
+    outline: 3px solid rgba(47, 196, 124, 0.22);
+    outline-offset: 4px;
+}
+
 .ui-palette {
     width: min(100%, 920px);
     min-width: 0;
@@ -502,6 +594,8 @@
     .ui-community-toolbar { grid-template-columns: 1fr auto; }
     .ui-community-toolbar .ui-menu-tabs { grid-column: 1 / -1; }
     .ui-menu-inline-form { grid-template-columns: 1fr; }
+    .ui-dialog-content { place-items: end center; padding: 8px; }
+    .ui-attendance-shell { max-height: calc(100dvh - 16px); border-radius: 20px; }
 }
 
 @media (max-width: 390px) {
@@ -517,4 +611,5 @@
 
 @media (prefers-reduced-motion: reduce) {
     .ui-button { transition: none; }
+    .ui-dialog-overlay { backdrop-filter: none; }
 }
