@@ -61,3 +61,6 @@ replay_pid*
 .mise.local.toml
 mise.local.toml
 .serena
+
+*storybook.log
+storybook-static

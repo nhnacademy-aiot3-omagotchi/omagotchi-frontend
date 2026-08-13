@@ -18,9 +18,9 @@
 | React DOM | 19.2.8 설치됨 | 유지 |
 | Vite | 7.3.6 설치됨 | 유지 |
 | React Vite Plugin | 5.2.0 설치됨 | 유지 |
-| Storybook | 미설치 | 공통 컴포넌트 분리 후 먼저 설치 |
-| Radix UI | 미설치 | Storybook 검증 후 시험 설치 |
-| Motion | 미설치 | Radix 시험이 끝난 뒤 설치 |
+| Storybook | 10.5.7 설치됨 | 공통 컴포넌트 Story 작성 전 대기 |
+| Radix UI | 1.6.7 설치됨 | Dialog·Tabs 시험 적용 전 대기 |
+| Motion | 13.1.0 설치됨 | 최소 애니메이션 적용 전 대기 |
 | Phaser·XState·Rive | 미설치 | 현재 설치하지 않음 |
 
 현재 개발 환경은 Node.js 24.13.1, npm 11.8.0이다. Vite 7과 Storybook 10을 사용하려면
@@ -77,9 +77,10 @@ npm run storybook
 삭제한 뒤 `npm install`을 실행하지 않는다. 오류가 나면 먼저 Node.js와 npm 버전을
 확인한다.
 
-현재는 도입 결정과 문서만 작성된 상태다. Storybook, Radix UI와 Motion이 실제로
-`package.json`과 `package-lock.json`에 반영된 변경이 병합되기 전까지 `npm ci`를 실행해도
-해당 패키지는 설치되지 않는다.
+2026-08-13 기준 Storybook, Radix UI와 Motion의 개발환경 구성이 완료됐다. 이 변경의
+`package.json`, `package-lock.json`과 `.storybook` 설정이 병합된 뒤부터 팀원은
+`npm ci`로 같은 환경을 설치할 수 있다. 실제 공통 컴포넌트 분리와 UI 적용은 다음
+작업에서 진행한다.
 
 ## 설치 전에 결정할 것
 
