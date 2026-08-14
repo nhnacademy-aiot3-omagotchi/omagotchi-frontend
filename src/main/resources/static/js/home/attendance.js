@@ -9,16 +9,22 @@ export function createAttendance({
     calendarGrid,
     calendarTitle,
     calendarPeriod,
+    calendarPrev,
+    calendarNext,
     streakCount,
     streakList,
     storageKey,
     api,
     onCheckOutSuccess,
+    onCheckOutError,
     confirmCheckOut,
     onChange
 }) {
     let renderedDateKey = getLocalDateKey();
     let serverHistory = null;
+    let visibleMonth = new Date();
+    visibleMonth.setDate(1);
+    visibleMonth.setHours(12, 0, 0, 0);
 
     function formatTime(date) {
         return new Intl.DateTimeFormat("ko-KR", {
@@ -67,7 +73,10 @@ export function createAttendance({
         const source = payload?.history || payload?.records || payload || {};
         if (Array.isArray(source)) {
             return source.reduce((history, entry) => {
-                const dateKey = entry.date || entry.serviceDate || getLocalDateKey(new Date(entry.checkInAt || entry.checkedInAt));
+                const dateKey = entry.date
+                    || entry.serviceDate
+                    || entry.attendanceDate
+                    || getLocalDateKey(new Date(entry.checkInAt || entry.checkedInAt));
                 history[dateKey] = normalizeAttendance(entry);
                 return history;
             }, {});
@@ -83,13 +92,40 @@ export function createAttendance({
     }
 
     async function loadServerHistory() {
-        if (!api?.getHistory) return;
+        const panel = calendarGrid?.closest("[data-ui-state]");
+        const stateMessage = panel?.querySelector("[data-attendance-state-message]");
+        if (!api?.getHistory) {
+            if (panel) panel.dataset.uiSource = "local-prototype";
+            return;
+        }
 
-        const history = await api.getHistory();
-        if (!history) return;
+        if (panel) panel.dataset.uiState = "loading";
+        if (stateMessage) {
+            stateMessage.hidden = false;
+            stateMessage.textContent = "출석 기록을 불러오는 중입니다.";
+        }
+        try {
+            const history = await api.getHistory();
+            if (!history || typeof history !== "object") {
+                throw new Error("Attendance history API returned an invalid response");
+            }
 
-        serverHistory = normalizeHistory(history);
-        render();
+            // 서버 응답이 도착한 뒤에는 서버 이력을 정본으로 사용한다.
+            serverHistory = normalizeHistory(history);
+            if (panel) panel.dataset.uiSource = "server";
+            if (stateMessage) stateMessage.hidden = true;
+            render();
+        } catch {
+            // [API-REPLACE] 계약 확정 전에는 로컬 Prototype을 유지하되 성공 응답으로 위장하지 않는다.
+            if (panel) {
+                panel.dataset.uiState = "error";
+                panel.dataset.uiSource = "local-prototype";
+            }
+            if (stateMessage) {
+                stateMessage.hidden = false;
+                stateMessage.textContent = "출석 기록을 불러오지 못했습니다. 임시 기록을 표시합니다.";
+            }
+        }
     }
 
     function saveToday(attendance) {
@@ -105,9 +141,9 @@ export function createAttendance({
         if (!calendarGrid) return;
 
         const today = new Date();
-        const year = today.getFullYear();
-        const month = today.getMonth();
-        const monthLabel = new Intl.DateTimeFormat("ko-KR", { month: "long" }).format(today);
+        const year = visibleMonth.getFullYear();
+        const month = visibleMonth.getMonth();
+        const monthLabel = new Intl.DateTimeFormat("ko-KR", { month: "long" }).format(visibleMonth);
         const daysInMonth = new Date(year, month + 1, 0).getDate();
         const firstWeekday = Array.from({ length: daysInMonth }, (_, index) => new Date(year, month, index + 1))
             .find((date) => !isWeekend(date));
@@ -122,7 +158,7 @@ export function createAttendance({
 
         for (let index = 0; index < offset; index += 1) {
             const blank = document.createElement("span");
-            blank.className = "calendar-blank";
+            blank.className = "calendar-blank ui-calendar-day ui-calendar-day--empty";
             blank.setAttribute("aria-hidden", "true");
             fragment.append(blank);
         }
@@ -132,12 +168,20 @@ export function createAttendance({
             if (isWeekend(date)) continue;
 
             const dayNode = document.createElement("span");
-            dayNode.className = "calendar-day";
+            dayNode.className = "calendar-day ui-calendar-day";
             dayNode.textContent = String(day);
 
-            if (day === today.getDate()) dayNode.classList.add("is-today");
+            if (
+                day === today.getDate()
+                && month === today.getMonth()
+                && year === today.getFullYear()
+            ) {
+                dayNode.classList.add("is-today");
+                dayNode.classList.add("ui-calendar-day--today");
+            }
             if (history[getLocalDateKey(date)]?.checkInAt) {
                 dayNode.classList.add("is-present");
+                dayNode.classList.add("ui-calendar-day--present");
                 dayNode.setAttribute("aria-label", `${day}일 출석`);
             }
             fragment.append(dayNode);
@@ -194,6 +238,8 @@ export function createAttendance({
             const item = document.createElement("li");
             const marker = document.createElement("span");
             const label = document.createElement("strong");
+            item.classList.add("ui-streak-item");
+            marker.classList.add("ui-streak-dot");
             const attended = hasAttendance(date);
 
             if (attended) item.classList.add("is-active");
@@ -216,16 +262,26 @@ export function createAttendance({
         const hasCheckIn = Boolean(attendance.checkInAt);
         const hasCheckOut = hasCheckIn && Boolean(attendance.checkOutAt);
 
+        const panel = calendarGrid?.closest("[data-ui-state]");
+        if (panel && panel.dataset.uiState !== "error") {
+            panel.dataset.uiState = hasCheckOut ? "complete" : hasCheckIn ? "active" : "empty";
+        }
+
         if (checkInTime) checkInTime.textContent = hasCheckIn ? formatTime(new Date(attendance.checkInAt)) : "아직 입실 전";
         if (checkOutTime) checkOutTime.textContent = hasCheckOut ? formatTime(new Date(attendance.checkOutAt)) : "아직 퇴실 전";
         if (earlyLeave) earlyLeave.textContent = hasCheckOut ? "0분" : "기록 없음";
         if (lateMinutes) lateMinutes.textContent = hasCheckIn ? "0분" : "기록 없음";
 
         if (button) {
+            const buttonLabel = button.querySelector("[data-attendance-label]");
             button.classList.toggle("is-checked-in", hasCheckIn && !hasCheckOut);
             button.classList.toggle("is-complete", hasCheckOut);
             button.hidden = !hasCheckIn;
-            button.textContent = "퇴실하기";
+            if (buttonLabel) {
+                buttonLabel.textContent = hasCheckOut ? "완료" : "퇴실";
+            } else {
+                button.textContent = "퇴실하기";
+            }
             button.setAttribute("aria-label", hasCheckOut ? "퇴실 완료" : "퇴실하기");
             button.setAttribute("title", hasCheckOut ? "퇴실 완료" : "퇴실하기");
             button.disabled = !hasCheckIn || hasCheckOut;
@@ -251,18 +307,30 @@ export function createAttendance({
         }
 
         if (button) button.disabled = true;
-        const serverAttendance = await api?.[nextAction]?.();
-        if (serverAttendance) {
-            saveToday(normalizeAttendance(serverAttendance));
+        try {
+            if (typeof api?.[nextAction] !== "function") {
+                throw new Error("Attendance check-out API is unavailable");
+            }
+            const response = await api[nextAction]();
+            if (!response || typeof response !== "object") {
+                throw new Error("Attendance check-out API returned an invalid response");
+            }
+            const serverAttendance = normalizeAttendance(response);
+            if (!serverAttendance.checkOutAt) {
+                throw new Error("Attendance check-out response is missing checkOutAt");
+            }
+            saveToday({
+                ...attendance,
+                ...serverAttendance,
+                checkInAt: serverAttendance.checkInAt || attendance.checkInAt,
+                checkOutAt: serverAttendance.checkOutAt
+            });
             render();
             onCheckOutSuccess?.();
-            return;
+        } catch {
+            render();
+            onCheckOutError?.();
         }
-
-        attendance.checkOutAt = new Date().toISOString();
-        saveToday(attendance);
-        render();
-        onCheckOutSuccess?.();
     }
 
     function refreshDate() {
@@ -274,6 +342,14 @@ export function createAttendance({
 
     function init() {
         button?.addEventListener("click", toggle);
+        calendarPrev?.addEventListener("click", () => {
+            visibleMonth.setMonth(visibleMonth.getMonth() - 1);
+            render();
+        });
+        calendarNext?.addEventListener("click", () => {
+            visibleMonth.setMonth(visibleMonth.getMonth() + 1);
+            render();
+        });
         render();
         loadServerHistory();
         window.setInterval(refreshDate, 30_000);

@@ -1,0 +1,1963 @@
+/* Home overlay visual system — loaded after all legacy home styles. */
+
+.home-overlay-root {
+    --overlay-accent: #e5f4eb;
+    --overlay-accent-strong: #176b46;
+    --overlay-ink: #10241b;
+    --overlay-muted: #607168;
+    --overlay-paper: #f6fff9;
+    --overlay-paper-soft: #e9f8ef;
+}
+
+.home-overlay-backdrop {
+    min-height: 100dvh;
+    display: grid;
+    place-items: center;
+    padding: clamp(16px, 3vw, 34px);
+    background: rgba(4, 18, 13, 0.64);
+    backdrop-filter: blur(8px);
+}
+
+/* Radix 도움말·설정도 화면의 가로·세로 중앙을 기준으로 배치한다. */
+.ui-dialog-content.home-overlay-dialog-content {
+    place-items: center;
+}
+
+.home-overlay {
+    width: min(1060px, calc(100vw - 32px));
+    max-height: calc(100dvh - 32px);
+    padding: 0 clamp(18px, 3vw, 34px) clamp(20px, 3vw, 34px);
+    border: 2px solid rgba(236, 255, 246, 0.88);
+    border-radius: clamp(18px, 2.4vw, 26px);
+    background: #23875b;
+    color: #ffffff;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.32);
+    scrollbar-gutter: stable;
+}
+
+.home-overlay--progress,
+.home-overlay--personal,
+.home-overlay--cohort,
+.home-overlay--write,
+.home-overlay--space,
+.home-overlay--community,
+.home-overlay--settings {
+    --overlay-accent: #e5f4eb;
+    --overlay-accent-strong: #176b46;
+}
+
+.home-overlay > .home-overlay-header {
+    position: sticky;
+    top: 0;
+    z-index: 6;
+    min-height: 132px;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    justify-content: start;
+    align-items: center;
+    gap: clamp(14px, 2vw, 22px);
+    margin: 0 calc(clamp(18px, 3vw, 34px) * -1) clamp(18px, 2.4vw, 26px);
+    padding: clamp(20px, 2.8vw, 30px) clamp(70px, 7vw, 88px) clamp(18px, 2.4vw, 26px) clamp(18px, 3vw, 34px);
+    border-bottom: 1px solid rgba(236, 255, 246, 0.28);
+    background: #23875b;
+}
+
+.home-overlay-icon {
+    width: clamp(50px, 5vw, 64px);
+    height: clamp(50px, 5vw, 64px);
+    display: grid;
+    place-items: center;
+    border: 1px solid rgba(255, 255, 255, 0.64);
+    border-radius: 16px;
+    background: var(--overlay-accent);
+    box-shadow: none;
+}
+
+.home-overlay-icon img {
+    width: 62%;
+    height: 62%;
+    object-fit: contain;
+    image-rendering: pixelated;
+}
+
+.home-overlay-heading {
+    min-width: 0;
+    display: grid;
+    gap: 7px;
+}
+
+.home-overlay .home-overlay-heading h2 {
+    font-size: clamp(30px, 4vw, 50px);
+    line-height: 0.96;
+}
+
+.home-overlay .home-overlay-heading p {
+    margin: 0;
+    color: rgba(255, 255, 255, 0.82);
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-size: clamp(12px, 1.2vw, 14px);
+    font-weight: 700;
+}
+
+.home-overlay-close {
+    top: clamp(18px, 2.5vw, 28px);
+    right: clamp(16px, 2.5vw, 28px);
+    z-index: 8;
+    width: 46px;
+    height: 46px;
+    border: 2px solid var(--overlay-ink);
+    border-radius: 13px;
+    background: #ffffff;
+    color: var(--overlay-ink);
+    font-family: var(--game-font);
+    font-size: 24px;
+    line-height: 1;
+    box-shadow: none;
+}
+
+.home-overlay-close:hover,
+.home-overlay-close:focus-visible {
+    background: var(--overlay-accent);
+    transform: translateY(-1px);
+}
+
+.home-overlay-body {
+    gap: clamp(14px, 2vw, 20px);
+}
+
+.home-overlay-body > * {
+    min-width: 0;
+}
+
+/* Common controls */
+.home-overlay:not(.home-overlay--help) .overlay-tabs {
+    position: sticky;
+    top: 0;
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(72px, 1fr);
+    align-items: center;
+    gap: 5px;
+    margin-bottom: clamp(16px, 2vw, 22px);
+    padding: 6px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.34);
+    border-radius: 16px;
+    background: rgba(4, 65, 38, 0.38);
+    box-shadow: none;
+}
+
+.home-overlay:not(.home-overlay--help) .overlay-tabs button {
+    width: 100% !important;
+    min-width: 0 !important;
+    height: 44px !important;
+    min-height: 44px !important;
+    max-height: 44px !important;
+    align-self: center !important;
+    flex: none !important;
+    padding: 0 10px !important;
+    border: 0;
+    border-radius: 11px;
+    color: rgba(255, 255, 255, 0.76);
+    font-weight: 900;
+    line-height: 1;
+    white-space: nowrap;
+}
+
+.home-overlay:not(.home-overlay--help) .overlay-tabs button:hover,
+.home-overlay:not(.home-overlay--help) .overlay-tabs button:focus-visible {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.12);
+}
+
+.home-overlay:not(.home-overlay--help) .overlay-tabs button:focus {
+    outline: none !important;
+}
+
+.home-overlay:not(.home-overlay--help) .overlay-tabs button:focus-visible {
+    outline: 2px solid rgba(255, 255, 255, 0.82) !important;
+    outline-offset: -3px;
+}
+
+.home-overlay:not(.home-overlay--help) .overlay-tabs button.is-active,
+.home-overlay:not(.home-overlay--help) .overlay-tabs button[data-state="active"] {
+    background: var(--overlay-paper);
+    color: var(--overlay-accent-strong);
+    box-shadow: none;
+}
+
+.home-overlay--progress .overlay-tabs {
+    grid-template-columns: repeat(5, minmax(55px, 1fr));
+    grid-auto-flow: initial;
+    grid-auto-columns: initial;
+}
+
+.home-overlay:not(.home-overlay--help) :is(
+    .overlay-card-grid article,
+    .overlay-stat-grid article,
+    .overlay-quest,
+    .overlay-list li,
+    .profile-summary-card,
+    .overlay-cohort-join,
+    .overlay-community-toolbar,
+    .overlay-community-notice,
+    .overlay-community-list li,
+    .overlay-community-compose,
+    .overlay-write-form,
+    .overlay-room-list article
+) {
+    border: 1px solid rgba(16, 36, 27, 0.14);
+    border-radius: 16px;
+    background: var(--overlay-paper);
+    color: var(--overlay-ink);
+    box-shadow: none;
+}
+
+.home-overlay:not(.home-overlay--help) :is(
+    .overlay-card-grid article,
+    .overlay-stat-grid article,
+    .profile-summary-card
+) {
+    position: relative;
+    overflow: hidden;
+}
+
+.home-overlay:not(.home-overlay--help) :is(
+    .overlay-card-grid article,
+    .overlay-stat-grid article,
+    .profile-summary-card
+)::before {
+    content: "";
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 3px;
+    background: var(--overlay-accent);
+}
+
+.home-overlay:not(.home-overlay--help) :is(
+    .overlay-card-grid article,
+    .overlay-stat-grid article,
+    .overlay-quest,
+    .profile-summary-card,
+    .overlay-community-notice,
+    .overlay-community-list li,
+    .overlay-room-list article
+):hover {
+    border-color: color-mix(in srgb, var(--overlay-accent-strong) 42%, transparent);
+}
+
+.home-overlay:not(.home-overlay--help) :is(h3, strong) {
+    color: var(--overlay-ink);
+}
+
+.home-overlay:not(.home-overlay--help) :is(
+    .overlay-card-grid p,
+    .overlay-stat-grid p,
+    .overlay-quest p,
+    .profile-summary-note,
+    .overlay-community-notice p,
+    .overlay-community-list p
+) {
+    color: var(--overlay-muted);
+}
+
+.overlay-section-label {
+    min-height: 30px;
+    margin-bottom: 12px;
+}
+
+.overlay-section-label strong {
+    color: #ffffff !important;
+}
+
+.overlay-section-label span {
+    background: var(--overlay-accent);
+    box-shadow: none;
+}
+
+/* Profile */
+.profile-summary-grid {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: clamp(12px, 1.6vw, 18px);
+}
+
+.profile-summary-card {
+    grid-column: span 2;
+    min-height: 154px;
+    padding: 22px 22px 20px 26px;
+}
+
+.profile-summary-card:first-child,
+.profile-summary-card:last-child {
+    grid-column: span 3;
+}
+
+.profile-summary-value {
+    color: var(--overlay-ink);
+}
+
+.home-overlay--personal {
+    width: min(860px, calc(100vw - 32px));
+}
+
+.player-profile {
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    border-radius: 12px;
+    background: rgba(5, 93, 55, 0.38);
+}
+
+.player-profile-identity {
+    min-height: 126px;
+    display: grid;
+    grid-template-columns: 92px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 18px;
+    padding: 16px 18px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.16);
+}
+
+.player-profile-avatar {
+    width: 92px;
+    height: 92px;
+    display: grid;
+    place-items: center;
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.player-profile-avatar img {
+    width: 74px;
+    height: 74px;
+    object-fit: contain;
+    image-rendering: pixelated;
+}
+
+.player-profile-identity h3 {
+    margin: 0;
+    color: #ffffff !important;
+    font-size: clamp(22px, 3vw, 30px);
+}
+
+.player-profile-identity p {
+    margin: 7px 0 0;
+    color: rgba(255, 255, 255, 0.64);
+    font-size: 12px;
+}
+
+.player-profile-identity > strong {
+    color: #ffffff !important;
+    font-family: var(--game-font);
+    font-size: 18px;
+    white-space: nowrap;
+}
+
+.player-profile-main {
+    display: grid;
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+}
+
+.player-profile-main > section {
+    min-width: 0;
+    padding: 18px;
+}
+
+.player-profile-main > section + section {
+    border-left: 1px solid rgba(255, 255, 255, 0.16);
+}
+
+.player-profile-main h3 {
+    margin: 0 0 10px;
+    color: rgba(255, 255, 255, 0.7) !important;
+    font-size: 12px;
+}
+
+.player-profile-main dl {
+    margin: 0;
+}
+
+.player-profile-main dl > div {
+    min-height: 50px;
+    display: grid;
+    grid-template-columns: minmax(110px, 1fr) auto;
+    align-items: center;
+    gap: 14px;
+    border-top: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.player-profile-main dt {
+    color: rgba(255, 255, 255, 0.62);
+    font-size: 11px;
+    font-weight: 900;
+}
+
+.player-profile-main dd {
+    min-width: 0;
+    overflow: hidden;
+    margin: 0;
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: 900;
+    text-align: right;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.player-profile-stats dd {
+    font-family: var(--game-font);
+    font-size: 18px;
+}
+
+/* Cohort and forms */
+.overlay-cohort-join {
+    margin-top: 20px;
+    padding: clamp(18px, 2vw, 24px);
+}
+
+.overlay-cohort-join input,
+.overlay-community-search input,
+.overlay-community-compose :is(input, select, textarea),
+.overlay-write-form :is(input, textarea) {
+    border: 2px solid #b8cfc2;
+    border-radius: 11px;
+    background: #ffffff;
+    color: var(--overlay-ink);
+    outline: none;
+    box-shadow: none;
+}
+
+.overlay-cohort-join input:focus,
+.overlay-community-search input:focus,
+.overlay-community-compose :is(input, select, textarea):focus,
+.overlay-write-form :is(input, textarea):focus {
+    border-color: var(--overlay-accent-strong);
+    box-shadow: 0 0 0 3px rgba(23, 107, 70, 0.12);
+}
+
+.overlay-cohort-join button,
+.overlay-community-compose button[type="submit"],
+.overlay-write-form button,
+.overlay-room-list button {
+    border: 1px solid rgba(16, 36, 27, 0.34);
+    border-radius: 10px;
+    background: var(--overlay-accent);
+    color: var(--overlay-ink);
+    box-shadow: none;
+}
+
+/* Community */
+.overlay-community-toolbar {
+    min-width: 0;
+    padding: 16px;
+}
+
+.overlay-community-tabs {
+    min-width: 0;
+    background: var(--overlay-paper-soft);
+}
+
+.overlay-community-tabs button.is-active,
+.overlay-community-toolbar > button {
+    background: var(--overlay-accent);
+    color: var(--overlay-ink);
+}
+
+.overlay-community-notice {
+    border-left: 6px solid var(--overlay-accent) !important;
+}
+
+.overlay-community-notice > strong,
+.overlay-community-type.is-notice {
+    background: var(--overlay-accent-strong);
+}
+
+.overlay-community-type {
+    background: var(--overlay-paper-soft);
+}
+
+.overlay-community-pagination button {
+    border: 2px solid rgba(255, 255, 255, 0.72);
+    background: rgba(5, 90, 53, 0.6);
+    color: #ffffff;
+}
+
+.overlay-community-pagination button:not(:disabled):hover,
+.overlay-community-pagination button:not(:disabled):focus-visible {
+    background: var(--overlay-accent);
+    color: var(--overlay-ink);
+}
+
+/* Space */
+.home-overlay--space {
+    width: min(1180px, calc(100vw - 32px));
+}
+
+.home-overlay--space .space-room-app,
+.home-overlay--write [data-study-records] {
+    border-radius: 18px;
+}
+
+.overlay-space-lab aside article,
+.overlay-space-stage,
+.overlay-room-list article {
+    background: var(--overlay-paper);
+}
+
+.overlay-space-stage {
+    border: 1px solid rgba(16, 36, 27, 0.14);
+    box-shadow: none;
+}
+
+/* Settings */
+.home-overlay--settings {
+    width: min(560px, calc(100vw - 32px));
+}
+
+.home-overlay--settings > .home-overlay-header {
+    min-height: 78px;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+    margin-bottom: 20px;
+    padding: 18px 56px 14px 22px;
+}
+
+.home-overlay--settings .home-overlay-icon {
+    display: none;
+}
+
+.home-overlay--settings .home-overlay-heading h2 {
+    font-size: clamp(28px, 3vw, 34px);
+    line-height: 1;
+}
+
+.home-overlay--settings > .home-overlay-close {
+    top: 20px;
+    right: 20px;
+    width: 32px;
+    height: 32px;
+    border: 0;
+    background: transparent;
+    color: #ffffff;
+    font-size: 20px;
+}
+
+.home-overlay--settings > .home-overlay-close:hover,
+.home-overlay--settings > .home-overlay-close:focus-visible {
+    background: rgba(255, 255, 255, 0.12);
+}
+
+.overlay-settings-panel,
+.overlay-settings-section {
+    display: grid;
+    gap: 12px;
+}
+
+.overlay-settings-section > h3 {
+    margin: 0 0 2px;
+    color: rgba(255, 255, 255, 0.8) !important;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-size: 12px;
+    font-weight: 900;
+}
+
+.overlay-settings-row {
+    min-height: 64px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 16px;
+    padding: 12px 14px;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 10px;
+    background: rgba(5, 93, 55, 0.5);
+}
+
+.overlay-settings-row > span:first-child {
+    min-width: 0;
+    display: grid;
+    gap: 4px;
+}
+
+.overlay-settings-row strong {
+    color: #ffffff !important;
+    font-size: 14px;
+}
+
+.overlay-settings-row em {
+    color: rgba(255, 255, 255, 0.66);
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-size: 11px;
+    font-style: normal;
+}
+
+.overlay-settings-status {
+    flex: 0 0 auto;
+    min-height: 30px;
+    display: inline-flex;
+    align-items: center;
+    padding: 0 10px;
+    border-radius: 8px;
+    background: rgba(229, 244, 235, 0.92);
+    color: var(--overlay-accent-strong);
+    font-size: 12px;
+    font-weight: 900;
+}
+
+.overlay-settings-logout {
+    width: 100%;
+    min-height: 46px;
+    border: 0;
+    border-radius: 10px;
+    background: #ffffff;
+    color: var(--overlay-ink);
+    font-family: var(--game-font);
+    font-size: 13px;
+    box-shadow: none;
+}
+
+.overlay-settings-logout:hover,
+.overlay-settings-logout:focus-visible {
+    background: var(--overlay-paper-soft);
+}
+
+/* Compact overlay contract */
+.home-overlay:not(.home-overlay--help):not(.home-overlay--space):not(.home-overlay--settings) {
+    width: min(980px, calc(100vw - 32px));
+    position: relative;
+}
+
+.home-overlay:not(.home-overlay--help):not(.home-overlay--space) > .home-overlay-header {
+    min-height: 78px;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+    margin-bottom: 20px;
+    padding: 18px 60px 14px 22px;
+}
+
+.home-overlay:not(.home-overlay--help):not(.home-overlay--space) .home-overlay-icon {
+    display: none;
+}
+
+.home-overlay:not(.home-overlay--help):not(.home-overlay--space) .home-overlay-heading h2 {
+    font-size: clamp(28px, 3vw, 36px);
+    line-height: 1;
+}
+
+.home-overlay:not(.home-overlay--help):not(.home-overlay--space) .home-overlay-heading p {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+}
+
+.home-overlay:not(.home-overlay--help):not(.home-overlay--space) > .home-overlay-close {
+    top: 19px;
+    right: 18px;
+    width: 40px;
+    height: 40px;
+    border: 0;
+    background: transparent;
+    color: #ffffff;
+    font-size: 20px;
+}
+
+/* Progress */
+.home-overlay--progress {
+    width: min(980px, calc(100vw - 32px)) !important;
+    min-height: min(680px, calc(100dvh - 32px));
+}
+
+.home-overlay--progress > .home-overlay-header {
+    margin-bottom: 24px !important;
+    border-bottom: 0;
+}
+
+.home-overlay--progress > .home-overlay-body {
+    display: grid;
+}
+
+.home-overlay--progress .overlay-tabs {
+    position: absolute !important;
+    z-index: 7;
+    top: 17px !important;
+    right: 74px;
+    left: 190px;
+    width: auto !important;
+    max-width: none;
+    grid-template-columns: repeat(5, minmax(92px, 1fr));
+    margin: 0 !important;
+    padding: 4px;
+    overflow-x: hidden;
+    border-radius: 10px;
+    background: rgba(5, 93, 55, 0.72);
+}
+
+.home-overlay--progress .overlay-tabs button {
+    height: 38px !important;
+    min-height: 38px !important;
+    gap: 6px;
+    padding-inline: 8px !important;
+    border-radius: 8px;
+    font-size: 12px;
+}
+
+.home-overlay--progress .overlay-tabs button span {
+    font-size: 11px;
+}
+
+.home-overlay--progress .overlay-section-label {
+    min-height: 24px;
+    margin-bottom: 10px;
+}
+
+.home-overlay--progress .overlay-section-label span {
+    display: none;
+}
+
+.home-overlay--progress .overlay-section-label strong {
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-size: 12px;
+    letter-spacing: 0.04em;
+}
+
+.home-overlay--progress .overlay-section-label em {
+    font-size: 10px;
+    text-transform: none;
+}
+
+.home-overlay--progress :is(.overlay-quest, .overlay-card-grid article, .overlay-stat-grid article) {
+    min-height: 92px;
+    padding: 16px !important;
+    border: 1px solid rgba(255, 255, 255, 0.18) !important;
+    border-radius: 10px !important;
+    background: rgba(5, 93, 55, 0.48) !important;
+    color: #ffffff !important;
+}
+
+.home-overlay--progress :is(.overlay-quest, .overlay-card-grid article, .overlay-stat-grid article) :is(h3, strong) {
+    color: #ffffff !important;
+}
+
+.home-overlay--progress :is(.overlay-quest, .overlay-card-grid article) p {
+    color: rgba(255, 255, 255, 0.7) !important;
+}
+
+.home-overlay--progress .overlay-card-grid,
+.home-overlay--progress .overlay-stat-grid {
+    gap: 10px;
+}
+
+.home-overlay--progress .overlay-stat-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.home-overlay--progress .overlay-stat-grid article {
+    min-height: 116px;
+    align-content: space-between;
+}
+
+.home-overlay--progress .overlay-leader-list {
+    gap: 0;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 12px;
+    background: rgba(5, 93, 55, 0.4);
+}
+
+.home-overlay--progress .overlay-leader-list li,
+.home-overlay--progress .overlay-leader-list [data-empty-ranking] {
+    min-height: 64px;
+    padding: 0 16px;
+    border: 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 0;
+    background: transparent;
+    color: #ffffff;
+}
+
+.home-overlay--progress .overlay-leader-list li:last-child {
+    border-bottom: 0;
+}
+
+.home-overlay--progress .overlay-leader-list li strong {
+    background: rgba(255, 255, 255, 0.12);
+    color: #ffffff !important;
+}
+
+.home-overlay--progress .overlay-leader-list li :is(span, em) {
+    color: #ffffff;
+}
+
+.home-overlay--progress .overlay-leader-list:not(:has([data-empty-ranking])):has(> li:nth-child(3)) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+    padding: 104px 0 0;
+    overflow: visible;
+    border: 0;
+    background: transparent;
+}
+
+.home-overlay--progress .overlay-leader-list:not(:has([data-empty-ranking])):has(> li:nth-child(3)) > li:nth-child(-n+3) {
+    min-height: 96px;
+    padding: 52px 12px 14px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 12px 12px 0 0;
+    background: rgba(5, 93, 55, 0.62);
+}
+
+.home-overlay--progress .overlay-leader-list:not(:has([data-empty-ranking])):has(> li:nth-child(3)) > li:nth-child(1) {
+    min-height: 126px;
+    background: rgba(229, 244, 235, 0.24);
+}
+
+.home-overlay--progress .overlay-leader-list:not(:has([data-empty-ranking])):has(> li:nth-child(3)) > li:nth-child(2) {
+    background: rgba(229, 244, 235, 0.16);
+}
+
+.home-overlay--progress .overlay-leader-list:not(:has([data-empty-ranking])):has(> li:nth-child(3)) > li:nth-child(3) {
+    min-height: 82px;
+    background: rgba(229, 244, 235, 0.1);
+}
+
+.home-overlay--progress .overlay-leader-list:not(:has([data-empty-ranking])):has(> li:nth-child(3)) > li:nth-child(n+4) {
+    min-height: 58px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(5, 93, 55, 0.42);
+}
+
+/* Community */
+.home-overlay--community {
+    width: min(900px, calc(100vw - 32px));
+}
+
+.home-overlay--community .home-overlay-body {
+    width: 100%;
+}
+
+.home-overlay--community .overlay-community {
+    gap: 10px;
+}
+
+.home-overlay--community .overlay-community-toolbar {
+    grid-template-columns: auto minmax(220px, 1fr) auto;
+    align-items: center;
+    gap: 8px;
+    padding: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 12px;
+    background: rgba(5, 93, 55, 0.5);
+}
+
+.home-overlay--community .overlay-community-tabs {
+    gap: 2px;
+    padding: 3px;
+    border-radius: 9px;
+    background: rgba(4, 65, 38, 0.44);
+}
+
+.home-overlay--community .overlay-community-tabs button {
+    min-width: 54px;
+    min-height: 38px;
+    padding: 0 12px;
+    border-radius: 7px;
+    color: rgba(255, 255, 255, 0.76);
+    font-size: 11px;
+    box-shadow: none;
+}
+
+.home-overlay--community .overlay-community-tabs button.is-active {
+    background: #ffffff;
+    color: var(--overlay-accent-strong);
+}
+
+.home-overlay--community .overlay-community-search {
+    display: block;
+    min-width: 0;
+}
+
+.home-overlay--community .overlay-community-search input {
+    min-height: 44px;
+    border: 0;
+    border-radius: 9px;
+    font-size: 12px;
+}
+
+.home-overlay--community .overlay-community-write {
+    width: auto;
+    min-width: 78px;
+    min-height: 44px;
+    padding: 0 14px;
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    border-radius: 9px;
+    background: rgba(255, 255, 255, 0.12);
+    color: #ffffff;
+    font-size: 11px;
+    box-shadow: none;
+}
+
+.home-overlay--community .overlay-community-write:hover,
+.home-overlay--community .overlay-community-write:focus-visible {
+    background: #ffffff;
+    color: var(--overlay-accent-strong);
+}
+
+.home-overlay--community .overlay-community-notice {
+    min-height: 66px;
+    grid-template-columns: 48px minmax(0, 1fr);
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    border: 1px solid rgba(255, 255, 255, 0.18) !important;
+    border-left: 1px solid rgba(255, 255, 255, 0.18) !important;
+    border-radius: 10px;
+    background: rgba(5, 93, 55, 0.42) !important;
+    color: #ffffff !important;
+}
+
+.home-overlay--community .overlay-community-notice > strong,
+.home-overlay--community .overlay-community-type {
+    min-height: 28px;
+    padding: 0 9px;
+    border-radius: 7px;
+    background: rgba(255, 255, 255, 0.12);
+    color: #ffffff;
+    font-size: 10px;
+}
+
+.home-overlay--community .overlay-community-notice h3,
+.home-overlay--community .overlay-community-list h3 {
+    color: #ffffff;
+    font-size: 14px;
+}
+
+.home-overlay--community .overlay-community-notice p,
+.home-overlay--community .overlay-community-list p {
+    margin-top: 4px;
+    color: rgba(255, 255, 255, 0.66) !important;
+    font-size: 11px;
+}
+
+.home-overlay--community .overlay-community-list {
+    gap: 6px;
+}
+
+.home-overlay--community .overlay-community-list li {
+    min-height: 64px;
+    grid-template-columns: 48px minmax(0, 1fr) auto;
+    gap: 12px;
+    padding: 10px 14px;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 10px;
+    background: rgba(5, 93, 55, 0.34) !important;
+    color: #ffffff !important;
+}
+
+.home-overlay--community .overlay-community-type.is-notice {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.home-overlay--community .overlay-community-list footer {
+    color: rgba(255, 255, 255, 0.62);
+    font-size: 10px;
+}
+
+.home-overlay--community .overlay-community-list .overlay-community-empty {
+    min-height: 96px;
+    grid-template-columns: 1fr;
+    padding: 18px;
+}
+
+.home-overlay--community .overlay-community-empty strong {
+    color: #ffffff;
+    font-size: 14px;
+}
+
+.home-overlay--community .overlay-community-pagination {
+    min-height: 42px;
+    padding: 2px 0 0;
+}
+
+.home-overlay--community .overlay-community-pagination[hidden] {
+    display: none;
+}
+
+.home-overlay--community .overlay-community-pagination button {
+    width: 36px;
+    height: 36px;
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    border-radius: 8px;
+    background: rgba(5, 93, 55, 0.48);
+    font-size: 20px;
+}
+
+.home-overlay--community .overlay-community-compose {
+    width: min(680px, 100%);
+    gap: 12px;
+    margin-inline: auto;
+    padding: 18px;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 12px;
+    background: rgba(5, 93, 55, 0.42);
+    color: #ffffff;
+}
+
+.home-overlay--community .overlay-community-compose label > span {
+    color: rgba(255, 255, 255, 0.76);
+    font-size: 11px;
+}
+
+.home-overlay--community .overlay-community-compose textarea {
+    min-height: 170px;
+}
+
+.home-overlay--community .overlay-community-compose button {
+    min-height: 42px;
+    border-radius: 9px;
+    box-shadow: none;
+}
+
+/* Responsive overlay shell */
+@media (max-width: 760px) {
+    .home-overlay-root.is-open {
+        position: fixed !important;
+        inset: 0 !important;
+        z-index: 1000 !important;
+        width: 100vw;
+        height: 100dvh;
+        overflow: hidden;
+    }
+
+    .home-overlay-backdrop {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        min-height: 0;
+        place-items: center;
+        padding:
+            max(8px, env(safe-area-inset-top))
+            max(8px, env(safe-area-inset-right))
+            max(8px, env(safe-area-inset-bottom))
+            max(8px, env(safe-area-inset-left));
+        overflow: hidden;
+    }
+
+    .home-overlay {
+        width: 100%;
+        height: auto;
+        min-height: 0;
+        max-height: calc(100dvh - max(16px, env(safe-area-inset-top)));
+        display: flex;
+        flex-direction: column;
+        padding: 0 14px 18px;
+        overflow: hidden;
+        border-radius: 16px;
+        box-shadow: 0 18px 44px rgba(0, 0, 0, 0.28);
+    }
+
+    .home-overlay--settings {
+        width: min(560px, 100%);
+    }
+
+    .home-overlay > .home-overlay-body {
+        flex: 0 1 auto;
+        min-height: 0;
+        max-height: calc(100dvh - 148px);
+        overflow-x: hidden;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        scrollbar-gutter: stable;
+    }
+
+    .home-overlay > .home-overlay-header {
+        min-height: 108px;
+        gap: 12px;
+        margin: 0 -14px 16px;
+        padding: 16px 58px 14px 14px;
+        border-radius: 14px 14px 0 0;
+        flex: 0 0 auto;
+    }
+
+    .home-overlay-icon {
+        width: 46px;
+        height: 46px;
+        border-radius: 13px;
+    }
+
+    .home-overlay .home-overlay-heading h2 {
+        font-size: clamp(26px, 8vw, 36px);
+    }
+
+    .home-overlay .home-overlay-heading p {
+        max-width: 38ch;
+        font-size: 11px;
+    }
+
+    .home-overlay-close {
+        top: 14px;
+        right: 12px;
+        width: 40px;
+        height: 40px;
+    }
+
+    .home-overlay--settings > .home-overlay-header {
+        min-height: 72px;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 0;
+        margin-bottom: 16px;
+        padding: 16px 56px 12px 14px;
+    }
+
+    .home-overlay--settings > .home-overlay-close {
+        top: 12px;
+        right: 10px;
+        width: 40px;
+        height: 40px;
+    }
+
+    .overlay-settings-row {
+        min-height: 60px;
+        padding: 10px 12px;
+    }
+
+    .profile-summary-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .profile-summary-card,
+    .profile-summary-card:first-child,
+    .profile-summary-card:last-child {
+        grid-column: auto;
+        min-height: 126px;
+        padding: 18px 16px 16px 20px;
+    }
+
+    .profile-summary-card:first-child,
+    .profile-summary-card:last-child {
+        grid-column: 1 / -1;
+    }
+
+    .home-overlay--settings .home-overlay-body,
+    .home-overlay--progress .home-overlay-body {
+        width: 100%;
+    }
+
+    .overlay-community-toolbar {
+        grid-template-columns: minmax(0, 1fr) 46px;
+    }
+
+    .overlay-community-tabs {
+        grid-column: 1 / -1;
+    }
+
+    .overlay-community-write {
+        grid-column: 2;
+        grid-row: 2;
+        align-self: end;
+    }
+
+    .overlay-community-search {
+        grid-column: 1;
+        grid-row: 2;
+        min-width: 0;
+    }
+}
+
+@media (max-width: 430px) {
+    .home-overlay > .home-overlay-header {
+        grid-template-columns: 40px minmax(0, 1fr);
+    }
+
+    .home-overlay--settings > .home-overlay-header {
+        min-height: 72px;
+        grid-template-columns: minmax(0, 1fr);
+        margin-bottom: 16px;
+        padding: 16px 56px 12px 14px;
+    }
+
+    .home-overlay--settings > .home-overlay-close {
+        top: 12px;
+        right: 10px;
+        width: 40px;
+        height: 40px;
+    }
+
+    .overlay-settings-row {
+        min-height: 60px;
+        padding: 10px 12px;
+    }
+
+    .home-overlay-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 11px;
+    }
+
+    .home-overlay .home-overlay-heading p {
+        display: none;
+    }
+
+    .profile-summary-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .profile-summary-card,
+    .profile-summary-card:first-child,
+    .profile-summary-card:last-child {
+        grid-column: auto;
+        min-height: 112px;
+    }
+}
+
+@media (max-width: 900px) and (max-height: 500px) {
+    .home-overlay-root.is-open {
+        position: fixed !important;
+        inset: 0 !important;
+        z-index: 1000 !important;
+        width: 100vw;
+        height: 100dvh;
+        overflow: hidden;
+    }
+
+    .home-overlay-backdrop {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        min-height: 0;
+        place-items: center;
+        padding: 8px;
+        overflow: hidden;
+    }
+
+    .home-overlay {
+        width: 100%;
+        height: auto;
+        min-height: 0;
+        max-height: calc(100dvh - 16px);
+        display: flex;
+        flex-direction: column;
+        padding: 0 14px 14px;
+        overflow: hidden;
+        border-radius: 14px;
+    }
+
+    .home-overlay--settings {
+        width: min(560px, calc(100vw - 16px));
+    }
+
+    .home-overlay > .home-overlay-header {
+        min-height: 90px;
+        flex: 0 0 auto;
+        margin: 0 -14px 12px;
+        padding: 12px 58px 12px 14px;
+        border-radius: 12px 12px 0 0;
+    }
+
+    .home-overlay > .home-overlay-body {
+        flex: 0 1 auto;
+        min-height: 0;
+        max-height: calc(100dvh - 118px);
+        overflow-x: hidden;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+    }
+
+    .home-overlay-icon {
+        width: 42px;
+        height: 42px;
+    }
+
+    .home-overlay .home-overlay-heading h2 {
+        font-size: 28px;
+    }
+
+    .home-overlay .home-overlay-heading p {
+        display: none;
+    }
+
+    .home-overlay-close {
+        top: 12px;
+        right: 12px;
+        width: 38px;
+        height: 38px;
+    }
+
+    .home-overlay--settings > .home-overlay-header {
+        min-height: 64px;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 0;
+        margin-bottom: 12px;
+        padding: 12px 46px 10px 14px;
+    }
+
+    .home-overlay--settings > .home-overlay-close {
+        top: 8px;
+        right: 8px;
+        width: 40px;
+        height: 40px;
+    }
+}
+
+@media (max-width: 340px) {
+    .overlay-settings-row {
+        gap: 10px;
+        padding-inline: 10px;
+    }
+
+    .overlay-settings-row strong {
+        font-size: 13px;
+    }
+
+    .overlay-settings-row em {
+        font-size: 10px;
+    }
+
+    .overlay-settings-status {
+        min-height: 28px;
+        padding-inline: 8px;
+        font-size: 11px;
+    }
+}
+
+/* Compact progress layout must win over the legacy mobile shell rules above. */
+@media (max-width: 760px) {
+    .home-overlay:not(.home-overlay--help):not(.home-overlay--space) > .home-overlay-header {
+        min-height: 68px;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 0;
+        margin: 0 -14px 14px;
+        padding: 17px 56px 13px 14px;
+    }
+
+    .home-overlay:not(.home-overlay--help):not(.home-overlay--space) .home-overlay-heading h2 {
+        font-size: clamp(25px, 8vw, 30px);
+    }
+
+    .home-overlay:not(.home-overlay--help):not(.home-overlay--space) > .home-overlay-close {
+        top: 12px;
+        right: 10px;
+        width: 40px;
+        height: 40px;
+    }
+
+    .home-overlay--progress {
+        width: min(560px, 100%) !important;
+        min-height: 0;
+    }
+
+    .home-overlay--progress > .home-overlay-header {
+        margin-bottom: 10px !important;
+    }
+
+    .home-overlay--progress > .home-overlay-body {
+        display: block;
+        max-height: calc(100dvh - 104px);
+        overflow-x: hidden;
+        overflow-y: auto;
+    }
+
+    .home-overlay--progress .overlay-tabs {
+        position: static !important;
+        width: 100%;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        margin: 0 0 16px !important;
+        padding: 4px;
+    }
+
+    .home-overlay--progress .overlay-tabs button {
+        min-width: 0;
+        gap: 3px;
+        padding-inline: 3px !important;
+        font-size: 10px;
+        white-space: nowrap;
+    }
+
+    .home-overlay--progress .overlay-tabs button span {
+        display: none;
+    }
+
+    .home-overlay--progress .overlay-section-label {
+        margin-bottom: 8px;
+    }
+
+    .home-overlay--progress :is(.overlay-quest, .overlay-card-grid article, .overlay-stat-grid article) {
+        min-height: 84px;
+        padding: 14px !important;
+    }
+
+    .home-overlay--progress .overlay-stat-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .home-overlay--progress .overlay-stat-grid article {
+        min-height: 96px;
+    }
+
+    .home-overlay--progress .overlay-leader-list:not(:has([data-empty-ranking])):has(> li:nth-child(3)) {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 0;
+        padding: 0;
+        overflow: hidden;
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        border-radius: 12px;
+        background: rgba(5, 93, 55, 0.4);
+    }
+
+    .home-overlay--progress .overlay-leader-list:not(:has([data-empty-ranking])):has(> li:nth-child(3)) > li:nth-child(-n+3),
+    .home-overlay--progress .overlay-leader-list:not(:has([data-empty-ranking])):has(> li:nth-child(3)) > li:nth-child(n+4) {
+        grid-column: 1;
+        min-height: 58px;
+        display: flex !important;
+        flex-direction: row !important;
+        gap: 10px;
+        align-items: center;
+        justify-content: initial;
+        padding: 0 12px;
+        border: 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 0;
+        background: transparent;
+        color: #ffffff;
+        text-align: left;
+    }
+
+    .home-overlay--progress .overlay-leader-list:not(:has([data-empty-ranking])):has(> li:nth-child(3)) > li:last-child {
+        border-bottom: 0;
+    }
+
+    .home-overlay--progress .overlay-leader-list:not(:has([data-empty-ranking])):has(> li:nth-child(3)) > li > strong {
+        flex: 0 0 32px;
+        width: 32px;
+        height: 32px;
+    }
+
+    .home-overlay--progress .overlay-leader-list:not(:has([data-empty-ranking])):has(> li:nth-child(3)) > li > span {
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+
+    .home-overlay--progress .overlay-leader-list:not(:has([data-empty-ranking])):has(> li:nth-child(3)) > li > em {
+        flex: 0 0 auto;
+    }
+
+    .home-overlay--progress .overlay-leader-list:not(:has([data-empty-ranking])):has(> li:nth-child(3)) > li:nth-child(-n+3)::before {
+        display: none;
+        content: none;
+    }
+
+    .home-overlay--progress .overlay-leader-list:not(:has([data-empty-ranking])):has(> li:nth-child(3)) > li:nth-child(-n+3) :is(strong, span, em) {
+        order: initial;
+    }
+
+    .home-overlay--progress .overlay-leader-list:not(:has([data-empty-ranking])):has(> li:nth-child(3)) > li:nth-child(-n+3) strong {
+        flex: 0 0 32px;
+        width: 32px;
+        height: 32px;
+        display: grid;
+        place-items: center;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.14);
+        color: #ffffff;
+        font-size: 13px;
+        line-height: 1;
+    }
+
+    .home-overlay--progress .overlay-leader-list:not(:has([data-empty-ranking])):has(> li:nth-child(3)) > li:nth-child(-n+3) span {
+        flex: 1 1 auto;
+        width: auto;
+        max-width: 100%;
+        padding: 0;
+        overflow: hidden;
+        border-radius: 0;
+        background: transparent;
+        color: #ffffff;
+        font-size: 13px;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .home-overlay--progress .overlay-leader-list:not(:has([data-empty-ranking])):has(> li:nth-child(3)) > li:nth-child(-n+3) em {
+        flex: 0 0 auto;
+        color: rgba(255, 255, 255, 0.78);
+        font-size: 11px;
+        white-space: nowrap;
+    }
+
+    .home-overlay--community {
+        width: min(560px, 100%);
+    }
+
+    .home-overlay--community .overlay-community-toolbar {
+        grid-template-columns: minmax(0, 1fr) 76px;
+        gap: 6px;
+        padding: 5px;
+    }
+
+    .home-overlay--community .overlay-community-tabs {
+        grid-column: 1 / -1;
+        width: 100%;
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .home-overlay--community .overlay-community-tabs button {
+        width: 100%;
+        min-width: 0;
+        padding-inline: 4px;
+    }
+
+    .home-overlay--community .overlay-community-search {
+        grid-column: 1;
+        grid-row: 2;
+    }
+
+    .home-overlay--community .overlay-community-write {
+        grid-column: 2;
+        grid-row: 2;
+        width: 76px;
+        min-width: 76px;
+        padding: 0 8px;
+    }
+
+    .home-overlay--community .overlay-community-notice {
+        grid-template-columns: 42px minmax(0, 1fr);
+        gap: 9px;
+        padding-inline: 10px;
+    }
+
+    .home-overlay--community .overlay-community-list li {
+        grid-template-columns: 42px minmax(0, 1fr);
+        gap: 9px;
+        padding: 10px;
+    }
+
+    .home-overlay--community .overlay-community-list footer {
+        grid-column: 2;
+        justify-content: flex-start;
+    }
+
+    .home-overlay--community .overlay-community-list .overlay-community-empty {
+        grid-template-columns: 1fr;
+        min-height: 88px;
+    }
+
+    .home-overlay--community .overlay-community-compose {
+        padding: 14px;
+    }
+
+    .home-overlay--community .overlay-community-compose textarea {
+        min-height: 140px;
+    }
+
+    .home-overlay--personal {
+        width: min(560px, 100%);
+    }
+
+    .player-profile-identity {
+        min-height: 94px;
+        grid-template-columns: 66px minmax(0, 1fr) auto;
+        gap: 12px;
+        padding: 12px;
+    }
+
+    .player-profile-avatar {
+        width: 66px;
+        height: 66px;
+    }
+
+    .player-profile-avatar img {
+        width: 54px;
+        height: 54px;
+    }
+
+    .player-profile-identity h3 {
+        font-size: 20px;
+    }
+
+    .player-profile-identity p {
+        max-width: 36vw;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .player-profile-identity > strong {
+        font-size: 14px;
+    }
+
+    .player-profile-main {
+        grid-template-columns: 1fr;
+    }
+
+    .player-profile-main > section {
+        padding: 14px;
+    }
+
+    .player-profile-main > section + section {
+        border-top: 1px solid rgba(255, 255, 255, 0.16);
+        border-left: 0;
+    }
+}
+
+@media (max-width: 900px) and (max-height: 500px) {
+    .home-overlay--progress {
+        width: min(760px, calc(100vw - 16px)) !important;
+    }
+
+    .home-overlay--progress > .home-overlay-header {
+        min-height: 60px;
+        margin-bottom: 8px !important;
+        padding-block: 14px 10px;
+    }
+
+    .home-overlay--progress > .home-overlay-body {
+        max-height: calc(100dvh - 86px);
+    }
+
+    .home-overlay--progress .overlay-tabs {
+        margin-bottom: 10px !important;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .home-overlay-close,
+    .home-overlay:not(.home-overlay--help) :is(
+        .overlay-card-grid article,
+        .overlay-stat-grid article,
+        .profile-summary-card
+    ) {
+        transition: none;
+    }
+}
+
+/* Storybook HomeMenuPanel -> 실제 Home 내용 어댑터.
+   home.js의 data-* 이벤트 위임과 실제 데이터 템플릿은 그대로 유지한다. */
+.ui-menu-live-panel {
+    border-color: var(--ui-line);
+    background: rgba(255, 255, 255, 0.98);
+    color: var(--ui-ink);
+    box-shadow: var(--ui-shadow);
+}
+
+.ui-menu-live-panel .ui-menu-live-header {
+    background: linear-gradient(135deg, var(--ui-emerald-500), #5ed99b);
+    color: var(--ui-ink);
+}
+
+.ui-menu-live-panel .ui-menu-live-body {
+    background: linear-gradient(180deg, var(--ui-emerald-50), #ffffff 150px);
+}
+
+.ui-menu-live-content {
+    min-width: 0;
+    width: 100%;
+    display: grid;
+    gap: 16px;
+}
+
+.ui-menu-live-content :is(article, section, form, .overlay-community-notice, .overlay-community-list) {
+    min-width: 0;
+}
+
+.ui-menu-live-content :is(input, select, textarea, button) {
+    max-width: 100%;
+}
+
+.ui-menu-live-content [data-ui-state="loading"] { opacity: 0.72; }
+.ui-menu-live-content [data-ui-state="empty"] { color: var(--ui-ink-muted); }
+.ui-menu-live-content [data-ui-state="error"] { color: var(--ui-danger); }
+
+@media (max-width: 840px) {
+    .ui-menu-live-panel {
+        border-radius: 20px;
+    }
+
+    .ui-menu-live-panel .ui-menu-live-body {
+        padding: 14px;
+    }
+}
+
+/* 2026-08-14 unified list surfaces.
+   진행·내 정보·커뮤니티·설정은 여러 파스텔 카드 대신 한 가지 밝은 목록 문법을 쓴다. */
+.ui-menu-live-panel.home-overlay--progress,
+.ui-menu-live-panel.home-overlay--personal,
+.ui-menu-live-panel.home-overlay--community,
+.ui-menu-live-panel.home-overlay--settings {
+    --overlay-list-surface: #f7fcf9;
+    --overlay-list-row: #ffffff;
+    --overlay-list-soft: #edf8f2;
+    --overlay-list-line: #c8ded2;
+    --overlay-list-ink: #12382a;
+    --overlay-list-muted: #597065;
+    border-color: #b9d6c6;
+    background: var(--overlay-list-surface);
+    color: var(--overlay-list-ink);
+}
+
+.ui-menu-live-panel:is(.home-overlay--progress, .home-overlay--personal, .home-overlay--community, .home-overlay--settings) .ui-menu-live-header {
+    border-bottom-color: rgba(18, 56, 42, 0.18);
+    background: #2fc47c;
+    color: #0c3022;
+}
+
+.ui-menu-live-panel:is(.home-overlay--progress, .home-overlay--personal, .home-overlay--community, .home-overlay--settings) .ui-menu-live-header :is(h2, p),
+.ui-menu-live-panel:is(.home-overlay--progress, .home-overlay--personal, .home-overlay--community, .home-overlay--settings) > .home-overlay-close {
+    color: #0c3022 !important;
+}
+
+.ui-menu-live-panel:is(.home-overlay--progress, .home-overlay--personal, .home-overlay--community, .home-overlay--settings) .ui-menu-live-body {
+    background: var(--overlay-list-surface);
+}
+
+.home-overlay--progress .overlay-tabs {
+    border: 1px solid var(--overlay-list-line);
+    background: var(--overlay-list-soft) !important;
+}
+
+.home-overlay--progress .overlay-tabs button {
+    color: var(--overlay-list-muted) !important;
+}
+
+.home-overlay--progress .overlay-tabs button:hover,
+.home-overlay--progress .overlay-tabs button:focus-visible {
+    background: #dff2e8;
+    color: var(--overlay-list-ink);
+}
+
+.home-overlay--progress .overlay-tabs button.is-active,
+.home-overlay--progress .overlay-tabs button[data-state="active"] {
+    background: #176b46 !important;
+    color: #ffffff !important;
+}
+
+.home-overlay--progress .overlay-section-label :is(strong, em) {
+    color: var(--overlay-list-muted) !important;
+}
+
+.overlay-state-list,
+.overlay-metric-list,
+.overlay-empty-state,
+.home-overlay--progress .overlay-leader-list {
+    overflow: hidden;
+    margin: 0;
+    padding: 0;
+    border: 1px solid var(--overlay-list-line) !important;
+    border-radius: 12px;
+    background: var(--overlay-list-row) !important;
+    color: var(--overlay-list-ink);
+    list-style: none;
+}
+
+.overlay-state-list li,
+.overlay-metric-list > div,
+.home-overlay--progress .overlay-leader-list li,
+.home-overlay--progress .overlay-leader-list [data-empty-ranking] {
+    min-height: 64px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 16px;
+    padding: 12px 16px;
+    border: 0 !important;
+    border-bottom: 1px solid var(--overlay-list-line) !important;
+    border-radius: 0 !important;
+    background: var(--overlay-list-row) !important;
+    color: var(--overlay-list-ink) !important;
+}
+
+.overlay-state-list li:last-child,
+.overlay-metric-list > div:last-child,
+.home-overlay--progress .overlay-leader-list li:last-child {
+    border-bottom: 0 !important;
+}
+
+.overlay-state-list li > div {
+    min-width: 0;
+    display: grid;
+    gap: 4px;
+}
+
+.overlay-state-list :is(strong, p),
+.home-overlay--progress .overlay-leader-list :is(strong, span, em) {
+    margin: 0;
+    color: var(--overlay-list-ink) !important;
+}
+
+.overlay-state-list p,
+.overlay-state-list em,
+.home-overlay--progress .overlay-leader-list em {
+    color: var(--overlay-list-muted) !important;
+    font-size: 12px;
+    font-style: normal;
+}
+
+.home-overlay--progress .overlay-leader-list li {
+    grid-template-columns: 34px minmax(0, 1fr) auto;
+}
+
+.home-overlay--progress .overlay-leader-list li strong {
+    width: 30px;
+    height: 30px;
+    display: grid;
+    place-items: center;
+    border-radius: 8px;
+    background: var(--overlay-list-soft);
+}
+
+.overlay-metric-list > div {
+    grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.overlay-metric-list :is(dt, dd) {
+    margin: 0;
+    color: var(--overlay-list-ink);
+    font-weight: 900;
+}
+
+.overlay-metric-list dt {
+    color: var(--overlay-list-muted);
+}
+
+.overlay-empty-state {
+    min-height: 112px;
+    display: grid;
+    align-content: center;
+    gap: 6px;
+    padding: 20px;
+}
+
+.overlay-empty-state strong {
+    color: var(--overlay-list-ink) !important;
+}
+
+.overlay-empty-state p {
+    margin: 0;
+    color: var(--overlay-list-muted) !important;
+    font-size: 13px;
+}
+
+/* Personal */
+.home-overlay--personal .player-profile {
+    border: 1px solid var(--overlay-list-line);
+    background: var(--overlay-list-row);
+}
+
+.home-overlay--personal .player-profile-identity {
+    border-bottom-color: var(--overlay-list-line);
+    background: var(--overlay-list-soft);
+}
+
+.home-overlay--personal .player-profile-avatar {
+    border-color: var(--overlay-list-line);
+    background: #ffffff;
+}
+
+.home-overlay--personal .player-profile-identity :is(h3, strong),
+.home-overlay--personal .player-profile-main dd {
+    color: var(--overlay-list-ink) !important;
+}
+
+.home-overlay--personal .player-profile-identity p,
+.home-overlay--personal .player-profile-main :is(h3, dt) {
+    color: var(--overlay-list-muted) !important;
+}
+
+.home-overlay--personal .player-profile-main > section + section {
+    border-color: var(--overlay-list-line);
+}
+
+.home-overlay--personal .player-profile-main dl > div {
+    border-top-color: var(--overlay-list-line);
+}
+
+/* Community */
+.home-overlay--community .overlay-community-toolbar,
+.home-overlay--community .overlay-community-notice,
+.home-overlay--community .overlay-community-list,
+.home-overlay--community .overlay-community-list li,
+.home-overlay--community .overlay-community-compose {
+    border-color: var(--overlay-list-line) !important;
+    background: var(--overlay-list-row) !important;
+    color: var(--overlay-list-ink) !important;
+}
+
+.home-overlay--community .overlay-community-tabs {
+    background: var(--overlay-list-soft);
+}
+
+.home-overlay--community .overlay-community-tabs button {
+    color: var(--overlay-list-muted);
+}
+
+.home-overlay--community .overlay-community-tabs button.is-active {
+    background: #176b46;
+    color: #ffffff;
+}
+
+.home-overlay--community .overlay-community-write {
+    border-color: #176b46;
+    background: #176b46;
+    color: #ffffff;
+}
+
+.home-overlay--community :is(.overlay-community-notice, .overlay-community-list) :is(h3, strong) {
+    color: var(--overlay-list-ink) !important;
+}
+
+.home-overlay--community :is(.overlay-community-notice, .overlay-community-list) p,
+.home-overlay--community .overlay-community-list footer {
+    color: var(--overlay-list-muted) !important;
+}
+
+.home-overlay--community .overlay-community-notice > strong,
+.home-overlay--community .overlay-community-type {
+    background: var(--overlay-list-soft);
+    color: #176b46 !important;
+}
+
+/* Settings */
+.home-overlay--settings .overlay-settings-section > h3 {
+    color: var(--overlay-list-muted) !important;
+}
+
+.home-overlay--settings .overlay-settings-row,
+.home-overlay--settings .overlay-settings-logout {
+    border: 1px solid var(--overlay-list-line);
+    background: var(--overlay-list-row);
+    color: var(--overlay-list-ink);
+}
+
+.home-overlay--settings .overlay-settings-row strong {
+    color: var(--overlay-list-ink) !important;
+}
+
+.home-overlay--settings .overlay-settings-row em {
+    color: var(--overlay-list-muted);
+}
+
+.home-overlay--settings .overlay-settings-status {
+    background: var(--overlay-list-soft);
+    color: #176b46;
+}
+
+@media (max-width: 760px) {
+    .overlay-state-list li,
+    .overlay-metric-list > div,
+    .home-overlay--progress .overlay-leader-list li,
+    .home-overlay--progress .overlay-leader-list [data-empty-ranking] {
+        min-height: 58px;
+        padding: 10px 12px;
+    }
+
+    .home-overlay--progress .overlay-leader-list li {
+        grid-template-columns: 30px minmax(0, 1fr) auto;
+    }
+}

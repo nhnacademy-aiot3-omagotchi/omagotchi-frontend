@@ -1,13 +1,18 @@
 # 백엔드 연동 협의 정리
 
-프론트엔드에서 백엔드 연동 전 맞춰야 할 항목을 정리한 문서다.  
+- 상태: 협의 중인 요구사항 — 구현 완료 문서 아님
+
+> 현재 Browser 연결 기준은 [Frontend ↔ Backend 기능별 연결 지도](frontend-backend-connection-map.md)를
+> 우선한다. 아래 `/api/**`, `/gamification/**` 표기는 Domain API 협의를 위한 후보이며 Browser
+> JavaScript가 직접 호출하는 경로가 아니다.
+
+프론트엔드에서 백엔드 연동 전 맞춰야 할 항목을 정리한 문서다.
+
 현재 화면은 일부 기능이 `localStorage`, `sessionStorage`, 목업 데이터로 동작하므로, 실제 연동 시 아래 항목을 백엔드와 먼저 합의해야 한다.
 
 ## 0. 백엔드 현재 명세 확인 결과
 
-백엔드에서 공유한 명세:
-
-- `/Users/chosun-nhn13/Desktop/NHN/project/learning-service/omagotchi-learning-service/docs/frontend-api-spec.md`
+백엔드에서 공유한 명세는 Learning Service 저장소의 `docs/frontend-api-spec.md`다.
 
 현재 백엔드 명세 기준으로 프론트 문서와 바로 맞춰야 할 차이는 아래다.
 
@@ -115,7 +120,8 @@ Handoff 기준으로 기존 가정에서 조정할 내용:
 ### API 기본 경로
 
 - 프론트 공통 API 래퍼는 `window.OmagotchiApi`를 사용한다.
-- 기본 API prefix는 `/api`다.
+- Browser 기본 API prefix는 같은 Origin의 `/bff/v1`이다.
+- Domain Service의 `/api/v1`, `/api/v2`, `/gamification` 차이는 View BFF에서 흡수한다.
 - 필요 시 `window.OMAGOTCHI_API_BASE` 또는 `<html data-api-base="...">`로 API base path를 바꿀 수 있다.
 
 ### 인증 전달 방식

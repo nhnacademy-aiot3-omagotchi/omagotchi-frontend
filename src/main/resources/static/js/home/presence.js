@@ -47,13 +47,12 @@ export function createPresence({
 
     function syncCurrentUser() {
         const currentStatus = getCurrentStatus();
-        let current = users.find((user) => user.current || user.email === currentUser.email);
+        let current = users.find((user) => user.current || user.id === "current-user");
 
         if (!current) {
             current = {
                 id: "current-user",
                 name: currentUser.name,
-                email: currentUser.email,
                 status: currentStatus,
                 current: true,
                 characterImage: selectedCharacterImage
@@ -62,7 +61,6 @@ export function createPresence({
         }
 
         current.name = currentUser.name;
-        current.email = currentUser.email;
         current.current = true;
         current.status = currentStatus;
         current.characterImage = selectedCharacterImage;
@@ -76,7 +74,6 @@ export function createPresence({
         const filtered = users.filter((user) => (
             !normalizedKeyword
             || user.name.toLowerCase().includes(normalizedKeyword)
-            || user.email.toLowerCase().includes(normalizedKeyword)
         ));
         const groups = Object.keys(statusMeta)
             .sort((left, right) => statusMeta[left].order - statusMeta[right].order)
@@ -92,7 +89,6 @@ export function createPresence({
                             <span class="presence-user-avatar"><img src="${escapeHtml(user.characterImage)}" alt="" /></span>
                             <span class="presence-user-copy">
                                 <strong>${escapeHtml(user.name)}${user.current ? " · 나" : ""}</strong>
-                                <span>${escapeHtml(user.email)}</span>
                             </span>
                             <span class="presence-user-status">${statusMeta[status].label}</span>
                         </li>
@@ -107,7 +103,7 @@ export function createPresence({
     }
 
     async function loadSnapshot() {
-        // [API-KEEP] 임시 API 연결 지점
+        // [API-REPLACE] 실제 재실 API가 없을 때 빈 성공 응답으로 위장하지 않는다.
         const serverSnapshot = await api?.getLabPresence?.();
         if (serverSnapshot) {
             return serverSnapshot;
@@ -115,11 +111,7 @@ export function createPresence({
         if (window.OmagotchiPresenceApi?.getLabPresence) {
             return window.OmagotchiPresenceApi.getLabPresence();
         }
-        return {
-            capacity: 0,
-            occupiedCount: 0,
-            users: []
-        };
+        throw new Error("Presence API is unavailable");
     }
 
     function applySnapshot(snapshot) {
@@ -143,11 +135,14 @@ export function createPresence({
 
         refreshButton.disabled = true;
         refreshButton.classList.add("is-loading");
+        if (panel) panel.dataset.uiState = "loading";
         try {
             const snapshot = await loadSnapshot();
             applySnapshot(snapshot);
+            if (panel) panel.dataset.uiState = users.length ? "ready" : "empty";
         } catch {
             if (updated) updated.textContent = "갱신 실패 · 기존 목록 표시 중";
+            if (panel) panel.dataset.uiState = "error";
         } finally {
             refreshButton.disabled = false;
             refreshButton.classList.remove("is-loading");

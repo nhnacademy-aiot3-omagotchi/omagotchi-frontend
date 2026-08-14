@@ -1,4 +1,4 @@
-import { checkInToday, isCheckedInToday } from "./attendanceState.js";
+import { canCheckIn, checkInToday, isCheckedInToday } from "./attendanceState.js";
 
 const SHAKE_COUNT_TO_WAKE = 4;
 const WAKE_DURATION_MS = 2800;
@@ -90,7 +90,31 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
         waking = true;
-        await checkInToday();
+        try {
+            await checkInToday();
+        } catch {
+            waking = false;
+            character.classList.remove("is-shaking");
+            const isEligibilityError = !canCheckIn();
+            setMessage(isEligibilityError
+                ? "승인된 기수에 가입한 뒤 입실할 수 있습니다."
+                : "입실 처리에 실패했어요. 잠시 후 다시 시도해 주세요.");
+            wakeButtons.forEach((button) => {
+                button.disabled = isEligibilityError;
+                if (isEligibilityError) {
+                    button.setAttribute("aria-disabled", "true");
+                } else {
+                    button.removeAttribute("aria-disabled");
+                }
+            });
+            if (isEligibilityError) {
+                character.setAttribute("aria-disabled", "true");
+                window.setTimeout(() => {
+                    window.location.assign("/home#cohort");
+                }, 1400);
+            }
+            return;
+        }
 
         const image = getCharacterImage(character);
         if (image) {
@@ -154,5 +178,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (isCheckedInToday()) {
         window.location.replace("/home");
+        return;
+    }
+
+    if (!canCheckIn()) {
+        wakeButtons.forEach((button) => {
+            button.disabled = true;
+            button.setAttribute("aria-disabled", "true");
+        });
+        character.setAttribute("aria-disabled", "true");
+        setMessage("승인된 기수에 가입한 뒤 오마고치를 깨울 수 있어요.");
     }
 });

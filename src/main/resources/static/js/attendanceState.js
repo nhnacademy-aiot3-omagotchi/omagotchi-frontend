@@ -39,6 +39,34 @@ export function getCurrentUserKey() {
         || localStorage.getItem("omagotchiLastEmail")
         || "guest";
 }
+
+// [API-REPLACE] GET /api/users/me/profile의 approvedCohort 기준으로 교체
+export function getApprovedCohortId(userKey = getCurrentUserKey()) {
+    try {
+        const joinedCohorts = JSON.parse(localStorage.getItem(`omagotchiJoinedCohorts:${userKey}`) || "[]") || [];
+        const managedCohorts = JSON.parse(localStorage.getItem("omagotchiCohortOperations") || "[]") || [];
+
+        if (!Array.isArray(joinedCohorts) || !Array.isArray(managedCohorts)) {
+            return null;
+        }
+
+        return joinedCohorts.find((cohortId) => (
+            managedCohorts.some((cohort) => (
+                String(cohort.id) === String(cohortId)
+                && cohort.members?.some((member) => (
+                    member.status === "ACTIVE"
+                    && [member.id, member.email].some((identifier) => String(identifier) === String(userKey))
+                ))
+            ))
+        )) || null;
+    } catch {
+        return null;
+    }
+}
+
+export function canCheckIn(userKey = getCurrentUserKey()) {
+    return Boolean(getApprovedCohortId(userKey));
+}
 // [API-REPLACE] GET /api/attendance/today 같은 조회 API로 교체
 function getAttendanceKey(userKey = getCurrentUserKey()) {
     return `${ATTENDANCE_PREFIX}${userKey}`;
@@ -87,13 +115,25 @@ export function isCheckedInToday() {
 }
 
 export async function checkInToday() {
-    const serverAttendance = await window.OmagotchiApi?.attendance?.checkIn?.();
-    const attendance = normalizeAttendance(serverAttendance || {
-        serviceDate: getServiceDate(),
-        checkInAt: new Date().toISOString(),
-        status: "PRESENT",
-        spaceStatus: "IN_LAB"
-    });
+    // 이 검사는 UX 안내용이다. 최종 입실 권한은 서버의 check-in API가 검증한다.
+    if (!canCheckIn()) {
+        throw new Error("승인된 기수에 가입한 뒤 입실할 수 있습니다.");
+    }
+
+    const checkIn = window.OmagotchiApi?.attendance?.checkIn;
+    if (typeof checkIn !== "function") {
+        throw new Error("Attendance check-in API is unavailable");
+    }
+
+    const serverAttendance = await checkIn();
+    if (!serverAttendance || typeof serverAttendance !== "object") {
+        throw new Error("Attendance check-in API returned an invalid response");
+    }
+
+    const attendance = normalizeAttendance(serverAttendance);
+    if (!attendance.checkInAt) {
+        throw new Error("Attendance check-in response is missing checkInAt");
+    }
     const dateKey = attendance.serviceDate || getServiceDate();
     let history = {};
 
@@ -106,7 +146,7 @@ export async function checkInToday() {
     history[dateKey] = {
         ...history[dateKey],
         ...attendance,
-        checkInAt: attendance.checkInAt || new Date().toISOString(),
+        checkInAt: attendance.checkInAt,
         serviceDate: dateKey,
         status: "PRESENT",
         spaceStatus: "IN_LAB"

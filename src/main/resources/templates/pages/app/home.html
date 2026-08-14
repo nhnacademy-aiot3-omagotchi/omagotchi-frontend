@@ -8,282 +8,85 @@
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon_11.gif" th:href="@{/favicon_11.gif}" />
     <link rel="stylesheet" href="/css/home.css" th:href="@{/css/home.css}" />
     <link rel="stylesheet" href="/css/home/home-ui.css" th:href="@{/css/home/home-ui.css}" />
-    <link rel="stylesheet" href="/css/studyRecords.css" th:href="@{/css/studyRecords.css}" />
+    <link rel="stylesheet" href="/css/home/react-stage.css" th:href="@{/css/home/react-stage.css}" />
+    <link rel="stylesheet" href="/css/studyRecords.css?v=20260812-1" th:href="@{/css/studyRecords.css(v='20260812-1')}" />
     <link rel="stylesheet" href="/css/gameFont.css" th:href="@{/css/gameFont.css}" />
+    <link rel="stylesheet" href="/css/ui/design-system.css?v=20260814-2" th:href="@{/css/ui/design-system.css(v='20260814-2')}" />
     <link rel="stylesheet" href="/css/spaceRoom.css" th:href="@{/css/spaceRoom.css}" />
     <link rel="stylesheet" href="/css/notificationPanel.css" th:href="@{/css/notificationPanel.css}" />
     <link rel="stylesheet" href="/css/imageProtection.css" th:href="@{/css/imageProtection.css}" />
     <link rel="stylesheet" th:href="@{/css/homeAttendance.css}">
     <link rel="stylesheet" th:href="@{/css/homeAttendanceSync.css}" href="/css/homeAttendanceSync.css">
     <link rel="stylesheet" href="/css/cursor.css" th:href="@{/css/cursor.css}" />
+    <link rel="stylesheet" href="/css/home/home-responsive.css?v=20260812-4" th:href="@{/css/home/home-responsive.css(v='20260812-4')}" />
+    <link rel="stylesheet" href="/css/home/home-overlay-theme.css?v=20260814-1" th:href="@{/css/home/home-overlay-theme.css(v='20260814-1')}" />
+    <link rel="stylesheet" href="/css/home/home-quick-panels.css?v=20260814-1" th:href="@{/css/home/home-quick-panels.css(v='20260814-1')}" />
 </head>
 <body>
 <main class="home-page">
     <section class="home-hero" aria-labelledby="home-title">
-        <h1 id="home-title">Omagotchi</h1>
-
-        <nav class="home-menu" aria-label="주요 메뉴">
-            <a href="/help" aria-label="도움말" data-home-overlay="help">
-                <span><img src ="/images/app/help.png" alt = " " width = "32"></span>
-                도움말
-            </a>
-            <a class="has-menu-alert" href="/progress#quests" aria-label="진행 현황" data-home-overlay="progress">
-                <span><img src = "/images/app/quest.png" alt = " " width = "32"></span>
-                진행
-            </a>
-            <a href="/personal" aria-label="내 정보" data-home-overlay="personal">
-                <span><img src = "/images/app/userList.png" alt = " " width = "32"></span>
-                내 정보
-            </a>
-            <a href="/cohort" aria-label="기수" data-home-overlay="cohort">
-                <span><img src = "/images/app/cohort.png" alt = " " width = "32"></span>
-                기수
-            </a>
-            <a href="/write" aria-label="학습 기록 확인" data-home-overlay="write">
-                <span><img src = "/images/app/studyrecord.png" alt = " " width = "32"></span>
-                학습 기록
-            </a>
-            <a href="/space#lab" aria-label="공간" data-home-overlay="space">
-                <span><img src = "/images/app/door.png" alt = " " width = "32"></span>
-                공간
-            </a>
-            <a href="/home#community" aria-label="커뮤니티" data-home-overlay="community">
-                <span><img src = "/images/app/commu.png" alt = " " width = "32"></span>
-                커뮤
-            </a>
-            <a href="/settings" aria-label="설정" data-home-overlay="settings">
-                <span><img src = "/images/app/set.png" alt = " " width = "32"></span>
-                설정
-            </a>
-        </nav>
-
-        <aside class="bgm-player" id="home-bgm-player" data-bgm-player aria-label="배경 음악">
-            <div class="bgm-player-copy">
-                <span>BGM</span>
-                <strong data-bgm-title>준비 중</strong>
-                <small data-bgm-artist>Pixabay</small>
-            </div>
-            <div class="bgm-player-actions">
-                <button type="button" data-bgm-play aria-label="BGM 재생" title="BGM 재생">▶</button>
-                <button type="button" data-bgm-next aria-label="다음 BGM" title="다음 BGM">⏭</button>
-                <button type="button" data-bgm-shuffle aria-pressed="false" aria-label="BGM 셔플" title="BGM 셔플">⇄</button>
-                <button type="button" data-bgm-repeat aria-pressed="false" aria-label="현재 BGM 반복" title="현재 BGM 반복">↻1</button>
-                <button type="button" data-bgm-list aria-expanded="false" aria-controls="bgm-playlist" aria-label="BGM 플레이리스트" title="BGM 플레이리스트">▤</button>
-            </div>
-            <label class="bgm-volume">
-                <span class="sr-only">BGM 볼륨</span>
-                <input type="range" min="0" max="100" value="22" data-bgm-volume />
-            </label>
-            <div class="bgm-progress" aria-label="BGM 재생 진행도">
-                <progress value="0" max="100" data-bgm-progress></progress>
-                <span><b data-bgm-current-time>0:00</b> / <b data-bgm-duration>0:00</b></span>
-            </div>
-            <p class="bgm-source-note">노래 출처는 도움말에 정리했습니다.</p>
-            <p class="bgm-credit-toast" data-bgm-credit role="status" aria-live="polite"></p>
-            <section class="bgm-playlist" id="bgm-playlist" data-bgm-panel hidden>
-                <header>
-                    <strong>Playlist</strong>
-                </header>
-                <ol data-bgm-tracks></ol>
-            </section>
-        </aside>
-
-        <aside class="presence-hud" data-presence-hud>
-            <button
-                    class="presence-trigger"
-                    type="button"
-                    data-presence-trigger
-                    aria-expanded="false"
-                    aria-controls="presence-panel"
-                    aria-label="재실 인원 보기"
-                    title="재실 인원 보기"
-            >
-                <span class="presence-trigger-copy">
-                    <strong>실습실 재실 인원</strong>
-                    <span><b data-presence-count>0</b><b class="sr-only" data-presence-capacity>50</b></span>
-                </span>
-                <kbd aria-hidden="true">U</kbd>
-            </button>
-
-            <section
-                    class="presence-panel"
-                    id="presence-panel"
-                    data-presence-panel
-                    aria-labelledby="presence-panel-title"
-                    hidden
-            >
-                <header>
-                    <div>
-                        <span>MY COHORT LAB</span>
-                        <h2 id="presence-panel-title">AIoT 3기 실습실</h2>
-                    </div>
-                    <button
-                            class="presence-refresh"
-                            type="button"
-                            data-presence-refresh
-                            aria-label="재실 인원 새로고침"
-                            title="재실 인원 새로고침"
-                    >↻</button>
-                </header>
-
-                <label class="presence-search">
-                    <span class="sr-only">이름 또는 이메일 검색</span>
-                    <input
-                            type="search"
-                            data-presence-search
-                            placeholder="이름 또는 이메일 검색"
-                            autocomplete="off"
-                    />
-                </label>
-
-                <div class="presence-list" data-presence-list></div>
-
-                <footer>
-                    <span data-presence-updated>아직 갱신하지 않음</span>
-                    <span><kbd>Esc</kbd> 닫기</span>
-                </footer>
-            </section>
-        </aside>
-
-        <section class="timer-panel" aria-label="학습 타이머">
-            <time class="timer-display" datetime="PT0S" data-timer-display>00:00:00</time>
-
-            <div class="timer-actions">
-                <button type="button" data-timer-toggle>시작</button>
-            </div>
-            <p class="timer-policy" data-timer-status aria-live="polite"></p>
-        </section>
-
-        <button class="attendance-button" type="button" data-attendance-button title="퇴실하기" aria-label="퇴실하기" hidden>
-            퇴실하기
-        </button>
-
-        <button
-                class="home-dock-button home-music-toggle"
-                type="button"
-                data-home-music-toggle
-                aria-expanded="false"
-                aria-controls="home-bgm-player"
-                aria-label="BGM 열기"
-                title="BGM 열기"
-        >
-            <img src="/images/app/music.png" alt="" aria-hidden="true" />
-        </button>
-
-        <button
-                class="home-dock-button home-attendance-toggle"
-                type="button"
-                data-attendance-panel-toggle
-                aria-expanded="false"
-                aria-controls="attendance-detail"
-                aria-label="출석부 열기"
-                title="출석부 열기"
-        >
-            <img src="/images/app/calendar.png" alt="" aria-hidden="true" />
-        </button>
-
-        <section class="companion-panel" aria-label="캐릭터 상태">
-            <div class="character-badge" data-presence="online">
-                <span data-character-name>오마고치</span>
-                <strong data-character-level>1</strong>
-            </div>
-            <div class="home-character-stage" data-character-stage>
-                <img
-                        class="home-character-wing"
-                        data-character-wing
-                        alt=""
-                        aria-hidden="true"
-                        hidden
-                />
-                <p class="character-speech-bubble" data-character-bubble aria-live="polite" hidden>
-                    오늘도 같이 공부해요!
-                </p>
-                <button
-                        class="home-character-button"
-                        type="button"
-                        data-character-interaction
-                        aria-label="오마고치와 놀아주기"
-                >
-                    <img
-                            class="home-character"
-                            data-home-character
-                            src="/images/characters/default/omagotchi.png"
-                            alt="오마고치 캐릭터"
-                    />
-                </button>
-            </div>
-            <div class="xp-area" aria-label="경험치">
-                <div class="xp-bar">
-                    <span data-xp-fill style="width: 0%"></span>
-                </div>
-                <div class="xp-labels">
-                    <span data-current-xp>0xp</span>
-                    <span data-next-level>다음 레벨까지 50xp</span>
-                </div>
-            </div>
-            <section class="home-chat-bar" aria-label="실시간 채팅">
-                <div class="home-chat-tabs" role="tablist" aria-label="채팅방">
-                    <button type="button" class="is-active" role="tab" aria-selected="true">
-                        <span class="home-chat-tab-icon home-chat-tab-icon-global" aria-hidden="true"></span>
-                        GLOBAL
-                    </button>
-                    <button type="button" role="tab" aria-selected="false">
-                        COHORT
-                    </button>
-                </div>
-                <label class="home-chat-input">
-                    <span class="sr-only">채팅 메시지</span>
-                    <input type="text" placeholder="메시지 입력" disabled />
-                </label>
-            </section>
-        </section>
+        <div id="home-react-root" class="home-react-root"></div>
     </section>
 
-    <section class="attendance-detail" id="attendance-detail" aria-labelledby="attendance-title">
-        <div class="attendance-layout">
-            <section class="attendance-summary" aria-labelledby="attendance-title">
+    <section class="attendance-detail ui-attendance" id="attendance-detail" aria-labelledby="attendance-title"
+             data-ui-state="ready" hidden>
+        <header class="quick-panel-header attendance-detail-header ui-attendance__header">
+            <span class="quick-panel-icon ui-attendance__header-icon" aria-hidden="true"><img src="/images/app/calendar.png" alt="" /></span>
+            <div class="ui-attendance__header-copy">
+                <h2>출석 현황</h2>
+                <p>오늘의 출석과 이번 달 학습 흐름을 확인하세요.</p>
+            </div>
+            <button class="quick-panel-close ui-attendance__close" type="button" data-attendance-panel-close aria-label="출석부 닫기">×</button>
+        </header>
+        <p class="ui-state-message" data-attendance-state-message role="status" hidden></p>
+        <div class="attendance-layout ui-attendance__layout">
+            <section class="attendance-summary ui-attendance__main" aria-labelledby="attendance-title">
                 <h2 id="attendance-title">오늘 출석</h2>
-                <dl>
-                    <div>
+                <dl class="ui-attendance__summary">
+                    <div class="ui-card ui-card--mint">
                         <dt>입실</dt>
                         <dd data-check-in-time>아직 입실 전</dd>
                     </div>
-                    <div>
+                    <div class="ui-card ui-card--sky">
                         <dt>퇴실</dt>
                         <dd data-check-out-time>아직 퇴실 전</dd>
                     </div>
-                    <div>
-                        <dt>조퇴</dt>
-                        <dd data-early-leave>0분</dd>
+                    <div class="ui-card ui-card--cream">
+                        <dt>출석 상태</dt>
+                        <dd data-early-leave>기록 없음</dd>
                     </div>
-                    <div>
-                        <dt>지각</dt>
-                        <dd data-late-minutes>0분</dd>
+                    <div class="ui-card ui-card--peach">
+                        <dt>학습 기록</dt>
+                        <dd data-late-minutes>기록 없음</dd>
                     </div>
                 </dl>
             </section>
 
-            <section class="calendar-card" aria-labelledby="calendar-title">
-                <div class="calendar-header">
+            <section class="calendar-card ui-attendance__calendar" aria-labelledby="calendar-title">
+                <div class="calendar-header ui-calendar-header">
                     <h2 id="calendar-title" data-calendar-title>출석 기록</h2>
-                    <span data-calendar-period>이번 달</span>
+                    <div class="calendar-controls ui-calendar-controls" role="group" aria-label="출석 기록 월 이동">
+                        <button class="ui-calendar-nav" type="button" data-calendar-prev aria-label="이전 달 출석 기록">‹</button>
+                        <span data-calendar-period>이번 달</span>
+                        <button class="ui-calendar-nav" type="button" data-calendar-next aria-label="다음 달 출석 기록">›</button>
+                    </div>
                 </div>
-                <div class="calendar-grid" aria-label="출석 달력" data-calendar-grid>
-                    <span class="calendar-weekday">월</span>
-                    <span class="calendar-weekday">화</span>
-                    <span class="calendar-weekday">수</span>
-                    <span class="calendar-weekday">목</span>
-                    <span class="calendar-weekday">금</span>
+                <div class="calendar-grid ui-calendar-grid" aria-label="출석 달력" data-calendar-grid>
+                    <span class="calendar-weekday ui-calendar-day ui-calendar-day--weekday">월</span>
+                    <span class="calendar-weekday ui-calendar-day ui-calendar-day--weekday">화</span>
+                    <span class="calendar-weekday ui-calendar-day ui-calendar-day--weekday">수</span>
+                    <span class="calendar-weekday ui-calendar-day ui-calendar-day--weekday">목</span>
+                    <span class="calendar-weekday ui-calendar-day ui-calendar-day--weekday">금</span>
                 </div>
             </section>
 
-            <aside class="streak-card" aria-label="연속 출석">
-                <div class="streak-header">
+            <aside class="streak-card ui-attendance__streak" aria-label="연속 출석">
+                <div class="streak-header ui-streak-header">
                     <h2>연속 출석</h2>
-                    <strong data-streak-count>0일</strong>
+                    <strong class="ui-streak-count" data-streak-count>0일</strong>
                 </div>
                 <p>입실 기록 기준으로 이어집니다.</p>
-                <ol data-streak-list></ol>
+                <ol class="ui-streak-list" data-streak-list></ol>
             </aside>
         </div>
     </section>
@@ -297,8 +100,8 @@
 <script src="/js/api.js" th:src="@{/js/api.js}"></script>
 <script src="/js/characterAssets.js" th:src="@{/js/characterAssets.js}"></script>
 <script src="/js/spaceRoom.js" th:src="@{/js/spaceRoom.js}"></script>
-<script type="module" src="/js/home.js" th:src="@{/js/home.js}"></script>
+<script type="module" src="/js/home-react/home-app.js?v=20260814-4" th:src="@{/js/home-react/home-app.js(v='20260814-4')}"></script>
+<script type="module" src="/js/home.js?v=20260814-3" th:src="@{/js/home.js(v='20260814-3')}"></script>
 <script src="/js/imageProtection.js" th:src="@{/js/imageProtection.js}"></script>
-<script src="/js/scrollCue.js" th:src="@{/js/scrollCue.js}"></script>
 </body>
 </html>

@@ -51,6 +51,7 @@ secrets/
 *.keystore
 
 ### Local runtime / tooling ###
+node_modules/
 *.log
 logs/
 tmp/
@@ -60,3 +61,6 @@ replay_pid*
 .mise.local.toml
 mise.local.toml
 .serena
+
+*storybook.log
+storybook-static

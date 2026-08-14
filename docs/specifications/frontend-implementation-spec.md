@@ -1,11 +1,13 @@
 # Frontend Implementation Spec
 
+- 상태: 요구사항 — 구현 완료 여부는 코드와 테스트에서 별도 확인
+
 ## Purpose
 
 프론트엔드는 관리자 화면과 사용자 화면의 성격이 다르므로 구현 방식을 분리한다.
 
 - 관리자 화면: Bootstrap 기반
-- 사용자 화면: Custom CSS 기반
+- 사용자 화면: Custom CSS 기반. Home처럼 상태와 레이아웃 변화가 큰 화면은 React island를 사용해 UI 구조를 컴포넌트로 관리한다.
 
 Bootstrap은 버튼, 폼, 카드, 테이블, 모달, 그리드 등 일반적인 업무형 UI를 빠르게 구성하는 데 사용한다. 사용자 화면은 오마고치 캐릭터와 실습실 경험을 중심으로 하므로 게임형 UI를 위해 Custom CSS를 사용한다.
 
@@ -22,7 +24,7 @@ Bootstrap은 버튼, 폼, 카드, 테이블, 모달, 그리드 등 일반적인 
 | 관리자 화면 | 방/회의실 생성 폼 | Bootstrap Form / Modal | 이름, 인원, 상태 입력 UI에 적합 |
 | 관리자 화면 | 사용자 목록 | Bootstrap Table | 사용자 목록과 상태 관리에 적합 |
 | 관리자 화면 | 통계 카드 | Bootstrap Card | 주요 지표를 카드 형태로 빠르게 구성 가능 |
-| 사용자 화면 | 오마고치 홈 | Custom CSS | 캐릭터 중심의 게임형 UI 필요 |
+| 사용자 화면 | 오마고치 홈 | React Island + Custom CSS | 캐릭터, 타이머, HUD, 오버레이가 같은 stage 안에서 반응해야 하므로 UI 구조는 React 컴포넌트로 관리하고 기존 API/JS 계약은 점진적으로 이관 |
 | 사용자 화면 | 실습실 배치도 | Custom CSS | 책상, 의자 슬롯, 캐릭터 배치 표현 필요 |
 | 사용자 화면 | 의자 슬롯 | Custom CSS Component | 출석/학습/부재중 상태를 시각적으로 구분 |
 | 사용자 화면 | 캐릭터 표시 | GIF/PNG + CSS | 픽셀 캐릭터 및 상태 변화 표현 |
@@ -38,7 +40,7 @@ Bootstrap은 버튼, 폼, 카드, 테이블, 모달, 그리드 등 일반적인 
 | --- | --- | --- |
 | FE-01 | 화면 구현 방식 분리 | 관리자 화면은 Bootstrap 기반, 사용자 화면은 Custom CSS 기반으로 구현한다. |
 | FE-02 | 관리자 화면 | 로그인, 회원가입, 관리자 로그인, 대시보드, 테이블, 폼, 통계 카드는 Bootstrap 컴포넌트를 활용한다. |
-| FE-03 | 사용자 화면 | 오마고치 홈, 실습실 배치도, 의자 슬롯, 캐릭터, EXP 바, 말풍선, 뱃지, 퀘스트, 타이머 HUD는 Custom CSS로 구성한다. |
+| FE-03 | 사용자 화면 | 오마고치 홈은 React island + Custom CSS로 구성하고, 실습실 배치도, 의자 슬롯, 캐릭터, EXP 바, 말풍선, 뱃지, 퀘스트, 타이머 HUD는 기존 Custom CSS 톤을 유지한다. |
 | FE-04 | 실습실 배치도 | 책상은 정적 요소로 처리하고, 의자 슬롯은 사용자 상태를 표시하는 동적 요소로 처리한다. |
 | FE-05 | 의자 슬롯 | 의자 슬롯은 빈 자리, 내 자리, 재실, 학습 중, 부재중, 회의중, 퇴실 상태를 시각적으로 구분할 수 있어야 한다. |
 | FE-06 | 캐릭터 이미지 | 픽셀 이미지 확대 시 `image-rendering: pixelated` 속성을 적용한다. |
@@ -54,7 +56,10 @@ Bootstrap은 버튼, 폼, 카드, 테이블, 모달, 그리드 등 일반적인 
 - 실제 구현은 현재 프로젝트의 픽셀/게임 UI 톤을 유지한다.
 - 사용자의 주요 시선은 캐릭터, 오늘의 퀘스트, 실습실 이동 버튼에 먼저 닿아야 한다.
 - 햄버거 메뉴와 실습실 이동 버튼은 현재 홈 화면 위치를 유지한다.
-- CSS 추가 고도화는 현재 보류한다.
+- Home 화면은 `/home` 단일 진입점을 유지하며 React island와 fluid layout으로 세로, 가로, 낮은 높이 화면을 처리한다.
+- API 연동 시 React 컴포넌트는 UI 상태 표현을 담당하고, Backend 호출은 BFF/API helper 계층에서 분리한다.
+- React island 점진 이전 학습 및 작업 기준은
+  [React Island 학습·작업 로드맵](../roadmaps/react-island-learning-roadmap.md)을 따른다.
 
 ## Ranking Dashboard Requirements
 
