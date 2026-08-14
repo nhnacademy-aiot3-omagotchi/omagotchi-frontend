@@ -18,11 +18,10 @@ function PresenceUsers({ users }) {
         <h3>{STATUS_LABELS[status]} · {groupUsers.length}</h3>
         <ul>
           {groupUsers.map((user) => (
-            <li className={`presence-user${status === "offline" ? " is-offline" : ""}`} key={user.id || user.email}>
+            <li className={`presence-user${status === "offline" ? " is-offline" : ""}`} key={user.id || `${user.name}-${status}`}>
               <span className="presence-user-avatar"><img src={user.characterImage} alt="" /></span>
               <span className="presence-user-copy">
                 <strong>{user.name}{user.current ? " · 나" : ""}</strong>
-                <span>{user.email}</span>
               </span>
               <span className="presence-user-status">{STATUS_LABELS[status]}</span>
             </li>
@@ -71,8 +70,8 @@ export function PresenceHud({
           </div>
         </header>
         <label className="presence-search">
-          <span className="sr-only">이름 또는 이메일 검색</span>
-          <input type="search" data-presence-search placeholder="이름 또는 이메일 검색" autoComplete="off" />
+          <span className="sr-only">재실 사용자 이름 검색</span>
+          <input type="search" data-presence-search placeholder="이름 검색" autoComplete="off" />
         </label>
         <div className="presence-list" data-presence-list><PresenceUsers users={users} /></div>
         <footer>

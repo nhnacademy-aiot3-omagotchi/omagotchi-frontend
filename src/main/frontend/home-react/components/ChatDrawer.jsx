@@ -20,12 +20,12 @@ export function ChatDrawer({ chatOpen = false, setChatOpen = () => {}, disabled 
       onTouchEnd={handleTouchEnd}
     >
       <div className="home-chat-panel" id="home-chat-input-panel">
-        <div className="home-chat-tabs" role="tablist" aria-label="채팅방">
-          <button type="button" className="is-active" role="tab" aria-selected="true">
+        <div className="home-chat-tabs" aria-label="지원 예정 채팅방">
+          <span className="is-active">
             <span className="home-chat-tab-icon home-chat-tab-icon-global" aria-hidden="true"></span>
             GLOBAL
-          </button>
-          <button type="button" role="tab" aria-selected="false">COHORT</button>
+          </span>
+          <span>COHORT</span>
         </div>
         <label className="home-chat-input">
           <span className="sr-only">채팅 메시지</span>

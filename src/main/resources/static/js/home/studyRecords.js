@@ -62,6 +62,10 @@ function getRecordStudyDateKey(record) {
 
 function parseRecordStudyDate(record) {
     const dateKey = getRecordStudyDateKey(record);
+    return parseStudyDateKey(dateKey);
+}
+
+function parseStudyDateKey(dateKey) {
     const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateKey || "");
 
     if (!match) {
@@ -71,6 +75,10 @@ function parseRecordStudyDate(record) {
     const [, year, month, day] = match.map(Number);
     const date = new Date(year, month - 1, day, 12);
     return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function getCurrentStudyDate() {
+    return parseStudyDateKey(toStudyDateKey(new Date())) || new Date();
 }
 
 function filterRecords(records, viewMode, referenceDate) {
@@ -207,7 +215,7 @@ export function createStudyRecords({ storageKey, getElapsedSeconds, api }) {
     let editingId = null;
     let container = null;
     let viewMode = "daily";
-    let referenceDate = new Date();
+    let referenceDate = getCurrentStudyDate();
     let loadErrorMessage = "";
     // [API-REPLACE] 학습 기록 목록 조회 API로 교체
     function readRecords() {
@@ -303,7 +311,7 @@ export function createStudyRecords({ storageKey, getElapsedSeconds, api }) {
         lastRecordedElapsed = elapsedSeconds;
         editingId = null;
         viewMode = "daily";
-        referenceDate = new Date(now);
+        referenceDate = parseRecordStudyDate(record) || getCurrentStudyDate();
         render();
 
         return { ok: true, record };
@@ -396,10 +404,9 @@ export function createStudyRecords({ storageKey, getElapsedSeconds, api }) {
         const lastDate = new Date(year, month + 1, 0).getDate();
         const totals = groupDailyTotals(records);
         const selectedKey = toDateKey(referenceDate);
-        const selectedRecords = records.filter((record) => {
-            const date = parseRecordedAt(record);
-            return date && toDateKey(date) === selectedKey;
-        });
+        const selectedRecords = records.filter((record) => (
+            getRecordStudyDateKey(record) === selectedKey
+        ));
         const cells = [];
 
         for (let index = 0; index < firstDay; index += 1) {
@@ -412,7 +419,7 @@ export function createStudyRecords({ storageKey, getElapsedSeconds, api }) {
             const seconds = totals.get(key) || 0;
             const weekday = date.getDay();
             const isSelected = key === selectedKey;
-            const isToday = isSameDay(date, new Date());
+            const isToday = key === toStudyDateKey(new Date());
 
             cells.push(`
                 <li>
@@ -618,7 +625,7 @@ export function createStudyRecords({ storageKey, getElapsedSeconds, api }) {
         }
 
         if (todayButton) {
-            referenceDate = new Date();
+            referenceDate = getCurrentStudyDate();
             editingId = null;
             render();
             return true;

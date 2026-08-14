@@ -50,7 +50,6 @@ home-ui/
 | 문서 | 용도 |
 | --- | --- |
 | [게임 UI 프레임워크 도입 검토안](03-research/react-ui-library.md) | Storybook, Radix UI, Motion과 외부 도구 검토 |
-| [Home UI React Island 초기 조사 기록](03-research/mobile-view-research.md) | 모바일 분리 여부, 반응형과 초기 React Island 조사 |
 
 검토 문서는 도구 후보와 판단 근거다. 현재 적용 상태는 구조 가이드와 실행 체크리스트를
 우선한다.
@@ -60,13 +59,12 @@ home-ui/
 | 문서 | 성격 |
 | --- | --- |
 | [Home UI 전환 검토 기록](04-work-records/home-ui-decision-history.md) | 모바일 Route 분리 대신 `/home` React Island를 선택한 과정 |
+| [Home UI React Island 리팩토링 기록](04-work-records/home-react-island-refactor.md) | 초기 React Island 적용 범위와 반응형 레이아웃 변경 이력 |
 | [Home 반응형 레이아웃 리팩토링 기록](04-work-records/home-responsive-layout-refactor.md) | 반응형·overlay 변경 이력 |
 | [Home 하단 HUD 반응형 리팩토링 기록](04-work-records/home-bottom-hud-refactor.md) | 하단 HUD와 빠른 실행 영역 변경 이력 |
 | [Storybook 공통 UI·화면 Pattern 리팩토링 기록](04-work-records/storybook-ui-pattern-refactor.md) | 디자인 토큰, 출석·인증·메뉴 Story와 반응형 검증 작업 기록 |
 | [백엔드 연동 전 UI 통합 리팩토링 기록](04-work-records/pre-backend-ui-integration-2026-08-14.md) | 실제 View 연결, 상태 처리, 반응형·테스트 결과와 남은 통합 검증 |
 
-파일명에 `mobile`이 남은 `03-research/mobile-view-research.md`는 당시 조사 범위를 보존한
-조사 기록이다.
 신규 문서는 특정 기기 이름보다 `home`, `responsive`, `component`, `storybook`처럼 실제
 책임을 나타내는 이름을 사용한다.
 

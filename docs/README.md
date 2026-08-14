@@ -66,7 +66,7 @@
 | 문서 | 용도 |
 | --- | --- |
 | [Home UI 전환 검토 기록](home-ui/04-work-records/home-ui-decision-history.md) | 모바일 Route 분리 대신 React Island를 선택한 이유 |
-| [Home UI React Island 조사·초기 작업 기록](home-ui/03-research/mobile-view-research.md) | 초기 조사 범위와 레이아웃 방향 |
+| [Home UI React Island 리팩토링 기록](home-ui/04-work-records/home-react-island-refactor.md) | 초기 React Island 적용 범위와 레이아웃 변경 이력 |
 | [홈 반응형 레이아웃 리팩터링 기록](home-ui/04-work-records/home-responsive-layout-refactor.md) | 반응형·오버레이 변경 이력 |
 | [Home 하단 HUD 반응형 리팩토링 기록](home-ui/04-work-records/home-bottom-hud-refactor.md) | 하단 HUD 변경 이력 |
 | [Storybook 공통 UI·화면 Pattern 리팩토링 기록](home-ui/04-work-records/storybook-ui-pattern-refactor.md) | 공통 UI, 화면 Pattern과 반응형 검증 변경 이력 |

@@ -117,11 +117,6 @@ body {
 }
 
 @media (max-width: 840px) {
-    .login-page {
-        align-items: flex-start;
-        padding: 12px;
-    }
-
     .auth-card.ui-auth-shell {
         width: 100%;
         min-height: 0;
@@ -1029,5 +1024,13 @@ body {
 
     .form-panel {
         padding: 28px 22px 34px;
+    }
+}
+
+/* 실제 사용 가능한 폭을 우선 확보하는 인증 화면 최종 모바일 규칙 */
+@media (max-width: 840px) {
+    .login-page {
+        align-items: flex-start;
+        padding: 12px;
     }
 }

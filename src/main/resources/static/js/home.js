@@ -395,8 +395,7 @@ presenceController = createPresence({
     refreshButton: presenceRefresh,
     updated: presenceUpdated,
     currentUser: {
-        name: displayCharacterName,
-        email: currentUserEmail === "guest" ? "" : currentUserEmail
+        name: displayCharacterName
     },
     selectedCharacterImage,
     getAttendanceHistory: attendanceController.getHistory,

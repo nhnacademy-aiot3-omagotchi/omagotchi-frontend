@@ -47,13 +47,12 @@ export function createPresence({
 
     function syncCurrentUser() {
         const currentStatus = getCurrentStatus();
-        let current = users.find((user) => user.current || user.email === currentUser.email);
+        let current = users.find((user) => user.current || user.id === "current-user");
 
         if (!current) {
             current = {
                 id: "current-user",
                 name: currentUser.name,
-                email: currentUser.email,
                 status: currentStatus,
                 current: true,
                 characterImage: selectedCharacterImage
@@ -62,7 +61,6 @@ export function createPresence({
         }
 
         current.name = currentUser.name;
-        current.email = currentUser.email;
         current.current = true;
         current.status = currentStatus;
         current.characterImage = selectedCharacterImage;
@@ -76,7 +74,6 @@ export function createPresence({
         const filtered = users.filter((user) => (
             !normalizedKeyword
             || user.name.toLowerCase().includes(normalizedKeyword)
-            || user.email.toLowerCase().includes(normalizedKeyword)
         ));
         const groups = Object.keys(statusMeta)
             .sort((left, right) => statusMeta[left].order - statusMeta[right].order)
@@ -92,7 +89,6 @@ export function createPresence({
                             <span class="presence-user-avatar"><img src="${escapeHtml(user.characterImage)}" alt="" /></span>
                             <span class="presence-user-copy">
                                 <strong>${escapeHtml(user.name)}${user.current ? " · 나" : ""}</strong>
-                                <span>${escapeHtml(user.email)}</span>
                             </span>
                             <span class="presence-user-status">${statusMeta[status].label}</span>
                         </li>

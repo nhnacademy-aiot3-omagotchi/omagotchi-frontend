@@ -27,7 +27,8 @@ React·Thymeleaf DOM
 | 인증 | Thymeleaf Form 제출 | Spring Security·Identity 연동 | Form action·field·서버 오류 | 실제 로그인·회원가입 종단 회귀 |
 | 캐릭터 선택 | `OmagotchiApi.character` | `characterSelector.js` | `data-character-*`, `data-color-*`, `data-enter-button` | 목록·대표 캐릭터 DTO, assetKey 매핑 |
 | 출석 | `OmagotchiApi.attendance` | `attendanceState.js`, `home/attendance.js` | 출석 시간·달력·`data-ui-state` | cohortId, 날짜·상태 enum, 이력 DTO |
-| 재실 | `OmagotchiApi.presence` | `home/presence.js` | `data-presence-*`, 검색·새로고침 | Snapshot 우선 여부, 상태 enum, WebSocket 시점 |
+| 재실 | `OmagotchiApi.presence` | `home/presence.js` | `data-presence-*`, 이름 필터·새로고침 | Snapshot 우선 여부, 상태 enum, WebSocket 시점 |
+| 사용자 검색·초대 | 추가 adapter 필요 | 별도 `UserSearch`·초대 Dialog | 재실 목록과 분리, 사용자 ID로 후속 동작 | 이름·이메일 검색 권한, 최소 응답 DTO, 메시지·파티 초대 API |
 | 학습 기록 | `OmagotchiApi.studyRecords` | `home/studyRecords.js` | `data-study-record-*`, 기간 이동 | 이번 Handoff 포함 여부와 기록 DTO |
 | 기수 신청 | `OmagotchiApi.cohort` | `home.js` | `data-home-cohort-*` | 신청 응답·오류 DTO |
 | 커뮤니티 | `OmagotchiApi.community` | `home.js` | `data-community-*` | 목록·검색·페이지·작성 BFF 계약 |
@@ -48,6 +49,11 @@ React·Thymeleaf DOM
 | `error` | 내부 예외 원문 대신 사용자용 문구를 표시한다. |
 | `unauthorized` | 로그인 흐름으로 위임하며 임시 사용자로 대체하지 않는다. |
 | `forbidden` | 권한 부족을 빈 데이터처럼 숨기지 않는다. |
+
+재실 Snapshot은 사용자 ID, 표시 이름, 캐릭터 이미지와 재실 상태처럼 목록 표현에 필요한
+최소 정보만 제공한다. 이메일은 재실 목록의 표시·필터 데이터로 사용하지 않는다. 메시지나
+파티 초대를 위한 이메일·사용자 이름 검색은 인증된 별도 BFF API와 별도 검색 UI로 구현하고,
+검색 결과 또한 권한에 맞는 사용자 ID와 표시용 이름만 후속 동작에 전달한다.
 
 출석 로컬 이력처럼 현재 남아 있는 Prototype은 `data-ui-source="local-prototype"` 또는
 `[API-REPLACE]`로 추적한다. BFF가 정상 응답하고 회귀 검증을 통과하기 전에는 제거하지

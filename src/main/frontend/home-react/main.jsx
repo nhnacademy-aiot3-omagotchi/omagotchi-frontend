@@ -54,6 +54,7 @@ const homeOverlayStore = {
     const returnFocusElement = overlayReturnFocusElement;
     overlaySnapshot = null;
     overlayReturnFocusElement = null;
+    document.querySelector("[data-home-overlay-root]")?.classList.remove("is-open");
     document.body.classList.remove("has-home-overlay");
     flushSync(() => overlayListeners.forEach((listener) => listener()));
 

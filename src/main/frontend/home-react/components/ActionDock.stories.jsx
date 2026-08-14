@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { expect, userEvent, within } from "storybook/test";
 import { ActionDock } from "./ActionDock.jsx";
 
 function InteractiveDock({ attendanceVisible = false }) {
@@ -14,6 +15,19 @@ const meta = {
 };
 
 export default meta;
-export const Default = { render: () => <InteractiveDock /> };
+export const Default = {
+  render: () => <InteractiveDock />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const attendanceButton = canvasElement.querySelector("[data-attendance-button]");
+    attendanceButton.hidden = false;
+    attendanceButton.querySelector("[data-attendance-label]").textContent = "완료";
+
+    await userEvent.click(canvas.getByRole("button", { name: "채팅 입력 열기" }));
+
+    await expect(attendanceButton).toBeVisible();
+    await expect(attendanceButton).toHaveTextContent("완료");
+  }
+};
 export const ChatOpen = { render: () => <ActionDock chatOpen /> };
 export const CheckedIn = { render: () => <InteractiveDock attendanceVisible /> };

@@ -1,4 +1,5 @@
 import React from "react";
+import { expect, within } from "storybook/test";
 import { PresenceHud } from "./PresenceHud.jsx";
 
 const users = [
@@ -23,5 +24,13 @@ const meta = {
 
 export default meta;
 export const Closed = {};
-export const Open = { args: { panelOpen: true } };
+export const Open = {
+  args: { panelOpen: true },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByText("문재민 · 나")).toBeInTheDocument();
+    await expect(canvas.queryByText("jaemin@example.com")).not.toBeInTheDocument();
+    await expect(canvas.getByPlaceholderText("이름 검색")).toBeInTheDocument();
+  }
+};
 export const Empty = { args: { panelOpen: true, count: 0, users: [], updatedText: "검색 결과 없음" } };
