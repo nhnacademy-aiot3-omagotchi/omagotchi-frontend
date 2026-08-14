@@ -1,6 +1,7 @@
-*,
-*::before,
-*::after {
+.selector-page,
+.selector-page *,
+.selector-page *::before,
+.selector-page *::after {
     box-sizing: border-box;
 }
 
@@ -14,7 +15,7 @@
     --selector-shadow: rgba(0, 0, 0, 0.16);
 }
 
-body {
+.selector-page {
     margin: 0;
     min-height: 100vh;
     background:
@@ -24,7 +25,7 @@ body {
     font-family: "DNFBitBitv2", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
-button {
+.selector-page button {
     font: inherit;
 }
 
@@ -37,7 +38,8 @@ button {
     padding: clamp(24px, 3.4vw, 56px);
     background:
             radial-gradient(circle at 16% 14%, rgba(255, 255, 255, 0.16), transparent 28%),
-            radial-gradient(circle at 82% 74%, rgba(0, 0, 0, 0.10), transparent 34%);
+            radial-gradient(circle at 82% 74%, rgba(0, 0, 0, 0.10), transparent 34%),
+            linear-gradient(135deg, var(--selector-green), var(--selector-green-deep));
 }
 /* 캐릭터 선택 화면의 전체 콘텐츠 영역 */
 .selector-shell {
@@ -386,6 +388,23 @@ button {
     text-align: center;
 }
 
+.selector-feedback {
+    margin: 0;
+    padding: 12px 16px;
+    border: 2px solid rgba(104, 20, 20, 0.28);
+    border-radius: 14px;
+    background: #fff1f1;
+    color: #681414;
+    font-weight: 900;
+}
+
+.character-option:disabled,
+.color-option:disabled,
+.enter-button:disabled {
+    cursor: wait;
+    opacity: 0.66;
+}
+
 /* 캐릭터 선택 완료 버튼 */
 .enter-button {
     min-height: 72px;
@@ -395,6 +414,7 @@ button {
     color: var(--selector-ink);
     font-size: clamp(20px, 1.8vw, 26px);
     font-weight: 900;
+    text-shadow: 0.5px 0 0 currentColor;
     cursor: pointer;
     box-shadow:
             0 8px 0 rgba(0, 0, 0, 0.16),
@@ -547,6 +567,7 @@ button {
     .color-row {
         grid-template-columns: repeat(4, minmax(0, 1fr));
     }
+
 }
 
 @media (max-width: 420px) {

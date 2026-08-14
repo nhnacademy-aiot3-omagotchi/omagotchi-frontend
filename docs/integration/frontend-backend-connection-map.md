@@ -25,7 +25,7 @@ React·Thymeleaf DOM
 | 기능 | Browser adapter | 상태·mapping 소유자 | 보존할 UI 계약 | 현재 Backend 대기 항목 |
 | --- | --- | --- | --- | --- |
 | 인증 | Thymeleaf Form 제출 | Spring Security·Identity 연동 | Form action·field·서버 오류 | 실제 로그인·회원가입 종단 회귀 |
-| 캐릭터 선택 | `OmagotchiApi.character` | `characterSelector.js` | `data-character-*`, `data-color-*`, `data-enter-button` | 목록·대표 캐릭터 DTO, assetKey 매핑 |
+| 캐릭터 선택 | `OmagotchiApi.character` | `character-selector/main.jsx` | `data-character-*`, `data-color-*`, `data-enter-button` | 목록·대표 캐릭터 DTO, assetKey 매핑 |
 | 출석 | `OmagotchiApi.attendance` | `attendanceState.js`, `home/attendance.js` | 출석 시간·달력·`data-ui-state` | cohortId, 날짜·상태 enum, 이력 DTO |
 | 재실 | `OmagotchiApi.presence` | `home/presence.js` | `data-presence-*`, 이름 필터·새로고침 | Snapshot 우선 여부, 상태 enum, WebSocket 시점 |
 | 사용자 검색·초대 | 추가 adapter 필요 | 별도 `UserSearch`·초대 Dialog | 재실 목록과 분리, 사용자 ID로 후속 동작 | 이름·이메일 검색 권한, 최소 응답 DTO, 메시지·파티 초대 API |

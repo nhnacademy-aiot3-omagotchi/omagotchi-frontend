@@ -14,9 +14,12 @@ export default defineConfig({
     outDir: "src/main/resources/static/js/home-react",
     emptyOutDir: true,
     rollupOptions: {
-      input: "src/main/frontend/home-react/main.jsx",
+      input: {
+        home: "src/main/frontend/home-react/main.jsx",
+        "character-selector": "src/main/frontend/character-selector/main.jsx"
+      },
       output: {
-        entryFileNames: "home-app.js",
+        entryFileNames: "[name]-app.js",
         chunkFileNames: "chunks/[name]-[hash].js",
         assetFileNames: "assets/[name]-[hash][extname]"
       }

@@ -47,7 +47,7 @@ view/
 │       └── js/
 │           ├── home.js                 기존 Home 기능 조립
 │           ├── home/                   BGM·출석 등 기능 Controller
-│           └── home-react/home-app.js  Vite 생성물, 직접 수정 금지
+│           └── home-react/             Home·캐릭터 선택 Vite 생성물과 공통 chunk
 ├── package.json                        npm·Storybook 실행 명령
 └── vite.config.js                      React entry와 산출물 경로
 ```
@@ -63,10 +63,11 @@ view/
 | `src/main/frontend/ui/*.jsx` | 여러 사용자 화면에서 쓸 공통 UI·Pattern | 가능 |
 | `src/main/resources/static/css/ui/design-system.css` | 공통 색상 토큰·컴포넌트 외형·반응형 | 가능 |
 | `src/main/frontend/home-react/main.jsx` | React root mount, 전역 overlay store | 필요한 경우만 |
+| `src/main/frontend/character-selector/**` | 캐릭터 선택 화면, Story와 실제 mount | 가능 |
 | `src/main/resources/static/css/home/*.css` | 실제 Home과 Storybook이 공유하는 외형·반응형 | 가능 |
 | `src/main/resources/static/js/home.js` | 기존 기능 Controller 연결 | 계약 확인 후 가능 |
 | `src/main/resources/static/js/home/*.js` | 타이머·BGM·출석 등 실제 동작 | 계약 확인 후 가능 |
-| `src/main/resources/static/js/home-react/home-app.js` | `npm run build:home` 생성물 | 금지 |
+| `src/main/resources/static/js/home-react/**` | `npm run build:home` 생성물 | 금지 |
 | `.storybook/main.js` | Story 탐색, Addon, 정적 파일 경로 | 설정 변경 시 |
 | `.storybook/preview.jsx` | 실제 Home CSS 연결 | CSS 추가·순서 변경 시 |
 

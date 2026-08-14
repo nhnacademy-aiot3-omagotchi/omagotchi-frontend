@@ -72,11 +72,13 @@ Motion은 Dialog가 부드럽게 나타나고 사라지는 것처럼 짧은 시�
 
 ### Vite
 
-Vite는 개발 화면 자체가 아니라 **빌드 도구**다. `src/main/frontend/home-react/main.jsx`를
-시작점으로 React 코드를 묶어 다음 Spring Boot 정적 리소스를 만든다.
+Vite는 개발 화면 자체가 아니라 **빌드 도구**다. Home과 캐릭터 선택 React 진입점을 묶어
+다음 Spring Boot 정적 리소스를 만든다.
 
 ```text
 src/main/resources/static/js/home-react/home-app.js
+src/main/resources/static/js/home-react/character-selector-app.js
+src/main/resources/static/js/home-react/chunks/**
 ```
 
 이 산출물은 직접 수정하지 않는다. React source를 수정한 뒤 `npm run build:home`으로 다시

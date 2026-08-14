@@ -43,7 +43,7 @@ view/
 │   ├── js/api.js                       Browser API 단일 진입점
 │   ├── js/home.js                      Home 기능 조립·Overlay 템플릿
 │   ├── js/home/                        기능별 Vanilla Controller
-│   ├── js/home-react/home-app.js       Vite 생성 산출물
+│   ├── js/home-react/                  Home·캐릭터 선택 Vite 산출물과 공통 chunk
 │   ├── images/                         정적 이미지·캐릭터 Asset
 │   ├── audio/                          BGM Asset
 │   └── fonts/                          서비스 Font
@@ -75,6 +75,7 @@ Spring Controller
 | --- | --- | --- |
 | 공통 UI 추가 | `src/main/frontend/ui/**` | Story, `css/ui/**` |
 | Home UI 구조 | `src/main/frontend/home-react/**` | Story, `home-app.js` 재생성 |
+| 캐릭터 선택 UI | `src/main/frontend/character-selector/**` | Story, `character-selector-app.js` 재생성 |
 | Home 기능 동작 | `static/js/home/*.js` | `home.js`, 관련 `data-*` |
 | Browser API 연결 | `static/js/api.js` | 기능 Controller, View BFF DTO |
 | 실제 Page DOM | `templates/pages/**` | Controller 선택자, 반응형 CSS |
@@ -92,7 +93,7 @@ src/main/frontend/ui/**
 src/main/frontend/**/*.stories.*
 src/main/resources/static/css/ui/**
 src/main/resources/static/css/home/**
-src/main/resources/static/js/home-react/home-app.js
+src/main/resources/static/js/home-react/**
 docs/home-ui/**
 docs/adr/**
 package.json

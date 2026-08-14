@@ -24,6 +24,7 @@
 ### 실제 Home 연결
 
 - [x] 도움말·설정 Overlay를 Radix Dialog와 Motion shell에 연결하고 뷰포트 중앙 배치·접근성 제목 중복 방지
+- [x] 캐릭터 선택 화면을 실제 React Island와 Storybook 공통 컴포넌트로 전환하고 PC·모바일·저장 중·오류 상태 고정
 - [x] Dialog를 기존 `[data-home-overlay-root]` 안에 유지해 `data-*` 이벤트 위임 보존
 - [x] 닫기 버튼·배경·Esc 닫기와 열기 전 요소로 포커스 복귀 처리
 - [x] 진행 Overlay의 탭을 Radix Tabs로 전환하고 기존 탭 계약 회귀 확인

@@ -12,75 +12,11 @@
     <link rel="stylesheet" href="/css/cursor.css" th:href="@{/css/cursor.css}" />
 </head>
 <body>
-<main class="selector-page">
-    <section class="selector-shell" aria-labelledby="selector-title">
-        <header class="selector-header">
-            <p class="selector-kicker">Character Select</p>
-            <h1 id="selector-title">오늘부터 함께 공부할 <br />오마고치를 선택하세요</h1>
-        </header>
-
-        <div class="selector-content">
-            <aside class="selected-panel" aria-live="polite">
-                <div class="selected-stage">
-                    <div class="selected-bubble" data-selected-bubble>말풍선</div>
-
-                    <img
-                            class="selected-character"
-                            data-selected-image
-                            src="/images/characters/study/study.png"
-                            alt="선택한 캐릭터 이미지"
-                    />
-
-                    <div class="selected-shadow" aria-hidden="true"></div>
-                </div>
-
-                <div class="selected-info">
-                    <div class="selected-name">
-                        <span>캐릭터</span>
-                        <strong data-selected-name>공부쟁이</strong>
-                    </div>
-                    <div class="selected-color">
-                        <span>색상</span>
-                        <strong data-selected-color-name>기본</strong>
-                    </div>
-                    <p data-selected-description>
-                        학습 시간을 차곡차곡 쌓으며 함께 성장하는 기본형 오마고치입니다.
-                    </p>
-                </div>
-            </aside>
-
-            <section class="choice-panel" aria-label="캐릭터와 색상 선택">
-                <div class="choice-section">
-                    <div class="choice-heading">
-                        <h2>오마고치 선택</h2>
-                        <p>함께 성장할 친구를 고르세요.</p>
-                    </div>
-                    <div class="character-grid" data-character-grid></div>
-                </div>
-
-                <div class="choice-section">
-                    <div class="choice-heading">
-                        <h2>색상 선택</h2>
-                        <p>현재 선택한 캐릭터에 적용됩니다.</p>
-                    </div>
-                    <div class="color-row" data-color-row aria-label="캐릭터 색상 선택"></div>
-                </div>
-
-                <div class="selection-summary">
-                    <span data-selected-summary>공부쟁이 · 기본</span>
-                </div>
-
-                <button class="enter-button" type="button" data-enter-button>
-                    선택하기
-                </button>
-            </section>
-        </div>
-    </section>
-</main>
+<div id="character-selector-react-root"></div>
 
 <script src="/js/api.js" th:src="@{/js/api.js}"></script>
 <script src="/js/characterAssets.js" th:src="@{/js/characterAssets.js}"></script>
-<script src="/js/characterSelector.js" th:src="@{/js/characterSelector.js}"></script>
+<script type="module" src="/js/home-react/character-selector-app.js?v=20260814-1" th:src="@{/js/home-react/character-selector-app.js(v='20260814-1')}"></script>
 <script src="/js/imageProtection.js" th:src="@{/js/imageProtection.js}"></script>
 </body>
 </html>
