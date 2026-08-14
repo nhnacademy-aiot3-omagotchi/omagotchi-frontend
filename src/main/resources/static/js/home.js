@@ -1015,6 +1015,10 @@ homeOverlayRoot?.addEventListener("click", (event) => {
     }
 
     if (tabButton) {
+        // 진행 Overlay는 Radix Tabs가 선택·키보드 상태를 관리한다.
+        if (tabButton.closest(".home-progress-tabs")) {
+            return;
+        }
         setOverlayTab(tabButton);
         return;
     }

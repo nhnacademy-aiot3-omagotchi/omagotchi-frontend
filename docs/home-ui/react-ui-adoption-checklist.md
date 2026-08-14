@@ -20,8 +20,8 @@
 | Vite | 7.3.6 설치됨 | 유지 |
 | React Vite Plugin | 5.2.0 설치됨 | 유지 |
 | Storybook | 10.5.7 설치·전체 Story 74개 등록 | PC·모바일 시각 QA에 사용 |
-| Radix UI | 1.6.7 설치됨 | Dialog·Tabs 시험 적용 전 대기 |
-| Motion | 13.1.0 설치됨 | 최소 애니메이션 적용 전 대기 |
+| Radix UI | 1.6.7 설치됨 | Storybook 검증 완료, 도움말·설정 Dialog 실제 연결 |
+| Motion | 13.1.0 설치됨 | Storybook과 도움말·설정 Dialog 등장·퇴장에 적용 |
 | Phaser·XState·Rive | 미설치 | 현재 설치하지 않음 |
 
 현재 개발 환경은 Node.js 24.13.1, npm 11.8.0이다. Vite 7과 Storybook 10을 사용하려면
@@ -313,8 +313,9 @@ Radix Tabs 시험 직전에 연결한다.
 
 ### 6단계 — Radix Dialog 한 개 시험
 
-진행 상태: Storybook 공통 `GameDialog`와 `AttendanceBook` 조합 검증 완료. 실제 Home
-Overlay 적용은 기존 Portal·`data-*` 경계 확인 후 진행한다.
+진행 상태: Storybook 공통 `GameDialog`와 `AttendanceBook` 조합 검증을 완료했고, 실제
+Home의 도움말·설정 Overlay에 연결했다. Dialog layer는 Portal로 `body`에 옮기지 않고
+기존 `[data-home-overlay-root]` 안에 렌더링해 Vanilla JS의 이벤트 위임을 보존한다.
 
 현재 오버레이는 React의 `HomeOverlayHost`와 Vanilla JS의 `home.js`가 함께 관리한다.
 다음 계약을 먼저 보존한다.
@@ -332,7 +333,7 @@ data-overlay-tab / data-overlay-panel
 옮기면 이 조회와 이벤트 위임이 깨질 수 있다. Portal container를 기존 overlay root 안에
 두거나, 관련 Vanilla JS를 React로 옮긴 뒤 Portal을 적용한다.
 
-첫 시험은 콘텐츠가 단순한 도움말 오버레이 하나로 제한한다. 커뮤니티, 학습 기록, 공간은
+첫 시험은 콘텐츠가 단순한 도움말과 설정 오버레이로 제한한다. 커뮤니티, 학습 기록, 공간은
 기존 JavaScript가 DOM을 직접 변경하므로 첫 대상에서 제외한다.
 
 완료 기준:
@@ -346,7 +347,8 @@ data-overlay-tab / data-overlay-panel
 ### 7단계 — Radix Tabs 한 개 시험
 
 진행 상태: Storybook `HomeMenuPanel`의 진행 시안에서 방향키 이동과 선택 Panel 일치를
-검증했다. 실제 진행 Overlay 연결은 기존 이벤트 위임을 분리한 뒤 진행한다.
+검증했고 실제 진행 Overlay에도 연결했다. 기존 `data-overlay-tab`, `data-overlay-panel`은
+유지해 Vanilla JS 이벤트 위임과 후속 API 연동 코드를 보호한다.
 
 진행 오버레이의 퀘스트·업적·랭킹 전환 한 곳에만 적용한다. 기존
 `data-overlay-tab`, `data-overlay-panel`을 바로 삭제하지 않고 `home.js` 사용 여부를 먼저
@@ -416,6 +418,8 @@ npm run build-storybook
 - [x] Radix `GameDialog`·`GameTabs`와 상태 Story 6개 추가
 - [x] Dialog에 Motion 등장·퇴장과 reduced motion 대응 적용
 - [x] `npm run build:home`, `npm run build-storybook` 통과
+- [x] 도움말·설정 Overlay에 Radix Dialog·Motion 실제 연결
+- [x] 진행 Overlay에 Radix Tabs 실제 연결
 - [ ] `./mvnw test`와 실제 Spring Home 기능 회귀 확인
 
 다음 작업은 출석부 실제 기능 연결이며, 인증과 Home 메뉴를 점진적으로 연결한 뒤 Radix와

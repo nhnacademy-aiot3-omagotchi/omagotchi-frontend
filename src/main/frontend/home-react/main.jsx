@@ -8,6 +8,7 @@ import { HOME_MENU_ITEMS } from "./components/TopMenu.jsx";
 const overlayTypes = new Set(HOME_MENU_ITEMS.map(({ overlay }) => overlay));
 
 let overlaySnapshot = null;
+let overlayReturnFocusElement = null;
 const overlayListeners = new Set();
 
 function isValidOverlayPayload(payload) {
@@ -42,13 +43,25 @@ const homeOverlayStore = {
       return false;
     }
 
+    overlayReturnFocusElement = document.activeElement instanceof HTMLElement
+      ? document.activeElement
+      : null;
     overlaySnapshot = nextOverlay;
     flushSync(() => overlayListeners.forEach((listener) => listener()));
     return true;
   },
   close() {
+    const returnFocusElement = overlayReturnFocusElement;
     overlaySnapshot = null;
+    overlayReturnFocusElement = null;
+    document.body.classList.remove("has-home-overlay");
     flushSync(() => overlayListeners.forEach((listener) => listener()));
+
+    window.requestAnimationFrame(() => {
+      if (returnFocusElement?.isConnected) {
+        returnFocusElement.focus();
+      }
+    });
   }
 };
 
@@ -65,7 +78,7 @@ function HomeOverlayHost() {
     return null;
   }
 
-  return <HomeOverlay {...overlay} />;
+  return <HomeOverlay {...overlay} onClose={homeOverlayStore.close} />;
 }
 
 const rootElement = document.getElementById("home-react-root");

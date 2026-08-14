@@ -26,7 +26,13 @@ export const Progress = {
   args: {
     type: "progress",
     meta: { icon: "/images/app/quest.png", title: "성장 현황", description: "현재 캐릭터의 성장 기록입니다." },
-    content: `<section><h3>레벨 7</h3><p>다음 레벨까지 경험치가 18% 남았습니다.</p><progress value="82" max="100">82%</progress></section>`
+    content: `
+      <section data-overlay-panel="quests"><h3>일일 퀘스트</h3><p>집중 학습 30분을 완료해 보세요.</p></section>
+      <section data-overlay-panel="achievements"><h3>업적</h3><p>첫 학습 기록을 달성했습니다.</p></section>
+      <section data-overlay-panel="leaders"><h3>랭킹</h3><p>랭킹 데이터가 없습니다.</p></section>
+      <section data-overlay-panel="timeline"><h3>타임라인</h3><p>최근 활동을 확인합니다.</p></section>
+      <section data-overlay-panel="stats"><h3>학습 통계</h3><p>다음 레벨까지 경험치가 18% 남았습니다.</p><progress value="82" max="100">82%</progress></section>
+    `
   }
 };
 export const Settings = {

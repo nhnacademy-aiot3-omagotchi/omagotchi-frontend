@@ -8,6 +8,7 @@ Frontend의 중요한 구조적 결정을 기록한다. 중앙 문서 저장소�
 | 번호 | 상태 | 결정 |
 | --- | --- | --- |
 | 0003 | Accepted | [React 게임 UI 도구의 단계적 도입](0003-react-game-ui-tools-incremental-adoption.md) |
+| 0004 | Deprecated/Superseded | [CSS 라이브러리 추가 도입 검토 폐기](0004-css-library-adoption-superseded.md) |
 
 ## 파일 이름
 

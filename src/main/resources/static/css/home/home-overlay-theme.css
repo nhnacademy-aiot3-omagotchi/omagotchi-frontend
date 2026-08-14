@@ -173,7 +173,8 @@
     outline-offset: -3px;
 }
 
-.home-overlay:not(.home-overlay--help) .overlay-tabs button.is-active {
+.home-overlay:not(.home-overlay--help) .overlay-tabs button.is-active,
+.home-overlay:not(.home-overlay--help) .overlay-tabs button[data-state="active"] {
     background: var(--overlay-paper);
     color: var(--overlay-accent-strong);
     box-shadow: none;

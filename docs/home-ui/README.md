@@ -12,6 +12,7 @@
 | [Home React·Storybook 구조 가이드](home-react-storybook-structure.md) | 소스·Story·CSS·Controller와 빌드 산출물의 경로·책임 |
 | [공통 UI 디자인 시스템·Storybook 가이드](ui-design-system.md) | 기준색, 공통 컴포넌트, 출석·인증 시안과 실제 적용 순서 |
 | [React 게임 UI 도입 실행 체크리스트](react-ui-adoption-checklist.md) | 설치, 팀 적용과 단계별 검증 기준 |
+| [백엔드 연동 전 Frontend 완료 체크리스트](pre-backend-frontend-checklist.md) | API 준비 전 완료 범위와 백엔드·AI 작업 보호 경계 |
 
 ## 검토 문서
 
