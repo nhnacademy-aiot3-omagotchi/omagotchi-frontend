@@ -506,10 +506,11 @@
 
 .ui-menu-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
 .ui-menu-stat { min-width: 0; display: grid; gap: 7px; padding: 16px; border: 1px solid var(--ui-line); border-radius: 16px; }
-.ui-menu-stat--mint { background: var(--ui-emerald-50); }
-.ui-menu-stat--cream { background: var(--ui-cream); }
-.ui-menu-stat--sky { background: var(--ui-sky); }
-.ui-menu-stat--lilac { background: var(--ui-lilac); }
+.ui-menu-stat,
+.ui-menu-stat--mint,
+.ui-menu-stat--cream,
+.ui-menu-stat--sky,
+.ui-menu-stat--lilac { background: #f4fbf7; }
 .ui-menu-stat span { color: var(--ui-ink-muted); font-size: 12px; font-weight: 800; }
 .ui-menu-stat strong { overflow: hidden; color: var(--ui-ink); font-size: clamp(18px, 2.3vw, 25px); text-overflow: ellipsis; white-space: nowrap; }
 

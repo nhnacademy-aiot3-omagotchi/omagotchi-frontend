@@ -48,6 +48,7 @@ const musicToggle = document.querySelector("[data-home-music-toggle]");
 const musicClose = document.querySelector("[data-home-music-close]");
 const attendancePanelToggle = document.querySelector("[data-attendance-panel-toggle]");
 const attendancePanelClose = document.querySelector("[data-attendance-panel-close]");
+const chatToggle = document.querySelector(".home-chat-toggle");
 const homeToast = document.querySelector("[data-home-toast]");
 const attendanceDetail = document.querySelector("[data-attendance-panel-toggle]")?.getAttribute("aria-controls")
     ? document.getElementById(document.querySelector("[data-attendance-panel-toggle]").getAttribute("aria-controls"))
@@ -411,10 +412,21 @@ function setBgmPanelOpen(open) {
 function setAttendancePanelOpen(open) {
     homePage?.classList.toggle("is-attendance-panel-open", open);
     attendancePanelToggle?.setAttribute("aria-expanded", String(open));
+    if (attendanceDetail) attendanceDetail.hidden = !open;
+
+    if (!open && attendanceDetail?.contains(document.activeElement)) {
+        attendancePanelToggle?.focus();
+    }
+}
+
+// React가 소유하는 채팅 상태는 DOM을 직접 조작하지 않고 단방향 이벤트로 닫는다.
+function closeHomeChat() {
+    window.dispatchEvent(new CustomEvent("omagotchi:home-chat-close"));
 }
 
 musicToggle?.addEventListener("click", () => {
     const nextOpen = !homePage?.classList.contains("is-bgm-open");
+    if (nextOpen) closeHomeChat();
     presenceController?.close();
     setAttendancePanelOpen(false);
     setBgmPanelOpen(nextOpen);
@@ -424,6 +436,7 @@ musicClose?.addEventListener("click", () => setBgmPanelOpen(false));
 
 attendancePanelToggle?.addEventListener("click", () => {
     const nextOpen = !homePage?.classList.contains("is-attendance-panel-open");
+    if (nextOpen) closeHomeChat();
     presenceController?.close();
     setBgmPanelOpen(false);
     setAttendancePanelOpen(nextOpen);
@@ -432,6 +445,13 @@ attendancePanelToggle?.addEventListener("click", () => {
 attendancePanelClose?.addEventListener("click", () => setAttendancePanelOpen(false));
 presenceClose?.addEventListener("click", () => presenceController?.close());
 presenceTrigger?.addEventListener("click", () => {
+    closeHomeChat();
+    setBgmPanelOpen(false);
+    setAttendancePanelOpen(false);
+});
+
+chatToggle?.addEventListener("click", () => {
+    presenceController?.close();
     setBgmPanelOpen(false);
     setAttendancePanelOpen(false);
 });
@@ -685,41 +705,34 @@ const overlayContent = {
         </div>
         <section class="overlay-tab-panel is-active" role="tabpanel" data-overlay-panel="quests">
             <div class="overlay-section-label"><strong>일일</strong><span></span><em>익일 4시에 초기화</em></div>
-            <article class="overlay-quest">
-                <header>
-                    <div>
-                        <h3>등록된 퀘스트가 없습니다.</h3>
-                        <p>백엔드에서 퀘스트 목록을 내려주면 이 영역에 표시됩니다.</p>
-                    </div>
-                </header>
-            </article>
+            <ul class="overlay-state-list" aria-label="퀘스트 목록">
+                <li><div><strong>등록된 퀘스트가 없습니다.</strong><p>퀘스트가 제공되면 이 목록에 표시됩니다.</p></div><em>대기</em></li>
+            </ul>
         </section>
         <section class="overlay-tab-panel" role="tabpanel" data-overlay-panel="achievements" hidden>
             <div class="overlay-section-label"><strong>업적</strong><span></span><em>달성 기록</em></div>
-            <div class="overlay-card-grid">
-                <article><h3>등록된 업적이 없습니다.</h3><p>백엔드에서 업적 목록을 내려주면 이 영역에 표시됩니다.</p></article>
-            </div>
+            <div class="overlay-empty-state" role="status"><strong>업적 기능은 아직 준비되지 않았습니다.</strong><p>기능이 준비되면 달성 기록을 확인할 수 있습니다.</p></div>
         </section>
         <section class="overlay-tab-panel" role="tabpanel" data-overlay-panel="leaders" hidden>
             <div class="overlay-section-label"><strong>명예의 전당</strong><span></span><em>전체 학습 시간</em></div>
             <ol class="overlay-list overlay-leader-list" aria-label="학습 시간 랭킹">
-                <li data-empty-ranking><strong>-</strong><span>랭킹 데이터가 없습니다.</span><em>0분</em></li>
+                <li data-empty-ranking><strong>-</strong><span>랭킹 데이터가 없습니다.</span><em>기록 없음</em></li>
             </ol>
         </section>
         <section class="overlay-tab-panel" role="tabpanel" data-overlay-panel="timeline" hidden>
             <div class="overlay-section-label"><strong>타임라인</strong><span></span><em>최근 활동</em></div>
-            <div class="overlay-card-grid">
-                <article><h3>활동 기록이 없습니다.</h3><p>출석과 학습 기록이 생성되면 이 영역에 표시됩니다.</p></article>
-            </div>
+            <ul class="overlay-state-list overlay-timeline-list" aria-label="최근 활동">
+                <li><div><strong>활동 기록이 없습니다.</strong><p>출석과 학습 기록이 생기면 시간순으로 표시됩니다.</p></div><em>최근 활동</em></li>
+            </ul>
         </section>
         <section class="overlay-tab-panel" role="tabpanel" data-overlay-panel="stats" hidden>
             <div class="overlay-section-label"><strong>학습 통계</strong><span></span><em>나의 기록</em></div>
-            <div class="overlay-stat-grid">
-                <article><h3>오늘 집중</h3><strong>0분</strong></article>
-                <article><h3>세션</h3><strong>0회</strong></article>
-                <article><h3>연속 출석</h3><strong>0일</strong></article>
-                <article><h3>이번 주</h3><strong>0분</strong></article>
-            </div>
+            <dl class="overlay-metric-list">
+                <div><dt>오늘 집중</dt><dd>0분</dd></div>
+                <div><dt>세션</dt><dd>0회</dd></div>
+                <div><dt>연속 출석</dt><dd>0일</dd></div>
+                <div><dt>이번 주</dt><dd>0분</dd></div>
+            </dl>
         </section>
     `,
     personal: renderPersonalOverlay,
@@ -934,7 +947,10 @@ function openHomeOverlay(type) {
         return;
     }
 
+    closeHomeChat();
     presenceController?.close();
+    setBgmPanelOpen(false);
+    setAttendancePanelOpen(false);
     window.OmagotchiHomeOverlay?.open({ type, meta, content });
     homeOverlayRoot.classList.add("is-open");
     document.body.classList.add("has-home-overlay");

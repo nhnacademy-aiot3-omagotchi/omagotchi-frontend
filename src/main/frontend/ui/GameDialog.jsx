@@ -2,6 +2,17 @@ import React, { useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { Dialog } from "radix-ui";
 
+const visuallyHiddenStyle = {
+  position: "absolute",
+  width: 1,
+  height: 1,
+  padding: 0,
+  overflow: "hidden",
+  clipPath: "inset(50%)",
+  whiteSpace: "nowrap",
+  border: 0
+};
+
 export function GameDialog({
   trigger,
   title,
@@ -10,7 +21,8 @@ export function GameDialog({
   open,
   defaultOpen = false,
   onOpenChange,
-  portalled = true
+  portalled = true,
+  contentClassName = ""
 }) {
   const [internalOpen, setInternalOpen] = useState(defaultOpen);
   const reducedMotion = useReducedMotion();
@@ -41,15 +53,15 @@ export function GameDialog({
           </Dialog.Overlay>
           <Dialog.Content asChild forceMount aria-describedby={description ? undefined : null}>
             <motion.section
-              className="ui-dialog-content"
+              className={`ui-dialog-content ${contentClassName}`.trim()}
               initial={reducedMotion ? false : { opacity: 0, y: 18, scale: 0.985 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 12, scale: 0.99 }}
               transition={transition}
             >
-              <Dialog.Title className="ui-sr-only">{title}</Dialog.Title>
+              <Dialog.Title className="ui-sr-only" style={visuallyHiddenStyle}>{title}</Dialog.Title>
               {description ? (
-                <Dialog.Description className="ui-sr-only">{description}</Dialog.Description>
+                <Dialog.Description className="ui-sr-only" style={visuallyHiddenStyle}>{description}</Dialog.Description>
               ) : null}
               {children}
             </motion.section>

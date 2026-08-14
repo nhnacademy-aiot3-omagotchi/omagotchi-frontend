@@ -1,7 +1,7 @@
 # 백엔드 연동 전 Frontend 완료 체크리스트
 
 - 작성일: 2026-08-14
-- 상태: 진행 중
+- 상태: Frontend 완료, Backend 종단 연동 대기
 - 대상 브랜치: `feature/mobile-ui`
 - 백엔드 연동 보호 규칙: [공통 보호 규칙](../prompt/공통-보호규칙.md)
 
@@ -23,20 +23,42 @@
 
 ### 실제 Home 연결
 
-- [x] 도움말·설정 Overlay를 Radix Dialog와 Motion shell에 연결
+- [x] 도움말·설정 Overlay를 Radix Dialog와 Motion shell에 연결하고 뷰포트 중앙 배치·접근성 제목 중복 방지
 - [x] Dialog를 기존 `[data-home-overlay-root]` 안에 유지해 `data-*` 이벤트 위임 보존
 - [x] 닫기 버튼·배경·Esc 닫기와 열기 전 요소로 포커스 복귀 처리
 - [x] 진행 Overlay의 탭을 Radix Tabs로 전환하고 기존 탭 계약 회귀 확인
-- [ ] 실제 Home에서 1440×900, 1024×768, 390×844, 844×390, 320×568 확인
-- [ ] 타이머·BGM·재실·채팅·출석 버튼·Overlay 상호 배타 동작 회귀 확인
+- [x] Storybook AttendanceBook 디자인을 실제 출석 DOM에 연결하고 기존 출석 Controller 선택자 보존
+- [x] 실제 출석 요약을 2×2 카드가 아닌 한 열 `항목 → 값` 목록으로 고정하고 320px 줄바꿈 확인
+- [x] 출석 패널의 `hidden` 상태를 Controller와 동기화하고 닫기·바깥 클릭·Esc·포커스 복귀 계약 확인
+- [x] Storybook AuthScreen 디자인을 실제 Thymeleaf 로그인·회원가입 Form에 적용하고 인증 계약 보존
+- [x] 실제 Home 메뉴 내용을 Storybook 공통 패널 어댑터로 감싸고 mock 데이터 유입 차단
+- [x] Storybook에서 1440×900, 1024×768, 390×844, 844×390, 320×568 외곽 이탈 확인
+- [x] 실제 Home template·bundle 통합 fixture에서 1440×900, 1024×768, 390×844, 844×390, 320×568 확인
+- [x] 타이머·BGM·재실·채팅·출석 버튼·Overlay 상호 배타 동작 회귀 확인
+- [ ] Identity·View·Domain Service를 함께 실행한 인증·실제 API 종단 회귀 확인
 
 ### API 응답 전 상태
 
 - [x] Storybook에서 기본·빈 값·로딩·오류·비활성 상태를 서버 없이 검증
-- [ ] 실제 화면 Controller가 로딩·빈 값·오류를 구분해 표시하는지 점검
-- [ ] API 응답을 UI props로 바꾸는 변환 지점을 기능별로 한 곳으로 고정
-- [ ] 임시 성공 mock과 브라우저 저장소 fallback 위치에 `[API-REPLACE]` 추적 주석 유지
-- [ ] 서버 응답이 없거나 잘못되었을 때 성공 화면으로 처리하지 않는지 확인
+- [x] 실제 화면 Controller가 로딩·빈 값·오류를 구분해 표시하는지 점검
+- [x] API 응답을 UI 상태로 바꾸는 변환 지점을 기능별 Controller 한 곳으로 고정
+- [x] 임시 성공 mock과 브라우저 저장소 fallback 위치에 `[API-REPLACE]` 추적 주석 유지
+- [x] 서버 응답이 없거나 잘못되었을 때 성공 화면으로 처리하지 않는지 확인
+
+출석 Controller는 `loading / empty / active / complete / error`를 구분한다. 서버 출석 이력이
+실패하면 `data-ui-source="local-prototype"`과 안내 문구를 남겨 로컬 기록이 서버 성공 결과처럼
+보이지 않게 한다. 재실 API가 없을 때도 더 이상 `0명` 성공 응답을 만들지 않고 오류 상태를
+표시한다. 학습 기록은 기존 `loadErrorMessage` 경로를 유지한다.
+
+## 2026-08-14 진행률
+
+- Frontend 단독 구현·자동 검증 항목: 완료 (`100%`)
+- 실제 서비스 종단 검증: Backend API 준비 대기 (`1개`)
+- 기능별 adapter·Controller·보존 계약: [연결 지도](../integration/frontend-backend-connection-map.md)에 정리
+
+Storybook과 정적 통합 fixture 검증 완료는 실제 서비스 종단 실행 완료를 뜻하지 않는다.
+남은 1개는 Frontend 미구현이 아니라 실제 API가 준비된 뒤 서비스 조합에서 기존 기능이
+그대로 동작하는지 확인하는 통합 검증이다.
 
 ## API 계약이 준비된 뒤에만 하는 범위
 

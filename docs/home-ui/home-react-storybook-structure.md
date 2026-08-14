@@ -32,9 +32,9 @@ view/
 │   ├── GameButton.jsx                  화면 공통 기초 UI
 │   ├── GameDialog.jsx                  Radix Dialog·Motion 공통 shell
 │   ├── GameTabs.jsx                    Radix Tabs 공통 전환 UI
-│   ├── AttendanceBook.jsx              출석 Pattern 시안
-│   ├── AuthScreen.jsx                  인증 Pattern 시안
-│   ├── HomeMenuPanel.jsx               Home 메뉴 7종 내부 Pattern 시안
+│   ├── AttendanceBook.jsx              출석 Pattern·실제 DOM 디자인 기준
+│   ├── AuthScreen.jsx                  인증 Pattern·Thymeleaf 디자인 기준
+│   ├── HomeMenuPanel.jsx               Home 메뉴 Pattern·실제 내용 표현 어댑터
 │   └── *.stories.jsx                   공통 UI 상태·반응형 검증
 ├── src/main/resources/
 │   ├── templates/pages/app/home.html   Home 진입점·script 로드 순서
@@ -190,14 +190,15 @@ Backend만 수정하고 Frontend를 실행하지 않는 팀원은 npm 설치를 
 - Home 전용 컴포넌트 12종·Story 38개 작성 완료
 - 공통 버튼·카드·입력창과 출석부·로그인·회원가입·Home 메뉴 내부 Pattern 추가, 전체 74개 Story 등록
 - 기준 초록 `#2FC47C`과 크림·하늘색·살구색·라일락 보조 토큰 구성
-- 출석·인증·Home 메뉴 내부 Pattern은 Storybook 검증 단계이며 실제 기능에는 아직 미적용
+- 출석·인증·Home 메뉴 내부 Pattern은 실제 View 표현 계층에 연결했으며 Story mock은 유입하지 않음
 - Storybook preview에 실제 Home의 반응형·overlay·quick panel CSS 로드 순서 반영
 - `ActionDock`의 재실·출석·BGM·퇴실·채팅 버튼을 같은 아이콘·라벨 DOM 구조로 통일
 - 출석 Controller가 `data-attendance-label`을 보존하면서 `퇴실`·`완료` 상태를 갱신
 - `ScrollPanel`에 세로·가로·모바일 Story와 Firefox·WebKit 스크롤 스타일 적용
-- Home·Storybook production build 통과, Story 74개 Vitest 렌더링 테스트 통과
-- Radix UI와 Motion은 실제 Home에 아직 적용하지 않음
-- 다음 검증은 실제 Spring `/home`의 타이머, BGM, 출석, 재실, 채팅과 overlay 회귀 확인
+- Home·Storybook production build 통과, Vitest 21 files / 80 tests 통과
+- Radix UI와 Motion을 실제 Home 도움말·설정 Dialog와 진행 Tabs에 적용
+- 실제 template·bundle 통합 fixture의 5개 화면 비율과 패널 상호 배타 회귀 통과
+- 다음 검증은 Identity·View·Domain Service를 함께 실행한 인증·실제 API 종단 회귀
 
 구조적 도입 결정은
 [ADR 0003](../adr/0003-react-game-ui-tools-incremental-adoption.md), 실행 순서는

@@ -13,8 +13,8 @@ const menuMeta = {
   settings: { title: "설정", description: "계정과 이용 환경", icon: "/images/app/set.png" }
 };
 
-function Stat({ label, value, tone = "mint" }) {
-  return <article className={`ui-menu-stat ui-menu-stat--${tone}`}><span>{label}</span><strong>{value}</strong></article>;
+function Stat({ label, value }) {
+  return <article className="ui-menu-stat"><span>{label}</span><strong>{value}</strong></article>;
 }
 
 function ProgressPanel() {
@@ -30,14 +30,14 @@ function ProgressPanel() {
         </section>
       )
     },
-    { value: "achievement", label: "업적", content: <section className="ui-menu-section"><h3>연속 출석 4일</h3><p>학습 습관이 안정적으로 이어지고 있어요.</p></section> },
-    { value: "ranking", label: "랭킹", content: <section className="ui-menu-section"><h3>이번 주 기수 내 12위</h3><p>지난주보다 3계단 올랐어요.</p></section> },
-    { value: "statistics", label: "통계", content: <section className="ui-menu-section"><h3>이번 주 8시간 40분</h3><p>하루 평균 1시간 44분 집중했어요.</p></section> }
+    { value: "achievement", label: "업적", content: <section className="ui-menu-section"><h3>업적 기능은 아직 준비되지 않았습니다.</h3><p>기능이 준비되면 달성 기록을 확인할 수 있습니다.</p></section> },
+    { value: "ranking", label: "랭킹", content: <section className="ui-menu-section"><h3>랭킹 데이터가 없습니다.</h3><p>학습 기록이 제공되면 목록으로 표시됩니다.</p></section> },
+    { value: "statistics", label: "통계", content: <section className="ui-menu-section"><h3>학습 통계</h3><p>오늘·이번 주 기록을 한 가지 목록 형식으로 확인합니다.</p></section> }
   ];
 
   return (
     <>
-      <div className="ui-menu-stats"><Stat label="오늘 집중" value="2시간 18분" /><Stat label="연속 출석" value="4일" tone="cream" /><Stat label="이번 주" value="8시간 40분" tone="sky" /></div>
+      <div className="ui-menu-stats"><Stat label="오늘 집중" value="2시간 18분" /><Stat label="연속 출석" value="4일" /><Stat label="이번 주" value="8시간 40분" /></div>
       <GameTabs items={progressItems} defaultValue="quest" ariaLabel="진행 항목" />
     </>
   );
@@ -51,7 +51,7 @@ function PersonalPanel() {
         <div><span className="ui-menu-eyebrow">학습자</span><h3>오마고치</h3><p>오늘도 차근차근 성장하고 있어요.</p></div>
         <strong>Lv. 7</strong>
       </section>
-      <div className="ui-menu-stats"><Stat label="총 학습" value="42시간" /><Stat label="출석" value="12일" tone="cream" /><Stat label="완료 퀘스트" value="18개" tone="lilac" /></div>
+      <div className="ui-menu-stats"><Stat label="총 학습" value="42시간" /><Stat label="출석" value="12일" /><Stat label="완료 퀘스트" value="18개" /></div>
       <dl className="ui-menu-list"><div><dt>이메일</dt><dd>learner@example.com</dd></div><div><dt>참여 기수</dt><dd>NHN Academy 7기</dd></div><div><dt>대표 캐릭터</dt><dd>새싹 오마고치</dd></div></dl>
     </>
   );
@@ -150,5 +150,19 @@ export function HomeMenuPanel({ menu = "progress" }) {
         <div className="ui-menu-panel__body"><Panel /></div>
       </section>
     </main>
+  );
+}
+
+/**
+ * 실제 Home용 내용 어댑터.
+ * Storybook의 mock Panel은 가져오지 않고, home.js가 만든 내부 템플릿만 감싼다.
+ */
+export function HomeMenuLiveContent({ menu, content }) {
+  return (
+    <div
+      className={`ui-menu-live-content ui-menu-live-content--${menu}`}
+      data-ui-state="ready"
+      dangerouslySetInnerHTML={{ __html: content }}
+    />
   );
 }

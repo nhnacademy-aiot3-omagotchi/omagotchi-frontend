@@ -248,6 +248,8 @@ src/main/frontend/home-react/
 
 ### 3단계 — 출석부 실제 기능 연결
 
+진행 상태: 디자인과 실제 Controller DOM 연결 완료. 실제 서버 조합 회귀는 대기한다.
+
 Storybook의 `AttendanceBook`을 첫 실제 적용 대상으로 사용한다. 시각 검증용 출석일,
 입실·퇴실 시간과 스트릭 값은 실제 화면으로 가져오지 않고, 기존 출석 Controller와 서버
 응답을 props로 변환한다.
@@ -271,6 +273,9 @@ attendanceState.js의 출석 가능 여부 판정
 
 ### 4단계 — 로그인·회원가입 실제 화면 연결
 
+진행 상태: Thymeleaf Form 계약을 유지한 디자인 연결과 템플릿 테스트 완료. Identity Service
+실행 상태·장애 상태의 브라우저 확인은 통합 회귀 단계에서 수행한다.
+
 `AuthScreen`의 디자인을 기존 Thymeleaf 인증 화면에 적용한다. 이 단계에서는 인증 방식을
 React 상태나 브라우저 저장소로 바꾸지 않는다.
 
@@ -292,6 +297,9 @@ Identity Service 오류 응답과 성공 redirect
 - 768, 390, 320px에서 입력창과 버튼이 화면을 벗어나지 않는다.
 
 ### 5단계 — Home 메뉴 내부를 한 화면씩 연결
+
+진행 상태: `home.js`의 실제 내용을 `HomeMenuLiveContent` 표현 어댑터로 연결했다. Storybook
+mock은 실제 bundle에 성공 데이터로 사용하지 않는다. 기능별 서버 DTO 연결은 대기한다.
 
 `HomeMenuPanel` 7종은 한 번에 교체하지 않고 아래 순서로 한 메뉴씩 적용한다.
 
@@ -316,6 +324,8 @@ Radix Tabs 시험 직전에 연결한다.
 진행 상태: Storybook 공통 `GameDialog`와 `AttendanceBook` 조합 검증을 완료했고, 실제
 Home의 도움말·설정 Overlay에 연결했다. Dialog layer는 Portal로 `body`에 옮기지 않고
 기존 `[data-home-overlay-root]` 안에 렌더링해 Vanilla JS의 이벤트 위임을 보존한다.
+두 Overlay는 데스크톱과 모바일 모두 뷰포트 중앙을 기준으로 배치하며, 접근성용 숨김
+제목·설명은 컴포넌트 자체에서도 시각적으로 숨겨 CSS 로드 순서에 따른 중복 노출을 막는다.
 
 현재 오버레이는 React의 `HomeOverlayHost`와 Vanilla JS의 `home.js`가 함께 관리한다.
 다음 계약을 먼저 보존한다.
@@ -362,8 +372,9 @@ data-overlay-tab / data-overlay-panel
 
 ### 8단계 — Motion 최소 적용
 
-진행 상태: Storybook `GameDialog`의 등장·퇴장에만 적용했다. `useReducedMotion()`으로
-사용자 설정을 존중하며 실제 Home Bundle에는 아직 연결하지 않았다.
+진행 상태: Storybook `GameDialog`의 등장·퇴장과 실제 Home의 도움말·설정 Dialog에
+적용했다. `useReducedMotion()`으로 사용자 설정을 존중하며 그 외 Overlay에는 확장하지
+않았다.
 
 - Dialog 등장·퇴장과 경험치 변화에만 적용한다.
 - 버튼의 1~2px 눌림은 우선 CSS로 구현한다.

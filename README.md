@@ -68,4 +68,4 @@ SPRING_PROFILES_ACTIVE=local ./mvnw spring-boot:run
 
 - [전체 문서 안내](docs/README.md)
 - [Frontend 동작 흐름](docs/onboarding/README.md)
-- [관리자 대시보드 패널 작성](docs/manager-dashboard-panel-guide.md)
+- [관리자 대시보드 패널 작성](docs/guides/manager-dashboard-panel-guide.md)

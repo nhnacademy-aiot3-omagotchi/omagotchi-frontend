@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { ActionDock } from "./ActionDock.jsx";
 import { BgmPlayer } from "./BgmPlayer.jsx";
 import { CharacterStage } from "./CharacterStage.jsx";
@@ -18,6 +18,12 @@ export function HomeStage({
   bgmProps = {}
 }) {
   const [chatOpen, setChatOpen] = useState(initialChatOpen);
+
+  useEffect(() => {
+    const closeChat = () => setChatOpen(false);
+    window.addEventListener("omagotchi:home-chat-close", closeChat);
+    return () => window.removeEventListener("omagotchi:home-chat-close", closeChat);
+  }, []);
 
   return (
     <div className="home-stage">

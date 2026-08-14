@@ -6,7 +6,7 @@
 
 이 문서는 관리자 대시보드 패널을 새로 만들거나 기존 패널을 수정할 때 지켜야 할 파일 위치, 패널 인터페이스와 검증 절차를 설명한다.
 
-처음 작성한다면 [비활성 수강생 패널 작성 예시](examples/manager-dashboard-panel-example.md)를 먼저 확인한다.
+처음 작성한다면 [비활성 수강생 패널 작성 예시](../examples/manager-dashboard-panel-example.md)를 먼저 확인한다.
 
 ## 먼저 확인할 원칙
 

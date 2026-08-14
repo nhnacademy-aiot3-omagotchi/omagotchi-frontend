@@ -1,13 +1,14 @@
 # 공통 UI 디자인 시스템·Storybook 가이드
 
 - 작성일: 2026-08-13
-- 상태: Storybook 검증 중
+- 상태: Storybook 검증 및 실제 View 표현 연결 완료, 서비스 종단 검증 대기
 - 대상: Home, 출석, 로그인·회원가입 등 사용자 화면을 작업하는 Frontend 팀원
 
 ## 목적
 
 오마고치 사용자 화면에 반복되는 색상, 버튼, 카드와 입력창의 기준을 한곳에 둔다.
-현재 단계에서는 Storybook에서 먼저 외형·상태·반응형을 검증하며, 기존 Thymeleaf 화면을
+Storybook에서 외형·상태·반응형을 먼저 검증하고, 실제 View에는 Form·`data-*`·Controller
+계약을 보존하는 표현 어댑터로 연결한다. Storybook mock 컴포넌트가 Thymeleaf 기능 DOM을
 자동으로 교체하지 않는다.
 
 ## 기준 색상
@@ -99,9 +100,10 @@ src/main/resources/static/css/
 4. 공통 컴포넌트를 실제 화면에 연결하고 Story mock 대신 서버·BFF 응답을 props로 전달한다.
 5. 로그인, 회원가입, 출석 기능 회귀 테스트를 수행한다.
 
-현재 `AttendanceBook`, `AuthScreen`, `HomeMenuPanel`은 시안·상태 검증 단계다. 기존
-`home.html`, `home.js`, `login.html`, `register.html`의 기능과 서버 요청은 아직
-교체하지 않았다.
+2026-08-14에 세 Pattern의 디자인을 실제 View에 연결했다. 다만 Storybook mock 컴포넌트를
+그대로 마운트하지는 않는다. `AttendanceBook`은 실제 출석 DOM class, `AuthScreen`은
+Thymeleaf Form 디자인, `HomeMenuPanel`은 실제 `home.js` 내용을 감싸는 표현 어댑터로
+사용한다. 서버 요청과 인증·`data-*` 기능 계약은 기존 코드가 계속 소유한다.
 
 ## 실행과 검증
 
@@ -112,4 +114,4 @@ npm run build-storybook
 ./node_modules/.bin/vitest run
 ```
 
-2026-08-13 기준 전체 19개 Story 그룹, 74개 Story가 렌더링 테스트를 통과한다.
+2026-08-14 기준 전체 21개 Story 그룹, 80개 Story가 렌더링 테스트를 통과한다.

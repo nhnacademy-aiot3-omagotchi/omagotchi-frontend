@@ -115,7 +115,7 @@ npm run build-storybook
 시점에 번들링하지 않고 `staticDirs`에서 실행 시점에 제공하기 때문에 발생하며 build
 실패는 아니다.
 
-## 이번 작업에서 변경하지 않은 범위
+## 최초 Storybook 작업에서 변경하지 않은 범위
 
 - Spring Security, JWT, Redis Session과 Identity Service 연동
 - Java 로그인·회원가입 Controller
@@ -124,16 +124,20 @@ npm run build-storybook
 - 실제 Home 메뉴의 `home.js` HTML·이벤트 위임
 - Radix UI와 Motion의 실제 화면 적용
 
-`AuthScreen`, `AttendanceBook`, `HomeMenuPanel`은 현재 Storybook 시안이다. 실제 서비스가
-자동으로 이 컴포넌트를 사용하는 상태는 아니다.
+이 절은 최초 Storybook 시안 작성 시점의 범위를 기록한다. 2026-08-14 후속 작업에서 세
+Pattern의 디자인을 실제 화면에 연결했으며 연결 방식은 아래 절과
+[백엔드 연동 전 UI 통합 기록](pre-backend-ui-integration-2026-08-14.md)에 정리했다.
 
 ## 다음 작업
 
-1. `AttendanceBook`을 기존 출석 Controller와 서버 응답에 연결한다.
-2. 인증 로직은 유지하고 `AuthScreen` 디자인만 기존 Thymeleaf Form에 적용한다.
-3. Home 메뉴는 `설정 → 내 정보 → 기수 → 학습 기록 → 공간 → 커뮤 → 진행` 순서로 한
-   화면씩 연결한다.
-4. 실제 화면 연결 뒤 Radix Dialog, Radix Tabs와 Motion을 별도 변경으로 검토한다.
+아래 항목은 2026-08-14 후속 작업에서 완료했다.
+
+1. `AttendanceBook` 디자인을 기존 출석 Controller DOM에 연결
+2. 인증 로직을 유지한 채 `AuthScreen` 디자인을 Thymeleaf Form에 적용
+3. Home 메뉴 실제 내용을 공통 표현 어댑터에 연결
+4. 도움말·설정 Dialog와 진행 Tabs를 Radix·Motion에 연결
+
+다음 작업은 Identity·View·필요 Domain Service를 함께 실행한 실제 `/home` 통합 회귀다.
 
 화면별 보존 계약과 완료 기준은
 [React 게임 UI 도입 실행 체크리스트](react-ui-adoption-checklist.md#구현-순서)를 따른다.
@@ -163,6 +167,33 @@ npm run build-storybook
 - Tabs에서 오른쪽 방향키 입력 시 선택 탭과 콘텐츠가 함께 변경
 - 모바일 Dialog에서 가로 넘침 없음
 - 화면 높이를 넘는 콘텐츠는 Dialog 내부에서만 세로 스크롤
+
+### 실제 Home 적용과 오버레이 후속 보정
+
+- 실제 `home.html`에서도 Storybook과 같은 `ui/design-system.css`를 로드하도록 연결했다.
+- 도움말과 설정은 `GameDialog`를 기존 `[data-home-overlay-root]` 안에 유지해 기존 이벤트
+  위임과 포커스 복귀 계약을 보존했다.
+- 일반 Overlay와 Radix Dialog Overlay 모두 뷰포트의 가로·세로 중앙을 기준으로 배치한다.
+- Radix가 접근성 이름으로 사용하는 숨김 제목과 설명은 컴포넌트 내부의 시각적 숨김
+  스타일도 함께 적용한다. 공통 CSS가 늦게 로드되거나 누락되어도 제목·설명이 화면 상단에
+  중복 노출되지 않는다.
+- 도움말과 설정은 화면에 보이는 제목이 각각 한 번만 렌더링되고, Dialog의 접근성 이름은
+  유지되는 것을 Storybook 독립 화면에서 확인했다.
+- 최종 검증은 `npm run build:home`, 전체 Storybook 21개 파일·80개 Story 테스트와
+  `git diff --check`를 통과했다.
+
+### Pattern의 실제 화면 연결
+
+- `AttendanceBook`: 실제 `home.html` 출석부에 공통 class를 적용했다. 달력과 스트릭은 기존
+  Vanilla Controller가 계속 갱신하며 `data-calendar-*`, `data-check-*-time` 계약을 보존한다.
+- `AuthScreen`: React 시안을 인증 페이지에 마운트하지 않고 Thymeleaf Form에 디자인만
+  적용했다. `method`, `th:action`, `th:field`, `name`, 오류 출력과 비밀번호 토글은 유지한다.
+- `HomeMenuPanel`: Storybook mock Panel을 가져오지 않는다. `HomeMenuLiveContent`가
+  `home.js`의 실제 내부 템플릿만 감싸 공통 색상·간격·반응형 규칙을 제공한다.
+- 출석과 재실 Controller는 API 부재·실패를 빈 성공 상태로 처리하지 않고 UI 상태를 구분한다.
+
+5개 뷰포트의 Storybook 정적 검사에서 `document.body.scrollWidth`가 viewport 폭을 넘지 않았고,
+도움말·설정의 화면상 제목이 각각 하나만 존재함을 확인했다.
 
 ### 계속 대기하는 백엔드 연동 범위
 

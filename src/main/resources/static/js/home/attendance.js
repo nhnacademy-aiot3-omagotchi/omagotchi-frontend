@@ -92,14 +92,40 @@ export function createAttendance({
     }
 
     async function loadServerHistory() {
-        if (!api?.getHistory) return;
+        const panel = calendarGrid?.closest("[data-ui-state]");
+        const stateMessage = panel?.querySelector("[data-attendance-state-message]");
+        if (!api?.getHistory) {
+            if (panel) panel.dataset.uiSource = "local-prototype";
+            return;
+        }
 
-        const history = await api.getHistory();
-        if (!history) return;
+        if (panel) panel.dataset.uiState = "loading";
+        if (stateMessage) {
+            stateMessage.hidden = false;
+            stateMessage.textContent = "출석 기록을 불러오는 중입니다.";
+        }
+        try {
+            const history = await api.getHistory();
+            if (!history || typeof history !== "object") {
+                throw new Error("Attendance history API returned an invalid response");
+            }
 
-        // 서버 응답이 도착한 뒤에는 서버 이력을 정본으로 사용한다.
-        serverHistory = normalizeHistory(history);
-        render();
+            // 서버 응답이 도착한 뒤에는 서버 이력을 정본으로 사용한다.
+            serverHistory = normalizeHistory(history);
+            if (panel) panel.dataset.uiSource = "server";
+            if (stateMessage) stateMessage.hidden = true;
+            render();
+        } catch {
+            // [API-REPLACE] 계약 확정 전에는 로컬 Prototype을 유지하되 성공 응답으로 위장하지 않는다.
+            if (panel) {
+                panel.dataset.uiState = "error";
+                panel.dataset.uiSource = "local-prototype";
+            }
+            if (stateMessage) {
+                stateMessage.hidden = false;
+                stateMessage.textContent = "출석 기록을 불러오지 못했습니다. 임시 기록을 표시합니다.";
+            }
+        }
     }
 
     function saveToday(attendance) {
@@ -132,7 +158,7 @@ export function createAttendance({
 
         for (let index = 0; index < offset; index += 1) {
             const blank = document.createElement("span");
-            blank.className = "calendar-blank";
+            blank.className = "calendar-blank ui-calendar-day ui-calendar-day--empty";
             blank.setAttribute("aria-hidden", "true");
             fragment.append(blank);
         }
@@ -142,7 +168,7 @@ export function createAttendance({
             if (isWeekend(date)) continue;
 
             const dayNode = document.createElement("span");
-            dayNode.className = "calendar-day";
+            dayNode.className = "calendar-day ui-calendar-day";
             dayNode.textContent = String(day);
 
             if (
@@ -151,9 +177,11 @@ export function createAttendance({
                 && year === today.getFullYear()
             ) {
                 dayNode.classList.add("is-today");
+                dayNode.classList.add("ui-calendar-day--today");
             }
             if (history[getLocalDateKey(date)]?.checkInAt) {
                 dayNode.classList.add("is-present");
+                dayNode.classList.add("ui-calendar-day--present");
                 dayNode.setAttribute("aria-label", `${day}일 출석`);
             }
             fragment.append(dayNode);
@@ -210,6 +238,8 @@ export function createAttendance({
             const item = document.createElement("li");
             const marker = document.createElement("span");
             const label = document.createElement("strong");
+            item.classList.add("ui-streak-item");
+            marker.classList.add("ui-streak-dot");
             const attended = hasAttendance(date);
 
             if (attended) item.classList.add("is-active");
@@ -231,6 +261,11 @@ export function createAttendance({
         const attendance = history[getLocalDateKey()] || {};
         const hasCheckIn = Boolean(attendance.checkInAt);
         const hasCheckOut = hasCheckIn && Boolean(attendance.checkOutAt);
+
+        const panel = calendarGrid?.closest("[data-ui-state]");
+        if (panel && panel.dataset.uiState !== "error") {
+            panel.dataset.uiState = hasCheckOut ? "complete" : hasCheckIn ? "active" : "empty";
+        }
 
         if (checkInTime) checkInTime.textContent = hasCheckIn ? formatTime(new Date(attendance.checkInAt)) : "아직 입실 전";
         if (checkOutTime) checkOutTime.textContent = hasCheckOut ? formatTime(new Date(attendance.checkOutAt)) : "아직 퇴실 전";

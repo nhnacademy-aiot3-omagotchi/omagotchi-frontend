@@ -32,6 +32,7 @@
 | [Home 반응형 레이아웃 리팩토링 기록](home-responsive-layout-refactor.md) | 반응형·overlay 변경 이력 |
 | [Home 하단 HUD 반응형 리팩토링 기록](home-bottom-hud-refactor.md) | 하단 HUD와 빠른 실행 영역 변경 이력 |
 | [Storybook 공통 UI·화면 Pattern 리팩토링 기록](storybook-ui-pattern-refactor.md) | 디자인 토큰, 출석·인증·메뉴 Story와 반응형 검증 작업 기록 |
+| [백엔드 연동 전 UI 통합 리팩토링 기록](pre-backend-ui-integration-2026-08-14.md) | 실제 View 연결, 상태 처리, 반응형·테스트 결과와 남은 통합 검증 |
 
 파일명에 `mobile`이 남은 `mobile-view-research.md`는 당시 조사 범위를 보존한 작업 기록이다.
 신규 문서는 특정 기기 이름보다 `home`, `responsive`, `component`, `storybook`처럼 실제

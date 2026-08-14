@@ -315,8 +315,8 @@ React로 옮기기 좋은 이유:
 
 ## 관련 문서
 
-- [Frontend 구현 명세](frontend-implementation-spec.md)
-- [Home UI React Island 리팩토링 기록](home-ui/mobile-view-research.md)
-- [Home UI 전환 검토 기록](home-ui/home-ui-decision-history.md)
-- [Timer Backend 연동 Prompt](prompt/타이머.md)
-- [Space·Team Backend 연동 Prompt](prompt/공간-팀.md)
+- [Frontend 구현 명세](../specifications/frontend-implementation-spec.md)
+- [Home UI React Island 리팩토링 기록](../home-ui/mobile-view-research.md)
+- [Home UI 전환 검토 기록](../home-ui/home-ui-decision-history.md)
+- [Timer Backend 연동 Prompt](../prompt/타이머.md)
+- [Space·Team Backend 연동 Prompt](../prompt/공간-팀.md)

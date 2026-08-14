@@ -290,4 +290,4 @@ sequenceDiagram
 ## 관련 문서
 
 - [Home UI React Island 리팩토링 기록](mobile-view-research.md)
-- [React Island 학습·작업 로드맵](../react-island-learning-roadmap.md)
+- [React Island 학습·작업 로드맵](../roadmaps/react-island-learning-roadmap.md)

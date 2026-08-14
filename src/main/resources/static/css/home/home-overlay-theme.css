@@ -11,9 +11,16 @@
 
 .home-overlay-backdrop {
     min-height: 100dvh;
+    display: grid;
+    place-items: center;
     padding: clamp(16px, 3vw, 34px);
     background: rgba(4, 18, 13, 0.64);
     backdrop-filter: blur(8px);
+}
+
+/* Radix 도움말·설정도 화면의 가로·세로 중앙을 기준으로 배치한다. */
+.ui-dialog-content.home-overlay-dialog-content {
+    place-items: center;
 }
 
 .home-overlay {
@@ -1628,5 +1635,329 @@
         .profile-summary-card
     ) {
         transition: none;
+    }
+}
+
+/* Storybook HomeMenuPanel -> 실제 Home 내용 어댑터.
+   home.js의 data-* 이벤트 위임과 실제 데이터 템플릿은 그대로 유지한다. */
+.ui-menu-live-panel {
+    border-color: var(--ui-line);
+    background: rgba(255, 255, 255, 0.98);
+    color: var(--ui-ink);
+    box-shadow: var(--ui-shadow);
+}
+
+.ui-menu-live-panel .ui-menu-live-header {
+    background: linear-gradient(135deg, var(--ui-emerald-500), #5ed99b);
+    color: var(--ui-ink);
+}
+
+.ui-menu-live-panel .ui-menu-live-body {
+    background: linear-gradient(180deg, var(--ui-emerald-50), #ffffff 150px);
+}
+
+.ui-menu-live-content {
+    min-width: 0;
+    width: 100%;
+    display: grid;
+    gap: 16px;
+}
+
+.ui-menu-live-content :is(article, section, form, .overlay-community-notice, .overlay-community-list) {
+    min-width: 0;
+}
+
+.ui-menu-live-content :is(input, select, textarea, button) {
+    max-width: 100%;
+}
+
+.ui-menu-live-content [data-ui-state="loading"] { opacity: 0.72; }
+.ui-menu-live-content [data-ui-state="empty"] { color: var(--ui-ink-muted); }
+.ui-menu-live-content [data-ui-state="error"] { color: var(--ui-danger); }
+
+@media (max-width: 840px) {
+    .ui-menu-live-panel {
+        border-radius: 20px;
+    }
+
+    .ui-menu-live-panel .ui-menu-live-body {
+        padding: 14px;
+    }
+}
+
+/* 2026-08-14 unified list surfaces.
+   진행·내 정보·커뮤니티·설정은 여러 파스텔 카드 대신 한 가지 밝은 목록 문법을 쓴다. */
+.ui-menu-live-panel.home-overlay--progress,
+.ui-menu-live-panel.home-overlay--personal,
+.ui-menu-live-panel.home-overlay--community,
+.ui-menu-live-panel.home-overlay--settings {
+    --overlay-list-surface: #f7fcf9;
+    --overlay-list-row: #ffffff;
+    --overlay-list-soft: #edf8f2;
+    --overlay-list-line: #c8ded2;
+    --overlay-list-ink: #12382a;
+    --overlay-list-muted: #597065;
+    border-color: #b9d6c6;
+    background: var(--overlay-list-surface);
+    color: var(--overlay-list-ink);
+}
+
+.ui-menu-live-panel:is(.home-overlay--progress, .home-overlay--personal, .home-overlay--community, .home-overlay--settings) .ui-menu-live-header {
+    border-bottom-color: rgba(18, 56, 42, 0.18);
+    background: #2fc47c;
+    color: #0c3022;
+}
+
+.ui-menu-live-panel:is(.home-overlay--progress, .home-overlay--personal, .home-overlay--community, .home-overlay--settings) .ui-menu-live-header :is(h2, p),
+.ui-menu-live-panel:is(.home-overlay--progress, .home-overlay--personal, .home-overlay--community, .home-overlay--settings) > .home-overlay-close {
+    color: #0c3022 !important;
+}
+
+.ui-menu-live-panel:is(.home-overlay--progress, .home-overlay--personal, .home-overlay--community, .home-overlay--settings) .ui-menu-live-body {
+    background: var(--overlay-list-surface);
+}
+
+.home-overlay--progress .overlay-tabs {
+    border: 1px solid var(--overlay-list-line);
+    background: var(--overlay-list-soft) !important;
+}
+
+.home-overlay--progress .overlay-tabs button {
+    color: var(--overlay-list-muted) !important;
+}
+
+.home-overlay--progress .overlay-tabs button:hover,
+.home-overlay--progress .overlay-tabs button:focus-visible {
+    background: #dff2e8;
+    color: var(--overlay-list-ink);
+}
+
+.home-overlay--progress .overlay-tabs button.is-active,
+.home-overlay--progress .overlay-tabs button[data-state="active"] {
+    background: #176b46 !important;
+    color: #ffffff !important;
+}
+
+.home-overlay--progress .overlay-section-label :is(strong, em) {
+    color: var(--overlay-list-muted) !important;
+}
+
+.overlay-state-list,
+.overlay-metric-list,
+.overlay-empty-state,
+.home-overlay--progress .overlay-leader-list {
+    overflow: hidden;
+    margin: 0;
+    padding: 0;
+    border: 1px solid var(--overlay-list-line) !important;
+    border-radius: 12px;
+    background: var(--overlay-list-row) !important;
+    color: var(--overlay-list-ink);
+    list-style: none;
+}
+
+.overlay-state-list li,
+.overlay-metric-list > div,
+.home-overlay--progress .overlay-leader-list li,
+.home-overlay--progress .overlay-leader-list [data-empty-ranking] {
+    min-height: 64px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 16px;
+    padding: 12px 16px;
+    border: 0 !important;
+    border-bottom: 1px solid var(--overlay-list-line) !important;
+    border-radius: 0 !important;
+    background: var(--overlay-list-row) !important;
+    color: var(--overlay-list-ink) !important;
+}
+
+.overlay-state-list li:last-child,
+.overlay-metric-list > div:last-child,
+.home-overlay--progress .overlay-leader-list li:last-child {
+    border-bottom: 0 !important;
+}
+
+.overlay-state-list li > div {
+    min-width: 0;
+    display: grid;
+    gap: 4px;
+}
+
+.overlay-state-list :is(strong, p),
+.home-overlay--progress .overlay-leader-list :is(strong, span, em) {
+    margin: 0;
+    color: var(--overlay-list-ink) !important;
+}
+
+.overlay-state-list p,
+.overlay-state-list em,
+.home-overlay--progress .overlay-leader-list em {
+    color: var(--overlay-list-muted) !important;
+    font-size: 12px;
+    font-style: normal;
+}
+
+.home-overlay--progress .overlay-leader-list li {
+    grid-template-columns: 34px minmax(0, 1fr) auto;
+}
+
+.home-overlay--progress .overlay-leader-list li strong {
+    width: 30px;
+    height: 30px;
+    display: grid;
+    place-items: center;
+    border-radius: 8px;
+    background: var(--overlay-list-soft);
+}
+
+.overlay-metric-list > div {
+    grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.overlay-metric-list :is(dt, dd) {
+    margin: 0;
+    color: var(--overlay-list-ink);
+    font-weight: 900;
+}
+
+.overlay-metric-list dt {
+    color: var(--overlay-list-muted);
+}
+
+.overlay-empty-state {
+    min-height: 112px;
+    display: grid;
+    align-content: center;
+    gap: 6px;
+    padding: 20px;
+}
+
+.overlay-empty-state strong {
+    color: var(--overlay-list-ink) !important;
+}
+
+.overlay-empty-state p {
+    margin: 0;
+    color: var(--overlay-list-muted) !important;
+    font-size: 13px;
+}
+
+/* Personal */
+.home-overlay--personal .player-profile {
+    border: 1px solid var(--overlay-list-line);
+    background: var(--overlay-list-row);
+}
+
+.home-overlay--personal .player-profile-identity {
+    border-bottom-color: var(--overlay-list-line);
+    background: var(--overlay-list-soft);
+}
+
+.home-overlay--personal .player-profile-avatar {
+    border-color: var(--overlay-list-line);
+    background: #ffffff;
+}
+
+.home-overlay--personal .player-profile-identity :is(h3, strong),
+.home-overlay--personal .player-profile-main dd {
+    color: var(--overlay-list-ink) !important;
+}
+
+.home-overlay--personal .player-profile-identity p,
+.home-overlay--personal .player-profile-main :is(h3, dt) {
+    color: var(--overlay-list-muted) !important;
+}
+
+.home-overlay--personal .player-profile-main > section + section {
+    border-color: var(--overlay-list-line);
+}
+
+.home-overlay--personal .player-profile-main dl > div {
+    border-top-color: var(--overlay-list-line);
+}
+
+/* Community */
+.home-overlay--community .overlay-community-toolbar,
+.home-overlay--community .overlay-community-notice,
+.home-overlay--community .overlay-community-list,
+.home-overlay--community .overlay-community-list li,
+.home-overlay--community .overlay-community-compose {
+    border-color: var(--overlay-list-line) !important;
+    background: var(--overlay-list-row) !important;
+    color: var(--overlay-list-ink) !important;
+}
+
+.home-overlay--community .overlay-community-tabs {
+    background: var(--overlay-list-soft);
+}
+
+.home-overlay--community .overlay-community-tabs button {
+    color: var(--overlay-list-muted);
+}
+
+.home-overlay--community .overlay-community-tabs button.is-active {
+    background: #176b46;
+    color: #ffffff;
+}
+
+.home-overlay--community .overlay-community-write {
+    border-color: #176b46;
+    background: #176b46;
+    color: #ffffff;
+}
+
+.home-overlay--community :is(.overlay-community-notice, .overlay-community-list) :is(h3, strong) {
+    color: var(--overlay-list-ink) !important;
+}
+
+.home-overlay--community :is(.overlay-community-notice, .overlay-community-list) p,
+.home-overlay--community .overlay-community-list footer {
+    color: var(--overlay-list-muted) !important;
+}
+
+.home-overlay--community .overlay-community-notice > strong,
+.home-overlay--community .overlay-community-type {
+    background: var(--overlay-list-soft);
+    color: #176b46 !important;
+}
+
+/* Settings */
+.home-overlay--settings .overlay-settings-section > h3 {
+    color: var(--overlay-list-muted) !important;
+}
+
+.home-overlay--settings .overlay-settings-row,
+.home-overlay--settings .overlay-settings-logout {
+    border: 1px solid var(--overlay-list-line);
+    background: var(--overlay-list-row);
+    color: var(--overlay-list-ink);
+}
+
+.home-overlay--settings .overlay-settings-row strong {
+    color: var(--overlay-list-ink) !important;
+}
+
+.home-overlay--settings .overlay-settings-row em {
+    color: var(--overlay-list-muted);
+}
+
+.home-overlay--settings .overlay-settings-status {
+    background: var(--overlay-list-soft);
+    color: #176b46;
+}
+
+@media (max-width: 760px) {
+    .overlay-state-list li,
+    .overlay-metric-list > div,
+    .home-overlay--progress .overlay-leader-list li,
+    .home-overlay--progress .overlay-leader-list [data-empty-ranking] {
+        min-height: 58px;
+        padding: 10px 12px;
+    }
+
+    .home-overlay--progress .overlay-leader-list li {
+        grid-template-columns: 30px minmax(0, 1fr) auto;
     }
 }

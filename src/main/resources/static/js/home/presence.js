@@ -107,7 +107,7 @@ export function createPresence({
     }
 
     async function loadSnapshot() {
-        // [API-KEEP] 임시 API 연결 지점
+        // [API-REPLACE] 실제 재실 API가 없을 때 빈 성공 응답으로 위장하지 않는다.
         const serverSnapshot = await api?.getLabPresence?.();
         if (serverSnapshot) {
             return serverSnapshot;
@@ -115,11 +115,7 @@ export function createPresence({
         if (window.OmagotchiPresenceApi?.getLabPresence) {
             return window.OmagotchiPresenceApi.getLabPresence();
         }
-        return {
-            capacity: 0,
-            occupiedCount: 0,
-            users: []
-        };
+        throw new Error("Presence API is unavailable");
     }
 
     function applySnapshot(snapshot) {
@@ -143,11 +139,14 @@ export function createPresence({
 
         refreshButton.disabled = true;
         refreshButton.classList.add("is-loading");
+        if (panel) panel.dataset.uiState = "loading";
         try {
             const snapshot = await loadSnapshot();
             applySnapshot(snapshot);
+            if (panel) panel.dataset.uiState = users.length ? "ready" : "empty";
         } catch {
             if (updated) updated.textContent = "갱신 실패 · 기존 목록 표시 중";
+            if (panel) panel.dataset.uiState = "error";
         } finally {
             refreshButton.disabled = false;
             refreshButton.classList.remove("is-loading");

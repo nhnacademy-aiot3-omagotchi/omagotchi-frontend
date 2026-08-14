@@ -1,6 +1,7 @@
 import React, { useMemo } from "react";
 import { GameDialog, GameDialogClose } from "../../ui/GameDialog.jsx";
 import { GameTabs } from "../../ui/GameTabs.jsx";
+import { HomeMenuLiveContent } from "../../ui/HomeMenuPanel.jsx";
 
 const radixDialogTypes = new Set(["help", "settings"]);
 const progressTabDefinitions = [
@@ -49,14 +50,14 @@ function OverlayArticle({ type, meta, content, radixDialog = false }) {
 
   return (
     <article
-      className={`home-overlay home-overlay--${type}`}
+      className={`home-overlay home-overlay--${type} ui-menu-live-panel`}
       role={radixDialog ? undefined : "dialog"}
       aria-modal={radixDialog ? undefined : "true"}
       aria-labelledby={radixDialog ? undefined : "home-overlay-title"}
       aria-describedby={radixDialog ? undefined : "home-overlay-description"}
     >
       {radixDialog ? <GameDialogClose>{closeButton}</GameDialogClose> : closeButton}
-      <header className="home-overlay-header">
+      <header className="home-overlay-header ui-menu-live-header">
         <span className="home-overlay-icon" aria-hidden="true"><img src={meta.icon} alt="" /></span>
         <div className="home-overlay-heading">
           <h2 id="home-overlay-title">{meta.title}</h2>
@@ -67,7 +68,9 @@ function OverlayArticle({ type, meta, content, radixDialog = false }) {
       {type === "progress" ? (
         <div className="home-overlay-body"><ProgressTabsContent content={content} /></div>
       ) : (
-        <div className="home-overlay-body" dangerouslySetInnerHTML={{ __html: content }} />
+        <div className="home-overlay-body ui-menu-live-body">
+          <HomeMenuLiveContent menu={type} content={content} />
+        </div>
       )}
     </article>
   );
@@ -88,6 +91,7 @@ export function HomeOverlay({ type, meta, content, onClose }) {
           if (!nextOpen) onClose?.();
         }}
         portalled={false}
+        contentClassName="home-overlay-dialog-content"
       >
         <OverlayArticle type={type} meta={meta} content={content} radixDialog />
       </GameDialog>

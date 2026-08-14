@@ -37,6 +37,112 @@ body {
     font-family: "DNFBitBitv2", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
+/* Storybook AuthScreen -> 실제 Thymeleaf 폼 어댑터.
+   method/action/name/th:field와 인증 스크립트 계약은 템플릿이 계속 소유한다. */
+.auth-card.ui-auth-shell {
+    width: min(980px, calc(100vw - 32px));
+    min-height: 600px;
+    display: grid;
+    grid-template-columns: minmax(260px, 0.82fr) minmax(380px, 1.18fr);
+    padding: 0;
+    overflow: hidden;
+    border: 1px solid var(--ui-line);
+    border-radius: 28px;
+    background: var(--ui-surface);
+    color: var(--ui-ink);
+    box-shadow: var(--ui-shadow);
+}
+
+.auth-card.ui-auth-shell .ui-auth-aside {
+    position: relative;
+}
+
+.auth-card.ui-auth-shell .auth-back-link {
+    top: 24px;
+    left: 24px;
+    z-index: 1;
+    color: var(--ui-ink);
+}
+
+.auth-card.ui-auth-shell .ui-auth-card {
+    width: 100%;
+    padding: clamp(30px, 5vw, 58px);
+}
+
+.auth-card.ui-auth-shell .auth-panel h1,
+.auth-card.ui-auth-shell .auth-panel .auth-subtitle {
+    text-align: left;
+}
+
+.auth-card.ui-auth-shell .auth-panel h1 {
+    margin-bottom: 16px;
+    color: var(--ui-ink);
+}
+
+.auth-card.ui-auth-shell .auth-panel .auth-subtitle {
+    margin: 0 0 8px;
+}
+
+.auth-card.ui-auth-shell .auth-segmented {
+    min-height: 52px;
+    margin-bottom: 4px;
+}
+
+.auth-card.ui-auth-shell .auth-segmented a,
+.auth-card.ui-auth-shell .auth-segmented span {
+    min-height: 42px;
+    font-size: 15px;
+}
+
+.auth-card.ui-auth-shell .auth-input-group {
+    margin-bottom: 0;
+}
+
+.auth-card.ui-auth-shell .auth-input-group input {
+    height: 58px;
+    padding: 0 18px;
+    border-color: var(--ui-line);
+    border-radius: 14px;
+    background: #fbfefc;
+    color: var(--ui-ink);
+    font-size: 16px;
+}
+
+.auth-card.ui-auth-shell .auth-submit-button {
+    height: 58px;
+    border-radius: 14px;
+    background: var(--ui-emerald-500);
+    color: #08271c;
+    font-size: 18px;
+}
+
+@media (max-width: 840px) {
+    .login-page {
+        align-items: flex-start;
+        padding: 12px;
+    }
+
+    .auth-card.ui-auth-shell {
+        width: 100%;
+        min-height: 0;
+        grid-template-columns: minmax(0, 1fr);
+        border-radius: 20px;
+    }
+
+    .auth-card.ui-auth-shell .ui-auth-aside {
+        min-height: 150px;
+        padding: 56px 22px 20px;
+    }
+
+    .auth-card.ui-auth-shell .ui-auth-aside h2 {
+        font-size: 25px;
+    }
+
+    .auth-card.ui-auth-shell .ui-auth-card {
+        padding: 24px 18px 28px;
+    }
+}
+
 /* 로그인/인증 카드 */
 .login-page {
     min-height: 100vh;
@@ -196,7 +302,7 @@ body {
     padding: 0;
     margin: -1px;
     overflow: hidden;
-    clip: rect(0, 0, 0, 0);
+    clip-path: inset(50%);
     white-space: nowrap;
     border: 0;
 }

@@ -27,11 +27,37 @@ export const Progress = {
     type: "progress",
     meta: { icon: "/images/app/quest.png", title: "성장 현황", description: "현재 캐릭터의 성장 기록입니다." },
     content: `
-      <section data-overlay-panel="quests"><h3>일일 퀘스트</h3><p>집중 학습 30분을 완료해 보세요.</p></section>
-      <section data-overlay-panel="achievements"><h3>업적</h3><p>첫 학습 기록을 달성했습니다.</p></section>
-      <section data-overlay-panel="leaders"><h3>랭킹</h3><p>랭킹 데이터가 없습니다.</p></section>
-      <section data-overlay-panel="timeline"><h3>타임라인</h3><p>최근 활동을 확인합니다.</p></section>
-      <section data-overlay-panel="stats"><h3>학습 통계</h3><p>다음 레벨까지 경험치가 18% 남았습니다.</p><progress value="82" max="100">82%</progress></section>
+      <section data-overlay-panel="quests">
+        <div class="overlay-section-label"><strong>일일</strong><span></span><em>익일 4시에 초기화</em></div>
+        <ul class="overlay-state-list" aria-label="퀘스트 목록">
+          <li><div><strong>등록된 퀘스트가 없습니다.</strong><p>퀘스트가 제공되면 이 목록에 표시됩니다.</p></div><em>대기</em></li>
+        </ul>
+      </section>
+      <section data-overlay-panel="achievements">
+        <div class="overlay-section-label"><strong>업적</strong><span></span><em>달성 기록</em></div>
+        <div class="overlay-empty-state" role="status"><strong>업적 기능은 아직 준비되지 않았습니다.</strong><p>기능이 준비되면 달성 기록을 확인할 수 있습니다.</p></div>
+      </section>
+      <section data-overlay-panel="leaders">
+        <div class="overlay-section-label"><strong>명예의 전당</strong><span></span><em>전체 학습 시간</em></div>
+        <ol class="overlay-list overlay-leader-list" aria-label="학습 시간 랭킹">
+          <li data-empty-ranking><strong>-</strong><span>랭킹 데이터가 없습니다.</span><em>기록 없음</em></li>
+        </ol>
+      </section>
+      <section data-overlay-panel="timeline">
+        <div class="overlay-section-label"><strong>타임라인</strong><span></span><em>최근 활동</em></div>
+        <ul class="overlay-state-list overlay-timeline-list" aria-label="최근 활동">
+          <li><div><strong>활동 기록이 없습니다.</strong><p>출석과 학습 기록이 생기면 시간순으로 표시됩니다.</p></div><em>최근 활동</em></li>
+        </ul>
+      </section>
+      <section data-overlay-panel="stats">
+        <div class="overlay-section-label"><strong>학습 통계</strong><span></span><em>나의 기록</em></div>
+        <dl class="overlay-metric-list">
+          <div><dt>오늘 집중</dt><dd>0분</dd></div>
+          <div><dt>세션</dt><dd>0회</dd></div>
+          <div><dt>연속 출석</dt><dd>0일</dd></div>
+          <div><dt>이번 주</dt><dd>0분</dd></div>
+        </dl>
+      </section>
     `
   }
 };
