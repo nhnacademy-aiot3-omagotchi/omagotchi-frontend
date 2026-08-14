@@ -2,7 +2,7 @@
 
 - 작성일: 2026-08-12
 - 상태: 주말 검토용 초안 — 구현 확정 아님
-- 실행 가이드: [React 게임 UI 도입 실행 체크리스트](react-ui-adoption-checklist.md)
+- 실행 가이드: [React 게임 UI 도입 실행 체크리스트](../02-checklists/react-ui-adoption-checklist.md)
 
 ## 1. 문서 목적
 
@@ -979,4 +979,4 @@ Phaser, XState, Rive, 모바일 앱 패키징은 이 단계에 포함하지 않�
 먼저 공통 UI가 실제로 단순해지고 유지보수가 쉬워지는지 확인한 뒤 다음 도구를 결정한다.
 
 현재 코드 기준의 설치 명령, 선행 작업과 검증 기준은
-[React 게임 UI 도입 실행 체크리스트](react-ui-adoption-checklist.md)를 따른다.
+[React 게임 UI 도입 실행 체크리스트](../02-checklists/react-ui-adoption-checklist.md)를 따른다.

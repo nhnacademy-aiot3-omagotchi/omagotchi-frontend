@@ -14,7 +14,24 @@ const meta = {
       title: "도움말",
       description: "홈 화면의 주요 기능을 확인합니다."
     },
-    content: `<section><h3>오마고치 홈 이용 방법</h3><p>타이머를 시작하고 캐릭터와 함께 학습 시간을 기록해 보세요.</p></section>`
+    content: `
+      <div class="help-accordion">
+        <details open>
+          <summary>1. 학습 타이머</summary>
+          <div class="help-detail"><ul><li><strong>시작</strong>: 학습 시간 측정 시작</li><li><strong>정지</strong>: 측정한 구간을 학습 기록으로 저장</li></ul></div>
+        </details>
+        <details>
+          <summary>2. 용어 설명</summary>
+          <div class="help-detail">
+            <dl class="help-key-list">
+              <div><dt>학습 세션</dt><dd>타이머를 시작한 뒤 정지할 때까지 측정한 한 번의 학습 구간</dd></div>
+              <div><dt>완료 세션</dt><dd>타이머를 정지해 학습 기록으로 저장된 세션</dd></div>
+              <div><dt>연속 출석</dt><dd>평일 기준으로 입실 기록을 이어간 일수</dd></div>
+            </dl>
+          </div>
+        </details>
+      </div>
+    `
   },
   parameters: { layout: "fullscreen" }
 };

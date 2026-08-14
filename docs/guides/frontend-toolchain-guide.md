@@ -193,8 +193,7 @@ npx vitest run
 ## 9. 관련 문서
 
 - [React 게임 UI 도구의 단계적 도입 ADR](../adr/0003-react-game-ui-tools-incremental-adoption.md)
-- [게임 UI 프레임워크 도입 검토안](../home-ui/react-ui-library.md)
-- [React 게임 UI 도입 실행 체크리스트](../home-ui/react-ui-adoption-checklist.md)
-- [Home React·Storybook 구조 가이드](../home-ui/home-react-storybook-structure.md)
-- [공통 UI 디자인 시스템·Storybook 가이드](../home-ui/ui-design-system.md)
-
+- [게임 UI 프레임워크 도입 검토안](../home-ui/03-research/react-ui-library.md)
+- [React 게임 UI 도입 실행 체크리스트](../home-ui/02-checklists/react-ui-adoption-checklist.md)
+- [Home React·Storybook 구조 가이드](../home-ui/01-guides/home-react-storybook-structure.md)
+- [공통 UI 디자인 시스템·Storybook 가이드](../home-ui/01-guides/ui-design-system.md)

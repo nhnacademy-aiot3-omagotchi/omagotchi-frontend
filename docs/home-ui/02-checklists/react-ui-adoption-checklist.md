@@ -2,8 +2,8 @@
 
 - 작성일: 2026-08-13
 - 상태: 실행 가이드
-- 검토 배경: [게임 UI 프레임워크 도입 검토안](react-ui-library.md)
-- 구조 가이드: [Home React·Storybook 구조 가이드](home-react-storybook-structure.md)
+- 검토 배경: [게임 UI 프레임워크 도입 검토안](../03-research/react-ui-library.md)
+- 구조 가이드: [Home React·Storybook 구조 가이드](../01-guides/home-react-storybook-structure.md)
 
 ## 목적
 

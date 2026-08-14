@@ -90,7 +90,7 @@ src/main/resources/static/css/
 ## 실제 화면 적용 순서
 
 화면별 우선순위와 보존할 기능 계약은
-[React 게임 UI 도입 실행 체크리스트의 구현 순서](react-ui-adoption-checklist.md#구현-순서)를
+[React 게임 UI 도입 실행 체크리스트의 구현 순서](../02-checklists/react-ui-adoption-checklist.md#구현-순서)를
 기준으로 한다.
 
 1. Storybook에서 기본·오류·로딩·빈 값·모바일 상태를 검토한다.

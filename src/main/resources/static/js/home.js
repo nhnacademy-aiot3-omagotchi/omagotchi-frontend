@@ -653,7 +653,21 @@ const overlayContent = {
         </details>
 
         <details>
-            <summary>9. 키보드 조작</summary>
+            <summary>9. 용어 설명</summary>
+            <div class="help-detail">
+                <dl class="help-key-list">
+                    <div><dt>학습 세션</dt><dd>타이머를 시작한 뒤 정지할 때까지 측정한 한 번의 학습 구간</dd></div>
+                    <div><dt>완료 세션</dt><dd>타이머를 정지해 학습 기록으로 저장된 세션. 내 정보의 횟수에는 저장된 세션만 포함</dd></div>
+                    <div><dt>총 학습 시간</dt><dd>저장된 학습 세션의 시간을 모두 합한 값</dd></div>
+                    <div><dt>연속 출석</dt><dd>평일 기준으로 빠짐없이 입실 기록을 이어간 일수. 주말은 계산에서 제외</dd></div>
+                    <div><dt>재실 인원</dt><dd>현재 담당 기수의 실습실을 이용 중인 사용자</dd></div>
+                    <div><dt>기수</dt><dd>함께 학습하는 사용자 그룹. 승인된 기수에 가입하면 해당 실습실과 기능을 이용</dd></div>
+                </dl>
+            </div>
+        </details>
+
+        <details>
+            <summary>10. 키보드 조작</summary>
             <div class="help-detail">
                 <dl class="help-key-list">
                     <div><dt><kbd>U</kbd> <kbd>u</kbd> <kbd>ㅕ</kbd></dt><dd>실습실 재실 인원 열기 또는 닫기</dd></div>
@@ -665,11 +679,16 @@ const overlayContent = {
         </details>
 
         <details>
-            <summary>10. 자주 묻는 질문</summary>
+            <summary>11. 자주 묻는 질문</summary>
             <div class="help-detail help-faq">
                 <details>
                     <summary>입실과 출석은 같은 기능인가요?</summary>
                     <p>네. 입실하면 오늘 출석을 기록하고 담당 기수 실습실의 재실 상태로 전환됩니다.</p>
+                </details>
+
+                <details>
+                    <summary>완료 세션은 무엇인가요?</summary>
+                    <p>타이머를 시작한 뒤 정지해 학습 기록으로 저장한 한 번의 학습 구간입니다. 측정 중인 시간은 정지하여 저장되기 전까지 완료 세션 횟수에 포함되지 않습니다.</p>
                 </details>
 
                 <details>

@@ -20,8 +20,10 @@ view/
 ├── docs/
 │   ├── home-ui/
 │   │   ├── README.md                    Home UI 문서 인덱스
-│   │   ├── home-react-storybook-structure.md  이 구조 가이드
-│   │   └── react-ui-adoption-checklist.md
+│   │   ├── 01-guides/                   현재 개발 가이드
+│   │   ├── 02-checklists/               실행 순서·완료 조건
+│   │   ├── 03-research/                 도구·구조 검토와 조사
+│   │   └── 04-work-records/             리팩토링·변경 기록
 │   └── adr/0003-react-game-ui-tools-incremental-adoption.md
 ├── src/main/frontend/home-react/
 │   ├── main.jsx                        React mount·Home overlay store
@@ -201,6 +203,6 @@ Backend만 수정하고 Frontend를 실행하지 않는 팀원은 npm 설치를 
 - 다음 검증은 Identity·View·Domain Service를 함께 실행한 인증·실제 API 종단 회귀
 
 구조적 도입 결정은
-[ADR 0003](../adr/0003-react-game-ui-tools-incremental-adoption.md), 실행 순서는
-[React 게임 UI 도입 실행 체크리스트](react-ui-adoption-checklist.md), 공통 UI 적용은
+[ADR 0003](../../adr/0003-react-game-ui-tools-incremental-adoption.md), 실행 순서는
+[React 게임 UI 도입 실행 체크리스트](../02-checklists/react-ui-adoption-checklist.md), 공통 UI 적용은
 [공통 UI 디자인 시스템·Storybook 가이드](ui-design-system.md)를 함께 확인한다.

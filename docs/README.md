@@ -35,9 +35,9 @@
 | [기능 연동 개발 가이드](onboarding/05-feature-integration-guide.md) | Prototype을 실제 BFF/API로 전환하는 기준 |
 | [Frontend 도구·라이브러리 역할 가이드](guides/frontend-toolchain-guide.md) | React, Vite, Storybook, Vitest, Playwright, Radix UI와 Motion의 역할·실행 방법 |
 | [Home UI 문서 인덱스](home-ui/README.md) | Home React Island, 반응형, Storybook 문서 분류 |
-| [Home React·Storybook 구조 가이드](home-ui/home-react-storybook-structure.md) | React 소스, Story, CSS, Controller와 빌드 산출물의 경로·책임 |
-| [공통 UI 디자인 시스템·Storybook 가이드](home-ui/ui-design-system.md) | 공통 색상·컴포넌트와 출석·인증 Story의 적용 기준 |
-| [백엔드 연동 전 Frontend 완료 체크리스트](home-ui/pre-backend-frontend-checklist.md) | API 준비 전 완료 범위와 백엔드·AI 작업 보호 경계 |
+| [Home React·Storybook 구조 가이드](home-ui/01-guides/home-react-storybook-structure.md) | React 소스, Story, CSS, Controller와 빌드 산출물의 경로·책임 |
+| [공통 UI 디자인 시스템·Storybook 가이드](home-ui/01-guides/ui-design-system.md) | 공통 색상·컴포넌트와 출석·인증 Story의 적용 기준 |
+| [백엔드 연동 전 Frontend 완료 체크리스트](home-ui/02-checklists/pre-backend-frontend-checklist.md) | API 준비 전 완료 범위와 백엔드·AI 작업 보호 경계 |
 | [관리자 대시보드 패널 작성 가이드](guides/manager-dashboard-panel-guide.md) | 관리자 패널의 구조와 확장 규칙 |
 | [관리자 대시보드 패널 작성 예시](examples/manager-dashboard-panel-example.md) | 신규 패널 구현 예시 |
 
@@ -55,8 +55,8 @@
 | [Backend 연동 협의 정리](integration/backend-integration-todo.md) | API 후보와 Backend 협의 항목 |
 | [Frontend ↔ Backend 기능별 연결 지도](integration/frontend-backend-connection-map.md) | 기능별 adapter·Controller·UI 계약과 Backend 대기 항목 |
 | [React Island 학습·작업 로드맵](roadmaps/react-island-learning-roadmap.md) | 점진 이전 순서와 학습 범위 |
-| [게임 UI 프레임워크 도입 검토안](home-ui/react-ui-library.md) | UI 도구와 외부 에셋 검토 초안 |
-| [React 게임 UI 도입 실행 체크리스트](home-ui/react-ui-adoption-checklist.md) | 설치 순서, 선행 작업과 검증 기준 |
+| [게임 UI 프레임워크 도입 검토안](home-ui/03-research/react-ui-library.md) | UI 도구와 외부 에셋 검토 초안 |
+| [React 게임 UI 도입 실행 체크리스트](home-ui/02-checklists/react-ui-adoption-checklist.md) | 설치 순서, 선행 작업과 검증 기준 |
 
 ## Home UI 작업 기록
 
@@ -65,12 +65,12 @@
 
 | 문서 | 용도 |
 | --- | --- |
-| [Home UI 전환 검토 기록](home-ui/home-ui-decision-history.md) | 모바일 Route 분리 대신 React Island를 선택한 이유 |
-| [Home UI React Island 리팩토링 기록](home-ui/mobile-view-research.md) | 초기 리팩토링 범위와 레이아웃 방향 |
-| [홈 반응형 레이아웃 리팩터링 기록](home-ui/home-responsive-layout-refactor.md) | 반응형·오버레이 변경 이력 |
-| [Home 하단 HUD 반응형 리팩토링 기록](home-ui/home-bottom-hud-refactor.md) | 하단 HUD 변경 이력 |
-| [Storybook 공통 UI·화면 Pattern 리팩토링 기록](home-ui/storybook-ui-pattern-refactor.md) | 공통 UI, 화면 Pattern과 반응형 검증 변경 이력 |
-| [백엔드 연동 전 UI 통합 리팩토링 기록](home-ui/pre-backend-ui-integration-2026-08-14.md) | 출석·인증·Home 메뉴의 실제 View 연결과 검증 결과 |
+| [Home UI 전환 검토 기록](home-ui/04-work-records/home-ui-decision-history.md) | 모바일 Route 분리 대신 React Island를 선택한 이유 |
+| [Home UI React Island 조사·초기 작업 기록](home-ui/03-research/mobile-view-research.md) | 초기 조사 범위와 레이아웃 방향 |
+| [홈 반응형 레이아웃 리팩터링 기록](home-ui/04-work-records/home-responsive-layout-refactor.md) | 반응형·오버레이 변경 이력 |
+| [Home 하단 HUD 반응형 리팩토링 기록](home-ui/04-work-records/home-bottom-hud-refactor.md) | 하단 HUD 변경 이력 |
+| [Storybook 공통 UI·화면 Pattern 리팩토링 기록](home-ui/04-work-records/storybook-ui-pattern-refactor.md) | 공통 UI, 화면 Pattern과 반응형 검증 변경 이력 |
+| [백엔드 연동 전 UI 통합 리팩토링 기록](home-ui/04-work-records/pre-backend-ui-integration-2026-08-14.md) | 출석·인증·Home 메뉴의 실제 View 연결과 검증 결과 |
 
 ## 작업용 Prompt
 

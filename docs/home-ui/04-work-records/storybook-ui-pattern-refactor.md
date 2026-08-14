@@ -140,7 +140,7 @@ Pattern의 디자인을 실제 화면에 연결했으며 연결 방식은 아래
 다음 작업은 Identity·View·필요 Domain Service를 함께 실행한 실제 `/home` 통합 회귀다.
 
 화면별 보존 계약과 완료 기준은
-[React 게임 UI 도입 실행 체크리스트](react-ui-adoption-checklist.md#구현-순서)를 따른다.
+[React 게임 UI 도입 실행 체크리스트](../02-checklists/react-ui-adoption-checklist.md#구현-순서)를 따른다.
 
 ## 2026-08-14 후속 작업 — 백엔드 비의존 UI
 

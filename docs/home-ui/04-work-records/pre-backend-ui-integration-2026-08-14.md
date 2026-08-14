@@ -84,9 +84,9 @@ DOM이나 class를 직접 바꾸지 않는다. 대신 `omagotchi:home-chat-close
 ### Backend Handoff와 파일 구조
 
 Backend 담당자가 화면을 다시 만들지 않고 API만 연결할 수 있도록
-[기능별 연결 지도](../integration/frontend-backend-connection-map.md)에 기능별 adapter,
+[기능별 연결 지도](../../integration/frontend-backend-connection-map.md)에 기능별 adapter,
 Controller, 보존할 `data-*`, 미확정 Backend 계약을 정리했다. 전체 경로와 파일 소유권은
-[Frontend 디렉터리 구조](../architecture/frontend-directory-map.md)를 기준으로 한다.
+[Frontend 디렉터리 구조](../../architecture/frontend-directory-map.md)를 기준으로 한다.
 
 실제 소스는 이미 `React UI → Home React Island → Vanilla 기능 Controller → Browser API`
 책임으로 분리되어 있으므로 충돌을 유발하는 대규모 파일 이동은 하지 않았다. 문서는
@@ -152,6 +152,7 @@ fixture에서도 다음을 확인했다. BFF 요청은 의도적으로 `503`을 
 | 도움말 Overlay | Dialog 열기, Escape 닫기, 메뉴 링크로 포커스 복귀 |
 | 진행 Overlay | 퀘스트·업적·랭킹·타임라인·통계 탭 전환과 단색 목록형 내용 확인 |
 | 내 정보·커뮤니티·설정 Overlay | 실제 사용자·커뮤니티·설정 DOM 계약을 유지하면서 밝은 단색 본문 적용 확인 |
+| 도움말 용어 안내 | 학습 세션·완료 세션·총 학습 시간·연속 출석·재실 인원·기수의 의미와 완료 세션 FAQ 추가 |
 | 실제 Home 390×844 | 설정·진행 Overlay 가로 넘침 없음, 타임라인 빈 상태 확인 |
 | 실제 Home 844×390 | Home·출석부 가로 넘침 없음, 출석부 닫기 후 `hidden=true` 복원 |
 | 채팅 → BGM·출석부·재실 | 기존 채팅이 닫히고 선택한 패널만 열림 |

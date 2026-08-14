@@ -3,7 +3,7 @@
 - 작성일: 2026-08-14
 - 상태: Frontend 완료, Backend 종단 연동 대기
 - 대상 브랜치: `feature/mobile-ui`
-- 백엔드 연동 보호 규칙: [공통 보호 규칙](../prompt/공통-보호규칙.md)
+- 백엔드 연동 보호 규칙: [공통 보호 규칙](../../prompt/공통-보호규칙.md)
 
 ## 목적
 
@@ -54,7 +54,7 @@
 
 - Frontend 단독 구현·자동 검증 항목: 완료 (`100%`)
 - 실제 서비스 종단 검증: Backend API 준비 대기 (`1개`)
-- 기능별 adapter·Controller·보존 계약: [연결 지도](../integration/frontend-backend-connection-map.md)에 정리
+- 기능별 adapter·Controller·보존 계약: [연결 지도](../../integration/frontend-backend-connection-map.md)에 정리
 
 Storybook과 정적 통합 fixture 검증 완료는 실제 서비스 종단 실행 완료를 뜻하지 않는다.
 남은 1개는 Frontend 미구현이 아니라 실제 API가 준비된 뒤 서비스 조합에서 기존 기능이
@@ -76,7 +76,7 @@ View BFF Java Client 또는 Gateway가 흡수하며 React·Vanilla UI에 노출�
 ## 백엔드 담당자와 AI 도구의 작업 경계
 
 백엔드 연동 작업을 시작하기 전에 반드시
-[공통 보호 규칙](../prompt/공통-보호규칙.md)과 담당 기능 프롬프트를 함께 입력한다.
+[공통 보호 규칙](../../prompt/공통-보호규칙.md)과 담당 기능 프롬프트를 함께 입력한다.
 
 기본적으로 수정 가능한 곳은 다음과 같다.
 

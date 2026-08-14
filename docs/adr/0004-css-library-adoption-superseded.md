@@ -139,8 +139,8 @@ src/main/resources/static/css/ui/
 
 - 대체 결정: [React 게임 UI 도구의 단계적 도입](0003-react-game-ui-tools-incremental-adoption.md)
 - 공통 CSS: `src/main/resources/static/css/ui/design-system.css`
-- 구조 문서: [Home React·Storybook 구조 가이드](../home-ui/home-react-storybook-structure.md)
-- 작업 기록: [Storybook 공통 UI·화면 Pattern 리팩토링 기록](../home-ui/storybook-ui-pattern-refactor.md)
+- 구조 문서: [Home React·Storybook 구조 가이드](../home-ui/01-guides/home-react-storybook-structure.md)
+- 작업 기록: [Storybook 공통 UI·화면 Pattern 리팩토링 기록](../home-ui/04-work-records/storybook-ui-pattern-refactor.md)
 - 현재 CSS 라이브러리 추가 설치 없음
 - 향후 프로젝트 규모와 CSS 유지보수 비용이 크게 증가하면 CSS Modules 등 Build-time
   격리 방식을 새 ADR에서 다시 검토할 수 있다.

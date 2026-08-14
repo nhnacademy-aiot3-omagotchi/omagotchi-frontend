@@ -178,4 +178,4 @@ Home React island는 Vite로 빌드한다.
 3. 기존 `home.js` 중 UI 상태와 강하게 묶인 부분을 작은 단위로 React 상태로 옮길지 검토한다.
 4. 오버레이 UI는 `data-home-overlay` 진입 계약을 유지한 채 React 컴포넌트로 점진 이관한다.
 5. 폐기한 모바일 전용 경로와 viewport redirect 시도가 반복되지 않도록
-   [Home UI 전환 검토 기록](home-ui-decision-history.md)을 기준으로 리뷰한다.
+   [Home UI 전환 검토 기록](../04-work-records/home-ui-decision-history.md)을 기준으로 리뷰한다.
