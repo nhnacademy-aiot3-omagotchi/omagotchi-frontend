@@ -187,10 +187,15 @@ window.OmagotchiDashboardPanels.start({
         statusLabel,
         openDialog,
         setBubble,
-        fetchStatistics: (cohortId, range) => (
-            window.OmagotchiApi?.manager?.getStudyStatistics?.(cohortId, range)
+        getToday: (cohortId) => (
+            window.OmagotchiApi?.manager?.getStudyStatisticsToday?.(cohortId)
         ),
-        getMemberProfiles: () => store.getState().currentCohort.members,
+        getTrend: (cohortId, window) => (
+            window.OmagotchiApi?.manager?.getStudyStatisticsTrend?.(cohortId, window)
+        ),
+        getMembers: (cohortId, query) => (
+            window.OmagotchiApi?.manager?.getStudyStatisticsMembers?.(cohortId, query)
+        ),
         openMemberDetail: (options) => {
             if (typeof window.openStudyDetailModal === "function") {
                 window.openStudyDetailModal(options);

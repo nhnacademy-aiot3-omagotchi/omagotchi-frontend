@@ -18,6 +18,8 @@ spring:
     serviceclient:
       identity-service:
         base-url: ${IDENTITY_SERVICE_BASE_URL}
+      learning-service:
+        base-url: ${LEARNING_SERVICE_BASE_URL}
   data:
     redis:
       host: ${SESSION_REDIS_HOST}

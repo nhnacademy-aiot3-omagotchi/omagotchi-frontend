@@ -854,22 +854,31 @@ td small {
 
 /* 공부 통계 패널 추가 스타일 */
 .sortable {
-    cursor: pointer;
     user-select: none;
 }
 .sortable:hover {
     background: #eef6f1;
 }
-.sort-icon {
-    display: inline-block;
-    margin-left: 4px;
-    font-size: 10px;
-    color: var(--muted);
+.sortable > button {
+    width: 100%;
+    min-height: 34px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 5px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    text-align: left;
 }
-.sortable[data-dir="asc"] .sort-icon {
-    color: var(--green-800);
+.sortable > button:focus-visible {
+    outline: 2px solid var(--green-600);
+    outline-offset: 2px;
 }
-.sortable[data-dir="desc"] .sort-icon {
+.sortable[aria-sort="ascending"],
+.sortable[aria-sort="descending"] {
     color: var(--green-800);
 }
 .pagination-wrap {
@@ -1136,6 +1145,34 @@ td small {
     white-space: nowrap;
 }
 
+.study-resource-status,
+.study-detail-daily-status {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin: 0 0 14px;
+    padding: 10px 12px;
+    border: 1px solid #ead7a5;
+    border-radius: 6px;
+    background: #fff8e8;
+    color: var(--warning);
+    font-size: 11px;
+    font-weight: 800;
+}
+
+.study-resource-status[hidden],
+.study-detail-daily-status[hidden] {
+    display: none;
+}
+
+.study-resource-status button,
+.study-detail-daily-status button {
+    flex: 0 0 auto;
+    min-height: 30px;
+    padding: 0 10px;
+}
+
 .visually-hidden {
     position: absolute !important;
     width: 1px !important;
@@ -1150,19 +1187,19 @@ td small {
 
 /* 수강생 개인 공부 통계 */
 .manager-dialog-backdrop[data-study-detail-dialog] {
-    place-items: start center;
+    align-items: start;
+    justify-items: center;
+    min-height: 100dvh;
     overflow-y: auto;
+    scrollbar-gutter: stable;
 }
 
 .study-detail-dialog {
     min-width: 0;
     width: min(1040px, 100%);
-    max-height: calc(100dvh - 40px);
     display: grid;
     gap: 18px;
     padding: 24px;
-    overflow-y: auto;
-    scrollbar-gutter: stable;
 }
 
 .study-detail-header,
@@ -1195,11 +1232,6 @@ td small {
 .manager-dialog .study-detail-header h2 {
     margin: 0;
     font-size: 24px;
-}
-
-.manager-dialog .study-detail-email {
-    margin: 5px 0 0;
-    font-size: 12px;
 }
 
 .manager-dialog .study-detail-close {
@@ -1251,12 +1283,26 @@ td small {
 }
 
 .manager-dialog .study-detail-status {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
     margin: -6px 0;
     padding: 10px 12px;
     border-radius: 6px;
     background: #fff8e8;
     color: var(--warning);
     font-weight: 800;
+}
+
+.manager-dialog .study-detail-status[hidden] {
+    display: none;
+}
+
+.manager-dialog .study-detail-status button {
+    flex: 0 0 auto;
+    min-height: 30px;
+    padding: 0 10px;
 }
 
 .study-detail-kpi-grid {
@@ -1439,6 +1485,11 @@ td small {
     outline: 3px solid rgba(47, 208, 138, 0.26);
 }
 
+.manager-dialog .study-timeline-bar.is-selected {
+    border-color: #064b32;
+    background: #064b32;
+}
+
 .study-timeline-bar span {
     display: block;
     padding: 0 3px;
@@ -1486,7 +1537,7 @@ td small {
 
 .study-detail-record {
     display: grid;
-    grid-template-columns: 30px minmax(150px, 1.25fr) minmax(120px, 1fr) minmax(140px, 1fr);
+    grid-template-columns: 30px minmax(150px, 1.25fr) minmax(120px, 1fr);
     align-items: center;
     gap: 12px;
     padding: 11px 12px;
@@ -1631,10 +1682,6 @@ td small {
         width: 100%;
     }
 
-    .study-statistics-controls .search-field {
-        flex: 1;
-    }
-
     .stats-chart-grid {
         grid-template-columns: 1fr;
         gap: 14px;
@@ -1662,9 +1709,6 @@ td small {
         grid-template-columns: 30px minmax(0, 1fr) minmax(110px, 0.8fr);
     }
 
-    .study-detail-record > div:last-child {
-        grid-column: 2 / -1;
-    }
 }
 
 @media (max-width: 520px) {
@@ -1674,7 +1718,6 @@ td small {
     }
 
     .study-statistics-controls .date-field,
-    .study-statistics-controls .search-field,
     .study-statistics-controls select {
         width: 100%;
         min-width: 0;
@@ -1706,7 +1749,6 @@ td small {
     }
 
     .study-detail-dialog {
-        max-height: calc(100dvh - 16px);
         gap: 14px;
         padding: 15px;
     }
@@ -1779,8 +1821,7 @@ td small {
         gap: 8px;
     }
 
-    .study-detail-record > div,
-    .study-detail-record > div:last-child {
+    .study-detail-record > div {
         grid-column: 2;
     }
 }

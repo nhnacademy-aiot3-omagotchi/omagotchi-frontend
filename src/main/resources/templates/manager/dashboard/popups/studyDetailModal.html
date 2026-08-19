@@ -4,8 +4,7 @@
             <header class="study-detail-header">
                 <div>
                     <span class="study-detail-eyebrow">개인 공부 통계</span>
-                    <h2 id="study-detail-title"><span data-detail-name>수강생</span> 님의 공부 기록</h2>
-                    <p class="study-detail-email" data-detail-email></p>
+                    <h2 id="study-detail-title"><span data-detail-name>수강생</span>의 공부 기록</h2>
                 </div>
                 <button type="button" class="study-detail-close" data-detail-close aria-label="상세 보기 닫기">×</button>
             </header>
@@ -18,24 +17,27 @@
                 <p data-detail-period>최근 7일의 학습 기록입니다.</p>
             </section>
 
-            <p class="study-detail-status" data-detail-status role="status" aria-live="polite"></p>
+            <div class="study-detail-status" data-detail-status role="status" aria-live="polite" hidden>
+                <span data-detail-status-message></span>
+                <button type="button" class="secondary-button" data-detail-overview-retry>다시 시도</button>
+            </div>
 
             <section class="study-detail-kpi-grid" aria-label="개인 공부 통계 요약">
                 <article>
                     <span>기간 총 학습</span>
-                    <strong data-detail-total>0분</strong>
+                    <strong data-detail-total>—</strong>
                 </article>
                 <article>
-                    <span>학습일 평균</span>
-                    <strong data-detail-average>0분</strong>
+                    <span>일평균</span>
+                    <strong data-detail-average>—</strong>
                 </article>
                 <article>
                     <span>학습한 날</span>
-                    <strong data-detail-active-days>0일</strong>
+                    <strong data-detail-active-days>—</strong>
                 </article>
                 <article>
                     <span>공부 세션</span>
-                    <strong data-detail-record-count>0회</strong>
+                    <strong data-detail-record-count>—</strong>
                 </article>
             </section>
 
@@ -48,7 +50,7 @@
                     <small>막대를 선택하면 해당 날짜의 기록을 확인할 수 있습니다.</small>
                 </div>
                 <div class="study-detail-chart-container">
-                    <canvas id="memberStudyTrendChart" data-detail-trend-chart></canvas>
+                    <canvas id="memberStudyTrendChart" data-detail-trend-chart aria-label="수강생 날짜별 학습량 차트">수강생 날짜별 학습량을 표시합니다.</canvas>
                     <p class="study-detail-chart-empty" data-detail-chart-empty hidden>표시할 학습 기록이 없습니다.</p>
                 </div>
             </section>
@@ -71,6 +73,10 @@
                 </header>
 
                 <p class="study-detail-boundary-note">오전 4시부터 다음 날 오전 4시까지를 하루로 표시합니다.</p>
+                <div class="study-detail-daily-status" data-detail-daily-status role="status" aria-live="polite" hidden>
+                    <span data-detail-daily-status-message></span>
+                    <button type="button" class="secondary-button" data-detail-daily-retry>다시 시도</button>
+                </div>
 
                 <div class="study-timeline" data-detail-timeline aria-label="선택 날짜의 24시간 공부 타임라인">
                     <div class="study-timeline-axis" aria-hidden="true">
@@ -112,10 +118,6 @@
                     <div>
                         <strong data-detail-record-duration></strong>
                         <small>인정 학습 시간</small>
-                    </div>
-                    <div>
-                        <strong data-detail-record-updated-at></strong>
-                        <small>최종 수정</small>
                     </div>
                 </article>
             </template>

@@ -73,24 +73,256 @@ function CohortPanel() {
   );
 }
 
-const studySessions = [
-  ["08.13", "UI 컴포넌트 정리", "1시간 22분"],
-  ["08.12", "React Island 학습", "2시간 05분"],
-  ["08.11", "출석 화면 설계", "54분"]
+const dailyStudySessions = [
+  { start: "08:10", end: "09:30", title: "구간 1", duration: "1시간 20분 15초" },
+  { start: "10:00", end: "11:05", title: "구간 2", duration: "1시간 5분 30초" },
+  { start: "13:30", end: "15:45", title: "구간 3", duration: "2시간 15분 45초" }
 ];
 
-function RecordsPanel() {
+function formatHoursMinutes(seconds) {
+  if (seconds === 0) return "0h 00m";
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  return `${hours}h ${String(minutes).padStart(2, '0')}m`;
+}
+
+function getMockMonthlyData(monthStr) {
+  const [year, month] = monthStr.split("-").map(Number);
+  const data = {
+    aggregationMonth: monthStr,
+    totalStudySeconds: 0,
+    dailyTotals: []
+  };
+
+  const getHeatLevelForDay = (day) => {
+    if (day % 5 === 0) return 0;
+    if (day % 3 === 0) return 4;
+    if (day % 2 === 0) return 2;
+    return 1;
+  };
+
+  if (monthStr === "2026-08") {
+    data.totalStudySeconds = 152100;
+    for (let d = 1; d <= 18; d++) {
+       data.dailyTotals.push({
+          aggregationDate: `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`,
+          studySeconds: getHeatLevelForDay(d) * 3600
+       });
+    }
+  } else if (monthStr === "2026-07") {
+    data.totalStudySeconds = 300000;
+    for (let d = 1; d <= 31; d++) {
+       const heat = d % 4 === 0 ? 3 : 2;
+       data.dailyTotals.push({
+          aggregationDate: `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`,
+          studySeconds: heat * 3600
+       });
+    }
+  }
+  return data;
+}
+
+function MonthlyRecordsView({ currentMonth, setCurrentMonth, onDateClick }) {
+  const [year, month] = currentMonth.split("-").map(Number);
+  const mockData = getMockMonthlyData(currentMonth);
+  
+  const firstDayOfWeek = new Date(year, month - 1, 1).getDay();
+  const daysInMonth = new Date(year, month, 0).getDate();
+  
+  const handlePrevMonth = () => {
+    const prev = new Date(year, month - 2, 1);
+    setCurrentMonth(`${prev.getFullYear()}-${String(prev.getMonth() + 1).padStart(2, '0')}`);
+  };
+  
+  const handleNextMonth = () => {
+    const next = new Date(year, month, 1);
+    setCurrentMonth(`${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, '0')}`);
+  };
+
+  const days = Array.from({ length: daysInMonth }, (_, i) => {
+     const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(i + 1).padStart(2, '0')}`;
+     const record = mockData.dailyTotals.find(d => d.aggregationDate === dateStr);
+     return {
+       date: i + 1,
+       dateStr,
+       hasData: Boolean(record),
+       studySeconds: record ? record.studySeconds : 0
+     };
+  });
+
   return (
-    <>
-      <div className="ui-menu-stats"><Stat label="오늘" value="2시간 18분" /><Stat label="이번 주" value="8시간 40분" tone="sky" /><Stat label="평균 세션" value="48분" tone="cream" /></div>
+    <div style={{ display: "grid", gap: "16px" }}>
+      <div className="ui-menu-stats">
+        <Stat label="이번 달 학습" value={formatHoursMinutes(mockData.totalStudySeconds).replace('h ', '시간 ').replace('m', '분')} />
+        <Stat label="출석" value={`${mockData.dailyTotals.filter(d => d.studySeconds > 0).length}일`} tone="sky" />
+        <Stat label="연속" value="5일" tone="cream" />
+      </div>
       <section className="ui-menu-section">
-        <header><div><span className="ui-menu-eyebrow">최근 기록</span><h3>집중 학습 세션</h3></div><GameButton variant="secondary">기록 추가</GameButton></header>
-        <ol className="ui-record-list">
-          {studySessions.map(([date, title, duration]) => <li key={`${date}-${title}`}><time>{date}</time><strong>{title}</strong><span>{duration}</span></li>)}
+        <header>
+          <div>
+            <span className="ui-menu-eyebrow">MONTHLY HEATMAP</span>
+            <h3>날짜별 학습 시간</h3>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+            <button type="button" onClick={handlePrevMonth} style={{ background: "transparent", border: "none", cursor: "pointer", fontSize: "16px", color: "var(--ui-ink-muted)", padding: "4px" }}>&lt;</button>
+            <strong style={{ fontSize: "16px", width: "70px", textAlign: "center" }}>{year}.{String(month).padStart(2, '0')}</strong>
+            <button type="button" onClick={handleNextMonth} style={{ background: "transparent", border: "none", cursor: "pointer", fontSize: "16px", color: "var(--ui-ink-muted)", padding: "4px" }}>&gt;</button>
+          </div>
+        </header>
+        <p style={{ color: "var(--ui-ink-muted)", marginBottom: "16px", fontSize: "14px", lineHeight: 1.5 }}>
+          오전 4시부터 다음 날 오전 4시까지를 하루로 표시합니다. 날짜를 선택하면 일간 타임라인으로 이동합니다.
+        </p>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: "8px" }}>
+          {["일", "월", "화", "수", "목", "금", "토"].map(day => (
+            <div key={day} style={{ textAlign: "center", fontSize: "14px", color: "var(--ui-ink-muted)", fontWeight: "600", paddingBottom: "8px" }}>{day}</div>
+          ))}
+          {Array.from({ length: firstDayOfWeek }).map((_, i) => <div key={`empty-${i}`} />)}
+          {days.map((info, i) => {
+            const isDisabled = !info.hasData;
+            const heat = Math.floor(info.studySeconds / 3600);
+            
+            return (
+              <div
+                key={i}
+                onClick={() => !isDisabled && onDateClick(info.dateStr)}
+                style={{
+                  height: "64px",
+                  borderRadius: "8px",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  background: isDisabled ? "transparent" : (info.studySeconds === 0 ? "var(--ui-canvas)" : `rgba(47, 196, 124, ${Math.min(1, 0.2 + (heat * 0.16))})`),
+                  border: isDisabled ? "1px dashed var(--ui-line)" : (info.studySeconds === 0 ? "1px solid var(--ui-line)" : "none"),
+                  color: isDisabled ? "var(--ui-ink-muted)" : (heat > 3 ? "#fff" : "var(--ui-ink)"),
+                  cursor: isDisabled ? "default" : "pointer",
+                  opacity: isDisabled ? 0.4 : 1
+                }}
+              >
+                <strong style={{ fontSize: "16px" }}>{info.date}</strong>
+                {!isDisabled && (
+                  <span style={{ fontSize: "12px", opacity: 0.8, marginTop: "2px" }}>
+                    {formatHoursMinutes(info.studySeconds)}
+                  </span>
+                )}
+              </div>
+            );
+          })}
+        </div>
+        <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: "6px", marginTop: "16px", fontSize: "12px", color: "var(--ui-ink-muted)" }}>
+          <span>Less</span>
+          <div style={{ width: "14px", height: "14px", borderRadius: "3px", background: "var(--ui-canvas)", border: "1px solid var(--ui-line)" }} />
+          <div style={{ width: "14px", height: "14px", borderRadius: "3px", background: "rgba(47, 196, 124, 0.36)" }} />
+          <div style={{ width: "14px", height: "14px", borderRadius: "3px", background: "rgba(47, 196, 124, 0.52)" }} />
+          <div style={{ width: "14px", height: "14px", borderRadius: "3px", background: "rgba(47, 196, 124, 0.68)" }} />
+          <div style={{ width: "14px", height: "14px", borderRadius: "3px", background: "rgba(47, 196, 124, 0.84)" }} />
+          <span>More</span>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function DailyRecordsView({ selectedDate, setSelectedDate }) {
+  const [year, month, day] = selectedDate.split("-");
+  const [selectedSessionId, setSelectedSessionId] = React.useState(null);
+
+  const handlePrevDay = () => {
+    const prev = new Date(year, month - 1, Number(day) - 1);
+    setSelectedDate(`${prev.getFullYear()}-${String(prev.getMonth() + 1).padStart(2, '0')}-${String(prev.getDate()).padStart(2, '0')}`);
+  };
+  
+  const handleNextDay = () => {
+    const next = new Date(year, month - 1, Number(day) + 1);
+    setSelectedDate(`${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, '0')}-${String(next.getDate()).padStart(2, '0')}`);
+  };
+
+  return (
+    <div style={{ display: "grid", gap: "16px" }}>
+      <div className="ui-menu-stats">
+        <Stat label="선택 날짜" value={`${Number(month)}월 ${Number(day)}일`} />
+        <Stat label="총 학습" value="4시간 40분" tone="sky" />
+        <Stat label="세션 수" value="3개" tone="cream" />
+      </div>
+      <section className="ui-menu-section">
+        <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div>
+            <span className="ui-menu-eyebrow">04:00 — NEXT 04:00</span>
+            <h3>24시간 공부 타임라인</h3>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+            <button type="button" onClick={handlePrevDay} style={{ background: "transparent", border: "none", cursor: "pointer", fontSize: "16px", color: "var(--ui-ink-muted)", padding: "4px" }}>&lt;</button>
+            <strong style={{ fontSize: "16px", width: "100px", textAlign: "center" }}>{selectedDate}</strong>
+            <button type="button" onClick={handleNextDay} style={{ background: "transparent", border: "none", cursor: "pointer", fontSize: "16px", color: "var(--ui-ink-muted)", padding: "4px" }}>&gt;</button>
+          </div>
+        </header>
+        <div style={{ position: "relative", height: "64px", background: "var(--ui-canvas)", borderRadius: "12px", border: "1px solid var(--ui-line)", marginBottom: "24px", overflow: "hidden" }}>
+          <div style={{ position: "absolute", inset: "0", display: "flex", justifyContent: "space-between", alignItems: "flex-end", padding: "0 8px 4px", fontSize: "11px", color: "var(--ui-ink-muted)" }}>
+             <span>04</span><span>10</span><span>16</span><span>22</span><span>04</span>
+          </div>
+          <button type="button" onClick={() => setSelectedSessionId(0)} style={{ position: "absolute", left: "17%", width: "5%", top: "8px", bottom: "20px", background: "var(--ui-emerald-500)", borderRadius: "4px", border: selectedSessionId === 0 ? "2px solid var(--ui-emerald-700)" : "none", color: "#fff", fontSize: "10px", padding: "0 2px", overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis", cursor: "pointer" }}>1h 20m</button>
+          <button type="button" onClick={() => setSelectedSessionId(1)} style={{ position: "absolute", left: "25%", width: "4%", top: "8px", bottom: "20px", background: "var(--ui-emerald-500)", borderRadius: "4px", border: selectedSessionId === 1 ? "2px solid var(--ui-emerald-700)" : "none", color: "#fff", fontSize: "10px", padding: "0 2px", overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis", cursor: "pointer" }}>1h 5m</button>
+          <button type="button" onClick={() => setSelectedSessionId(2)} style={{ position: "absolute", left: "40%", width: "9%", top: "8px", bottom: "20px", background: "var(--ui-emerald-500)", borderRadius: "4px", border: selectedSessionId === 2 ? "2px solid var(--ui-emerald-700)" : "none", color: "#fff", fontSize: "10px", padding: "0 2px", overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis", cursor: "pointer" }}>2h 15m</button>
+        </div>
+
+        <header>
+          <div>
+            <span className="ui-menu-eyebrow">상세 기록</span>
+            <h3>공부 상세 구간</h3>
+          </div>
+          <GameButton variant="secondary">기록 추가</GameButton>
+        </header>
+        <ol style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: "8px" }}>
+          {dailyStudySessions.map((session, i) => (
+            <li key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px", background: selectedSessionId === i ? "var(--ui-surface-hover, #f1f5f9)" : "var(--ui-surface)", borderRadius: "12px", border: selectedSessionId === i ? "1px solid var(--ui-emerald-500)" : "1px solid var(--ui-line)", transition: "all 0.2s" }}>
+               <div style={{ display: "flex", gap: "16px", alignItems: "center" }}>
+                 <span style={{ fontSize: "12px", color: selectedSessionId === i ? "var(--ui-emerald-600)" : "var(--ui-ink-muted)", fontWeight: "600", width: "16px", textAlign: "center" }}>{i + 1}</span>
+                 <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                   <strong style={{ fontSize: "15px", color: "var(--ui-ink)" }}>{session.start} – {session.end}</strong>
+                   <span style={{ fontSize: "13px", color: "var(--ui-ink-muted)" }}>{session.title}</span>
+                 </div>
+               </div>
+               <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+                 <strong style={{ color: "var(--ui-emerald-600)" }}>{session.duration}</strong>
+                 <div style={{ display: "flex", gap: "6px" }}>
+                    <button type="button" style={{ padding: "6px 12px", borderRadius: "6px", border: "1px solid var(--ui-line)", background: "#fff", cursor: "pointer", fontSize: "13px", color: "var(--ui-ink)", fontWeight: "500" }}>수정</button>
+                    <button type="button" style={{ padding: "6px 12px", borderRadius: "6px", border: "1px solid var(--ui-line)", background: "#fff", cursor: "pointer", fontSize: "13px", color: "var(--ui-danger)", fontWeight: "500" }}>삭제</button>
+                 </div>
+               </div>
+            </li>
+          ))}
         </ol>
       </section>
-    </>
+    </div>
   );
+}
+
+function RecordsPanel() {
+  const [activeTab, setActiveTab] = React.useState("monthly");
+  const [currentMonth, setCurrentMonth] = React.useState("2026-08");
+  const [selectedDate, setSelectedDate] = React.useState("2026-08-13");
+
+  const tabs = [
+    { 
+      value: "monthly", 
+      label: "월간", 
+      content: <MonthlyRecordsView 
+        currentMonth={currentMonth} 
+        setCurrentMonth={setCurrentMonth} 
+        onDateClick={(date) => {
+          setSelectedDate(date);
+          setActiveTab("daily");
+        }} 
+      /> 
+    },
+    { 
+      value: "daily", 
+      label: "일간", 
+      content: <DailyRecordsView selectedDate={selectedDate} /> 
+    }
+  ];
+
+  return <GameTabs items={tabs} value={activeTab} onValueChange={setActiveTab} ariaLabel="학습 기록 뷰" />;
 }
 
 const rooms = [

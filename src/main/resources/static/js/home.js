@@ -3,6 +3,7 @@ import { createBgmPlayer } from "./home/bgm.js";
 import { createCharacter } from "./home/character.js";
 import { createLevel } from "./home/level.js";
 import { createPresence } from "./home/presence.js";
+import { createMyStudyRecords, resolveMyActiveCohortId } from "./home/myStudyRecords.js";
 import { createStudyRecords } from "./home/studyRecords.js?v=20260812-1";
 import { createTimer } from "./home/timer.js";
 import { escapeHtml, formatDuration, getLocalDateKey } from "./home/utils.js";
@@ -300,6 +301,11 @@ studyRecordsController = createStudyRecords({
     storageKey: studyRecordsKey,
     getElapsedSeconds: timerController.getElapsedSeconds,
     api: api?.studyRecords
+});
+
+const myStudyRecordsController = createMyStudyRecords({
+    api: api?.myStudyRecords,
+    getCohortId: () => resolveMyActiveCohortId(api?.myStudyRecords)
 });
 
 const levelController = createLevel({
@@ -950,6 +956,7 @@ function closeHomeOverlay() {
         return;
     }
 
+    myStudyRecordsController.unmount();
     window.OmagotchiHomeOverlay?.close();
     homeOverlayRoot.classList.remove("is-open");
     document.body.classList.remove("has-home-overlay");
@@ -978,7 +985,7 @@ function openHomeOverlay(type) {
     }
 
     if (type === "write") {
-        studyRecordsController.mount(
+        myStudyRecordsController.mount(
             homeOverlayRoot.querySelector("[data-study-records]")
         );
     }
@@ -1030,10 +1037,6 @@ document.querySelectorAll("[data-home-overlay]").forEach((link) => {
 
 // 동적으로 생성되는 오버레이 버튼은 상위 요소에서 한 번에 처리
 homeOverlayRoot?.addEventListener("click", (event) => {
-    if (studyRecordsController.handleClick(event)) {
-        return;
-    }
-
     const closeTarget = event.target.closest("[data-close-home-overlay]");
     const tabButton = event.target.closest("[data-overlay-tab]");
     const claimButton = event.target.closest("[data-home-claim]");
@@ -1106,10 +1109,6 @@ homeOverlayRoot?.addEventListener("input", (event) => {
 
 // 커뮤니티 글쓰기와 기수 가입 코드 제출 처리
 homeOverlayRoot?.addEventListener("submit", async (event) => {
-    if (studyRecordsController.handleSubmit(event)) {
-        return;
-    }
-
     const communityForm = event.target.closest("[data-community-compose]");
     const cohortForm = event.target.closest("[data-home-cohort-form]");
 

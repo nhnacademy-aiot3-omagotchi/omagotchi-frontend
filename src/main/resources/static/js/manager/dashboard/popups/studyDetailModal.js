@@ -1,19 +1,14 @@
 /**
  * 관리자 공부 통계의 수강생별 상세 보기.
- * 외부에는 openStudyDetailModal만 공개하고 기간·날짜·타임라인 상태는 이 모듈이 관리한다.
+ * 기간 overview와 선택 날짜 records를 독립적으로 조회한다.
  */
 (() => {
     function addDays(isoDate, amount) {
+        if (!isoDate) return "";
         const date = new Date(`${isoDate}T00:00:00Z`);
+        if (Number.isNaN(date.getTime())) return "";
         date.setUTCDate(date.getUTCDate() + amount);
         return date.toISOString().slice(0, 10);
-    }
-
-    function datesBetween(from, to) {
-        if (!from || !to) return [];
-        const dates = [];
-        for (let date = from; date <= to; date = addDays(date, 1)) dates.push(date);
-        return dates;
     }
 
     function currentKstAggregationDate() {
@@ -68,30 +63,25 @@
         return `${date.getUTCMonth() + 1}.${date.getUTCDate()}`;
     }
 
-    function trendBackgroundColors(dates, selectedDate) {
-        return dates.map((date) => date === selectedDate ? "#176044" : "#9ad9ba");
-    }
-
     function formatKstTime(value) {
         if (!value) return "-";
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return "-";
         return new Intl.DateTimeFormat("ko-KR", {
             timeZone: "Asia/Seoul",
             hour: "2-digit",
             minute: "2-digit",
             hour12: false
-        }).format(new Date(value));
+        }).format(date);
     }
 
-    function formatKstDateTime(value) {
-        if (!value) return "-";
-        return new Intl.DateTimeFormat("ko-KR", {
-            timeZone: "Asia/Seoul",
-            month: "2-digit",
-            day: "2-digit",
-            hour: "2-digit",
-            minute: "2-digit",
-            hour12: false
-        }).format(new Date(value));
+    function errorMessage(error, fallback) {
+        const requestId = error?.requestId ? ` (요청 ID: ${error.requestId})` : "";
+        return `${error?.message || fallback}${requestId}`;
+    }
+
+    function trendBackgroundColors(dates, selectedDate) {
+        return dates.map((date) => date === selectedDate ? "#176044" : "#9ad9ba");
     }
 
     function createTimelineBar(template, record, position) {
@@ -112,7 +102,6 @@
         article.querySelector("[data-detail-record-index]").textContent = String(index + 1);
         article.querySelector("[data-detail-record-range]").textContent = `${formatKstTime(record.startTime)} ~ ${formatKstTime(record.endTime)}`;
         article.querySelector("[data-detail-record-duration]").textContent = formatDuration(record.studySeconds);
-        article.querySelector("[data-detail-record-updated-at]").textContent = formatKstDateTime(record.updatedAt);
         return article;
     }
 
@@ -122,9 +111,10 @@
 
         const elements = {
             name: dialog.querySelector("[data-detail-name]"),
-            email: dialog.querySelector("[data-detail-email]"),
             period: dialog.querySelector("[data-detail-period]"),
             status: dialog.querySelector("[data-detail-status]"),
+            statusMessage: dialog.querySelector("[data-detail-status-message]"),
+            overviewRetry: dialog.querySelector("[data-detail-overview-retry]"),
             total: dialog.querySelector("[data-detail-total]"),
             average: dialog.querySelector("[data-detail-average]"),
             activeDays: dialog.querySelector("[data-detail-active-days]"),
@@ -137,6 +127,9 @@
             previousDate: dialog.querySelector("[data-detail-previous-date]"),
             nextDate: dialog.querySelector("[data-detail-next-date]"),
             today: dialog.querySelector("[data-detail-today]"),
+            dailyStatus: dialog.querySelector("[data-detail-daily-status]"),
+            dailyStatusMessage: dialog.querySelector("[data-detail-daily-status-message]"),
+            dailyRetry: dialog.querySelector("[data-detail-daily-retry]"),
             timelineTrack: dialog.querySelector("[data-detail-timeline-track]"),
             timelineEmpty: dialog.querySelector("[data-detail-timeline-empty]"),
             selectedCount: dialog.querySelector("[data-detail-selected-count]"),
@@ -150,79 +143,106 @@
         const state = {
             cohortId: null,
             cohortMembershipId: null,
-            memberName: "수강생",
-            memberEmail: "",
-            currentAggregationDate: null,
+            memberLabel: "수강생",
             periodDays: 7,
-            from: null,
-            to: null,
+            requestedPeriodDays: null,
+            overviewRetryDays: null,
+            currentAggregationDate: null,
             selectedDate: null,
-            records: [],
-            totalStudySeconds: 0,
-            loading: false,
-            error: null,
-            requestSequence: 0,
+            overview: null,
+            overviewLoading: false,
+            overviewError: null,
+            overviewSequence: 0,
+            daily: null,
+            dailyLoading: false,
+            dailyError: null,
+            dailySequence: 0,
             previousFocus: null
         };
 
         let trendChart = null;
         let trendDates = [];
 
-        function selectedDateRecords() {
-            return state.records
-                .filter((record) => record.aggregationDate === state.selectedDate)
-                .sort((left, right) => new Date(left.startTime) - new Date(right.startTime));
+        function overviewRangeContains(date) {
+            return Boolean(date && state.overview
+                && date >= state.overview.from && date <= state.overview.to);
         }
 
-        function dailyTotals() {
-            const totals = new Map(datesBetween(state.from, state.to).map((date) => [date, 0]));
-            state.records.forEach((record) => {
-                if (!totals.has(record.aggregationDate)) return;
-                totals.set(
-                    record.aggregationDate,
-                    totals.get(record.aggregationDate) + Math.max(0, Number(record.studySeconds) || 0)
-                );
+        function validOverview(response, requestedDays) {
+            if (!response || response.window !== `${requestedDays}d`
+                || !response.from || !response.to || response.from > response.to
+                || !Array.isArray(response.dailyTotals)) {
+                throw new Error("개인 공부 통계 응답을 확인할 수 없습니다.");
+            }
+            return response;
+        }
+
+        function validDaily(response, requestedDate) {
+            if (!response || response.date !== requestedDate || !Array.isArray(response.records)) {
+                throw new Error("날짜별 공부 기록 응답을 확인할 수 없습니다.");
+            }
+            return response;
+        }
+
+        function renderOverviewStatus() {
+            if (state.overviewLoading) {
+                elements.statusMessage.textContent = "개인 공부 통계를 불러오는 중입니다.";
+                elements.overviewRetry.hidden = true;
+                elements.status.hidden = false;
+                return;
+            }
+            if (state.overviewError) {
+                elements.statusMessage.textContent = errorMessage(state.overviewError, "개인 공부 통계를 불러오지 못했습니다.");
+                elements.overviewRetry.hidden = false;
+                elements.status.hidden = false;
+                return;
+            }
+            elements.status.hidden = true;
+        }
+
+        function renderOverview() {
+            elements.name.textContent = state.memberLabel;
+            elements.period.textContent = state.overview
+                ? `${state.overview.from} ~ ${state.overview.to} · 최근 ${state.periodDays}일`
+                : `최근 ${state.requestedPeriodDays || state.periodDays}일의 학습 기록입니다.`;
+            elements.periodButtons.forEach((button) => {
+                const days = Number(button.dataset.detailPeriodDays);
+                const active = days === state.periodDays;
+                button.classList.toggle("is-active", active);
+                button.setAttribute("aria-pressed", String(active));
+                button.disabled = state.overviewLoading;
             });
-            return [...totals].map(([date, seconds]) => ({ date, seconds }));
-        }
 
-        function renderSummary() {
-            const activeDays = new Set(
-                state.records
-                    .filter((record) => Number(record.studySeconds) > 0)
-                    .map((record) => record.aggregationDate)
-            ).size;
-            const total = Math.max(0, Number(state.totalStudySeconds) || 0);
-
-            elements.total.textContent = formatDuration(total);
-            elements.average.textContent = formatDuration(activeDays ? Math.floor(total / activeDays) : 0);
-            elements.activeDays.textContent = `${activeDays}일`;
-            elements.recordCount.textContent = `${state.records.length}회`;
+            const overview = state.overview;
+            elements.total.textContent = overview ? formatDuration(overview.totalStudySeconds) : "—";
+            elements.average.textContent = overview ? formatDuration(overview.averageDailyStudySeconds) : "—";
+            elements.activeDays.textContent = overview ? `${Number(overview.activeStudyDays) || 0}일` : "—";
+            elements.recordCount.textContent = overview ? `${Number(overview.recordCount) || 0}회` : "—";
+            renderOverviewStatus();
+            renderDateControls();
         }
 
         function renderTrendChart() {
             trendChart?.destroy();
             trendChart = null;
             trendDates = [];
-            if (!elements.chart) return;
-
-            const totals = dailyTotals();
-            trendDates = totals.map((item) => item.date);
-            const hasRecords = totals.some((item) => item.seconds > 0);
-            elements.chartEmpty.hidden = state.loading || Boolean(state.error) || hasRecords;
+            const totals = state.overview?.dailyTotals || [];
+            trendDates = totals.map((item) => item.aggregationDate);
+            const hasRecords = totals.some((item) => Number(item.studySeconds) > 0);
+            elements.chartEmpty.hidden = !state.overview || state.overviewLoading || hasRecords;
             elements.chart.hidden = !hasRecords;
             if (!hasRecords || typeof window.Chart !== "function") return;
 
             trendChart = new window.Chart(elements.chart, {
                 type: "bar",
                 data: {
-                    labels: totals.map((item) => formatChartDate(item.date)),
+                    labels: totals.map((item) => formatChartDate(item.aggregationDate)),
                     datasets: [{
                         label: "학습 시간",
-                        data: totals.map((item) => Number((item.seconds / 3600).toFixed(2))),
+                        data: totals.map((item) => Number((Number(item.studySeconds) / 3600).toFixed(2))),
                         backgroundColor: trendBackgroundColors(trendDates, state.selectedDate),
                         hoverBackgroundColor: "#20b978",
-                        borderRadius: 5,
+                        borderRadius: 0,
                         maxBarThickness: 28
                     }]
                 },
@@ -232,36 +252,20 @@
                     resizeDelay: 100,
                     onClick: (_event, activeElements) => {
                         const selected = activeElements[0];
-                        if (!selected) return;
-                        selectDate(totals[selected.index].date);
+                        if (selected) selectDate(totals[selected.index].aggregationDate);
                     },
                     plugins: {
                         legend: { display: false },
                         tooltip: {
                             callbacks: {
-                                title: (items) => formatDateLabel(totals[items[0].dataIndex].date),
-                                label: (context) => ` ${formatDuration(totals[context.dataIndex].seconds)}`
+                                title: (items) => formatDateLabel(totals[items[0].dataIndex].aggregationDate),
+                                label: (context) => ` ${formatDuration(totals[context.dataIndex].studySeconds)}`
                             }
                         }
                     },
                     scales: {
-                        x: {
-                            grid: { display: false },
-                            ticks: {
-                                autoSkip: true,
-                                color: "#66736c",
-                                maxRotation: 0,
-                                maxTicksLimit: state.periodDays === 30 ? 10 : 7
-                            }
-                        },
-                        y: {
-                            beginAtZero: true,
-                            grid: { color: "#e5eee8" },
-                            ticks: {
-                                color: "#66736c",
-                                callback: (value) => `${value}h`
-                            }
-                        }
+                        x: { grid: { display: false }, ticks: { autoSkip: true, color: "#66736c", maxRotation: 0, maxTicksLimit: state.periodDays === 30 ? 10 : 7 } },
+                        y: { beginAtZero: true, grid: { color: "#e5eee8" }, ticks: { color: "#66736c", callback: (value) => `${value}h` } }
                     }
                 }
             });
@@ -270,9 +274,21 @@
         function updateTrendSelection() {
             const dataset = trendChart?.data.datasets[0];
             if (!dataset) return;
-
             dataset.backgroundColor = trendBackgroundColors(trendDates, state.selectedDate);
             trendChart.update("none");
+        }
+
+        function renderDateControls() {
+            const from = state.overview?.from || "";
+            const to = state.overview?.to || "";
+            elements.selectedDateLabel.textContent = formatDateLabel(state.selectedDate);
+            elements.dateInput.value = state.selectedDate || "";
+            elements.dateInput.min = from;
+            elements.dateInput.max = to;
+            elements.dateInput.disabled = !state.overview;
+            elements.previousDate.disabled = !state.overview || !state.selectedDate || state.selectedDate <= from;
+            elements.nextDate.disabled = !state.overview || !state.selectedDate || state.selectedDate >= to;
+            elements.today.disabled = !state.overview || state.selectedDate === state.currentAggregationDate;
         }
 
         function timelinePosition(record) {
@@ -283,32 +299,38 @@
             const clippedStart = Math.max(startOfDay, recordStart);
             const clippedEnd = Math.min(endOfDay, recordEnd);
             if (!Number.isFinite(recordStart) || !Number.isFinite(recordEnd) || clippedEnd <= clippedStart) return null;
-
             return {
                 left: (clippedStart - startOfDay) * 100 / (endOfDay - startOfDay),
                 width: (clippedEnd - clippedStart) * 100 / (endOfDay - startOfDay)
             };
         }
 
-        function focusRecord(recordId) {
-            const row = elements.list.querySelector(`[data-detail-record-id="${CSS.escape(String(recordId))}"]`);
-            if (!row) return;
-            elements.list.querySelectorAll(".is-selected").forEach((item) => item.classList.remove("is-selected"));
-            row.classList.add("is-selected");
-            row.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        function renderDailyStatus() {
+            if (state.dailyLoading) {
+                elements.dailyStatusMessage.textContent = "선택 날짜의 공부 기록을 불러오는 중입니다.";
+                elements.dailyRetry.hidden = true;
+                elements.dailyStatus.hidden = false;
+                return;
+            }
+            if (state.dailyError) {
+                elements.dailyStatusMessage.textContent = errorMessage(state.dailyError, "선택 날짜의 공부 기록을 불러오지 못했습니다.");
+                elements.dailyRetry.hidden = false;
+                elements.dailyStatus.hidden = false;
+                return;
+            }
+            elements.dailyStatus.hidden = true;
         }
 
-        function renderSelectedDate() {
-            const records = selectedDateRecords();
-            elements.selectedDateLabel.textContent = formatDateLabel(state.selectedDate);
-            elements.dateInput.value = state.selectedDate || "";
-            elements.dateInput.min = state.from || "";
-            elements.dateInput.max = state.to || "";
-            elements.previousDate.disabled = !state.selectedDate || state.selectedDate <= state.from;
-            elements.nextDate.disabled = !state.selectedDate || state.selectedDate >= state.to;
-            elements.today.disabled = state.selectedDate === state.currentAggregationDate;
-            elements.selectedCount.textContent = `${records.length}개 세션`;
-            elements.timelineEmpty.hidden = records.length > 0;
+        function renderDaily() {
+            renderDateControls();
+            renderDailyStatus();
+            const matchesSelection = state.daily?.date === state.selectedDate;
+            const records = matchesSelection ? state.daily.records : [];
+            const total = matchesSelection ? Number(state.daily.totalStudySeconds) || 0 : 0;
+            elements.selectedCount.textContent = matchesSelection
+                ? `${records.length}개 세션 · ${formatDuration(total)}`
+                : "0개 세션";
+            elements.timelineEmpty.hidden = state.dailyLoading || Boolean(state.dailyError) || records.length > 0;
 
             const timelineFragment = document.createDocumentFragment();
             records.forEach((record) => {
@@ -317,90 +339,156 @@
             });
             elements.timelineTrack.replaceChildren(timelineFragment);
 
+            if (state.dailyLoading && !matchesSelection) {
+                const loading = document.createElement("p");
+                loading.className = "study-detail-empty";
+                loading.textContent = "날짜별 기록을 불러오는 중입니다.";
+                elements.list.replaceChildren(loading);
+                return;
+            }
+            if (state.dailyError && !matchesSelection) {
+                const failure = document.createElement("p");
+                failure.className = "study-detail-empty";
+                failure.textContent = "날짜별 기록을 표시할 수 없습니다.";
+                elements.list.replaceChildren(failure);
+                return;
+            }
             if (!records.length) {
                 elements.list.replaceChildren(elements.recordEmptyTemplate.content.cloneNode(true));
                 return;
             }
-            const recordFragment = document.createDocumentFragment();
-            records.forEach((record, index) => {
-                recordFragment.append(createDetailRecord(elements.recordTemplate, record, index));
-            });
-            elements.list.replaceChildren(recordFragment);
+            const fragment = document.createDocumentFragment();
+            records.forEach((record, index) => fragment.append(createDetailRecord(elements.recordTemplate, record, index)));
+            elements.list.replaceChildren(fragment);
         }
 
-        function render() {
-            elements.name.textContent = state.memberName;
-            elements.email.textContent = state.memberEmail;
-            elements.email.hidden = !state.memberEmail;
-            elements.period.textContent = state.from && state.to
-                ? `${state.from} ~ ${state.to} · 최근 ${state.periodDays}일`
-                : `최근 ${state.periodDays}일의 학습 기록입니다.`;
-            elements.periodButtons.forEach((button) => {
-                const active = Number(button.dataset.detailPeriodDays) === state.periodDays;
-                button.classList.toggle("is-active", active);
-                button.setAttribute("aria-pressed", String(active));
-                button.disabled = state.loading;
-            });
+        function focusRecord(recordId) {
+            const escapedId = CSS.escape(String(recordId));
+            const row = elements.list.querySelector(`[data-detail-record-id="${escapedId}"]`);
+            if (!row) return;
+            elements.list.querySelectorAll(".is-selected").forEach((item) => item.classList.remove("is-selected"));
+            elements.timelineTrack.querySelectorAll(".is-selected").forEach((item) => item.classList.remove("is-selected"));
+            elements.timelineTrack.querySelector(`[data-timeline-record="${escapedId}"]`)?.classList.add("is-selected");
+            row.classList.add("is-selected");
+            row.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        }
 
-            elements.status.textContent = state.loading
-                ? "개인 공부 기록을 불러오는 중입니다."
-                : state.error || "";
-            elements.status.hidden = !state.loading && !state.error;
-
-            renderSummary();
-            renderTrendChart();
-            renderSelectedDate();
+        async function loadDaily(date = state.selectedDate) {
+            if (!overviewRangeContains(date)) {
+                renderDateControls();
+                return;
+            }
+            const sequence = ++state.dailySequence;
+            const cohortAtRequest = state.cohortId;
+            const membershipAtRequest = state.cohortMembershipId;
+            if (state.daily?.date !== date) state.daily = null;
+            state.dailyLoading = true;
+            state.dailyError = null;
+            renderDaily();
+            try {
+                const response = validDaily(await window.OmagotchiApi?.manager?.getStudyMemberRecords?.(
+                    cohortAtRequest,
+                    membershipAtRequest,
+                    date
+                ), date);
+                if (sequence !== state.dailySequence || cohortAtRequest !== state.cohortId
+                    || membershipAtRequest !== state.cohortMembershipId || date !== state.selectedDate) return;
+                state.daily = response;
+            } catch (error) {
+                if (sequence !== state.dailySequence || cohortAtRequest !== state.cohortId
+                    || membershipAtRequest !== state.cohortMembershipId || date !== state.selectedDate) return;
+                state.dailyError = error;
+                console.error("Failed to load member daily study records:", error);
+            } finally {
+                if (sequence === state.dailySequence) {
+                    state.dailyLoading = false;
+                    renderDaily();
+                }
+            }
         }
 
         function selectDate(date) {
-            if (!date || date < state.from || date > state.to || date === state.selectedDate) return;
+            if (!overviewRangeContains(date)) {
+                renderDateControls();
+                return;
+            }
+            if (date === state.selectedDate) {
+                renderDateControls();
+                if (state.dailyError || state.daily?.date !== date) void loadDaily(date);
+                return;
+            }
+            state.dailySequence += 1;
             state.selectedDate = date;
+            state.daily = null;
+            state.dailyError = null;
+            state.dailyLoading = false;
             updateTrendSelection();
-            renderSelectedDate();
+            renderDaily();
+            void loadDaily(date);
         }
 
-        async function loadRecords() {
-            const sequence = ++state.requestSequence;
-            state.to = state.currentAggregationDate;
-            state.from = addDays(state.to, -(state.periodDays - 1));
-            if (!state.selectedDate || state.selectedDate < state.from || state.selectedDate > state.to) {
-                state.selectedDate = state.to;
-            }
-            state.loading = true;
-            state.error = null;
-            state.records = [];
-            state.totalStudySeconds = 0;
-            render();
-
+        async function loadOverview(requestedDays = state.periodDays) {
+            if (![7, 30].includes(requestedDays)) return;
+            const sequence = ++state.overviewSequence;
+            const cohortAtRequest = state.cohortId;
+            const membershipAtRequest = state.cohortMembershipId;
+            const currentAtRequest = state.currentAggregationDate;
+            const followedCurrentAtRequest = state.selectedDate === currentAtRequest;
+            state.requestedPeriodDays = requestedDays;
+            state.overviewLoading = true;
+            state.overviewError = null;
+            renderOverview();
             try {
-                const response = await window.OmagotchiApi?.manager?.getStudyMemberRecords?.(
-                    state.cohortId,
-                    state.cohortMembershipId,
-                    { from: state.from, to: state.to }
-                );
-                if (sequence !== state.requestSequence) return;
+                const response = validOverview(await window.OmagotchiApi?.manager?.getStudyMemberOverview?.(
+                    cohortAtRequest,
+                    membershipAtRequest,
+                    `${requestedDays}d`
+                ), requestedDays);
+                if (sequence !== state.overviewSequence || cohortAtRequest !== state.cohortId
+                    || membershipAtRequest !== state.cohortMembershipId) return;
 
-                if (!Array.isArray(response?.records)) {
-                    throw new Error("개인 공부 기록 응답을 확인할 수 없습니다.");
+                const followsCurrent = followedCurrentAtRequest && state.selectedDate === currentAtRequest;
+                const outside = !state.selectedDate || state.selectedDate < response.from || state.selectedDate > response.to;
+                const previousSelectedDate = state.selectedDate;
+                state.overview = response;
+                state.periodDays = requestedDays;
+                state.overviewRetryDays = null;
+                state.currentAggregationDate = response.to;
+                if (followsCurrent || outside) state.selectedDate = response.to;
+                renderOverview();
+                renderTrendChart();
+
+                if (state.selectedDate !== previousSelectedDate || state.daily?.date !== state.selectedDate) {
+                    state.dailySequence += 1;
+                    state.daily = null;
+                    state.dailyError = null;
+                    state.dailyLoading = false;
+                    renderDaily();
+                    void loadDaily(state.selectedDate);
+                } else {
+                    updateTrendSelection();
+                    renderDaily();
                 }
-                state.records = response.records;
-                state.totalStudySeconds = Number(response.totalStudySeconds) || state.records.reduce(
-                    (total, record) => total + (Number(record.studySeconds) || 0),
-                    0
-                );
             } catch (error) {
-                if (sequence !== state.requestSequence) return;
-                state.error = error?.message || "개인 공부 기록을 불러오지 못했습니다.";
+                if (sequence !== state.overviewSequence || cohortAtRequest !== state.cohortId
+                    || membershipAtRequest !== state.cohortMembershipId) return;
+                state.overviewError = error;
+                state.overviewRetryDays = requestedDays;
+                console.error("Failed to load member study overview:", error);
             } finally {
-                if (sequence === state.requestSequence) {
-                    state.loading = false;
-                    render();
+                if (sequence === state.overviewSequence) {
+                    state.overviewLoading = false;
+                    state.requestedPeriodDays = null;
+                    renderOverview();
                 }
             }
         }
 
         function close() {
-            state.requestSequence += 1;
+            state.overviewSequence += 1;
+            state.dailySequence += 1;
+            state.overviewLoading = false;
+            state.dailyLoading = false;
             trendChart?.destroy();
             trendChart = null;
             trendDates = [];
@@ -409,29 +497,49 @@
         }
 
         window.openStudyDetailModal = function(options) {
-            if (!options?.cohortMembershipId) return;
+            if (!options?.cohortId || !options?.cohortMembershipId) return;
+            state.overviewSequence += 1;
+            state.dailySequence += 1;
             state.previousFocus = document.activeElement;
             state.cohortId = options.cohortId;
             state.cohortMembershipId = options.cohortMembershipId;
-            state.memberName = options.memberName || "수강생";
-            state.memberEmail = options.memberEmail || "";
-            state.currentAggregationDate = options.currentAggregationDate || options.to || currentKstAggregationDate();
+            state.memberLabel = options.memberLabel || `수강생 #${options.cohortMembershipId}`;
             state.periodDays = 7;
+            state.requestedPeriodDays = null;
+            state.overviewRetryDays = null;
+            state.currentAggregationDate = options.currentAggregationDate || currentKstAggregationDate();
             state.selectedDate = state.currentAggregationDate;
+            state.overview = null;
+            state.overviewLoading = false;
+            state.overviewError = null;
+            state.daily = null;
+            state.dailyLoading = false;
+            state.dailyError = null;
+            trendChart?.destroy();
+            trendChart = null;
+            trendDates = [];
+            elements.chart.hidden = true;
+            elements.chartEmpty.hidden = true;
             dialog.hidden = false;
+            renderOverview();
+            renderDaily();
             elements.closeButtons[0]?.focus();
-            loadRecords();
+            void loadOverview(7);
         };
 
         elements.closeButtons.forEach((button) => button.addEventListener("click", close));
         elements.periodButtons.forEach((button) => {
             button.addEventListener("click", () => {
-                const periodDays = Number(button.dataset.detailPeriodDays);
-                if (![7, 30].includes(periodDays) || periodDays === state.periodDays) return;
-                state.periodDays = periodDays;
-                loadRecords();
+                const days = Number(button.dataset.detailPeriodDays);
+                if (![7, 30].includes(days)) return;
+                if (days === state.periodDays && !state.overviewError) return;
+                void loadOverview(days);
             });
         });
+        elements.overviewRetry.addEventListener("click", () => {
+            void loadOverview(state.overviewRetryDays || state.periodDays);
+        });
+        elements.dailyRetry.addEventListener("click", () => void loadDaily());
         elements.dateInput.addEventListener("change", () => selectDate(elements.dateInput.value));
         elements.previousDate.addEventListener("click", () => selectDate(addDays(state.selectedDate, -1)));
         elements.nextDate.addEventListener("click", () => selectDate(addDays(state.selectedDate, 1)));

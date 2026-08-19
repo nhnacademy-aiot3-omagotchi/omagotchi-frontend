@@ -2,11 +2,13 @@ FROM eclipse-temurin:21-jdk-alpine AS builder
 
 WORKDIR /workspace
 
-RUN apk add --no-cache bash curl
+RUN apk add --no-cache bash curl nodejs npm
 
 COPY . .
 
-RUN chmod +x mvnw \
+RUN npm install \
+    && npm run build:home \
+    && chmod +x mvnw \
     && ./mvnw -B -DskipTests package
 
 

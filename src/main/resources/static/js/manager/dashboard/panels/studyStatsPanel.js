@@ -1,14 +1,17 @@
 (() => {
-    const PAGE_SIZE = 5;
-    const DEFAULT_BOUNDARY_NOTE = "Asia/Seoul 오전 4시를 하루의 시작으로 집계합니다.";
+    const PAGE_SIZE = 10;
+    const TOP_SIZE = 5;
+    const DEFAULT_SORT = Object.freeze({ field: "periodStudySeconds", direction: "desc" });
+    const BUCKET_LABELS = Object.freeze({
+        NO_RECORD: "기록 없음",
+        UNDER_ONE_HOUR: "1시간 미만",
+        ONE_TO_TWO_HOURS: "1~2시간",
+        TWO_TO_FOUR_HOURS: "2~4시간",
+        FOUR_HOURS_OR_MORE: "4시간 이상"
+    });
 
-    function isoDateInZone(date, timeZone = "Asia/Seoul") {
-        return new Intl.DateTimeFormat("en-CA", {
-            timeZone,
-            year: "numeric",
-            month: "2-digit",
-            day: "2-digit"
-        }).format(date);
+    function createResource() {
+        return { data: null, loading: false, error: null, sequence: 0 };
     }
 
     function formatDuration(seconds) {
@@ -24,6 +27,8 @@
 
     function formatDateTime(value) {
         if (!value) return "-";
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return "-";
         return new Intl.DateTimeFormat("ko-KR", {
             timeZone: "Asia/Seoul",
             month: "2-digit",
@@ -31,7 +36,20 @@
             hour: "2-digit",
             minute: "2-digit",
             hour12: false
-        }).format(new Date(value));
+        }).format(date);
+    }
+
+    function errorMessage(error, fallback) {
+        const requestId = error?.requestId ? ` (요청 ID: ${error.requestId})` : "";
+        return `${error?.message || fallback}${requestId}`;
+    }
+
+    function assertPage(response) {
+        if (!response || !Array.isArray(response.items)
+            || !Number.isInteger(response.page) || !Number.isInteger(response.totalPages)) {
+            throw new Error("수강생 공부 통계 응답을 확인할 수 없습니다.");
+        }
+        return response;
     }
 
     function createEmptyRow(template, message) {
@@ -42,243 +60,182 @@
 
     function createPageButton(template, pageNumber, currentPage) {
         const button = template.content.firstElementChild.cloneNode(true);
-        button.classList.toggle("is-active", pageNumber === currentPage);
+        const current = pageNumber === currentPage;
+        button.classList.toggle("is-active", current);
         button.dataset.goPage = String(pageNumber);
         button.textContent = String(pageNumber + 1);
+        button.setAttribute("aria-label", `${pageNumber + 1}페이지`);
+        if (current) button.setAttribute("aria-current", "page");
         return button;
     }
 
     function createMemberRow(template, member) {
         const row = template.content.firstElementChild.cloneNode(true);
         const membershipId = String(member.cohortMembershipId ?? "");
-        const name = String(member.name ?? "");
-        const email = String(member.email ?? "");
-
-        row.querySelector("[data-studystats-member-name]").textContent = name;
-        row.querySelector("[data-studystats-member-email]").textContent = email;
+        const label = `수강생 #${membershipId}`;
+        row.querySelector("[data-studystats-member-label]").textContent = label;
         row.querySelector("[data-studystats-today]").textContent = formatDuration(member.todayStudySeconds);
         row.querySelector("[data-studystats-period-total]").textContent = formatDuration(member.periodStudySeconds);
         row.querySelector("[data-studystats-active-days]").textContent = `${Number(member.activeStudyDays) || 0}일`;
+        row.querySelector("[data-studystats-record-count]").textContent = `${Number(member.recordCount) || 0}회`;
         row.querySelector("[data-studystats-last-studied]").textContent = formatDateTime(member.lastStudiedAt);
         row.querySelectorAll("[data-view-detail]").forEach((button) => {
             button.dataset.viewDetail = membershipId;
-            button.dataset.viewName = name;
-            button.dataset.viewEmail = email;
+            button.dataset.viewLabel = label;
         });
         return row;
     }
 
-    function create({ root, fetchStatistics, getMemberProfiles, openMemberDetail }) {
-        if (!root) {
-            throw new Error("Study statistics panel root is required.");
-        }
-        if (typeof fetchStatistics !== "function") {
-            throw new Error("Study statistics fetch function is required.");
+    function create({ root, getToday, getTrend, getMembers, openMemberDetail }) {
+        if (!root) throw new Error("Study statistics panel root is required.");
+        if (![getToday, getTrend, getMembers].every((dependency) => typeof dependency === "function")) {
+            throw new Error("Study statistics API functions are required.");
         }
 
         const elements = {
-            search: root.querySelector("[data-studystats-search]"),
             period: root.querySelector("[data-studystats-period]"),
             list: root.querySelector("[data-studystats-list]"),
             pageNumbers: root.querySelector("[data-page-numbers]"),
             totalTime: root.querySelector("[data-kpi-total-time]"),
             participation: root.querySelector("[data-kpi-participation]"),
             averageTime: root.querySelector("[data-kpi-avg-time]"),
-            currentlyStudying: root.querySelector("[data-kpi-current-studying]"),
+            noRecord: root.querySelector("[data-kpi-no-record]"),
             trendTitle: root.querySelector("[data-trend-chart-title]"),
             topTitle: root.querySelector("[data-top-chart-title]"),
-            boundaryNote: root.querySelector("[data-study-boundary-note]"),
             trendChart: root.querySelector("#trendChart"),
-            topStudentsChart: root.querySelector("#topStudentsChart"),
-            durationDistributionChart: root.querySelector("#durationDistributionChart"),
+            topChart: root.querySelector("#topStudentsChart"),
+            durationChart: root.querySelector("#durationDistributionChart"),
             rowTemplate: root.querySelector("[data-studystats-row-template]"),
             emptyTemplate: root.querySelector("[data-studystats-empty-template]"),
-            pageTemplate: root.querySelector("[data-studystats-page-template]")
+            pageTemplate: root.querySelector("[data-studystats-page-template]"),
+            statuses: new Map([...root.querySelectorAll("[data-study-status]")]
+                .map((element) => [element.dataset.studyStatus, element]))
         };
 
-        let active = false;
-        let cohortId;
-        let page = 0;
-        let sort = { key: "name", dir: "asc" };
-        let statistics = null;
-        let loading = false;
-        let requestSequence = 0;
-        let trendChartInstance = null;
-        let topStudentsChartInstance = null;
-        let durationDistributionChartInstance = null;
+        const state = {
+            active: false,
+            cohortId: null,
+            periodDays: 7,
+            page: 0,
+            sort: { ...DEFAULT_SORT },
+            today: createResource(),
+            trend: createResource(),
+            members: createResource(),
+            top: createResource()
+        };
+        const charts = { trend: null, top: null, duration: null };
 
-        function selectedPeriodDays() {
-            return Number(elements.period?.value) || 7;
+        function selectedWindow() {
+            return `${state.periodDays}d`;
         }
 
-        function dateRange() {
-            const aggregationNow = new Date(Date.now() - (4 * 60 * 60 * 1000));
-            const to = new Date(`${isoDateInZone(aggregationNow)}T12:00:00+09:00`);
-            const from = new Date(
-                to.getTime() - ((selectedPeriodDays() - 1) * 24 * 60 * 60 * 1000)
-            );
-            return { from: isoDateInZone(from), to: isoDateInZone(to) };
-        }
-
-        function memberRows() {
-            if (!statistics?.members) return [];
-            const profiles = getMemberProfiles?.() || [];
-            const profileByUserId = new Map(
-                profiles.map((member) => [String(member.userId ?? member.id), member])
-            );
-            const profileByMembershipId = new Map(
-                profiles
-                    .filter((member) => member.cohortMembershipId ?? member.membershipId)
-                    .map((member) => [String(member.cohortMembershipId ?? member.membershipId), member])
-            );
-
-            return statistics.members.map((memberStatistics) => {
-                const profile = profileByUserId.get(String(memberStatistics.userId))
-                    || profileByMembershipId.get(String(memberStatistics.cohortMembershipId));
-                return {
-                    ...memberStatistics,
-                    name: profile?.name
-                        || memberStatistics.name
-                        || `사용자-${String(memberStatistics.userId).slice(0, 8)}`,
-                    email: profile?.email || memberStatistics.email || "-"
-                };
-            });
-        }
-
-        function sortedAndFilteredMembers() {
-            const query = (elements.search?.value || "").trim().toLowerCase();
-            const direction = sort.dir === "desc" ? -1 : 1;
-            const selectors = {
-                name: (member) => member.name.toLocaleLowerCase("ko-KR"),
-                today: (member) => member.todayStudySeconds,
-                period: (member) => member.periodStudySeconds,
-                days: (member) => member.activeStudyDays,
-                last: (member) => member.lastStudiedAt || ""
-            };
-            const selector = selectors[sort.key] || selectors.name;
-
-            return memberRows()
-                .filter((member) => member.name.toLowerCase().includes(query)
-                    || member.email.toLowerCase().includes(query))
-                .sort((left, right) => {
-                    const a = selector(left);
-                    const b = selector(right);
-                    if (typeof a === "string") return a.localeCompare(b, "ko-KR") * direction;
-                    return (a - b) * direction;
-                });
-        }
-
-        function renderPagination(totalPages) {
-            if (!elements.pageNumbers) return;
-            if (totalPages <= 1) {
-                elements.pageNumbers.replaceChildren();
+        function renderStatus(key, resource, loadingMessage, failureMessage) {
+            const status = elements.statuses.get(key);
+            if (!status) return;
+            const message = status.querySelector("[data-study-status-message]");
+            const retry = status.querySelector("[data-study-retry]");
+            if (resource.loading) {
+                message.textContent = loadingMessage;
+                retry.hidden = true;
+                status.hidden = false;
                 return;
             }
+            if (resource.error) {
+                message.textContent = errorMessage(resource.error, failureMessage);
+                retry.hidden = false;
+                status.hidden = false;
+                return;
+            }
+            status.hidden = true;
+        }
 
-            const start = Math.max(0, Math.min(page - 2, totalPages - 5));
+        function renderToday() {
+            const today = state.today.data;
+            elements.totalTime.textContent = today ? formatDuration(today.totalStudySeconds) : "—";
+            if (today) {
+                const active = Number(today.activeStudentCount) || 0;
+                const participants = Number(today.participantCount) || 0;
+                const rate = active ? Math.round(participants * 100 / active) : 0;
+                elements.participation.textContent = `${participants} / ${active}명 (${rate}%)`;
+                elements.averageTime.textContent = formatDuration(today.averageParticipantStudySeconds);
+                elements.noRecord.textContent = `${Number(today.noRecordStudentCount) || 0}명`;
+            } else {
+                elements.participation.textContent = "—";
+                elements.averageTime.textContent = "—";
+                elements.noRecord.textContent = "—";
+            }
+            renderStatus("today", state.today, "오늘 통계를 불러오는 중입니다.", "오늘 통계를 불러오지 못했습니다.");
+            renderDurationChart();
+        }
+
+        function renderPagination(pageData) {
+            const totalPages = Number(pageData?.totalPages) || 0;
+            if (!elements.pageNumbers || totalPages <= 1) {
+                elements.pageNumbers?.replaceChildren();
+                return;
+            }
+            const start = Math.max(0, Math.min(state.page - 2, totalPages - 5));
             const end = Math.min(totalPages, start + 5);
             const fragment = document.createDocumentFragment();
             for (let pageNumber = start; pageNumber < end; pageNumber += 1) {
-                fragment.append(createPageButton(elements.pageTemplate, pageNumber, page));
+                fragment.append(createPageButton(elements.pageTemplate, pageNumber, state.page));
             }
             elements.pageNumbers.replaceChildren(fragment);
         }
 
-        function renderTable() {
-            if (!elements.list) return;
-            if (loading) {
-                elements.list.replaceChildren(createEmptyRow(
-                    elements.emptyTemplate,
-                    "공부 통계를 불러오는 중입니다."
-                ));
-                renderPagination(0);
-                return;
-            }
-            if (!statistics) {
-                elements.list.replaceChildren(createEmptyRow(
-                    elements.emptyTemplate,
-                    "공부 통계를 불러오지 못했습니다."
-                ));
-                renderPagination(0);
-                return;
-            }
-
-            const members = sortedAndFilteredMembers();
-            const totalPages = Math.max(1, Math.ceil(members.length / PAGE_SIZE));
-            page = Math.min(page, totalPages - 1);
-            const currentPage = members.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
-
-            if (!currentPage.length) {
-                elements.list.replaceChildren(createEmptyRow(
-                    elements.emptyTemplate,
-                    "조회된 수강생이 없습니다."
-                ));
-            } else {
-                const fragment = document.createDocumentFragment();
-                currentPage.forEach((member) => fragment.append(createMemberRow(elements.rowTemplate, member)));
-                elements.list.replaceChildren(fragment);
-            }
-
-            renderPagination(totalPages);
-            root.querySelectorAll(".sortable").forEach((heading) => {
-                if (heading.dataset.sort === sort.key) heading.dataset.dir = sort.dir;
-                else delete heading.dataset.dir;
+        function renderSort() {
+            root.querySelectorAll("[data-sort-heading]").forEach((heading) => {
+                const active = heading.dataset.sortHeading === state.sort.field;
+                const direction = active ? state.sort.direction : null;
+                heading.setAttribute(
+                    "aria-sort",
+                    direction === "asc" ? "ascending" : direction === "desc" ? "descending" : "none"
+                );
+                const icon = heading.querySelector("[aria-hidden='true']");
+                if (icon) icon.textContent = direction === "asc" ? "↑" : direction === "desc" ? "↓" : "↕";
             });
         }
 
-        function destroyCharts() {
-            trendChartInstance?.destroy();
-            topStudentsChartInstance?.destroy();
-            durationDistributionChartInstance?.destroy();
-            trendChartInstance = null;
-            topStudentsChartInstance = null;
-            durationDistributionChartInstance = null;
+        function renderMembers() {
+            renderStatus("members", state.members, "수강생 통계를 불러오는 중입니다.", "수강생 통계를 불러오지 못했습니다.");
+            renderSort();
+            const pageData = state.members.data;
+            if (!pageData) {
+                elements.list.replaceChildren(createEmptyRow(
+                    elements.emptyTemplate,
+                    state.members.loading ? "수강생 통계를 불러오는 중입니다." : "수강생 통계를 불러오지 못했습니다."
+                ));
+                renderPagination(null);
+                return;
+            }
+            if (!pageData.items.length) {
+                elements.list.replaceChildren(createEmptyRow(elements.emptyTemplate, "조회된 수강생이 없습니다."));
+            } else {
+                const fragment = document.createDocumentFragment();
+                pageData.items.forEach((member) => fragment.append(createMemberRow(elements.rowTemplate, member)));
+                elements.list.replaceChildren(fragment);
+            }
+            renderPagination(pageData);
         }
 
-        function renderCharts() {
-            const summary = statistics?.summary;
-            const activeStudentCount = Number(summary?.activeStudentCount) || 0;
-            const participantCount = Number(summary?.todayParticipantCount) || 0;
-            const participationRate = activeStudentCount
-                ? Math.round(participantCount * 100 / activeStudentCount)
-                : 0;
+        function destroyChart(key) {
+            charts[key]?.destroy();
+            charts[key] = null;
+        }
 
-            elements.totalTime.textContent = formatDuration(summary?.todayTotalStudySeconds);
-            elements.participation.textContent = `${participantCount} / ${activeStudentCount}명 (${participationRate}%)`;
-            elements.averageTime.textContent = formatDuration(summary?.averageTodayParticipantStudySeconds);
-            elements.currentlyStudying.textContent = `${Number(summary?.currentlyStudyingStudentCount) || 0}명`;
-
-            const periodDays = selectedPeriodDays();
-            elements.trendTitle.textContent = `최근 ${periodDays}일 기수 학습량 추이`;
-            elements.topTitle.textContent = `최근 ${periodDays}일 학습량 Top 5`;
-            elements.boundaryNote.textContent = statistics?.zoneId && statistics?.dayStartsAt
-                ? `${statistics.zoneId} ${String(statistics.dayStartsAt).slice(0, 5)}를 하루의 시작으로 집계합니다.`
-                : DEFAULT_BOUNDARY_NOTE;
-
-            destroyCharts();
-            const ChartConstructor = window.Chart;
-            if (!ChartConstructor || !statistics) return;
-
-            const dailyTotals = statistics.dailyTotals || [];
-            const topMembers = memberRows()
-                .filter((member) => member.periodStudySeconds > 0)
-                .sort((a, b) => b.periodStudySeconds - a.periodStudySeconds)
-                .slice(0, 5);
-            const bucketLabels = {
-                NO_RECORD: "기록 없음",
-                UNDER_ONE_HOUR: "1시간 미만",
-                ONE_TO_TWO_HOURS: "1~2시간",
-                TWO_TO_FOUR_HOURS: "2~4시간",
-                FOUR_HOURS_OR_MORE: "4시간 이상"
-            };
-
-            trendChartInstance = new ChartConstructor(elements.trendChart, {
+        function renderTrendChart() {
+            elements.trendTitle.textContent = `최근 ${state.periodDays}일 기수 학습량 추이`;
+            renderStatus("trend", state.trend, "기수 학습량 추이를 불러오는 중입니다.", "기수 학습량 추이를 불러오지 못했습니다.");
+            destroyChart("trend");
+            const dailyTotals = state.trend.data?.dailyTotals;
+            if (typeof window.Chart !== "function" || !Array.isArray(dailyTotals)) return;
+            charts.trend = new window.Chart(elements.trendChart, {
                 type: "line",
                 data: {
                     labels: dailyTotals.map((item) => item.aggregationDate.slice(5).replace("-", "/")),
                     datasets: [{
                         label: "학습량 (시간)",
-                        data: dailyTotals.map((item) => Number((item.studySeconds / 3600).toFixed(2))),
+                        data: dailyTotals.map((item) => Number((Number(item.studySeconds) / 3600).toFixed(2))),
                         borderColor: "#2b5c43",
                         backgroundColor: "rgba(43, 92, 67, 0.1)",
                         borderWidth: 2,
@@ -292,27 +249,28 @@
                     resizeDelay: 100,
                     plugins: { legend: { display: false } },
                     scales: {
-                        x: {
-                            ticks: {
-                                autoSkip: true,
-                                maxRotation: 0,
-                                maxTicksLimit: periodDays === 30 ? 8 : 7
-                            }
-                        },
+                        x: { ticks: { autoSkip: true, maxRotation: 0, maxTicksLimit: state.periodDays === 30 ? 8 : 7 } },
                         y: { beginAtZero: true }
                     }
                 }
             });
+        }
 
-            topStudentsChartInstance = new ChartConstructor(elements.topStudentsChart, {
+        function renderTopChart() {
+            elements.topTitle.textContent = `최근 ${state.periodDays}일 학습량 Top 5`;
+            renderStatus("top", state.top, "상위 학습량을 불러오는 중입니다.", "상위 학습량을 불러오지 못했습니다.");
+            destroyChart("top");
+            const members = state.top.data?.items;
+            if (typeof window.Chart !== "function" || !Array.isArray(members)) return;
+            charts.top = new window.Chart(elements.topChart, {
                 type: "bar",
                 data: {
-                    labels: topMembers.map((member) => member.name),
+                    labels: members.map((member) => `수강생 #${member.cohortMembershipId}`),
                     datasets: [{
                         label: "조회 기간 학습 (시간)",
-                        data: topMembers.map((member) => Number((member.periodStudySeconds / 3600).toFixed(2))),
+                        data: members.map((member) => Number((Number(member.periodStudySeconds) / 3600).toFixed(2))),
                         backgroundColor: "#529b74",
-                        borderRadius: 4
+                        borderRadius: 0
                     }]
                 },
                 options: {
@@ -321,20 +279,21 @@
                     maintainAspectRatio: false,
                     resizeDelay: 100,
                     plugins: { legend: { display: false } },
-                    scales: {
-                        x: { beginAtZero: true },
-                        y: { ticks: { autoSkip: false } }
-                    }
+                    scales: { x: { beginAtZero: true }, y: { ticks: { autoSkip: false } } }
                 }
             });
+        }
 
-            durationDistributionChartInstance = new ChartConstructor(elements.durationDistributionChart, {
+        function renderDurationChart() {
+            destroyChart("duration");
+            const buckets = state.today.data?.durationBuckets;
+            if (typeof window.Chart !== "function" || !Array.isArray(buckets)) return;
+            charts.duration = new window.Chart(elements.durationChart, {
                 type: "doughnut",
                 data: {
-                    labels: (statistics.durationBuckets || [])
-                        .map((bucket) => bucketLabels[bucket.code] || bucket.code),
+                    labels: buckets.map((bucket) => BUCKET_LABELS[bucket.code] || bucket.code),
                     datasets: [{
-                        data: (statistics.durationBuckets || []).map((bucket) => bucket.memberCount),
+                        data: buckets.map((bucket) => Number(bucket.memberCount) || 0),
                         backgroundColor: ["#d7e4dc", "#c2e3d3", "#8ecbb0", "#529b74", "#2b5c43"],
                         borderWidth: 0
                     }]
@@ -343,121 +302,238 @@
                     responsive: true,
                     maintainAspectRatio: false,
                     resizeDelay: 100,
-                    plugins: {
-                        legend: {
-                            position: "bottom",
-                            labels: {
-                                boxWidth: 10,
-                                padding: 12,
-                                usePointStyle: true
-                            }
-                        }
-                    }
+                    plugins: { legend: { position: "bottom", labels: { boxWidth: 10, padding: 12, usePointStyle: true } } }
                 }
             });
         }
 
-        function render() {
-            if (!active) return;
-            renderTable();
-            renderCharts();
+        function renderAll() {
+            if (!state.active) return;
+            renderToday();
+            renderTrendChart();
+            renderTopChart();
+            renderMembers();
         }
 
-        function reset() {
-            requestSequence += 1;
-            statistics = null;
-            loading = false;
-            page = 0;
-            destroyCharts();
+        function cancelResource(resource) {
+            resource.sequence += 1;
+            resource.loading = false;
         }
 
-        async function loadStatistics() {
-            const sequence = ++requestSequence;
-            loading = true;
-            statistics = null;
-            page = 0;
-            render();
+        function clearResource(resource) {
+            cancelResource(resource);
+            resource.data = null;
+            resource.error = null;
+        }
 
+        async function loadToday() {
+            const resource = state.today;
+            const cohortAtRequest = state.cohortId;
+            const sequence = ++resource.sequence;
+            resource.loading = true;
+            resource.error = null;
+            renderToday();
             try {
-                const response = await fetchStatistics(cohortId, dateRange());
-                if (sequence !== requestSequence) return;
-                loading = false;
-                statistics = response;
-                page = 0;
-                render();
+                const response = await getToday(cohortAtRequest);
+                if (sequence !== resource.sequence || cohortAtRequest !== state.cohortId) return;
+                resource.data = response;
             } catch (error) {
-                if (sequence !== requestSequence) return;
-                loading = false;
-                statistics = null;
-                render();
-                console.error("Failed to load study statistics:", error);
+                if (sequence !== resource.sequence || cohortAtRequest !== state.cohortId) return;
+                resource.error = error;
+                console.error("Failed to load today's study statistics:", error);
+            } finally {
+                if (sequence === resource.sequence) {
+                    resource.loading = false;
+                    if (state.active) renderToday();
+                }
             }
+        }
+
+        async function loadTrend() {
+            const resource = state.trend;
+            const cohortAtRequest = state.cohortId;
+            const windowAtRequest = selectedWindow();
+            const sequence = ++resource.sequence;
+            resource.loading = true;
+            resource.error = null;
+            renderTrendChart();
+            try {
+                const response = await getTrend(cohortAtRequest, windowAtRequest);
+                if (sequence !== resource.sequence || cohortAtRequest !== state.cohortId || windowAtRequest !== selectedWindow()) return;
+                if (!Array.isArray(response?.dailyTotals)) throw new Error("기수 학습량 추이 응답을 확인할 수 없습니다.");
+                resource.data = response;
+            } catch (error) {
+                if (sequence !== resource.sequence || cohortAtRequest !== state.cohortId) return;
+                resource.error = error;
+                console.error("Failed to load study trend:", error);
+            } finally {
+                if (sequence === resource.sequence) {
+                    resource.loading = false;
+                    if (state.active) renderTrendChart();
+                }
+            }
+        }
+
+        async function loadMembers() {
+            const resource = state.members;
+            const cohortAtRequest = state.cohortId;
+            const windowAtRequest = selectedWindow();
+            const pageAtRequest = state.page;
+            const sortAtRequest = `${state.sort.field},${state.sort.direction}`;
+            const sequence = ++resource.sequence;
+            resource.loading = true;
+            resource.error = null;
+            renderMembers();
+            try {
+                const response = assertPage(await getMembers(cohortAtRequest, {
+                    window: windowAtRequest,
+                    page: pageAtRequest,
+                    size: PAGE_SIZE,
+                    sort: sortAtRequest
+                }));
+                if (sequence !== resource.sequence || cohortAtRequest !== state.cohortId
+                    || windowAtRequest !== selectedWindow()
+                    || sortAtRequest !== `${state.sort.field},${state.sort.direction}`) return;
+                if (response.totalPages > 0 && pageAtRequest >= response.totalPages) {
+                    resource.loading = false;
+                    state.page = response.totalPages - 1;
+                    void loadMembers();
+                    return;
+                }
+                state.page = response.totalPages === 0 ? 0 : response.page;
+                resource.data = response;
+            } catch (error) {
+                if (sequence !== resource.sequence || cohortAtRequest !== state.cohortId) return;
+                resource.error = error;
+                console.error("Failed to load member study statistics:", error);
+            } finally {
+                if (sequence === resource.sequence) {
+                    resource.loading = false;
+                    if (state.active) renderMembers();
+                }
+            }
+        }
+
+        async function loadTop() {
+            const resource = state.top;
+            const cohortAtRequest = state.cohortId;
+            const windowAtRequest = selectedWindow();
+            const sequence = ++resource.sequence;
+            resource.loading = true;
+            resource.error = null;
+            renderTopChart();
+            try {
+                const response = assertPage(await getMembers(cohortAtRequest, {
+                    window: windowAtRequest,
+                    page: 0,
+                    size: TOP_SIZE,
+                    sort: "periodStudySeconds,desc"
+                }));
+                if (sequence !== resource.sequence || cohortAtRequest !== state.cohortId || windowAtRequest !== selectedWindow()) return;
+                resource.data = response;
+            } catch (error) {
+                if (sequence !== resource.sequence || cohortAtRequest !== state.cohortId) return;
+                resource.error = error;
+                console.error("Failed to load top study statistics:", error);
+            } finally {
+                if (sequence === resource.sequence) {
+                    resource.loading = false;
+                    if (state.active) renderTopChart();
+                }
+            }
+        }
+
+        function loadMissingResources() {
+            if (!state.today.data && !state.today.loading) void loadToday();
+            if (!state.trend.data && !state.trend.loading) void loadTrend();
+            if (!state.members.data && !state.members.loading) void loadMembers();
+            if (!state.top.data && !state.top.loading) void loadTop();
+        }
+
+        function resetForCohort() {
+            [state.today, state.trend, state.members, state.top].forEach(clearResource);
+            state.page = 0;
+            Object.keys(charts).forEach(destroyChart);
         }
 
         function invalidate() {
-            reset();
+            resetForCohort();
+            if (state.active) {
+                renderAll();
+                loadMissingResources();
+            }
         }
 
         function activate(context = {}) {
-            const cohortChanged = cohortId !== context.cohortId;
-            cohortId = context.cohortId;
-            active = true;
-            if (cohortChanged) reset();
-            if (!statistics && !loading) {
-                void loadStatistics();
-                return;
-            }
-            render();
+            const cohortChanged = state.cohortId !== context.cohortId;
+            state.cohortId = context.cohortId;
+            state.active = true;
+            if (cohortChanged) resetForCohort();
+            renderAll();
+            loadMissingResources();
         }
 
         function deactivate() {
-            active = false;
-            if (loading) {
-                requestSequence += 1;
-                loading = false;
-            }
-            destroyCharts();
+            state.active = false;
+            [state.today, state.trend, state.members, state.top].forEach(cancelResource);
+            Object.keys(charts).forEach(destroyChart);
         }
 
-        elements.search?.addEventListener("input", () => {
-            page = 0;
-            renderTable();
-        });
-
         elements.period?.addEventListener("change", () => {
-            reset();
-            if (active) void loadStatistics();
+            const days = Number(elements.period.value);
+            if (![7, 30].includes(days) || days === state.periodDays) return;
+            state.periodDays = days;
+            state.page = 0;
+            [state.trend, state.members, state.top].forEach(clearResource);
+            if (state.active) {
+                renderTrendChart();
+                renderTopChart();
+                renderMembers();
+                void loadTrend();
+                void loadMembers();
+                void loadTop();
+            }
         });
 
-        root.querySelectorAll(".sortable").forEach((heading) => {
-            heading.addEventListener("click", () => {
-                const key = heading.dataset.sort;
-                if (sort.key === key) {
-                    sort.dir = sort.dir === "asc" ? "desc" : "asc";
-                } else {
-                    sort = { key, dir: "asc" };
-                }
-                page = 0;
-                renderTable();
-            });
-        });
+        root.addEventListener("click", (event) => {
+            const sortButton = event.target.closest("[data-study-sort]");
+            if (sortButton) {
+                const field = sortButton.dataset.studySort;
+                state.sort = state.sort.field === field
+                    ? { field, direction: state.sort.direction === "asc" ? "desc" : "asc" }
+                    : { field, direction: "asc" };
+                state.page = 0;
+                clearResource(state.members);
+                renderMembers();
+                if (state.active) void loadMembers();
+                return;
+            }
 
-        elements.pageNumbers?.addEventListener("click", (event) => {
-            const button = event.target.closest("[data-go-page]");
-            if (!button) return;
-            page = Number(button.dataset.goPage);
-            renderTable();
-        });
+            const pageButton = event.target.closest("[data-go-page]");
+            if (pageButton) {
+                const targetPage = Number(pageButton.dataset.goPage);
+                if (!Number.isInteger(targetPage) || targetPage === state.page) return;
+                state.page = targetPage;
+                clearResource(state.members);
+                renderMembers();
+                if (state.active) void loadMembers();
+                return;
+            }
 
-        elements.list?.addEventListener("click", (event) => {
-            const button = event.target.closest("[data-view-detail]");
-            if (!button || !statistics) return;
+            const retry = event.target.closest("[data-study-retry]");
+            if (retry) {
+                const loaders = { today: loadToday, trend: loadTrend, members: loadMembers, top: loadTop };
+                void loaders[retry.dataset.studyRetry]?.();
+                return;
+            }
+
+            const detail = event.target.closest("[data-view-detail]");
+            if (!detail || !state.members.data) return;
             openMemberDetail?.({
-                cohortId,
-                cohortMembershipId: button.dataset.viewDetail,
-                memberName: button.dataset.viewName || "수강생",
-                memberEmail: button.dataset.viewEmail || "",
-                currentAggregationDate: statistics.currentAggregationDate || statistics.to
+                cohortId: state.cohortId,
+                cohortMembershipId: detail.dataset.viewDetail,
+                memberLabel: detail.dataset.viewLabel,
+                currentAggregationDate: state.members.data.to
             });
         });
 

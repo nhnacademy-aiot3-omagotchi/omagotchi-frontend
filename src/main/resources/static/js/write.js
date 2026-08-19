@@ -1,21 +1,10 @@
-import { createStudyRecords } from "./home/studyRecords.js";
+import { createMyStudyRecords, resolveMyActiveCohortId } from "./home/myStudyRecords.js";
 
-const currentUserEmail = sessionStorage.getItem("omagotchiEmail")
-    || localStorage.getItem("omagotchiLastEmail")
-    || "guest";
-
-const records = createStudyRecords({
-    storageKey: `omagotchiStudyRecords:${currentUserEmail}`,
-    getElapsedSeconds: () => 0
+const api = window.OmagotchiApi?.myStudyRecords;
+const records = createMyStudyRecords({
+    api,
+    preview: false,
+    getCohortId: () => resolveMyActiveCohortId(api)
 });
 
-const root = document.querySelector("[data-study-records]");
-records.mount(root);
-// click event 발생
-root?.addEventListener("click", (event) => {
-    records.handleClick(event);
-});
-// submit event 발생
-root?.addEventListener("submit", (event) => {
-    records.handleSubmit(event);
-});
+records.mount(document.querySelector("[data-study-records]"));

@@ -818,3 +818,469 @@
         font-size: 12px;
     }
 }
+
+/* Learning Service와 연결된 내 공부 기록: 월간 달력과 일간 Timeline을 별도 화면으로 표시 */
+.remote-study-records {
+    min-width: 0;
+    display: grid;
+    gap: 14px;
+    color: var(--ink, #09271d);
+}
+
+.remote-study-toolbar,
+.remote-study-view-actions,
+.remote-study-day-navigation,
+.remote-study-day > header,
+.remote-study-record-heading,
+.remote-study-record-main,
+.remote-study-record-actions,
+.remote-study-form-actions,
+.remote-study-calendar > header {
+    display: flex;
+    align-items: center;
+}
+
+.remote-study-toolbar,
+.remote-study-day > header,
+.remote-study-record-heading,
+.remote-study-calendar > header {
+    justify-content: space-between;
+    gap: 14px;
+}
+
+.remote-study-toolbar > div:first-child > span,
+.remote-study-day > header span,
+.remote-study-calendar > header span {
+    color: #087449;
+    font-size: 10px;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+}
+
+.remote-study-toolbar h3,
+.remote-study-day > header h3,
+.remote-study-calendar > header h3,
+.remote-study-record-heading h4,
+.remote-study-confirm h4 {
+    margin: 3px 0 0;
+    color: var(--ink, #09271d);
+}
+
+.remote-study-toolbar h3 {
+    font-size: 20px;
+}
+
+.remote-study-view-actions,
+.remote-study-day-navigation,
+.remote-study-record-actions,
+.remote-study-form-actions {
+    gap: 7px;
+}
+
+.remote-study-records button,
+.remote-study-state button {
+    min-height: 38px;
+    padding: 0 13px;
+    border: 1px solid rgba(8, 72, 47, 0.3);
+    border-radius: 6px;
+    background: #fff;
+    color: var(--ink, #09271d);
+    font: inherit;
+    font-size: 12px;
+    font-weight: 900;
+    cursor: pointer;
+}
+
+.remote-study-records button:hover:not(:disabled),
+.remote-study-records button:focus-visible,
+.remote-study-state button:hover,
+.remote-study-state button:focus-visible {
+    border-color: #087449;
+    outline: 3px solid rgba(22, 139, 85, 0.22);
+    outline-offset: 1px;
+}
+
+.remote-study-records button:disabled {
+    cursor: not-allowed;
+    opacity: 0.52;
+}
+
+.remote-study-records button.is-primary {
+    background: #075f3c;
+    color: #fff;
+}
+
+.remote-study-records button.is-danger {
+    border-color: #b94c4c;
+    color: #9d2929;
+}
+
+.remote-study-preview,
+.remote-study-notice,
+.remote-study-view-note,
+.remote-study-state {
+    margin: 0;
+    padding: 11px 13px;
+    border: 1px solid rgba(8, 72, 47, 0.24);
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.7);
+    color: rgba(0, 0, 0, 0.68);
+    font-size: 12px;
+    font-weight: 800;
+    line-height: 1.45;
+}
+
+.remote-study-preview,
+.remote-study-notice {
+    border-color: #2e9a65;
+    background: #e8f8ef;
+    color: #075f3c;
+}
+
+.remote-study-state {
+    min-height: 96px;
+    display: grid;
+    place-content: center;
+    justify-items: center;
+    gap: 10px;
+    text-align: center;
+}
+
+.remote-study-state p {
+    margin: 0;
+}
+
+.remote-study-state.is-error,
+.remote-study-form-error {
+    border-color: #d99882;
+    background: #fff0eb;
+    color: #842f27;
+}
+
+.remote-study-calendar,
+.remote-study-day,
+.remote-study-confirm {
+    min-width: 0;
+    display: grid;
+    gap: 14px;
+    padding: 18px;
+    border: 2px solid rgba(8, 72, 47, 0.26);
+    border-radius: 8px;
+    background: rgba(238, 255, 246, 0.92);
+}
+
+.remote-study-month-metric {
+    display: grid;
+    justify-items: end;
+    gap: 3px;
+}
+
+.remote-study-month-metric strong,
+.remote-study-day > header > strong {
+    color: #075f3c;
+    font-size: 20px;
+    font-variant-numeric: tabular-nums;
+}
+
+.remote-study-view-note {
+    padding: 9px 11px;
+    background: rgba(255, 255, 255, 0.5);
+}
+
+.remote-study-timeline {
+    min-width: 0;
+    display: grid;
+    gap: 7px;
+    padding-top: 4px;
+}
+
+.remote-study-timeline-axis,
+.remote-study-timeline-track {
+    position: relative;
+}
+
+.remote-study-timeline-axis {
+    height: 18px;
+    margin: 0 9px;
+}
+
+.remote-study-timeline-axis span {
+    position: absolute;
+    translate: -50% 0;
+    color: rgba(0, 0, 0, 0.54);
+    font-size: 9px;
+    font-weight: 900;
+    font-variant-numeric: tabular-nums;
+}
+
+.remote-study-timeline-axis span:first-child {
+    translate: 0 0;
+}
+
+.remote-study-timeline-axis span:last-child {
+    translate: -100% 0;
+}
+
+.remote-study-timeline-track {
+    height: 30px;
+    overflow: hidden;
+    border: 1px solid rgba(8, 72, 47, 0.28);
+    border-radius: 0;
+    background:
+        repeating-linear-gradient(
+            to right,
+            transparent 0,
+            transparent calc(12.5% - 1px),
+            rgba(8, 72, 47, 0.12) calc(12.5% - 1px),
+            rgba(8, 72, 47, 0.12) 12.5%
+        ),
+        #e7efea;
+}
+
+.remote-study-records .remote-study-timeline-bar {
+    position: absolute;
+    top: 5px;
+    min-width: 2px;
+    min-height: 18px;
+    height: 18px;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    outline-offset: 2px;
+    background: #58aa7c;
+    opacity: 0.72;
+}
+
+.remote-study-records .remote-study-timeline-bar:hover,
+.remote-study-records .remote-study-timeline-bar:focus-visible {
+    border: 0;
+    outline: 2px solid #083c29;
+    background: #238957;
+    opacity: 1;
+}
+
+.remote-study-records .remote-study-timeline-bar.is-selected {
+    background: #075f3c;
+    opacity: 1;
+}
+
+.remote-study-timeline-caption {
+    min-height: 18px;
+    margin: 0;
+    color: rgba(0, 0, 0, 0.62);
+    font-size: 11px;
+    font-weight: 800;
+}
+
+.remote-study-record-heading {
+    margin-top: 2px;
+}
+
+.remote-study-record-heading h4 {
+    font-size: 15px;
+}
+
+.remote-study-record-heading span {
+    color: rgba(0, 0, 0, 0.56);
+    font-size: 11px;
+    font-weight: 900;
+}
+
+.remote-study-record-list {
+    display: grid;
+    gap: 8px;
+    max-height: 310px;
+    overflow-y: auto;
+    margin: 0;
+    padding: 0 3px 0 0;
+    list-style: none;
+}
+
+.remote-study-record {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px;
+    padding: 8px;
+    border: 1px solid rgba(8, 72, 47, 0.22);
+    border-radius: 5px;
+    background: rgba(255, 255, 255, 0.68);
+}
+
+.remote-study-record.is-selected {
+    border-color: #075f3c;
+    background: #d8f2e4;
+}
+
+.remote-study-records .remote-study-record-main {
+    min-width: 0;
+    display: grid;
+    grid-template-columns: 34px minmax(110px, 1fr) minmax(110px, 0.7fr);
+    justify-items: start;
+    gap: 10px;
+    padding: 7px 9px;
+    border: 0;
+    background: transparent;
+    text-align: left;
+}
+
+.remote-study-records .remote-study-record-main:hover:not(:disabled),
+.remote-study-records .remote-study-record-main:focus-visible {
+    border: 0;
+    outline: 2px solid rgba(7, 95, 60, 0.62);
+}
+
+.remote-study-record-main > span:not(.remote-study-record-index) {
+    min-width: 0;
+    display: grid;
+    gap: 3px;
+}
+
+.remote-study-record-main strong {
+    font-size: 13px;
+    font-variant-numeric: tabular-nums;
+}
+
+.remote-study-record-main small {
+    color: rgba(0, 0, 0, 0.52);
+    font-size: 9px;
+}
+
+.remote-study-record-index {
+    width: 28px;
+    height: 28px;
+    display: grid;
+    place-items: center;
+    background: #2d7e58;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 900;
+}
+
+.remote-study-record.is-selected .remote-study-record-index {
+    background: #075f3c;
+}
+
+.remote-study-edit-form {
+    grid-column: 1 / -1;
+    display: grid;
+    gap: 10px;
+    padding: 12px;
+    border-top: 1px solid rgba(8, 72, 47, 0.2);
+}
+
+.remote-study-edit-form > p,
+.remote-study-form-error {
+    margin: 0;
+    font-size: 11px;
+    font-weight: 800;
+}
+
+.remote-study-edit-fields {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+}
+
+.remote-study-edit-fields label {
+    display: grid;
+    gap: 5px;
+    color: rgba(0, 0, 0, 0.65);
+    font-size: 10px;
+    font-weight: 900;
+}
+
+.remote-study-edit-fields input {
+    width: 100%;
+    min-height: 38px;
+    padding: 0 8px;
+    border: 1px solid rgba(8, 72, 47, 0.34);
+    border-radius: 4px;
+    background: #fff;
+    color: var(--ink, #09271d);
+    font: inherit;
+}
+
+.remote-study-form-error {
+    padding: 9px 10px;
+    border: 1px solid #d99882;
+    border-radius: 4px;
+}
+
+.remote-study-form-actions {
+    justify-content: flex-end;
+}
+
+.remote-study-confirm {
+    border-color: #cf7a63;
+    background: #fff4ef;
+}
+
+.remote-study-confirm p {
+    margin: 0;
+    color: rgba(0, 0, 0, 0.7);
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+@media (max-width: 720px) {
+    .remote-study-toolbar,
+    .remote-study-calendar > header {
+        align-items: stretch;
+        display: grid;
+    }
+
+    .remote-study-view-actions {
+        justify-content: space-between;
+    }
+
+    .remote-study-record {
+        grid-template-columns: 1fr;
+    }
+
+    .remote-study-record-actions {
+        justify-content: flex-end;
+    }
+
+    .remote-study-edit-fields {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 480px) {
+    .remote-study-calendar,
+    .remote-study-day,
+    .remote-study-confirm {
+        gap: 10px;
+        padding: 11px;
+    }
+
+    .remote-study-toolbar .study-period-navigation {
+        grid-template-columns: 40px minmax(0, 1fr) auto 40px;
+    }
+
+    .remote-study-toolbar .study-period-navigation button,
+    .remote-study-view-actions button,
+    .remote-study-record-actions button {
+        min-height: 40px;
+    }
+
+    .remote-study-month-metric {
+        justify-items: start;
+    }
+
+    .remote-study-records .remote-study-record-main {
+        grid-template-columns: 30px minmax(0, 1fr);
+    }
+
+    .remote-study-record-main > span:last-child {
+        grid-column: 2;
+    }
+
+    .remote-study-day-navigation {
+        gap: 4px;
+    }
+
+    .remote-study-timeline-axis span:nth-child(even) {
+        display: none;
+    }
+}

@@ -12,74 +12,99 @@
                     <option value="30">최근 30일</option>
                 </select>
             </label>
-            <label class="search-field">
-                <span>검색</span>
-                <input type="search" data-studystats-search placeholder="이름 또는 이메일" />
-            </label>
         </div>
     </div>
-    <p class="study-boundary-note" data-study-boundary-note>Asia/Seoul 오전 4시를 하루의 시작으로 집계합니다.</p>
+    <p class="study-boundary-note">Asia/Seoul 오전 4시를 하루의 시작으로 집계합니다.</p>
 
-    <div class="stats-kpi-grid" aria-label="공부 통계 요약">
+    <div class="stats-kpi-grid" aria-label="오늘 공부 통계 요약">
         <article class="kpi-card">
             <span>오늘 기수 총 학습</span>
-            <strong data-kpi-total-time>0분</strong>
+            <strong data-kpi-total-time>—</strong>
         </article>
         <article class="kpi-card">
             <span>오늘 참여</span>
-            <strong data-kpi-participation>0 / 0명</strong>
+            <strong data-kpi-participation>—</strong>
         </article>
         <article class="kpi-card">
             <span>참여자 평균 학습</span>
-            <strong data-kpi-avg-time>0분</strong>
+            <strong data-kpi-avg-time>—</strong>
         </article>
         <article class="kpi-card">
-            <span>현재 공부 중</span>
-            <strong data-kpi-current-studying>0명</strong>
+            <span>오늘 기록 없음</span>
+            <strong data-kpi-no-record>—</strong>
         </article>
+    </div>
+    <div class="study-resource-status" data-study-status="today" role="status" aria-live="polite" hidden>
+        <span data-study-status-message></span>
+        <button type="button" class="secondary-button" data-study-retry="today">다시 시도</button>
     </div>
 
     <div class="stats-chart-grid">
-        <div class="chart-card wide-chart">
-            <h3 data-trend-chart-title>최근 7일 기수 학습량 추이</h3>
-            <div class="chart-container">
-                <canvas id="trendChart"></canvas>
+        <section class="chart-card wide-chart" aria-labelledby="trend-chart-title">
+            <h3 id="trend-chart-title" data-trend-chart-title>최근 7일 기수 학습량 추이</h3>
+            <div class="study-resource-status" data-study-status="trend" role="status" aria-live="polite" hidden>
+                <span data-study-status-message></span>
+                <button type="button" class="secondary-button" data-study-retry="trend">다시 시도</button>
             </div>
-        </div>
-        <div class="chart-card">
-            <h3 data-top-chart-title>최근 7일 학습량 Top 5</h3>
             <div class="chart-container">
-                <canvas id="topStudentsChart"></canvas>
+                <canvas id="trendChart" aria-label="날짜별 기수 학습량 차트">날짜별 기수 학습량을 표시합니다.</canvas>
             </div>
-        </div>
-        <div class="chart-card">
-            <h3>오늘 학습 시간 분포</h3>
+        </section>
+        <section class="chart-card" aria-labelledby="top-chart-title">
+            <h3 id="top-chart-title" data-top-chart-title>최근 7일 학습량 Top 5</h3>
+            <div class="study-resource-status" data-study-status="top" role="status" aria-live="polite" hidden>
+                <span data-study-status-message></span>
+                <button type="button" class="secondary-button" data-study-retry="top">다시 시도</button>
+            </div>
             <div class="chart-container">
-                <canvas id="durationDistributionChart"></canvas>
+                <canvas id="topStudentsChart" aria-label="수강생 학습량 상위 5명 차트">수강생 학습량 상위 5명을 표시합니다.</canvas>
             </div>
-        </div>
+        </section>
+        <section class="chart-card" aria-labelledby="duration-chart-title">
+            <h3 id="duration-chart-title">오늘 학습 시간 분포</h3>
+            <div class="chart-container">
+                <canvas id="durationDistributionChart" aria-label="오늘 학습 시간 구간별 수강생 분포 차트">오늘 학습 시간 분포를 표시합니다.</canvas>
+            </div>
+        </section>
     </div>
 
+    <div class="study-resource-status" data-study-status="members" role="status" aria-live="polite" hidden>
+        <span data-study-status-message></span>
+        <button type="button" class="secondary-button" data-study-retry="members">다시 시도</button>
+    </div>
     <div class="table-wrap">
         <table>
+            <caption class="visually-hidden">수강생별 오늘 및 조회 기간 공부 통계</caption>
             <colgroup>
-                <col style="width: 14%;" />
-                <col style="width: 23%;" />
-                <col style="width: 14%;" />
-                <col style="width: 14%;" />
+                <col style="width: 18%;" />
+                <col style="width: 13%;" />
+                <col style="width: 13%;" />
                 <col style="width: 10%;" />
-                <col style="width: 15%;" />
                 <col style="width: 10%;" />
+                <col style="width: 22%;" />
+                <col style="width: 14%;" />
             </colgroup>
             <thead>
                 <tr>
-                    <th class="sortable" data-sort="name">구성원</th>
-                    <th>이메일</th>
-                    <th class="sortable" data-sort="today">오늘 학습</th>
-                    <th class="sortable" data-sort="period">조회 기간</th>
-                    <th class="sortable" data-sort="days">학습일</th>
-                    <th class="sortable" data-sort="last">최근 기록</th>
-                    <th>기록 확인</th>
+                    <th class="sortable" data-sort-heading="cohortMembershipId" aria-sort="none" scope="col">
+                        <button type="button" data-study-sort="cohortMembershipId">수강생 <span aria-hidden="true">↕</span></button>
+                    </th>
+                    <th class="sortable" data-sort-heading="todayStudySeconds" aria-sort="none" scope="col">
+                        <button type="button" data-study-sort="todayStudySeconds">오늘 학습 <span aria-hidden="true">↕</span></button>
+                    </th>
+                    <th class="sortable" data-sort-heading="periodStudySeconds" aria-sort="descending" scope="col">
+                        <button type="button" data-study-sort="periodStudySeconds">조회 기간 <span aria-hidden="true">↓</span></button>
+                    </th>
+                    <th class="sortable" data-sort-heading="activeStudyDays" aria-sort="none" scope="col">
+                        <button type="button" data-study-sort="activeStudyDays">학습일 <span aria-hidden="true">↕</span></button>
+                    </th>
+                    <th class="sortable" data-sort-heading="recordCount" aria-sort="none" scope="col">
+                        <button type="button" data-study-sort="recordCount">세션 <span aria-hidden="true">↕</span></button>
+                    </th>
+                    <th class="sortable" data-sort-heading="lastStudiedAt" aria-sort="none" scope="col">
+                        <button type="button" data-study-sort="lastStudiedAt">최근 기록 <span aria-hidden="true">↕</span></button>
+                    </th>
+                    <th scope="col">기록 확인</th>
                 </tr>
             </thead>
             <tbody data-studystats-list>
@@ -88,20 +113,20 @@
         </table>
     </div>
 
-    <div class="pagination-wrap">
-        <div class="page-numbers" data-page-numbers aria-label="공부 통계 페이지"></div>
-    </div>
+    <nav class="pagination-wrap" aria-label="수강생 공부 통계 페이지">
+        <div class="page-numbers" data-page-numbers></div>
+    </nav>
     <template data-studystats-row-template>
         <tr>
             <td>
                 <button type="button" class="study-member-link" data-view-detail>
-                    <strong data-studystats-member-name></strong>
+                    <strong data-studystats-member-label></strong>
                 </button>
             </td>
-            <td><small data-studystats-member-email></small></td>
             <td data-studystats-today></td>
             <td data-studystats-period-total></td>
             <td data-studystats-active-days></td>
+            <td data-studystats-record-count></td>
             <td data-studystats-last-studied></td>
             <td>
                 <div class="table-actions">
