@@ -108,6 +108,16 @@
 .home-menu a img {
     width: clamp(30px, 3vw, 40px);
     height: clamp(30px, 3vw, 40px);
+    display: block;
+    object-fit: contain;
+    object-position: center;
+}
+
+.home-menu a > span {
+    width: clamp(30px, 3vw, 40px);
+    height: clamp(30px, 3vw, 40px);
+    display: grid;
+    place-items: center;
 }
 
 .home-dock-button,

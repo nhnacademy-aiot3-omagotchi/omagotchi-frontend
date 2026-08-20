@@ -7,23 +7,27 @@
     <title>학습 기록 - Omagotchi</title>
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon_11.gif" th:href="@{/favicon_11.gif}" />
     <link rel="stylesheet" href="/css/appPages.css" th:href="@{/css/appPages.css}" />
+    <link rel="stylesheet" href="/css/ui/design-system.css" th:href="@{/css/ui/design-system.css}" />
     <link rel="stylesheet" href="/css/studyRecords.css" th:href="@{/css/studyRecords.css}" />
     <link rel="stylesheet" href="/css/cursor.css" th:href="@{/css/cursor.css}" />
 </head>
 <body>
-<main class="app-page">
-    <section class="app-shell">
-        <header class="app-topbar">
-            <div class="app-title">
-                <h1>학습 기록</h1>
-                <p>월별 공부 흐름과 날짜별 학습 구간을 확인하고 기록을 수정·삭제합니다.</p>
+<main class="app-page app-page--study-records">
+    <section class="app-shell ui-menu-panel ui-menu-panel--records" aria-labelledby="study-records-title">
+        <header class="ui-menu-panel__header">
+            <span class="ui-menu-panel__icon" aria-hidden="true">
+                <img src="/images/app/studyrecord.png" th:src="@{/images/app/studyrecord.png}" alt="" />
+            </span>
+            <div>
+                <h1 id="study-records-title">학습 기록</h1>
+                <p>집중 시간과 학습 흐름</p>
             </div>
-            <a href="/home">홈으로</a>
+            <a class="ui-menu-panel__close study-records-home-link" href="/home" aria-label="학습 기록 닫고 홈으로 이동">×</a>
         </header>
 
-        <section class="panel study-records-page">
-            <div data-study-records></div>
-        </section>
+        <div class="ui-menu-panel__body study-records-page">
+            <div id="study-records-root" data-study-records></div>
+        </div>
     </section>
 </main>
 <script src="/js/api.js" th:src="@{/js/api.js}"></script>

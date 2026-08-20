@@ -72,7 +72,7 @@ function CohortPanel() {
     </>
   );
 }
-
+// daily Study Sessions -> Timer
 const dailyStudySessions = [
   { start: "08:10", end: "09:30", title: "구간 1", duration: "1시간 20분 15초" },
   { start: "10:00", end: "11:05", title: "구간 2", duration: "1시간 5분 30초" },

@@ -6,6 +6,24 @@
     color: var(--ink);
 }
 
+.app-page--study-records {
+    display: grid;
+    place-items: center;
+}
+
+.app-page--study-records .app-shell {
+    margin: 0;
+}
+
+.study-records-home-link {
+    display: grid;
+    place-items: center;
+    color: var(--ui-ink);
+    font-weight: 900;
+    line-height: 1;
+    text-decoration: none;
+}
+
 .study-records-page {
     padding: 24px;
 }
