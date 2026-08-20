@@ -1,0 +1,211 @@
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+:root {
+    --error-green: #1fc979;
+    --error-green-deep: #17ad66;
+    --error-ink: #111111;
+    --error-white: #ffffff;
+}
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    font-family: "DNFBitBitv2", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+/* 오류 화면 */
+.error-page {
+    position: relative;
+    isolation: isolate;
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+    padding: 40px 24px;
+    background:
+            linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(0, 0, 0, 0.08)),
+            linear-gradient(135deg, var(--error-green), var(--error-green-deep));
+    color: var(--error-white);
+    text-align: center;
+}
+
+/* 배경 격자 무늬 */
+.error-page::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background:
+            linear-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+    background-size: 42px 42px;
+    mask-image: linear-gradient(180deg, transparent, #000 20%, #000 80%, transparent);
+}
+
+/* 오류 내용 */
+.error-content {
+    width: min(720px, 100%);
+    display: grid;
+    justify-items: center;
+    gap: 22px;
+}
+
+.error-code {
+    margin: 0;
+    color: rgba(255, 255, 255, 0.9);
+    font-size: clamp(54px, 9vw, 96px);
+    font-weight: 900;
+    line-height: 1;
+    text-shadow: 0 5px 0 rgba(0, 0, 0, 0.16);
+}
+
+/* 캐릭터와 말풍선 */
+.error-character-stage {
+    position: relative;
+    width: 230px;
+    min-height: 240px;
+    display: grid;
+    align-items: end;
+    justify-items: center;
+}
+
+.error-character-stage img {
+    width: 180px;
+    height: auto;
+    image-rendering: pixelated;
+    filter: drop-shadow(0 12px 0 rgba(0, 0, 0, 0.12));
+    animation: error-character-float 2.4s ease-in-out infinite;
+}
+
+.error-bubble {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    z-index: 1;
+    width: max-content;
+    max-width: min(290px, 80vw);
+    margin: 0;
+    padding: 14px 18px;
+    border: 4px solid var(--error-ink);
+    border-radius: 8px;
+    background: var(--error-white);
+    color: var(--error-ink);
+    font-size: 16px;
+    font-weight: 900;
+    line-height: 1.4;
+    transform: translateX(-50%);
+    box-shadow: 7px 7px 0 rgba(0, 0, 0, 0.16);
+}
+
+.error-bubble::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    bottom: -12px;
+    width: 20px;
+    height: 20px;
+    border-right: 4px solid var(--error-ink);
+    border-bottom: 4px solid var(--error-ink);
+    background: var(--error-white);
+    transform: translateX(-50%) rotate(45deg);
+}
+
+/* 오류 안내 문구 */
+.error-message h1 {
+    margin: 0;
+    font-size: clamp(28px, 5vw, 46px);
+    font-weight: 900;
+    line-height: 1.2;
+}
+
+.error-message p {
+    margin: 10px 0 0;
+    color: rgba(255, 255, 255, 0.88);
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 1.6;
+}
+
+/* 오류 화면 이동 버튼 */
+.error-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px;
+}
+
+.error-actions a,
+.error-actions button {
+    min-width: 132px;
+    min-height: 52px;
+    display: inline-grid;
+    place-items: center;
+    padding: 0 22px;
+    border: 3px solid var(--error-ink);
+    border-radius: 8px;
+    background: var(--error-white);
+    color: var(--error-ink);
+    font: inherit;
+    font-size: 15px;
+    font-weight: 900;
+    text-decoration: none;
+    box-shadow: 0 6px 0 rgba(0, 0, 0, 0.18);
+    cursor: pointer;
+}
+
+.error-actions a:active,
+.error-actions button:active {
+    translate: 0 3px;
+    box-shadow: 0 3px 0 rgba(0, 0, 0, 0.18);
+}
+
+.error-actions a:focus-visible,
+.error-actions button:focus-visible {
+    outline: 4px solid rgba(255, 255, 255, 0.82);
+    outline-offset: 3px;
+}
+
+@keyframes error-character-float {
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-8px);
+    }
+}
+
+@media (max-width: 560px) {
+    .error-page {
+        padding: 28px 18px;
+    }
+
+    .error-character-stage {
+        width: 190px;
+        min-height: 210px;
+    }
+
+    .error-character-stage img {
+        width: 150px;
+    }
+
+    .error-actions {
+        width: 100%;
+    }
+
+    .error-actions a,
+    .error-actions button {
+        flex: 1 1 140px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .error-character-stage img {
+        animation: none;
+    }
+}

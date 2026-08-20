@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Omagotchi 회원가입</title>
+
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon_11.gif" th:href="@{/favicon_11.gif}" />
+    <link rel="stylesheet" href="/css/gameFont.css" th:href="@{/css/gameFont.css}" />
+    <link rel="stylesheet" href="/css/ui/design-system.css?v=20260814-2" th:href="@{/css/ui/design-system.css(v='20260814-2')}" />
+    <link rel="stylesheet" href="/css/auth.css?v=20260814-1" th:href="@{/css/auth.css(v='20260814-1')}" />
+    <link rel="stylesheet" href="/css/passwordToggle.css" th:href="@{/css/passwordToggle.css}" />
+    <link rel="stylesheet" href="/css/cursor.css" th:href="@{/css/cursor.css}" />
+</head>
+<body>
+<main class="login-page auth-page">
+    <section class="login-card auth-card ui-auth-shell" aria-labelledby="register-title">
+        <aside class="ui-auth-aside" aria-label="오마고치 서비스 소개">
+            <a class="auth-back-link" href="/" aria-label="인덱스로 돌아가기">←</a>
+            <div>
+                <p class="auth-brand ui-auth-brand">omagotchi</p>
+                <h2>새로운 학습 여정을<br />시작해 보세요</h2>
+                <p>하나의 계정으로 출석, 학습 기록과 캐릭터 성장을 관리합니다.</p>
+            </div>
+            <div class="ui-auth-aside-badges" aria-label="주요 기능">
+                <span>#집중타이머</span><span>#출석기록</span><span>#캐릭터성장</span>
+            </div>
+        </aside>
+
+        <form class="auth-form register-form auth-panel ui-auth-card ui-auth-form" method="post"
+              th:action="@{/register}" th:object="${signupForm}">
+            <h1 id="register-title">계정을 생성하세요</h1>
+            <p class="auth-subtitle" data-auth-feedback
+               th:classappend="${authFeedback != null} ? ' auth-error'"
+               th:text="${authFeedback ?: '오마고치와 함께하는 학습'}">오마고치와 함께하는 학습</p>
+
+            <div class="auth-segmented ui-auth-tabs" aria-label="인증 메뉴">
+                <a class="ui-auth-tab" href="/login">로그인</a>
+                <span class="is-active ui-auth-tab">회원가입</span>
+            </div>
+
+            <div class="input-group auth-input-group ui-field">
+                <label class="sr-only" for="email">이메일</label>
+                <input id="email" type="email" placeholder="이메일" autocomplete="username"
+                       required th:field="*{email}" />
+                <p class="auth-field-error" th:errors="*{email}">이메일 입력 오류</p>
+            </div>
+
+            <div class="input-group auth-input-group ui-field">
+                <label class="sr-only" for="name">사용자 이름</label>
+                <input id="name" type="text" placeholder="사용자 이름" autocomplete="name"
+                       required th:field="*{name}" />
+                <p class="auth-field-error" th:errors="*{name}">이름 입력 오류</p>
+            </div>
+
+            <div class="input-group auth-input-group ui-field">
+                <label class="sr-only" for="register-password">비밀번호</label>
+                <div class="password-input-wrap">
+                    <input id="register-password" type="password" name="password" placeholder="비밀번호"
+                           autocomplete="new-password" required />
+                    <button class="password-visibility-toggle" type="button" data-password-toggle
+                            aria-label="비밀번호 표시" aria-pressed="false">
+                        <span class="password-eye" aria-hidden="true"></span>
+                    </button>
+                </div>
+                <p class="auth-field-error" th:errors="*{password}">비밀번호 입력 오류</p>
+            </div>
+
+            <button class="auth-button register-button auth-submit-button ui-button ui-button--primary" type="submit">
+                계정 생성하기
+            </button>
+        </form>
+    </section>
+</main>
+
+<script src="/js/register.js" th:src="@{/js/register.js}"></script>
+<script src="/js/passwordToggle.js" th:src="@{/js/passwordToggle.js}"></script>
+</body>
+</html>

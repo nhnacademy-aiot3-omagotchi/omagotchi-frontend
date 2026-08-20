@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>출석하기 | Omagotchi</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon_11.gif" th:href="@{/favicon_11.gif}" />
+    <link rel="stylesheet" href="/css/checkIn.css">
+    <link rel="stylesheet" th:href="@{/css/checkInFlow.css}">
+    <link rel="stylesheet" href="/css/checkInWakeFlow.css">
+    <link rel="stylesheet" href="/css/cursor.css" th:href="@{/css/cursor.css}" />
+</head>
+<body>
+<main class="check-in-stage" aria-labelledby="check-in-title">
+    <section class="wake-panel">
+        <p class="wake-panel__eyebrow">TODAY'S CHECK IN</p>
+        <h1 id="check-in-title">오마고치를 깨워서 출석시키세요</h1>
+        <p class="wake-panel__description">캐릭터를 깨우면 오늘 출석이 기록되고 담당 실습실로 연결됩니다.</p>
+
+        <button class="sleeping-character" id="sleeping-character" type="button"
+                aria-label="잠든 오마고치를 눌러 깨우기">
+            <img src="/images/characters/sleepy/sleepy.gif" alt="잠들어 있는 오마고치">
+            <span class="sleep-bubble" aria-hidden="true">Z</span>
+        </button>
+
+        <p class="wake-message" id="wake-message" aria-live="polite">캐릭터를 누르거나 아래 방법으로 깨워보세요.</p>
+
+        <div class="wake-actions">
+            <button type="button" data-wake-action="shake">흔들기</button>
+            <button type="button" data-wake-action="water">물 뿌리기</button>
+        </div>
+    </section>
+</main>
+<script src="/js/api.js" th:src="@{/js/api.js}"></script>
+<script type="module" src="/js/checkIn.js"></script>
+</body>
+</html>

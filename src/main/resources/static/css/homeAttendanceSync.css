@@ -1,0 +1,105 @@
+.home-lab-status {
+    position: fixed;
+    z-index: 30;
+    top: 18px;
+    left: 18px;
+    width: min(292px, calc(100vw - 36px));
+    padding: 14px;
+    color: #10271e;
+    background: rgb(235 248 241 / 94%);
+    border: 2px solid #183d2f;
+    border-radius: 8px;
+    box-shadow: 0 5px 0 rgb(15 67 45 / 28%);
+    backdrop-filter: blur(8px);
+}
+
+.home-lab-status__heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.home-lab-status__heading div {
+    display: grid;
+    gap: 2px;
+}
+
+.home-lab-status__heading strong {
+    font-size: 18px;
+}
+
+.home-lab-status__heading span:not(.home-lab-status__badge) {
+    color: #45685a;
+    font-size: 13px;
+}
+
+.home-lab-status__badge {
+    flex: 0 0 auto;
+    padding: 5px 9px;
+    color: #fff;
+    background: #168a58;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 800;
+}
+
+.home-lab-sensors {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 7px;
+    margin: 12px 0 0;
+}
+
+.home-lab-sensors div {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 6px;
+    min-width: 0;
+    padding: 8px;
+    background: #cfe8dc;
+    border: 1px solid #a8cdbb;
+    border-radius: 6px;
+}
+
+.home-lab-sensors dt {
+    color: #45685a;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.home-lab-sensors dd {
+    margin: 0;
+    font-size: 12px;
+    font-weight: 900;
+}
+
+.is-attended {
+    color: #073e29 !important;
+    background: #73d2a3 !important;
+}
+
+.is-attended.is-today {
+    outline: 3px solid #10271e;
+    outline-offset: -3px;
+}
+
+@media (max-width: 760px) {
+    .home-lab-status {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        width: calc(100vw - 20px);
+    }
+
+    .home-lab-sensors {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        overflow-x: auto;
+    }
+
+    .home-lab-sensors div {
+        display: grid;
+        min-width: 78px;
+    }
+}

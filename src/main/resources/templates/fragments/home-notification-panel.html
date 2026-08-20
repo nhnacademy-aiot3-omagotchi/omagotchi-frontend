@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="ko">
+<body>
+<th:block th:fragment="notificationPanelTemplate">
+    <!-- 파티 초대와 공실 알림 데이터를 연결할 공용 알림 패널 원형 -->
+    <template id="home-notification-panel-template">
+        <section
+                class="notification-panel"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="notification-panel-title"
+                tabindex="-1"
+        >
+            <header class="notification-panel__header">
+                <div>
+                    <p class="notification-panel__kicker">NOTIFICATIONS</p>
+                    <h2 id="notification-panel-title">알림</h2>
+                </div>
+                <button
+                        class="notification-panel__close"
+                        type="button"
+                        data-notification-close
+                        aria-label="알림 닫기"
+                >×</button>
+            </header>
+
+            <nav class="notification-panel__tabs" aria-label="알림 종류">
+                <button class="is-active" type="button" data-notification-filter="all">전체</button>
+                <button type="button" data-notification-filter="party">파티 초대</button>
+                <button type="button" data-notification-filter="space">공실 알림</button>
+            </nav>
+
+            <div class="notification-panel__list" data-notification-list></div>
+
+            <div class="notification-panel__empty" data-notification-empty>
+                <strong>새로운 알림이 없습니다.</strong>
+                <span>파티 초대와 신청한 공간의 공실 소식을 여기에서 확인합니다.</span>
+            </div>
+        </section>
+    </template>
+
+    <template id="home-notification-item-template">
+        <article class="notification-item" data-notification-item>
+            <span class="notification-item__icon" data-notification-icon aria-hidden="true"></span>
+            <div class="notification-item__content">
+                <div class="notification-item__heading">
+                    <strong data-notification-title></strong>
+                    <time data-notification-time></time>
+                </div>
+                <p data-notification-message></p>
+                <div class="notification-item__actions" data-notification-actions></div>
+            </div>
+        </article>
+    </template>
+</th:block>
+</body>
+</html>

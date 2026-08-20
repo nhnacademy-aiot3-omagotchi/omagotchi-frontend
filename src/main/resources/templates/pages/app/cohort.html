@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Omagotchi Cohort</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon_11.gif" th:href="@{/favicon_11.gif}" />
+    <link rel="stylesheet" href="/css/appPages.css" th:href="@{/css/appPages.css}" />
+    <link rel="stylesheet" href="/css/cursor.css" th:href="@{/css/cursor.css}" />
+</head>
+<body>
+<main class="app-page">
+    <section class="app-shell">
+        <header class="app-topbar">
+            <div class="app-title">
+                <h1>기수</h1>
+                <p>내가 속한 기수와 참가 가능한 기수를 확인합니다.</p>
+            </div>
+            <a href="/home">홈으로</a>
+        </header>
+
+        <section class="panel">
+            <div class="panel-header">
+                <h2>기수 현황</h2>
+                <span class="status-pill">목업 데이터</span>
+            </div>
+            <div class="cohort-grid">
+                <article class="cohort-card">
+                    <h3>AIoT 3기</h3>
+                    <p>현재 참여 중인 기수입니다.</p>
+                    <div class="cohort-meta">
+                        <span>5 / 24</span>
+                        <span>참가중</span>
+                    </div>
+                </article>
+                <article class="cohort-card">
+                    <h3>Backend 7기</h3>
+                    <p>가입 코드 입력 후 신청할 수 있습니다.</p>
+                    <div class="cohort-meta">
+                        <span>3 / 20</span>
+                        <span>신청 가능</span>
+                    </div>
+                </article>
+            </div>
+        </section>
+    </section>
+</main>
+</body>
+</html>

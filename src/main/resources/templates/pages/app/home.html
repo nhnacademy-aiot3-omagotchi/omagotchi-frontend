@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Omagotchi Home</title>
+
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon_11.gif" th:href="@{/favicon_11.gif}" />
+    <link rel="stylesheet" href="/css/home.css" th:href="@{/css/home.css}" />
+    <link rel="stylesheet" href="/css/home/home-ui.css" th:href="@{/css/home/home-ui.css}" />
+    <link rel="stylesheet" href="/css/home/react-stage.css" th:href="@{/css/home/react-stage.css}" />
+    <link rel="stylesheet" href="/css/studyRecords.css?v=20260812-1" th:href="@{/css/studyRecords.css(v='20260812-1')}" />
+    <link rel="stylesheet" href="/css/gameFont.css" th:href="@{/css/gameFont.css}" />
+    <link rel="stylesheet" href="/css/ui/design-system.css?v=20260814-2" th:href="@{/css/ui/design-system.css(v='20260814-2')}" />
+    <link rel="stylesheet" href="/css/spaceRoom.css" th:href="@{/css/spaceRoom.css}" />
+    <link rel="stylesheet" href="/css/notificationPanel.css" th:href="@{/css/notificationPanel.css}" />
+    <link rel="stylesheet" href="/css/imageProtection.css" th:href="@{/css/imageProtection.css}" />
+    <link rel="stylesheet" th:href="@{/css/homeAttendance.css}">
+    <link rel="stylesheet" th:href="@{/css/homeAttendanceSync.css}" href="/css/homeAttendanceSync.css">
+    <link rel="stylesheet" href="/css/cursor.css" th:href="@{/css/cursor.css}" />
+    <link rel="stylesheet" href="/css/home/home-responsive.css?v=20260812-4" th:href="@{/css/home/home-responsive.css(v='20260812-4')}" />
+    <link rel="stylesheet" href="/css/home/home-overlay-theme.css?v=20260814-1" th:href="@{/css/home/home-overlay-theme.css(v='20260814-1')}" />
+    <link rel="stylesheet" href="/css/home/home-quick-panels.css?v=20260814-1" th:href="@{/css/home/home-quick-panels.css(v='20260814-1')}" />
+</head>
+<body>
+<main class="home-page">
+    <section class="home-hero" aria-labelledby="home-title">
+        <div id="home-react-root" class="home-react-root"></div>
+    </section>
+
+    <section class="attendance-detail ui-attendance" id="attendance-detail" aria-labelledby="attendance-title"
+             data-ui-state="ready" hidden>
+        <header class="quick-panel-header attendance-detail-header ui-attendance__header">
+            <span class="quick-panel-icon ui-attendance__header-icon" aria-hidden="true"><img src="/images/app/calendar.png" alt="" /></span>
+            <div class="ui-attendance__header-copy">
+                <h2>출석 현황</h2>
+                <p>오늘의 출석과 이번 달 학습 흐름을 확인하세요.</p>
+            </div>
+            <button class="quick-panel-close ui-attendance__close" type="button" data-attendance-panel-close aria-label="출석부 닫기">×</button>
+        </header>
+        <p class="ui-state-message" data-attendance-state-message role="status" hidden></p>
+        <div class="attendance-layout ui-attendance__layout">
+            <section class="attendance-summary ui-attendance__main" aria-labelledby="attendance-title">
+                <h2 id="attendance-title">오늘 출석</h2>
+                <dl class="ui-attendance__summary">
+                    <div class="ui-card ui-card--mint">
+                        <dt>입실</dt>
+                        <dd data-check-in-time>아직 입실 전</dd>
+                    </div>
+                    <div class="ui-card ui-card--sky">
+                        <dt>퇴실</dt>
+                        <dd data-check-out-time>아직 퇴실 전</dd>
+                    </div>
+                    <div class="ui-card ui-card--cream">
+                        <dt>출석 상태</dt>
+                        <dd data-early-leave>기록 없음</dd>
+                    </div>
+                    <div class="ui-card ui-card--peach">
+                        <dt>학습 기록</dt>
+                        <dd data-late-minutes>기록 없음</dd>
+                    </div>
+                </dl>
+            </section>
+
+            <section class="calendar-card ui-attendance__calendar" aria-labelledby="calendar-title">
+                <div class="calendar-header ui-calendar-header">
+                    <h2 id="calendar-title" data-calendar-title>출석 기록</h2>
+                    <div class="calendar-controls ui-calendar-controls" role="group" aria-label="출석 기록 월 이동">
+                        <button class="ui-calendar-nav" type="button" data-calendar-prev aria-label="이전 달 출석 기록">‹</button>
+                        <span data-calendar-period>이번 달</span>
+                        <button class="ui-calendar-nav" type="button" data-calendar-next aria-label="다음 달 출석 기록">›</button>
+                    </div>
+                </div>
+                <div class="calendar-grid ui-calendar-grid" aria-label="출석 달력" data-calendar-grid>
+                    <span class="calendar-weekday ui-calendar-day ui-calendar-day--weekday">월</span>
+                    <span class="calendar-weekday ui-calendar-day ui-calendar-day--weekday">화</span>
+                    <span class="calendar-weekday ui-calendar-day ui-calendar-day--weekday">수</span>
+                    <span class="calendar-weekday ui-calendar-day ui-calendar-day--weekday">목</span>
+                    <span class="calendar-weekday ui-calendar-day ui-calendar-day--weekday">금</span>
+                </div>
+            </section>
+
+            <aside class="streak-card ui-attendance__streak" aria-label="연속 출석">
+                <div class="streak-header ui-streak-header">
+                    <h2>연속 출석</h2>
+                    <strong class="ui-streak-count" data-streak-count>0일</strong>
+                </div>
+                <p>입실 기록 기준으로 이어집니다.</p>
+                <ol class="ui-streak-list" data-streak-list></ol>
+            </aside>
+        </div>
+    </section>
+</main>
+
+<div class="home-overlay-root" data-home-overlay-root aria-live="polite"></div>
+<p class="home-toast" data-home-toast role="status" aria-live="polite"></p>
+<th:block th:replace="~{fragments/home-notification-panel :: notificationPanelTemplate}"></th:block>
+<form action="/logout" th:action="@{/logout}" method="post" data-logout-form hidden></form>
+
+<script src="/js/api.js" th:src="@{/js/api.js}"></script>
+<script src="/js/characterAssets.js" th:src="@{/js/characterAssets.js}"></script>
+<script src="/js/spaceRoom.js" th:src="@{/js/spaceRoom.js}"></script>
+<script type="module" src="/js/home-react/home-app.js?v=20260814-4" th:src="@{/js/home-react/home-app.js(v='20260814-4')}"></script>
+<script type="module" src="/js/home.js?v=20260814-3" th:src="@{/js/home.js(v='20260814-3')}"></script>
+<script src="/js/imageProtection.js" th:src="@{/js/imageProtection.js}"></script>
+</body>
+</html>

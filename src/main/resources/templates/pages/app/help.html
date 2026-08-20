@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Omagotchi Help</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon_11.gif" th:href="@{/favicon_11.gif}" />
+    <link rel="stylesheet" href="/css/appPages.css" th:href="@{/css/appPages.css}" />
+    <link rel="stylesheet" href="/css/cursor.css" th:href="@{/css/cursor.css}" />
+</head>
+<body>
+<main class="app-page">
+    <section class="app-shell">
+        <header class="app-topbar">
+            <div class="app-title">
+                <h1>도움말</h1>
+                <p>오마고치의 기본 사용 흐름을 확인합니다.</p>
+            </div>
+            <a href="/home">홈으로</a>
+        </header>
+
+        <section class="panel">
+            <div class="help-grid">
+                <article class="help-card">
+                    <h3>입실하기</h3>
+                    <p>하루 학습을 시작할 때 입실을 기록합니다. 이후 퇴실 기록과 출석률 계산에 사용됩니다.</p>
+                </article>
+                <article class="help-card">
+                    <h3>학습 타이머</h3>
+                    <p>집중 시간을 기록하고 퀘스트 진행도와 캐릭터 성장에 반영합니다.</p>
+                </article>
+                <article class="help-card">
+                    <h3>공간</h3>
+                    <p>실습실, 회의실, 도서관처럼 사용할 공간을 선택합니다.</p>
+                </article>
+                <article class="help-card">
+                    <h3>기수</h3>
+                    <p>참여 중인 기수와 가입 가능한 기수를 확인합니다.</p>
+                </article>
+                <article class="help-card">
+                    <h3>BGM</h3>
+                    <p>홈 화면에서 배경 음악을 재생하고, 플레이리스트에서 곡 선택과 셔플을 사용할 수 있습니다. 음악 출처는 Pixabay Music과 Louie Zong의 Ghost Songs입니다.</p>
+                </article>
+                <article class="help-card help-card-wide">
+                    <h3>홈 하단 버튼</h3>
+                    <p>홈 화면 아래의 고정 버튼으로 자주 쓰는 기능을 빠르게 열 수 있습니다.</p>
+                    <ol class="dock-action-guide" aria-label="홈 하단 버튼 안내">
+                        <li>
+                            <img src="/images/app/music.png" alt="BGM 버튼" />
+                            <strong>BGM</strong>
+                            <span>음악 재생, 다음 곡, 셔플, 플레이리스트를 확인합니다.</span>
+                        </li>
+                        <li>
+                            <img src="/images/app/calendar.png" alt="출석부 버튼" />
+                            <strong>출석부</strong>
+                            <span>오늘 입실/퇴실 시간과 월별 출석 기록을 확인합니다.</span>
+                        </li>
+                        <li>
+                            <img src="/images/app/social.png" alt="재실 인원 버튼" />
+                            <strong>재실 인원</strong>
+                            <span>현재 실습실에 있는 인원과 상태를 확인합니다.</span>
+                        </li>
+                        <li>
+                            <img src="/images/app/exit.png" alt="퇴실 버튼" />
+                            <strong>퇴실</strong>
+                            <span>하루 학습을 마치고 퇴실 기록을 남깁니다.</span>
+                        </li>
+                    </ol>
+                </article>
+                <article class="help-card help-card-wide">
+                    <h3>출석 스트릭 날개</h3>
+                    <p>평일 출석 스트릭에 따라 캐릭터 뒤에 날개가 장착됩니다. 홈 화면에서는 움직이는 날개로 표시됩니다.</p>
+                    <ol class="streak-wing-guide" aria-label="출석 스트릭 날개 단계">
+                        <li>
+                            <img src="/images/wing/dia/셀렌.png" alt="셀렌 날개" />
+                            <strong>1일차</strong>
+                            <span>셀렌</span>
+                        </li>
+                        <li>
+                            <img src="/images/wing/mas/이트.png" alt="이트 날개" />
+                            <strong>2일차</strong>
+                            <span>이트</span>
+                        </li>
+                        <li>
+                            <img src="/images/wing/grand/세슘.png" alt="세슘 날개" />
+                            <strong>3일차 이상</strong>
+                            <span>세슘</span>
+                        </li>
+                    </ol>
+                </article>
+            </div>
+        </section>
+    </section>
+</main>
+<script src="/js/scrollCue.js" th:src="@{/js/scrollCue.js}"></script>
+</body>
+</html>

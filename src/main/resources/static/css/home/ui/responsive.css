@@ -1,0 +1,583 @@
+@media (max-width: 980px) {
+    .home-page {
+        --home-hud-left: 14px;
+        --home-hud-right: 14px;
+        --home-chat-width: 302px;
+        --home-dock-width: 290px;
+        --home-hud-gap: 24px;
+    }
+
+    .character-badge {
+        width: fit-content;
+        max-width: min(320px, calc(100vw - 32px));
+    }
+
+    .character-badge span {
+        width: auto;
+    }
+
+    .xp-area {
+        left: var(--home-xp-left);
+        right: var(--home-xp-right);
+    }
+
+    .character-badge strong {
+        left: var(--home-xp-left);
+    }
+
+    .character-badge {
+        left: auto;
+        right: var(--home-xp-right);
+    }
+
+    .home-chat-bar {
+        left: 14px;
+        right: auto;
+        bottom: 14px;
+        width: 302px;
+    }
+}
+
+@media (max-width: 900px) {
+    .bgm-player {
+        right: 14px;
+        bottom: 82px;
+        width: min(390px, calc(100vw - 28px));
+    }
+
+    .attendance-detail {
+        right: 14px;
+        bottom: 82px;
+        width: calc(100vw - 28px);
+    }
+}
+
+@media (min-width: 901px) and (max-height: 900px) {
+    .home-hero {
+        min-height: 100svh !important;
+        gap: clamp(8px, 1.5vh, 14px);
+        padding-top: clamp(18px, 2.6vh, 28px);
+        padding-bottom: 96px;
+    }
+
+    .home-hero h1 {
+        font-size: clamp(42px, 5.2vh, 52px);
+    }
+
+    .home-menu {
+        width: min(1060px, calc(100vw - 64px));
+        gap: 10px;
+        padding: 11px 18px;
+    }
+
+    .home-menu a {
+        min-height: 58px;
+        padding: 8px 7px;
+    }
+
+    .timer-panel {
+        gap: 10px;
+        margin-top: 6px;
+    }
+
+    .timer-display {
+        font-size: clamp(66px, 10vh, 94px);
+    }
+
+    .companion-panel {
+        margin-top: clamp(22px, 4.2vh, 54px);
+    }
+
+    .home-character-stage {
+        min-height: clamp(210px, 29vh, 280px);
+    }
+
+    .home-character-button {
+        width: clamp(190px, 26vh, 265px);
+    }
+
+    .home-character-wing {
+        width: clamp(240px, 36vh, 340px);
+    }
+}
+
+@media (min-width: 901px) and (max-height: 720px) {
+    .home-hero {
+        padding-top: 14px;
+        padding-bottom: 88px;
+    }
+
+    .home-hero h1 {
+        font-size: clamp(36px, 5.4vh, 44px);
+    }
+
+    .home-menu a {
+        min-height: 50px;
+    }
+
+    .timer-display {
+        font-size: clamp(56px, 9.4vh, 76px);
+    }
+
+    .timer-actions button {
+        min-height: 44px;
+    }
+
+    .companion-panel {
+        margin-top: clamp(12px, 2.4vh, 28px);
+    }
+
+    .home-character-stage {
+        min-height: clamp(190px, 27vh, 240px);
+    }
+
+    .home-character-button {
+        width: clamp(170px, 24vh, 230px);
+    }
+
+    .home-character-wing {
+        width: clamp(210px, 32vh, 285px);
+    }
+}
+
+@media (min-width: 901px) and (max-height: 640px) {
+    .home-hero {
+        gap: 7px;
+        padding-top: 10px;
+        padding-bottom: 78px;
+    }
+
+    .home-hero h1 {
+        font-size: clamp(32px, 5vh, 38px);
+    }
+
+    .home-menu {
+        width: min(980px, calc(100vw - 96px));
+        gap: 8px;
+        padding: 8px 14px;
+        border-radius: 24px;
+        overflow-y: visible;
+    }
+
+    .home-menu a {
+        min-height: 44px;
+        gap: 4px;
+        padding: 6px 5px;
+        border-radius: 10px;
+        font-size: 11px;
+    }
+
+    .home-menu a img {
+        width: 24px;
+        height: 24px;
+    }
+
+    .timer-panel {
+        gap: 8px;
+        margin-top: 4px;
+    }
+
+    .timer-display {
+        font-size: clamp(48px, 8vh, 62px);
+    }
+
+    .timer-actions {
+        width: min(190px, calc(100vw - 64px));
+    }
+
+    .timer-actions button {
+        min-height: 40px;
+        border-radius: 13px;
+        font-size: 15px;
+    }
+
+    .timer-policy {
+        min-height: 16px;
+        margin-top: -5px;
+        font-size: 11px;
+    }
+
+    .companion-panel {
+        margin-top: 6px;
+    }
+
+    .home-character-stage {
+        min-height: clamp(160px, 24vh, 210px);
+    }
+
+    .home-character-button {
+        width: clamp(145px, 22vh, 195px);
+    }
+
+    .home-character-wing {
+        width: clamp(172px, 26vh, 220px);
+    }
+}
+
+@media (max-width: 760px) {
+    .home-page {
+        --home-hud-left: 16px;
+        --home-hud-right: 16px;
+        --home-chat-width: min(318px, calc(100vw - 104px));
+        --home-dock-width: 0px;
+        --home-hud-gap: 0px;
+    }
+
+    .home-hero {
+        gap: 12px;
+        padding: 22px 16px 188px;
+    }
+
+    .home-hero h1 {
+        font-size: clamp(42px, 13vw, 62px);
+    }
+
+    .home-menu {
+        width: calc(100vw - 32px);
+        padding: 10px 14px;
+    }
+
+    .home-menu a {
+        min-height: 56px;
+        padding: 8px 6px;
+    }
+
+    .timer-panel {
+        gap: 11px;
+        margin-top: 4px;
+    }
+
+    .timer-display {
+        font-size: clamp(62px, 17vw, 92px);
+    }
+
+    .companion-panel {
+        margin-top: clamp(22px, 4vh, 48px);
+    }
+
+    .character-badge {
+        left: auto;
+        right: 16px;
+        bottom: 104px;
+        width: fit-content;
+        min-width: 124px;
+        max-width: calc(100vw - 106px);
+        transform: none;
+    }
+
+    .character-badge span {
+        width: auto;
+    }
+
+    .character-badge strong {
+        left: 16px;
+        bottom: 102px;
+        transform: none;
+    }
+
+    .xp-area {
+        left: 16px;
+        right: 16px;
+        bottom: 76px;
+    }
+
+    .xp-labels {
+        padding-left: 0;
+    }
+
+    .home-chat-bar {
+        left: 16px;
+        right: auto;
+        bottom: 138px;
+        width: min(318px, calc(100vw - 104px));
+        grid-template-columns: 82px minmax(0, 1fr);
+    }
+
+    .home-chat-tabs {
+        grid-template-columns: 1fr;
+    }
+
+    .home-character-wing {
+        width: clamp(190px, 52vw, 280px);
+    }
+
+    .home-character-stage {
+        min-height: clamp(150px, 30vh, 210px);
+    }
+
+    .home-character-button {
+        width: clamp(118px, 32vw, 164px);
+    }
+}
+
+@media (max-width: 520px) {
+    .home-page {
+        --home-chat-width: calc(100vw - 32px);
+    }
+
+    .home-hero {
+        padding-bottom: 206px;
+    }
+
+    .home-chat-bar {
+        left: 16px;
+        right: 16px;
+        bottom: 172px;
+        width: auto;
+        grid-template-columns: 84px minmax(0, 1fr);
+    }
+
+    .xp-area {
+        bottom: 92px;
+    }
+
+    .character-badge,
+    .character-badge strong {
+        bottom: 123px;
+    }
+
+    .home-character-stage {
+        min-height: clamp(130px, 25vh, 178px);
+    }
+
+    .companion-panel {
+        transform: translateY(-18px);
+    }
+
+    .home-character-button {
+        width: clamp(108px, 29vw, 142px);
+    }
+
+    .home-character-wing {
+        width: clamp(174px, 48vw, 238px);
+    }
+}
+
+@media (max-width: 760px) {
+    .home-page {
+        height: auto;
+        min-height: 100svh;
+        overflow-y: auto;
+    }
+
+    .home-hero {
+        height: auto;
+        min-height: 100svh !important;
+        overflow: visible;
+        gap: clamp(16px, 3vh, 24px);
+        padding: 24px 16px 112px;
+    }
+
+    .home-hero::after {
+        display: none;
+    }
+
+    .home-hero h1 {
+        font-size: clamp(44px, 13vw, 66px);
+    }
+
+    .home-menu {
+        width: min(560px, calc(100vw - 32px));
+        grid-template-columns: repeat(4, minmax(64px, 1fr));
+        gap: 9px;
+        overflow: visible;
+        padding: 12px;
+        border-radius: 22px;
+    }
+
+    .home-menu a {
+        min-height: 62px;
+        gap: 5px;
+        padding: 8px 5px;
+        font-size: 11px;
+    }
+
+    .home-menu span {
+        font-size: 15px;
+    }
+
+    .timer-panel {
+        gap: 13px;
+        margin-top: 0;
+    }
+
+    .timer-display {
+        font-size: clamp(66px, 18vw, 96px);
+    }
+
+    .timer-actions {
+        width: min(260px, calc(100vw - 96px));
+    }
+
+    .timer-actions button {
+        min-height: 58px;
+        border-radius: 18px;
+    }
+
+    .timer-policy {
+        max-width: calc(100vw - 48px);
+        font-size: 13px;
+    }
+
+    .companion-panel {
+        width: min(520px, calc(100vw - 32px));
+        display: grid;
+        justify-items: center;
+        gap: 14px;
+        margin-top: 0;
+        transform: none;
+    }
+
+    .character-badge {
+        position: static;
+        order: 1;
+        width: fit-content;
+        max-width: min(320px, calc(100vw - 48px));
+        height: auto;
+        min-height: 0;
+        display: inline-flex;
+        align-items: center;
+        gap: 12px;
+        padding: 0;
+        border-radius: 0;
+        background: transparent;
+        color: #ffffff;
+    }
+
+    .character-badge span {
+        max-width: 190px;
+        font-size: 16px;
+        text-align: left;
+    }
+
+    .character-badge strong {
+        position: static;
+        min-width: 48px;
+        height: auto;
+        padding: 0;
+        border-radius: 0;
+        background: transparent;
+        font-size: 14px;
+    }
+
+    .character-badge strong::before {
+        font-size: 11px;
+    }
+
+    .home-character-stage {
+        order: 2;
+        width: min(360px, calc(100vw - 48px));
+        min-height: clamp(170px, 34vh, 250px);
+    }
+
+    .home-character-button {
+        width: clamp(130px, 34vw, 178px);
+    }
+
+    .home-character-wing {
+        width: clamp(210px, 56vw, 300px);
+    }
+
+    .xp-area {
+        position: static;
+        order: 3;
+        width: min(420px, calc(100vw - 64px));
+        display: flex;
+        flex-direction: column;
+        gap: 7px;
+        margin-top: 0;
+        transform: none;
+    }
+
+    .xp-labels {
+        min-height: 0;
+        order: 2;
+    }
+
+    .xp-labels span:last-child {
+        position: static;
+        line-height: 1;
+        transform: none;
+    }
+
+    .home-chat-bar {
+        position: static;
+        order: 4;
+        width: min(440px, calc(100vw - 32px));
+        margin-top: 0;
+        display: grid;
+        grid-template-columns: 84px minmax(0, 1fr);
+    }
+
+    .home-dock-button,
+    .presence-hud,
+    .attendance-button {
+        bottom: max(16px, env(safe-area-inset-bottom)) !important;
+        width: 56px !important;
+        min-width: 56px !important;
+        height: 56px !important;
+        min-height: 56px !important;
+    }
+
+    .home-music-toggle {
+        left: calc(50% - 134px);
+        right: auto !important;
+    }
+
+    .home-attendance-toggle {
+        left: calc(50% - 64px);
+        right: auto !important;
+    }
+
+    .presence-hud {
+        left: calc(50% + 6px);
+        right: auto !important;
+    }
+
+    .attendance-button {
+        left: calc(50% + 76px);
+        right: auto !important;
+    }
+}
+
+@media (max-width: 420px) {
+    .home-hero {
+        padding-inline: 12px;
+    }
+
+    .home-menu {
+        grid-template-columns: repeat(4, minmax(58px, 1fr));
+        gap: 7px;
+        padding: 10px;
+    }
+
+    .home-menu a {
+        min-height: 56px;
+        font-size: 10px;
+    }
+
+    .home-dock-button,
+    .presence-hud,
+    .attendance-button {
+        width: 52px !important;
+        min-width: 52px !important;
+        height: 52px !important;
+        min-height: 52px !important;
+    }
+
+    .home-music-toggle {
+        left: calc(50% - 124px);
+    }
+
+    .home-attendance-toggle {
+        left: calc(50% - 59px);
+    }
+
+    .presence-hud {
+        left: calc(50% + 6px);
+    }
+
+    .attendance-button {
+        left: calc(50% + 71px);
+    }
+}

@@ -1,0 +1,189 @@
+.attendance-detail {
+    right: 92px;
+    bottom: 92px;
+    width: min(720px, calc(100vw - 44px));
+    max-height: min(620px, calc(100svh - 126px));
+    padding: 14px;
+    border: 3px solid #09251a;
+    border-radius: 18px;
+    background: #f4fff9;
+    box-shadow: 0 10px 0 rgba(0, 0, 0, 0.18);
+}
+
+.attendance-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+}
+
+.attendance-summary,
+.calendar-card,
+.streak-card {
+    border: 2px solid rgba(9, 37, 26, 0.36);
+    border-radius: 14px;
+    background: #ffffff;
+}
+
+.attendance-summary {
+    padding: 18px;
+}
+
+.attendance-summary h2,
+.calendar-card h2 {
+    font-size: clamp(28px, 3vw, 36px);
+}
+
+.attendance-summary dl {
+    margin: 16px 0 0;
+    gap: 9px;
+}
+
+.attendance-summary div {
+    min-height: 66px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    background: #f3fff8;
+}
+
+.calendar-card {
+    margin-top: 0;
+    padding: 18px;
+}
+
+.calendar-header {
+    margin-bottom: 14px;
+}
+
+.calendar-grid {
+    gap: 7px;
+}
+
+.calendar-weekday {
+    background: #e1faed !important;
+    color: #09251a !important;
+}
+
+.calendar-grid span,
+.calendar-day {
+    min-height: 34px;
+    border-radius: 10px;
+}
+
+.attendance-summary,
+.calendar-card,
+.streak-card {
+    border-color: #8d9a95;
+    background: #ffffff;
+}
+
+.attendance-summary dl {
+    gap: 10px;
+}
+
+.attendance-summary div {
+    border: 2px solid #c9d3ce;
+    background: #f8fffb;
+    box-shadow: inset 0 -2px 0 rgba(9, 37, 26, 0.06);
+}
+
+.attendance-summary div:nth-child(1),
+.attendance-summary div:nth-child(2) {
+    border-bottom-color: #9fafaa;
+}
+
+.attendance-summary dt,
+.calendar-header span,
+.streak-card > p {
+    color: #4a5a53;
+}
+
+.attendance-summary dd,
+.calendar-day,
+.calendar-grid span,
+.streak-card li {
+    color: #050806;
+}
+
+.calendar-day {
+    min-height: 38px;
+    background: #ffffff;
+    border: 1px solid #d8e0dc;
+    font-size: 14px;
+}
+
+.calendar-weekday {
+    min-height: 34px !important;
+    border: 1px solid #c8efe0;
+    background: #def8ed !important;
+    font-size: 13px !important;
+}
+
+.calendar-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 6px;
+    padding: 8px;
+    border: 2px solid #d2ddd8;
+    border-radius: 14px;
+    background: #fbfffd;
+}
+
+.calendar-day.is-present {
+    background: #43c284;
+    color: #031d14;
+    box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.08);
+}
+
+.calendar-day.is-today {
+    background: #111111;
+    color: #ffffff;
+}
+
+.streak-card li {
+    color: #050806;
+    font-size: 12px;
+}
+
+.streak-card li span {
+    width: 30px;
+    height: 30px;
+    border-color: #d2d9d6;
+    background: #ffffff;
+}
+
+.streak-card li.is-active span {
+    background: #ffffff;
+    box-shadow: inset 0 0 0 5px #050806;
+}
+
+.streak-card li.is-current-streak span {
+    border-color: #050806;
+    background: #43c284;
+    box-shadow: inset 0 0 0 5px #050806;
+}
+
+.streak-card ol {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    padding: 8px;
+    border: 2px solid #d2ddd8;
+    border-radius: 14px;
+    background: #fbfffd;
+}
+
+.streak-card {
+    grid-column: auto;
+    grid-row: auto;
+    padding: 16px;
+}
+
+.streak-card h2 {
+    font-size: 24px;
+}
+
+.streak-card > p {
+    margin-bottom: 12px;
+}
+
+.streak-card ol {
+    gap: 7px;
+}
+

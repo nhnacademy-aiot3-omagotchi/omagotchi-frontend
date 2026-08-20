@@ -1,0 +1,438 @@
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+:root {
+    --space-green: #1fc979;
+    --space-green-deep: #17ad66;
+    --green-soft: #9de9bf;
+    --green-panel: #d6f7e5;
+    --space-background:
+            linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(0, 0, 0, 0.08)),
+            linear-gradient(135deg, var(--space-green), var(--space-green-deep));
+    --ink: #080808;
+    --white: #ffffff;
+    --line: rgba(8, 8, 8, 0.45);
+}
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    overflow-x: hidden;
+    background: var(--space-background);
+    color: var(--white);
+    font-family: "DNFBitBitv2", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+button,
+a {
+    font: inherit;
+}
+
+/* 공간 화면 */
+.space-page {
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+    padding: 36px 22px;
+}
+
+/* 공간 패널 */
+.space-shell {
+    position: relative;
+    width: min(980px, 100%);
+    min-height: 620px;
+    display: grid;
+    grid-template-rows: auto auto 1fr auto;
+    gap: 20px;
+    padding: 34px 44px 30px;
+    border: 2px solid rgba(255, 255, 255, 0.72);
+    border-radius: 18px;
+    background: var(--space-background);
+    color: var(--white);
+}
+
+.space-shell.space-shell-v2 {
+    width: min(1160px, 100%);
+    min-height: 700px;
+    grid-template-rows: auto 1fr;
+    background: rgba(255, 255, 255, 0.96);
+    color: #10271d;
+}
+
+.space-shell.space-shell-v2 .space-header h1 {
+    color: #10271d;
+}
+
+.space-shell.space-shell-v2 .space-header p {
+    color: #557064;
+}
+
+.space-shell.space-shell-v2 .space-header a {
+    background: #10271d;
+    color: #ffffff;
+}
+
+/* 공간 제목과 홈 이동 */
+.space-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 18px;
+}
+
+.space-header h1 {
+    margin: 0;
+    color: var(--white);
+    font-size: 46px;
+    font-weight: 900;
+    line-height: 1;
+}
+
+.space-header p {
+    margin: 10px 0 0;
+    color: rgba(255, 255, 255, 0.82);
+    font-size: 14px;
+    font-weight: 900;
+}
+
+.space-header a {
+    min-height: 42px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 16px;
+    border-radius: 12px;
+    background: var(--white);
+    color: var(--ink);
+    font-size: 14px;
+    font-weight: 900;
+    text-decoration: none;
+}
+
+/* 공간 종류 탭 */
+.space-tabs {
+    justify-self: center;
+    min-width: min(420px, 100%);
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 4px;
+    padding: 6px;
+    border-radius: 999px;
+    background: rgba(0, 0, 0, 0.12);
+}
+
+.space-tabs button {
+    min-height: 34px;
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--white);
+    font-size: 13px;
+    font-weight: 900;
+    cursor: pointer;
+}
+
+.space-tabs button.is-active {
+    background: var(--white);
+    color: var(--ink);
+}
+
+/* 선택 공간 내용 */
+.space-view {
+    min-height: 390px;
+}
+
+.space-view[hidden] {
+    display: none !important;
+}
+
+.space-view[data-space-view="lab"] {
+    display: grid;
+    grid-template-columns: 170px minmax(0, 1fr);
+    gap: 24px;
+}
+
+/* 실습실 센서 상태 */
+.sensor-stack {
+    display: grid;
+    gap: 14px;
+}
+
+.sensor-stack article,
+.lab-status-card,
+.room-card {
+    border-radius: 16px;
+    background: var(--green-panel);
+    color: var(--ink);
+}
+
+.sensor-stack article {
+    min-height: 88px;
+    display: grid;
+    place-items: center;
+    gap: 6px;
+    padding: 14px;
+}
+
+.sensor-stack strong,
+.sensor-stack span {
+    font-size: 14px;
+    font-weight: 900;
+}
+
+.sensor-stack span {
+    color: rgba(8, 8, 8, 0.62);
+}
+
+/* 실습실 캐릭터 현황 */
+.lab-status-card {
+    position: relative;
+    min-height: 340px;
+    display: grid;
+    place-items: center;
+    padding: 26px;
+}
+
+.space-character {
+    width: clamp(180px, 22vw, 230px);
+    height: auto;
+    image-rendering: pixelated;
+    animation: spaceCharacterFloat 2.4s ease-in-out infinite;
+}
+
+/* 캐릭터 말풍선 */
+.space-bubble {
+    position: absolute;
+    z-index: 2;
+    top: 38px;
+    left: 50%;
+    min-width: 128px;
+    margin: 0;
+    padding: 10px 14px;
+    border: 3px solid var(--ink);
+    border-radius: 14px;
+    background: var(--white);
+    color: var(--ink);
+    font-family: var(--game-font);
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 1.25;
+    text-align: center;
+    box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.18);
+    transform: translateX(-50%);
+}
+
+.space-bubble::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    bottom: -14px;
+    width: 22px;
+    height: 22px;
+    background: var(--white);
+    border-right: 3px solid var(--ink);
+    border-bottom: 3px solid var(--ink);
+    transform: translateX(-50%) rotate(45deg);
+}
+
+@keyframes spaceCharacterFloat {
+    0%,
+    100% {
+        transform: translateY(4px);
+    }
+
+    50% {
+        transform: translateY(-5px);
+    }
+}
+
+/* 실습실 정원 */
+.lab-capacity {
+    position: absolute;
+    top: 22px;
+    right: 22px;
+    display: grid;
+    justify-items: end;
+    gap: 4px;
+    font-size: 13px;
+    font-weight: 900;
+}
+
+/* 회의실·도서관 목록 */
+.room-list {
+    display: grid;
+    gap: 18px;
+}
+
+/* 공간 카드 */
+.room-card {
+    position: relative;
+    display: grid;
+    grid-template-columns: 72px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 18px;
+    min-height: 112px;
+    padding: 18px 22px;
+}
+
+.room-number {
+    width: 58px;
+    height: 58px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background: var(--white);
+    color: var(--ink);
+    font-size: 28px;
+    font-weight: 900;
+}
+
+.room-card h2 {
+    margin: 0;
+    color: var(--ink);
+    font-size: 22px;
+    font-weight: 900;
+}
+
+.room-card p,
+.room-card span {
+    margin: 8px 0 0;
+    color: var(--ink);
+    font-size: 14px;
+    font-weight: 900;
+}
+
+.room-card button,
+.space-footer button {
+    min-height: 42px;
+    border: 0;
+    border-radius: 10px;
+    background: var(--white);
+    color: var(--ink);
+    font-size: 14px;
+    font-weight: 900;
+    cursor: pointer;
+}
+
+.room-card > button {
+    min-width: 104px;
+}
+
+.room-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+.room-actions button {
+    min-width: 82px;
+}
+
+/* 내가 사용하는 공간 */
+.room-card.is-mine {
+    border: 4px solid var(--white);
+    box-shadow:
+            inset 0 0 0 2px rgba(8, 8, 8, 0.18),
+            0 0 0 6px rgba(255, 255, 255, 0.16);
+}
+
+.my-room-badge {
+    display: inline-flex;
+    min-height: 28px;
+    align-items: center;
+    margin: 0 0 8px;
+    padding: 0 10px;
+    border-radius: 999px;
+    background: var(--ink);
+    color: var(--white);
+    font-size: 12px;
+    font-weight: 900;
+}
+
+.room-card.is-full {
+    opacity: 0.72;
+}
+
+/* 공간 페이지 이동 */
+.space-footer {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 76px;
+    color: var(--white);
+    font-size: 14px;
+    font-weight: 900;
+}
+
+.space-footer button {
+    width: 42px;
+    padding: 0;
+}
+
+@media (max-width: 760px) {
+    .space-page {
+        align-items: start;
+        padding: 18px 14px;
+    }
+
+    .space-shell {
+        min-height: calc(100vh - 36px);
+        padding: 24px 18px;
+    }
+
+    .space-header {
+        flex-direction: column;
+    }
+
+    .space-header h1 {
+        font-size: 38px;
+    }
+
+    .space-view[data-space-view="lab"] {
+        grid-template-columns: 1fr;
+    }
+
+    .sensor-stack {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+    }
+
+    .sensor-stack article {
+        min-height: 72px;
+    }
+
+    .lab-status-card {
+        min-height: 280px;
+    }
+
+    .space-bubble {
+        top: 58px;
+        left: 50%;
+    }
+
+    .room-card {
+        grid-template-columns: 52px minmax(0, 1fr);
+        gap: 14px;
+        padding: 16px;
+    }
+
+    .room-number {
+        width: 48px;
+        height: 48px;
+        font-size: 22px;
+    }
+
+    .room-card > button,
+    .room-actions {
+        grid-column: 2;
+        justify-self: start;
+    }
+
+    .space-footer {
+        gap: 34px;
+    }
+}
