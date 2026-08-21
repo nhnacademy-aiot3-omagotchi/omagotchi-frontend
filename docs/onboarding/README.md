@@ -113,6 +113,8 @@ flowchart LR
    - Browser·BFF·Gateway·Learning 역할과 출결·Presence·첨부파일 처리 순서
 6. [기능 연동 개발 가이드](05-feature-integration-guide.md)
    - Prototype 전환, SSR·JSON BFF 선택, Session·CSRF·내부 HTTP·검증 기준
+7. [BFF와 Learning HTTP Interface 경계](06-bff-http-interface-boundary.md)
+   - Browser·View·Learning의 의존 범위와 `@HttpExchange`·`@GetExchange` 동작 방식
 
 ## 5. Code 탐색 시작점
 
