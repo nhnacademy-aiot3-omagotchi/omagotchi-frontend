@@ -1,25 +1,26 @@
 (() => {
-    const ALLOWED_STATUSES = new Set(["NORMAL", "LATE", "ABSENT", "EARLY_LEAVE"]);
+    const ALLOWED_STATUSES = new Set([
+        "PRESENT",
+        "LATE",
+        "ABSENT",
+        "LEFT_EARLY",
+        "LATE_LEFT_EARLY",
+        "MISSING_CHECK_OUT"
+    ]);
 
-    function findAttendanceRecord(cohort, memberId, date) {
-        return cohort.attendance.find(
-            (item) => String(item.memberId) === String(memberId) && item.date === date
-        );
-    }
-
-    function createAttendanceRow(template, member, record, statusLabel) {
+    function createAttendanceRow(template, record, statusLabel) {
         const row = template.content.firstElementChild.cloneNode(true);
-        row.querySelector("[data-attendance-member-name]").textContent = member.name ?? "";
-        row.querySelector("[data-attendance-member-email]").textContent = member.email ?? "";
+        row.querySelector("[data-attendance-member-name]").textContent = `출결 기록 #${record.id}`;
+        row.querySelector("[data-attendance-member-email]").textContent = "사용자 정보는 Identity 연동 후 표시됩니다.";
         row.querySelector("[data-attendance-check-in]").textContent = record?.checkIn || "-";
         row.querySelector("[data-attendance-check-out]").textContent = record?.checkOut || "-";
         row.querySelector("[data-attendance-auto-status]").textContent = statusLabel(record?.autoStatus || "PENDING");
         row.querySelector("[data-attendance-final-status]").textContent = statusLabel(record?.finalStatus || "PENDING");
-        row.querySelector("[data-attendance-edit]").dataset.attendanceEdit = String(member.id);
+        row.querySelector("[data-attendance-edit]").dataset.attendanceEdit = String(record.id);
         return row;
     }
 
-    function create({ root, store, statusLabel, openDialog }) {
+    function create({ root, store, statusLabel, openDialog, refreshDashboard }) {
         if (!root) throw new Error("Attendance panel root is required.");
 
         const dateInput = root.querySelector("[data-attendance-date]");
@@ -40,10 +41,8 @@
             const fragment = document.createDocumentFragment();
             let rowCount = 0;
 
-            for (const member of cohort.members) {
-                if (member.role === "MANAGER" || member.status === "ENDED") continue;
-                const record = findAttendanceRecord(cohort, member.id, date);
-                fragment.append(createAttendanceRow(rowTemplate, member, record, statusLabel));
+            for (const record of cohort.attendance.filter((item) => item.date === date)) {
+                fragment.append(createAttendanceRow(rowTemplate, record, statusLabel));
                 rowCount += 1;
             }
 
@@ -55,32 +54,36 @@
             if (!pendingEdit) return false;
             const nextStatus = value.trim().toUpperCase();
             if (!ALLOWED_STATUSES.has(nextStatus)) return false;
-            return store.dispatch({
-                type: "CHANGE_ATTENDANCE_STATUS",
-                memberId: pendingEdit.memberId,
-                date: pendingEdit.date,
-                status: nextStatus
-            }).ok;
+            globalThis.OmagotchiApi.manager.updateAttendanceStatus(
+                getCohort().id,
+                pendingEdit.recordId,
+                nextStatus,
+                "관리자 화면에서 수동 정정"
+            ).then(() => refreshDashboard(pendingEdit.date))
+                .catch((error) => console.error("출결 상태를 변경하지 못했습니다.", error));
+            return true;
         }
 
         function handleListClick(event) {
             const button = event.target.closest("[data-attendance-edit]");
             if (!button) return;
-            const member = getCohort().members.find(
+            const record = getCohort().attendance.find(
                 (item) => String(item.id) === String(button.dataset.attendanceEdit)
             );
-            if (!member) return;
+            if (!record) return;
             const date = dateInput.value;
-            pendingEdit = { memberId: member.id, date };
+            pendingEdit = { recordId: record.id, date };
             openDialog({
                 title: "출결 상태 변경",
-                message: `${member.name} 님의 ${date} 최종 출결 상태를 입력하세요. NORMAL, LATE, ABSENT, EARLY_LEAVE 중 하나를 사용합니다.`,
+                message: `${date} 출결 기록 #${record.id}의 최종 상태를 입력하세요. PRESENT, LATE, ABSENT, LEFT_EARLY, LATE_LEFT_EARLY, MISSING_CHECK_OUT 중 하나를 사용합니다.`,
                 inputLabel: "최종 상태",
-                initialValue: "NORMAL"
+                initialValue: "PRESENT"
             }, submitStatus);
         }
 
-        dateInput.addEventListener("change", activate);
+        dateInput.addEventListener("change", () => {
+            refreshDashboard(dateInput.value).catch((error) => console.error("출결을 불러오지 못했습니다.", error));
+        });
         list.addEventListener("click", handleListClick);
 
         return Object.freeze({ activate });
