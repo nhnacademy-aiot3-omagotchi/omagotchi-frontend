@@ -1,4 +1,4 @@
-import { canCheckIn, checkInToday, isCheckedInToday } from "./attendanceState.js";
+import { canCheckIn, checkInToday, isCheckedInToday, loadTodayAttendance } from "./attendanceState.js";
 
 const SHAKE_COUNT_TO_WAKE = 4;
 const WAKE_DURATION_MS = 2800;
@@ -63,7 +63,12 @@ function createWaterParticles(character) {
     }
 }
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
+    try {
+        await loadTodayAttendance();
+    } catch {
+        // 입실 요청 시 서버 오류 상태를 다시 확인한다.
+    }
     prepareWakeMarkup();
 
     const character = document.querySelector(

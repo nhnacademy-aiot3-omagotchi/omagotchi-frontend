@@ -1,5 +1,5 @@
 (() => {
-    function create({ root, store, statusLabel }) {
+    function create({ root, store, statusLabel, refreshDashboard }) {
         if (!root) throw new Error("Overview panel root is required.");
 
         const elements = {
@@ -43,12 +43,11 @@
             elements.name.textContent = cohort.name;
             elements.period.textContent = `${cohort.startDate} ~ ${cohort.endDate}`;
             elements.status.textContent = statusLabel(cohort.status);
-            elements.capacity.textContent = `${cohort.members.filter((member) => member.status === "ACTIVE").length} / ${cohort.capacity}명`;
+            elements.capacity.textContent = "API 계약 미제공";
             elements.pending.textContent = `${model.pendingCount}건`;
             elements.late.textContent = `${model.lateCount}명`;
             elements.reported.textContent = `${model.reportedCount}건`;
             elements.form.elements.namedItem("description").value = cohort.description;
-            elements.form.elements.namedItem("capacity").value = cohort.capacity;
         }
 
         elements.edit.addEventListener("click", () => {
@@ -57,17 +56,22 @@
         elements.cancel.addEventListener("click", () => {
             elements.form.hidden = true;
         });
-        elements.form.addEventListener("submit", (event) => {
+        elements.form.addEventListener("submit", async (event) => {
             event.preventDefault();
             const cohort = getModel().cohort;
             const description = elements.form.elements.namedItem("description").value.trim();
-            const capacity = Math.max(
-                1,
-                Number(elements.form.elements.namedItem("capacity").value) || cohort.capacity
-            );
-            const result = store.dispatch({ type: "UPDATE_COHORT", description, capacity });
-            if (!result.ok) return;
-            elements.form.hidden = true;
+            try {
+                await globalThis.OmagotchiApi.manager.updateCohort(cohort.id, {
+                    name: cohort.name,
+                    description,
+                    startDate: cohort.startDate,
+                    endDate: cohort.endDate
+                });
+                elements.form.hidden = true;
+                await refreshDashboard();
+            } catch (error) {
+                console.error("기수 정보를 수정하지 못했습니다.", error);
+            }
         });
 
         return Object.freeze({ activate });

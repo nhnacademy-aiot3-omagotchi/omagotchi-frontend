@@ -1,4 +1,5 @@
 import { getLocalDateKey } from "./utils.js";
+import { getServiceDate } from "../attendanceState.js";
 
 export function createAttendance({
     button,
@@ -13,7 +14,6 @@ export function createAttendance({
     calendarNext,
     streakCount,
     streakList,
-    storageKey,
     api,
     onCheckOutSuccess,
     onCheckOutError,
@@ -21,7 +21,7 @@ export function createAttendance({
     onChange
 }) {
     let renderedDateKey = getLocalDateKey();
-    let serverHistory = null;
+    let serverHistory = {};
     let visibleMonth = new Date();
     visibleMonth.setDate(1);
     visibleMonth.setHours(12, 0, 0, 0);
@@ -45,50 +45,18 @@ export function createAttendance({
         }
     }
 
-    function getLocalHistory() {
-        try {
-            const saved = JSON.parse(localStorage.getItem(storageKey)) || {};
-
-            if (saved.checkInAt) {
-                const dateKey = getLocalDateKey(new Date(saved.checkInAt));
-                const migrated = { [dateKey]: saved };
-                localStorage.setItem(storageKey, JSON.stringify(migrated));
-                return migrated;
-            }
-            return saved;
-        } catch {
-            return {};
-        }
-    }
-
-    function normalizeAttendance(entry = {}) {
-        return {
-            ...entry,
-            checkInAt: entry.checkInAt || entry.checkedInAt,
-            checkOutAt: entry.checkOutAt || entry.checkedOutAt
-        };
-    }
-
     function normalizeHistory(payload) {
-        const source = payload?.history || payload?.records || payload || {};
-        if (Array.isArray(source)) {
-            return source.reduce((history, entry) => {
-                const dateKey = entry.date
-                    || entry.serviceDate
-                    || entry.attendanceDate
-                    || getLocalDateKey(new Date(entry.checkInAt || entry.checkedInAt));
-                history[dateKey] = normalizeAttendance(entry);
-                return history;
-            }, {});
+        if (!Array.isArray(payload)) {
+            throw new Error("Attendance history API returned an invalid response");
         }
-
-        return Object.fromEntries(
-            Object.entries(source).map(([dateKey, entry]) => [dateKey, normalizeAttendance(entry)])
-        );
+        return payload.reduce((history, entry) => {
+            if (entry?.attendanceDate) history[entry.attendanceDate] = entry;
+            return history;
+        }, {});
     }
 
     function getHistory() {
-        return serverHistory || getLocalHistory();
+        return serverHistory;
     }
 
     async function loadServerHistory() {
@@ -106,7 +74,7 @@ export function createAttendance({
         }
         try {
             const history = await api.getHistory();
-            if (!history || typeof history !== "object") {
+            if (!Array.isArray(history)) {
                 throw new Error("Attendance history API returned an invalid response");
             }
 
@@ -116,25 +84,20 @@ export function createAttendance({
             if (stateMessage) stateMessage.hidden = true;
             render();
         } catch {
-            // [API-REPLACE] 계약 확정 전에는 로컬 Prototype을 유지하되 성공 응답으로 위장하지 않는다.
             if (panel) {
                 panel.dataset.uiState = "error";
-                panel.dataset.uiSource = "local-prototype";
+                panel.dataset.uiSource = "server-error";
             }
             if (stateMessage) {
                 stateMessage.hidden = false;
-                stateMessage.textContent = "출석 기록을 불러오지 못했습니다. 임시 기록을 표시합니다.";
+                stateMessage.textContent = "출석 기록을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.";
             }
         }
     }
 
     function saveToday(attendance) {
-        const history = serverHistory || getLocalHistory();
-        history[getLocalDateKey()] = attendance;
-        if (serverHistory) {
-            serverHistory = history;
-        }
-        localStorage.setItem(storageKey, JSON.stringify(history));
+        const dateKey = attendance.attendanceDate || getServiceDate();
+        serverHistory = {...serverHistory, [dateKey]: attendance};
     }
 
     function renderCalendar(history) {
@@ -179,7 +142,7 @@ export function createAttendance({
                 dayNode.classList.add("is-today");
                 dayNode.classList.add("ui-calendar-day--today");
             }
-            if (history[getLocalDateKey(date)]?.checkInAt) {
+            if (history[getLocalDateKey(date)]?.checkedInAt) {
                 dayNode.classList.add("is-present");
                 dayNode.classList.add("ui-calendar-day--present");
                 dayNode.setAttribute("aria-label", `${day}일 출석`);
@@ -190,7 +153,7 @@ export function createAttendance({
     }
 
     function getStreakCount(history) {
-        const hasAttendance = (date) => Boolean(history[getLocalDateKey(date)]?.checkInAt);
+        const hasAttendance = (date) => Boolean(history[getLocalDateKey(date)]?.checkedInAt);
         const cursor = new Date();
         let count = 0;
 
@@ -213,7 +176,7 @@ export function createAttendance({
 
         if (!streakCount || !streakList) return count;
 
-        const hasAttendance = (date) => Boolean(history[getLocalDateKey(date)]?.checkInAt);
+        const hasAttendance = (date) => Boolean(history[getLocalDateKey(date)]?.checkedInAt);
         streakCount.textContent = `${count}일`;
         streakList.replaceChildren();
 
@@ -258,19 +221,19 @@ export function createAttendance({
 
     function render() {
         const history = getHistory();
-        const attendance = history[getLocalDateKey()] || {};
-        const hasCheckIn = Boolean(attendance.checkInAt);
-        const hasCheckOut = hasCheckIn && Boolean(attendance.checkOutAt);
+        const attendance = history[getServiceDate()] || {};
+        const hasCheckIn = Boolean(attendance.checkedInAt);
+        const hasCheckOut = hasCheckIn && Boolean(attendance.checkedOutAt);
 
         const panel = calendarGrid?.closest("[data-ui-state]");
         if (panel && panel.dataset.uiState !== "error") {
             panel.dataset.uiState = hasCheckOut ? "complete" : hasCheckIn ? "active" : "empty";
         }
 
-        if (checkInTime) checkInTime.textContent = hasCheckIn ? formatTime(new Date(attendance.checkInAt)) : "아직 입실 전";
-        if (checkOutTime) checkOutTime.textContent = hasCheckOut ? formatTime(new Date(attendance.checkOutAt)) : "아직 퇴실 전";
-        if (earlyLeave) earlyLeave.textContent = hasCheckOut ? "0분" : "기록 없음";
-        if (lateMinutes) lateMinutes.textContent = hasCheckIn ? "0분" : "기록 없음";
+        if (checkInTime) checkInTime.textContent = hasCheckIn ? formatTime(new Date(attendance.checkedInAt)) : "아직 입실 전";
+        if (checkOutTime) checkOutTime.textContent = hasCheckOut ? formatTime(new Date(attendance.checkedOutAt)) : "아직 퇴실 전";
+        if (earlyLeave) earlyLeave.textContent = hasCheckOut ? `${attendance.earlyLeaveMinutes || 0}분` : "기록 없음";
+        if (lateMinutes) lateMinutes.textContent = hasCheckIn ? `${attendance.lateMinutes || 0}분` : "기록 없음";
 
         if (button) {
             const buttonLabel = button.querySelector("[data-attendance-label]");
@@ -293,8 +256,8 @@ export function createAttendance({
     }
     async function toggle() {
         const history = getHistory();
-        const attendance = history[getLocalDateKey()] || {};
-        if (!attendance.checkInAt || attendance.checkOutAt) {
+        const attendance = history[getServiceDate()] || {};
+        if (!attendance.checkedInAt || attendance.checkedOutAt) {
             render();
             return;
         }
@@ -315,16 +278,11 @@ export function createAttendance({
             if (!response || typeof response !== "object") {
                 throw new Error("Attendance check-out API returned an invalid response");
             }
-            const serverAttendance = normalizeAttendance(response);
-            if (!serverAttendance.checkOutAt) {
-                throw new Error("Attendance check-out response is missing checkOutAt");
+            const serverAttendance = response;
+            if (!serverAttendance.checkedOutAt) {
+                throw new Error("Attendance check-out response is missing checkedOutAt");
             }
-            saveToday({
-                ...attendance,
-                ...serverAttendance,
-                checkInAt: serverAttendance.checkInAt || attendance.checkInAt,
-                checkOutAt: serverAttendance.checkOutAt
-            });
+            saveToday(serverAttendance);
             render();
             onCheckOutSuccess?.();
         } catch {
