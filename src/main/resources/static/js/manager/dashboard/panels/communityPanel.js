@@ -11,7 +11,7 @@
         return article;
     }
 
-    function create({ root, store, refreshDashboard }) {
+    function create({ root, store, setBubble, refreshDashboard }) {
         if (!root) throw new Error("Community panel root is required.");
 
         const elements = {
@@ -63,6 +63,7 @@
                 await refreshDashboard();
             } catch (error) {
                 console.error("공지를 등록하지 못했습니다.", error);
+                setBubble("공지를\n등록하지 못했습니다.");
             }
         });
         elements.list.addEventListener("click", async (event) => {
@@ -75,6 +76,7 @@
                 await refreshDashboard();
             } catch (error) {
                 console.error("게시글 고정 상태를 변경하지 못했습니다.", error);
+                setBubble("게시글 고정 상태를\n변경하지 못했습니다.");
             }
         });
 

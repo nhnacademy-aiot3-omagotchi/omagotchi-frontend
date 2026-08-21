@@ -19,7 +19,10 @@ public class ProfileBffService {
 
     public UserProfileResponse getMyProfile(HttpServletRequest request) {
         String bearerToken = authorization.bearerToken(request);
-        return callExecutor.execute(() -> learningHttpService.getMyProfile(bearerToken));
+        UserProfileResponse profile = callExecutor.execute(
+                () -> learningHttpService.getMyProfile(bearerToken)
+        );
+        return profile.withUserId(authorization.userId(request));
     }
 
     public UserNicknameResponse updateMyNickname(

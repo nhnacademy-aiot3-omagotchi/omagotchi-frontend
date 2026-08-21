@@ -1,5 +1,5 @@
 (() => {
-    function create({ root, store, statusLabel, refreshDashboard }) {
+    function create({ root, store, statusLabel, setBubble, refreshDashboard }) {
         if (!root) throw new Error("Overview panel root is required.");
 
         const elements = {
@@ -71,6 +71,7 @@
                 await refreshDashboard();
             } catch (error) {
                 console.error("기수 정보를 수정하지 못했습니다.", error);
+                setBubble("기수 정보를\n수정하지 못했습니다.");
             }
         });
 

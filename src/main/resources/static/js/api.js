@@ -68,7 +68,8 @@
         const hasBody = body !== undefined;
         const isFormData = isFormDataBody(body);
         const normalizedMethod = method.toUpperCase();
-        const csrf = SAFE_METHODS.has(normalizedMethod) ? null : await getCsrfToken();
+        const needsCsrf = !SAFE_METHODS.has(normalizedMethod);
+        const csrf = needsCsrf ? await getCsrfToken() : null;
         const response = await fetch(toUrl(path), {
             credentials: "same-origin",
             headers: {
@@ -81,6 +82,10 @@
             method: normalizedMethod,
             ...rest
         });
+        if (response.status === 403 && needsCsrf && !options.__csrfRetried) {
+            csrfTokenPromise = null;
+            return request(path, {...options, __csrfRetried: true});
+        }
 
         if (response.status === 204) {
             return null;

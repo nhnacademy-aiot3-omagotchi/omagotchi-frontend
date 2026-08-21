@@ -1,7 +1,12 @@
-import { canCheckIn, checkInToday, isCheckedInToday, loadTodayAttendance } from "./attendanceState.js";
+import { checkInToday, isCheckedInToday, loadTodayAttendance } from "./attendanceState.js";
 
 const SHAKE_COUNT_TO_WAKE = 4;
 const WAKE_DURATION_MS = 2800;
+const APPROVED_COHORT_REQUIRED_CODE = "LEARNING_APPROVED_COHORT_REQUIRED";
+
+function isApprovedCohortRequired(error) {
+    return error?.code === APPROVED_COHORT_REQUIRED_CODE;
+}
 
 function prepareWakeMarkup() {
     // 텍스트를 찾아 버튼을 삭제하고
@@ -97,10 +102,10 @@ document.addEventListener("DOMContentLoaded", async () => {
         waking = true;
         try {
             await checkInToday();
-        } catch {
+        } catch (error) {
             waking = false;
             character.classList.remove("is-shaking");
-            const isEligibilityError = !canCheckIn();
+            const isEligibilityError = isApprovedCohortRequired(error);
             setMessage(isEligibilityError
                 ? "승인된 기수에 가입한 뒤 입실할 수 있습니다."
                 : "입실 처리에 실패했어요. 잠시 후 다시 시도해 주세요.");
@@ -186,12 +191,4 @@ document.addEventListener("DOMContentLoaded", async () => {
         return;
     }
 
-    if (!canCheckIn()) {
-        wakeButtons.forEach((button) => {
-            button.disabled = true;
-            button.setAttribute("aria-disabled", "true");
-        });
-        character.setAttribute("aria-disabled", "true");
-        setMessage("승인된 기수에 가입한 뒤 오마고치를 깨울 수 있어요.");
-    }
 });

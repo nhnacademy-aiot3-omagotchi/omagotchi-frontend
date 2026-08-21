@@ -20,7 +20,7 @@
         return row;
     }
 
-    function create({ root, store, statusLabel, openDialog, refreshDashboard }) {
+    function create({ root, store, statusLabel, openDialog, setBubble, refreshDashboard }) {
         if (!root) throw new Error("Attendance panel root is required.");
 
         const dateInput = root.querySelector("[data-attendance-date]");
@@ -60,7 +60,10 @@
                 nextStatus,
                 "관리자 화면에서 수동 정정"
             ).then(() => refreshDashboard(pendingEdit.date))
-                .catch((error) => console.error("출결 상태를 변경하지 못했습니다.", error));
+                .catch((error) => {
+                    console.error("출결 상태를 변경하지 못했습니다.", error);
+                    setBubble("출결 상태를\n변경하지 못했습니다.");
+                });
             return true;
         }
 
@@ -82,7 +85,10 @@
         }
 
         dateInput.addEventListener("change", () => {
-            refreshDashboard(dateInput.value).catch((error) => console.error("출결을 불러오지 못했습니다.", error));
+            refreshDashboard(dateInput.value).catch((error) => {
+                console.error("출결을 불러오지 못했습니다.", error);
+                setBubble("출결 기록을\n불러오지 못했습니다.");
+            });
         });
         list.addEventListener("click", handleListClick);
 

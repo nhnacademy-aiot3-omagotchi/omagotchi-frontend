@@ -28,6 +28,7 @@ import site.omagotchi.frontend.global.exception.ErrorHttpMapper;
 import site.omagotchi.frontend.global.session.SessionStoreFailures;
 import site.omagotchi.frontend.learning.infrastructure.LearningDownstreamException;
 
+import java.util.Map;
 import java.util.Optional;
 
 // @RestController 예외의 Frontend 공통 JSON 오류 응답 변환
@@ -36,6 +37,55 @@ import java.util.Optional;
 @RestControllerAdvice(annotations = RestController.class)
 @NullMarked
 public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
+
+    private static final Map<String, Integer> PUBLIC_LEARNING_DOWNSTREAM_ERRORS = Map.ofEntries(
+            Map.entry("COMMON_INVALID_REQUEST", 400),
+            Map.entry("COMMON_MALFORMED_REQUEST", 400),
+            Map.entry("AUTH_AUTHENTICATION_REQUIRED", 401),
+            Map.entry("AUTH_ACCESS_DENIED", 403),
+            Map.entry("COHORT_INVALID_PERIOD", 400),
+            Map.entry("COHORT_INVALID_STATUS_TRANSITION", 400),
+            Map.entry("MEMBERSHIP_INVALID_STATUS_TRANSITION", 400),
+            Map.entry("MEMBERSHIP_REJECTION_REASON_REQUIRED", 400),
+            Map.entry("JOIN_CODE_REQUIRED", 400),
+            Map.entry("JOIN_CODE_EXPIRES_AT_INVALID", 400),
+            Map.entry("COHORT_ACCESS_DENIED", 403),
+            Map.entry("COHORT_MANAGER_REQUIRED", 403),
+            Map.entry("SYSTEM_ADMIN_REQUIRED", 403),
+            Map.entry("COHORT_NOT_FOUND", 404),
+            Map.entry("MEMBERSHIP_NOT_FOUND", 404),
+            Map.entry("JOIN_CODE_NOT_FOUND", 404),
+            Map.entry("COHORT_ALREADY_CLOSED", 409),
+            Map.entry("COHORT_ACTIVE_MANAGER_REQUIRED", 409),
+            Map.entry("MEMBERSHIP_DUPLICATED", 409),
+            Map.entry("JOIN_CODE_EXPIRED", 409),
+            Map.entry("JOIN_CODE_REVOKED", 409),
+            Map.entry("JOIN_CODE_ALREADY_EXISTS", 409),
+            Map.entry("ATTENDANCE_POLICY_NOT_FOUND", 404),
+            Map.entry("ATTENDANCE_RECORD_NOT_FOUND", 404),
+            Map.entry("ATTENDANCE_ALREADY_CHECKED_IN", 409),
+            Map.entry("ATTENDANCE_ALREADY_CHECKED_OUT", 409),
+            Map.entry("ATTENDANCE_CHECK_IN_REQUIRED", 409),
+            Map.entry("ATTENDANCE_CHANGE_REASON_REQUIRED", 400),
+            Map.entry("COMMUNITY_POST_NOT_FOUND", 404),
+            Map.entry("COMMUNITY_INVALID_PAGE_REQUEST", 400),
+            Map.entry("COMMUNITY_INVALID_POST_REQUEST", 400),
+            Map.entry("COMMUNITY_POST_ACCESS_DENIED", 403),
+            Map.entry("COMMUNITY_INVALID_ATTACHMENT", 400),
+            Map.entry("REPRESENTATIVE_CHARACTER_NOT_FOUND", 404),
+            Map.entry("GAME_CHARACTER_NOT_FOUND", 404),
+            Map.entry("REPRESENTATIVE_CHARACTER_ALREADY_EXISTS", 409),
+            Map.entry("INVALID_CHARACTER_NICKNAME", 400),
+            Map.entry("DUPLICATE_NICKNAME", 409),
+            Map.entry("INVALID_CHARACTER_COLOR", 400),
+            Map.entry("LEVEL_POLICY_NOT_FOUND", 404),
+            Map.entry("DAILY_QUEST_NOT_FOUND", 404),
+            Map.entry("DAILY_QUEST_NOT_COMPLETED", 409),
+            Map.entry("DAILY_QUEST_ALREADY_CLAIMED", 409),
+            Map.entry("DAILY_QUEST_EXPIRED", 409),
+            Map.entry("USER_PROFILE_INVALID_NICKNAME", 400),
+            Map.entry("USER_PROFILE_DUPLICATE_NICKNAME", 409)
+    );
 
     // 클라이언트 공개 ErrorCode와 응답 방식이 확정된 실패 처리
     @ExceptionHandler(BusinessException.class)
@@ -55,15 +105,52 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
             HttpServletRequest request
     ) {
         ApiErrorResponse downstream = exception.getErrorResponse();
-        ApiErrorResponse response = new ApiErrorResponse(
+
+        if (isPublicLearningDownstreamError(exception)) {
+            ApiErrorResponse response = new ApiErrorResponse(
+                    downstream.code(),
+                    downstream.message(),
+                    request.getRequestURI(),
+                    downstream.requestId()
+            );
+            return ResponseEntity.status(exception.getStatusCode())
+                    .cacheControl(CacheControl.noStore())
+                    .body(response);
+        }
+
+        logLearningDownstreamFailure(exception, request);
+        if (exception.getStatusCode().is5xxServerError()) {
+            return response(CommonErrorCode.INTERNAL_SERVER_ERROR, request);
+        }
+
+        return response(CommonErrorCode.DOWNSTREAM_INVALID_RESPONSE, request);
+    }
+
+    private boolean isPublicLearningDownstreamError(
+            LearningDownstreamException exception
+    ) {
+        ApiErrorResponse downstream = exception.getErrorResponse();
+        Integer approvedStatus = PUBLIC_LEARNING_DOWNSTREAM_ERRORS.get(downstream.code());
+        return approvedStatus != null
+                && approvedStatus == exception.getStatusCode().value();
+    }
+
+    private void logLearningDownstreamFailure(
+            LearningDownstreamException exception,
+            HttpServletRequest request
+    ) {
+        ApiErrorResponse downstream = exception.getErrorResponse();
+        log.error(
+                "Learning 하류 오류 은닉 downstream.status={}, downstream.code={}, "
+                        + "downstream.requestId={}, exception={}, method={}, path={}",
+                exception.getStatusCode().value(),
                 downstream.code(),
-                downstream.message(),
+                downstream.requestId(),
+                exception.getClass().getName(),
+                request.getMethod(),
                 request.getRequestURI(),
-                downstream.requestId()
+                exception
         );
-        return ResponseEntity.status(exception.getStatusCode())
-                .cacheControl(CacheControl.noStore())
-                .body(response);
     }
 
     @Override

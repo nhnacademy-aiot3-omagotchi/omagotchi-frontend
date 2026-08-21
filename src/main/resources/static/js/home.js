@@ -56,20 +56,25 @@ const attendanceDetail = document.querySelector("[data-attendance-panel-toggle]"
 
 const currentProfile = window.OmagotchiProfile || {};
 const currentCharacter = currentProfile.currentCharacter || {};
-const currentUserEmail = "current-user";
+const currentUserId = currentProfile.userId;
 const currentUserName = currentProfile.nickname || currentCharacter.nickname || "나";
 const selectedCharacterId = currentCharacter.type || "study";
 const selectedCharacterColorId = currentCharacter.colorId || "original";
+const characterAssets = window.OmagotchiCharacterAssets;
+const fallbackCharacterImage = "/images/characters/study/study.png";
+const fallbackCharacterAnimatedImage = "/images/characters/study/study_eye.gif";
+
 const selectedCharacterImage = currentCharacter.assetKey
     ? `/images/characters/${currentCharacter.assetKey}.png`
-    : window.OmagotchiCharacterAssets.getPng(selectedCharacterId, selectedCharacterColorId);
-const selectedCharacterAnimatedImage = window.OmagotchiCharacterAssets
-    .getEyeGif(selectedCharacterId, selectedCharacterColorId);
+    : characterAssets?.getPng(selectedCharacterId, selectedCharacterColorId) ?? fallbackCharacterImage;
+const selectedCharacterAnimatedImage = characterAssets
+    ?.getEyeGif(selectedCharacterId, selectedCharacterColorId) ?? fallbackCharacterAnimatedImage;
+
 const selectedCharacterName = currentCharacter.name || "오마고치";
 const displayCharacterName = currentCharacter.nickname || currentUserName;
 
-const studyRecordsKey = `omagotchiStudyRecords:${currentUserEmail}`;
-const timerKey = `omagotchiStudyTimer:${currentUserEmail}`;
+const studyRecordsKey = `omagotchiStudyRecords:${currentUserId}`;
+const timerKey = `omagotchiStudyTimer:${currentUserId}`;
 const sessionOnlyKeys = [
     "omagotchiEmail",
     "omagotchiUsername",
@@ -900,13 +905,18 @@ async function submitCommunityPost(form) {
     if (!title || !content) {
         return;
     }
+    const cohortId = currentProfile.approvedCohort?.cohortId;
+       if (!cohortId) {
+            throw new Error("승인된 기수가 없어 게시글을 작성할 수 없습니다.");
+       }
 
     const post = {
         type: formData.get("type") === "notice" ? "NOTICE" : "FREE",
         title,
         content,
         scope: "COHORT",
-        cohortId: currentProfile.approvedCohort?.cohortId
+        cohortId
+
     };
     const attachments = form.querySelector("input[name='attachments']")?.files || [];
     const postId = form.dataset.communityPostId;
@@ -1063,6 +1073,7 @@ async function claimDailyQuest(button) {
         await api.gamification.claimQuest(button.dataset.homeClaim);
         const profile = await api.profile.get();
         Object.assign(currentProfile, profile);
+        levelController.update(profile.currentCharacter || {});
         await loadProgressOverlay();
     } catch (error) {
         button.disabled = false;

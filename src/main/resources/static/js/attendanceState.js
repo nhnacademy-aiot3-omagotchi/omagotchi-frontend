@@ -43,10 +43,6 @@ export async function loadTodayAttendance() {
     return todayAttendance;
 }
 
-export function canCheckIn() {
-    return true;
-}
-
 export function isCheckedInToday() {
     return Boolean(todayAttendance?.checkedInAt);
 }

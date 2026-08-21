@@ -33,6 +33,8 @@ class LearningSessionAuthorizationTest {
 
         assertThat(authorization.bearerToken(request))
                 .isEqualTo("Bearer session-access-token");
+        assertThat(authorization.userId(request))
+                .isEqualTo("00000000-0000-0000-0000-000000000001");
     }
 
     @Test

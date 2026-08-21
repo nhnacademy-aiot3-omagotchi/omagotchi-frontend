@@ -1,4 +1,3 @@
-import { getLocalDateKey } from "./utils.js";
 import { getServiceDate } from "../attendanceState.js";
 
 export function createAttendance({
@@ -20,7 +19,7 @@ export function createAttendance({
     confirmCheckOut,
     onChange
 }) {
-    let renderedDateKey = getLocalDateKey();
+    let renderedDateKey = getServiceDate();
     let serverHistory = {};
     let visibleMonth = new Date();
     visibleMonth.setDate(1);
@@ -103,12 +102,12 @@ export function createAttendance({
     function renderCalendar(history) {
         if (!calendarGrid) return;
 
-        const today = new Date();
+        const todayKey = getServiceDate();
         const year = visibleMonth.getFullYear();
         const month = visibleMonth.getMonth();
         const monthLabel = new Intl.DateTimeFormat("ko-KR", { month: "long" }).format(visibleMonth);
         const daysInMonth = new Date(year, month + 1, 0).getDate();
-        const firstWeekday = Array.from({ length: daysInMonth }, (_, index) => new Date(year, month, index + 1))
+        const firstWeekday = Array.from({ length: daysInMonth }, (_, index) => new Date(year, month, index + 1, 12))
             .find((date) => !isWeekend(date));
         const offset = firstWeekday ? firstWeekday.getDay() - 1 : 0;
         const fragment = document.createDocumentFragment();
@@ -127,7 +126,7 @@ export function createAttendance({
         }
 
         for (let day = 1; day <= daysInMonth; day += 1) {
-            const date = new Date(year, month, day);
+            const date = new Date(year, month, day, 12);
             if (isWeekend(date)) continue;
 
             const dayNode = document.createElement("span");
@@ -135,14 +134,12 @@ export function createAttendance({
             dayNode.textContent = String(day);
 
             if (
-                day === today.getDate()
-                && month === today.getMonth()
-                && year === today.getFullYear()
+                getServiceDate(date) === todayKey
             ) {
                 dayNode.classList.add("is-today");
                 dayNode.classList.add("ui-calendar-day--today");
             }
-            if (history[getLocalDateKey(date)]?.checkedInAt) {
+            if (history[getServiceDate(date)]?.checkedInAt) {
                 dayNode.classList.add("is-present");
                 dayNode.classList.add("ui-calendar-day--present");
                 dayNode.setAttribute("aria-label", `${day}일 출석`);
@@ -153,7 +150,7 @@ export function createAttendance({
     }
 
     function getStreakCount(history) {
-        const hasAttendance = (date) => Boolean(history[getLocalDateKey(date)]?.checkedInAt);
+        const hasAttendance = (date) => Boolean(history[getServiceDate(date)]?.checkedInAt);
         const cursor = new Date();
         let count = 0;
 
@@ -176,7 +173,7 @@ export function createAttendance({
 
         if (!streakCount || !streakList) return count;
 
-        const hasAttendance = (date) => Boolean(history[getLocalDateKey(date)]?.checkedInAt);
+        const hasAttendance = (date) => Boolean(history[getServiceDate(date)]?.checkedInAt);
         streakCount.textContent = `${count}일`;
         streakList.replaceChildren();
 
@@ -209,7 +206,7 @@ export function createAttendance({
             if (count > 0  && attended && index === latestAttendedIndex) {
                 item.classList.add("is-current-streak");
             }
-            label.textContent = getLocalDateKey(date) === getLocalDateKey(new Date())
+            label.textContent = getServiceDate(date) === getServiceDate()
                 ? "오늘"
                 : `${date.getMonth() + 1}/${date.getDate()}`;
             item.append(marker, label);
@@ -292,7 +289,7 @@ export function createAttendance({
     }
 
     function refreshDate() {
-        const currentDateKey = getLocalDateKey();
+        const currentDateKey = getServiceDate();
         if (currentDateKey === renderedDateKey) return;
         renderedDateKey = currentDateKey;
         render();

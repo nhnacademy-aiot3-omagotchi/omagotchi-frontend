@@ -16,7 +16,7 @@
         return row;
     }
 
-    function create({ root, store, statusLabel, openDialog, refreshDashboard }) {
+    function create({ root, store, statusLabel, openDialog, setBubble, refreshDashboard }) {
         if (!root) throw new Error("Applications panel root is required.");
 
         const count = root.querySelector("[data-application-count]");
@@ -47,6 +47,7 @@
                 await refreshDashboard();
             } catch (error) {
                 console.error("참가 신청을 거절하지 못했습니다.", error);
+                setBubble("참가 신청을\n거절하지 못했습니다.");
             }
         }
 
@@ -65,6 +66,7 @@
                 } catch (error) {
                     approveButton.disabled = false;
                     console.error("참가 신청을 승인하지 못했습니다.", error);
+                    setBubble("참가 신청을\n승인하지 못했습니다.");
                 }
                 return;
             }
