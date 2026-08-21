@@ -26,6 +26,7 @@ import site.omagotchi.frontend.global.exception.CommonErrorCode;
 import site.omagotchi.frontend.global.exception.ErrorCode;
 import site.omagotchi.frontend.global.exception.ErrorHttpMapper;
 import site.omagotchi.frontend.global.session.SessionStoreFailures;
+import site.omagotchi.frontend.learning.infrastructure.LearningDownstreamException;
 
 import java.util.Optional;
 
@@ -46,6 +47,23 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
             logServerFailure(exception, exception.getErrorCode(), request);
         }
         return response(exception.getErrorCode(), request);
+    }
+
+    @ExceptionHandler(LearningDownstreamException.class)
+    public ResponseEntity<ApiErrorResponse> handleLearningDownstreamException(
+            LearningDownstreamException exception,
+            HttpServletRequest request
+    ) {
+        ApiErrorResponse downstream = exception.getErrorResponse();
+        ApiErrorResponse response = new ApiErrorResponse(
+                downstream.code(),
+                downstream.message(),
+                request.getRequestURI(),
+                downstream.requestId()
+        );
+        return ResponseEntity.status(exception.getStatusCode())
+                .cacheControl(CacheControl.noStore())
+                .body(response);
     }
 
     @Override
