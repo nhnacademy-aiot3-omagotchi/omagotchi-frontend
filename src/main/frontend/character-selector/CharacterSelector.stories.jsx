@@ -5,14 +5,15 @@ import { CharacterSelector } from "./CharacterSelector.jsx";
 function InteractiveSelector(args) {
   const [characterId, setCharacterId] = useState(args.characterId);
   const [colorId, setColorId] = useState(args.colorId);
-  return <CharacterSelector {...args} characterId={characterId} colorId={colorId} onCharacterChange={setCharacterId} onColorChange={setColorId} />;
+  const [nickname, setNickname] = useState(args.nickname);
+  return <CharacterSelector {...args} characterId={characterId} colorId={colorId} nickname={nickname} onCharacterChange={setCharacterId} onColorChange={setColorId} onNicknameChange={setNickname} />;
 }
 
 const meta = {
   title: "Onboarding/CharacterSelector",
   component: CharacterSelector,
   render: (args) => <InteractiveSelector {...args} />,
-  args: { characterId: "study", colorId: "original", loading: false, feedback: "" },
+  args: { characterId: "study", colorId: "original", nickname: "오마", loading: false, feedback: "" },
   parameters: { layout: "fullscreen" }
 };
 

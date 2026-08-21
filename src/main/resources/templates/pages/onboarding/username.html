@@ -16,11 +16,9 @@
             <p class="auth-brand">omagotchi</p>
         </header>
 
-        <!-- Learning Service 게임 프로필 연동 전 캐릭터 표시명 목업 -->
-        <!-- 입력 제한은 화면 확인용 임시 기준이며 Learning Service Domain 정책 아님 -->
         <form class="auth-form username-form auth-panel">
             <h1 id="username-title">캐릭터 이름을 정해주세요</h1>
-            <p class="auth-subtitle username-feedback" data-auth-feedback>2~16자의 한글·영문·숫자</p>
+            <p class="auth-subtitle username-feedback" data-auth-feedback>2~12자의 한글·영문·숫자</p>
 
             <label class="input-group auth-input-group username-input-group">
                 <span class="sr-only">캐릭터 표시명</span>
@@ -30,8 +28,8 @@
                         placeholder="캐릭터 표시명"
                         autocomplete="nickname"
                         minlength="2"
-                        maxlength="16"
-                        pattern="[0-9A-Za-z가-힣]{2,16}"
+                        maxlength="12"
+                        pattern="[0-9A-Za-z가-힣]{2,12}"
                         required
                 />
             </label>
@@ -43,6 +41,7 @@
     </section>
 </main>
 
-<script src="/js/username.js" th:src="@{/js/username.js}"></script>
+<script src="/js/api.js" th:src="@{/js/api.js}"></script>
+<script src="/js/username.js?v=20260820-1" th:src="@{/js/username.js(v='20260820-1')}"></script>
 </body>
 </html>
