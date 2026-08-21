@@ -19,7 +19,7 @@ public class WebConfig implements WebMvcConfigurer {
 
         // 사용자 기능 Page
         registry.addViewController("/username")
-                .setViewName("pages/onboarding/username"); // Learning 게임 프로필 연동 전 캐릭터 표시명 목업
+                .setViewName("pages/onboarding/username");
         registry.addViewController("/character-selector")
                 .setViewName("pages/onboarding/characterSelector");
         registry.addViewController("/check-in")

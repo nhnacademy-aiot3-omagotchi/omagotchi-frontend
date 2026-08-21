@@ -6,6 +6,8 @@ spring:
     serviceclient:
       identity-service:
         base-url: http://localhost:8083
+      gateway-service:
+        base-url: http://localhost:8080
   data:
     redis:
       host: localhost

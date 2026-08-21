@@ -1,4 +1,4 @@
-import { escapeHtml, getLocalDateKey, isEditableTarget } from "./utils.js";
+import { escapeHtml, isEditableTarget } from "./utils.js";
 
 const statusMeta = {
     present: { label: "재실", order: 0 },
@@ -17,9 +17,6 @@ export function createPresence({
     list,
     refreshButton,
     updated,
-    currentUser,
-    selectedCharacterImage,
-    getAttendanceHistory,
     api,
     isOverlayOpen
 }) {
@@ -30,46 +27,9 @@ export function createPresence({
     let occupiedCount = 0;
     let keyTimer = null;
 
-    function getCurrentStatus() {
-        const attendance = getAttendanceHistory()[getLocalDateKey()] || {};
-        if (!attendance.checkInAt || attendance.checkOutAt) return "offline";
-
-        try {
-            const spaceState = JSON.parse(sessionStorage.getItem("omagotchiSpaceState") || "{}");
-            const inMeeting = spaceState.rooms?.some((room) => (
-                room.occupancy?.participants?.some((participant) => participant.id === "current-user")
-            ));
-            return inMeeting ? "meeting" : "present";
-        } catch {
-            return "present";
-        }
-    }
-
-    function syncCurrentUser() {
-        const currentStatus = getCurrentStatus();
-        let current = users.find((user) => user.current || user.id === "current-user");
-
-        if (!current) {
-            current = {
-                id: "current-user",
-                name: currentUser.name,
-                status: currentStatus,
-                current: true,
-                characterImage: selectedCharacterImage
-            };
-            users.unshift(current);
-        }
-
-        current.name = currentUser.name;
-        current.current = true;
-        current.status = currentStatus;
-        current.characterImage = selectedCharacterImage;
-    }
-
     function render() {
         if (!list) return;
 
-        syncCurrentUser();
         const normalizedKeyword = keyword.trim().toLowerCase();
         const filtered = users.filter((user) => (
             !normalizedKeyword
@@ -99,11 +59,10 @@ export function createPresence({
 
         occupiedCount = users.filter((user) => ["present", "meeting"].includes(user.status)).length;
         if (count) count.textContent = String(occupiedCount);
-        if (capacity) capacity.textContent = String(labCapacity);
+        if (capacity) capacity.textContent = labCapacity == null ? "—" : String(labCapacity);
     }
 
     async function loadSnapshot() {
-        // [API-REPLACE] 실제 재실 API가 없을 때 빈 성공 응답으로 위장하지 않는다.
         const serverSnapshot = await api?.getLabPresence?.();
         if (serverSnapshot) {
             return serverSnapshot;
@@ -115,8 +74,13 @@ export function createPresence({
     }
 
     function applySnapshot(snapshot) {
-        labCapacity = Number(snapshot.capacity) || initialCapacity;
-        users = Array.isArray(snapshot.users) ? snapshot.users : [];
+        labCapacity = null;
+        users = Array.isArray(snapshot.users) ? snapshot.users.map((user) => ({
+            id: user.userId,
+            name: user.userId ? `사용자 ${user.userId.slice(0, 8)}…` : "사용자",
+            status: ({ONLINE: "present", AWAY: "away", OFFLINE: "offline"})[user.status] || "offline",
+            characterImage: "/images/characters/default/omagotchi.png"
+        })) : [];
         render();
 
         if (updated) {

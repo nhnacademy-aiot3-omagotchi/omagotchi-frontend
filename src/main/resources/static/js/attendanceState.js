@@ -1,8 +1,5 @@
-// [API-REPLACE] localStorage용 출석 키, 서버 연동 후 삭제
-const ATTENDANCE_PREFIX = "omagotchiAttendance:";
-const LEGACY_ATTENDANCE_PREFIX = "omagotchiAttendance:";
-// [UI-KEEP] 한국 서비스 기준 시간대
 const SEOUL_TIME_ZONE = "Asia/Seoul";
+let todayAttendance = null;
 
 function getSeoulParts(now = new Date()) {
     const parts = new Intl.DateTimeFormat("en-CA", {
@@ -16,12 +13,11 @@ function getSeoulParts(now = new Date()) {
 
     return Object.fromEntries(parts.map(({type, value}) => [type, value]));
 }
-// [POLICY-CHECK] 출석일이 오전 4시에 전환되는 것이 실제 요구사항인지 확인
+
 export function getServiceDate(now = new Date()) {
     const parts = getSeoulParts(now);
     const date = new Date(`${parts.year}-${parts.month}-${parts.day}T12:00:00+09:00`);
 
-    // 학습일은 오전 4시에 전환된다.
     if (Number(parts.hour) < 4) {
         date.setDate(date.getDate() - 1);
     }
@@ -33,126 +29,36 @@ export function getServiceDate(now = new Date()) {
         day: "2-digit"
     }).format(date);
 }
-// [API-REPLACE] 로그인 사용자는 서버 세션 또는 인증 객체에서 받아야 함
-export function getCurrentUserKey() {
-    return sessionStorage.getItem("omagotchiEmail")
-        || localStorage.getItem("omagotchiLastEmail")
-        || "guest";
-}
-
-// [API-REPLACE] GET /api/users/me/profile의 approvedCohort 기준으로 교체
-export function getApprovedCohortId(userKey = getCurrentUserKey()) {
-    try {
-        const joinedCohorts = JSON.parse(localStorage.getItem(`omagotchiJoinedCohorts:${userKey}`) || "[]") || [];
-        const managedCohorts = JSON.parse(localStorage.getItem("omagotchiCohortOperations") || "[]") || [];
-
-        if (!Array.isArray(joinedCohorts) || !Array.isArray(managedCohorts)) {
-            return null;
-        }
-
-        return joinedCohorts.find((cohortId) => (
-            managedCohorts.some((cohort) => (
-                String(cohort.id) === String(cohortId)
-                && cohort.members?.some((member) => (
-                    member.status === "ACTIVE"
-                    && [member.id, member.email].some((identifier) => String(identifier) === String(userKey))
-                ))
-            ))
-        )) || null;
-    } catch {
-        return null;
-    }
-}
-
-export function canCheckIn(userKey = getCurrentUserKey()) {
-    return Boolean(getApprovedCohortId(userKey));
-}
-// [API-REPLACE] GET /api/attendance/today 같은 조회 API로 교체
-function getAttendanceKey(userKey = getCurrentUserKey()) {
-    return `${ATTENDANCE_PREFIX}${userKey}`;
-}
-
-function getLegacyAttendanceKey(userKey = getCurrentUserKey()) {
-    return `${LEGACY_ATTENDANCE_PREFIX}${userKey}:${getServiceDate()}`;
-}
-
-function normalizeAttendance(entry = {}) {
-    return {
-        ...entry,
-        checkInAt: entry.checkInAt || entry.checkedInAt,
-        checkOutAt: entry.checkOutAt || entry.checkedOutAt
-    };
-}
 
 export function getTodayAttendance() {
-    const dateKey = getServiceDate();
-    const raw = localStorage.getItem(getAttendanceKey());
-
-    if (raw) {
-        try {
-            const history = JSON.parse(raw) || {};
-            if (history[dateKey]) {
-                return normalizeAttendance(history[dateKey]);
-            }
-        } catch {
-            return null;
-        }
-    }
-
-    const legacyRaw = localStorage.getItem(getLegacyAttendanceKey());
-    if (!legacyRaw) return null;
-
-    try {
-        return normalizeAttendance(JSON.parse(legacyRaw));
-    } catch {
-        return null;
-    }
+    return todayAttendance;
 }
-// [API-REPLACE] POST 입실 API로 교체
-// checkedInAt은 브라우저 시간이 아니라 서버 시간이 되어야 함
+
+export async function loadTodayAttendance() {
+    const getToday = window.OmagotchiApi?.attendance?.getToday;
+    if (typeof getToday !== "function") {
+        throw new Error("Attendance today API is unavailable");
+    }
+    todayAttendance = await getToday();
+    return todayAttendance;
+}
+
 export function isCheckedInToday() {
-    return Boolean(getTodayAttendance()?.checkInAt);
+    return Boolean(todayAttendance?.checkedInAt);
 }
 
 export async function checkInToday() {
-    // 이 검사는 UX 안내용이다. 최종 입실 권한은 서버의 check-in API가 검증한다.
-    if (!canCheckIn()) {
-        throw new Error("승인된 기수에 가입한 뒤 입실할 수 있습니다.");
-    }
-
     const checkIn = window.OmagotchiApi?.attendance?.checkIn;
     if (typeof checkIn !== "function") {
         throw new Error("Attendance check-in API is unavailable");
     }
 
-    const serverAttendance = await checkIn();
-    if (!serverAttendance || typeof serverAttendance !== "object") {
+    const attendance = await checkIn();
+    if (!attendance || typeof attendance !== "object" || !attendance.checkedInAt) {
         throw new Error("Attendance check-in API returned an invalid response");
     }
 
-    const attendance = normalizeAttendance(serverAttendance);
-    if (!attendance.checkInAt) {
-        throw new Error("Attendance check-in response is missing checkInAt");
-    }
-    const dateKey = attendance.serviceDate || getServiceDate();
-    let history = {};
-
-    try {
-        history = JSON.parse(localStorage.getItem(getAttendanceKey()) || "{}") || {};
-    } catch {
-        history = {};
-    }
-
-    history[dateKey] = {
-        ...history[dateKey],
-        ...attendance,
-        checkInAt: attendance.checkInAt,
-        serviceDate: dateKey,
-        status: "PRESENT",
-        spaceStatus: "IN_LAB"
-    };
-
-    localStorage.setItem(getAttendanceKey(), JSON.stringify(history));
+    todayAttendance = attendance;
     window.dispatchEvent(new CustomEvent("omagotchi:attendance", {detail: attendance}));
     return attendance;
 }

@@ -1,4 +1,5 @@
 import React from "react";
+import PropTypes from "prop-types";
 
 export const CHARACTERS = [
   { id: "study", name: "공부쟁이", bubble: "오늘도 집중!", description: "기본기가 탄탄한 학습형 오마고치입니다.\n매일의 기록과 퀘스트를 차분하게 쌓아갑니다.", baseImage: "/images/characters/study/study.png" },
@@ -27,8 +28,10 @@ const defaultImageResolver = (character, color) => color.id === "original"
   : `/images/characters/${character.id}/${character.id}_${color.id}.png`;
 
 export function CharacterSelector({
+  characters = CHARACTERS,
   characterId = "study",
   colorId = "original",
+  nickname = "",
   loading = false,
   feedback = "",
   completed = false,
@@ -36,9 +39,11 @@ export function CharacterSelector({
   resolveAnimatedImage = resolveImage,
   onCharacterChange = () => {},
   onColorChange = () => {},
+  onNicknameChange = () => {},
   onSubmit = () => {}
 }) {
-  const character = CHARACTERS.find(({ id }) => id === characterId) || CHARACTERS[0];
+  const availableCharacters = characters.length ? characters : CHARACTERS;
+  const character = availableCharacters.find(({ id }) => id === characterId) || availableCharacters[0];
   const color = CHARACTER_COLORS.find(({ id }) => id === colorId) || CHARACTER_COLORS[0];
   const fallbackImage = resolveImage(character, color);
   const selectedImage = resolveAnimatedImage(character, color);
@@ -80,7 +85,7 @@ export function CharacterSelector({
             <div className="choice-section">
               <div className="choice-heading"><h2>오마고치 선택</h2><p>함께 성장할 친구를 고르세요.</p></div>
               <div className="character-grid" data-character-grid>
-                {CHARACTERS.map((option) => (
+                {availableCharacters.map((option) => (
                   <button
                     className={`character-option${option.id === character.id ? " is-selected" : ""}`}
                     type="button"
@@ -114,6 +119,21 @@ export function CharacterSelector({
               </div>
             </div>
 
+            <label className="selector-nickname">
+              <span>캐릭터 닉네임</span>
+              <input
+                type="text"
+                value={nickname}
+                minLength={2}
+                maxLength={12}
+                pattern="[0-9A-Za-z가-힣]{2,12}"
+                autoComplete="nickname"
+                disabled={loading}
+                placeholder="2~12자의 한글·영문·숫자"
+                onChange={(event) => onNicknameChange(event.target.value)}
+              />
+            </label>
+
             <div className="selection-summary"><span data-selected-summary>{character.name} · {color.name}</span></div>
             {feedback ? <p className="selector-feedback" role="alert">{feedback}</p> : null}
             <button className="enter-button" type="button" data-enter-button disabled={loading} onClick={onSubmit}>
@@ -125,3 +145,28 @@ export function CharacterSelector({
     </main>
   );
 }
+
+const characterPropType = PropTypes.shape({
+  id: PropTypes.string.isRequired,
+  name: PropTypes.string.isRequired,
+  bubble: PropTypes.string.isRequired,
+  description: PropTypes.string.isRequired,
+  baseImage: PropTypes.string.isRequired,
+  gameCharacterId: PropTypes.number
+});
+
+CharacterSelector.propTypes = {
+  characters: PropTypes.arrayOf(characterPropType),
+  characterId: PropTypes.string,
+  colorId: PropTypes.string,
+  nickname: PropTypes.string,
+  loading: PropTypes.bool,
+  feedback: PropTypes.string,
+  completed: PropTypes.bool,
+  resolveImage: PropTypes.func,
+  resolveAnimatedImage: PropTypes.func,
+  onCharacterChange: PropTypes.func,
+  onColorChange: PropTypes.func,
+  onNicknameChange: PropTypes.func,
+  onSubmit: PropTypes.func
+};
