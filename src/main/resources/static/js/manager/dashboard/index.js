@@ -13,13 +13,17 @@ function timeLabel(value) {
     return new Date(value).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" });
 }
 
-async function hydrateDashboard(attendanceDate = store.getState().today) {
+async function hydrateDashboard(
+    attendanceDate = store.getState().today,
+    { rejectAttendanceFailure = false } = {}
+) {
     try {
         const api = globalThis.OmagotchiApi;
         const cohorts = await api.cohort.list();
         const source = Array.isArray(cohorts) ? cohorts : [];
         const applications = [];
         let partialFailure = false;
+        let attendanceFailure = null;
         let notices = [];
         try {
             const noticePage = await api.community.listPosts({ page: 0, size: 100, type: "NOTICE" });
@@ -37,6 +41,9 @@ async function hydrateDashboard(attendanceDate = store.getState().today) {
             ]);
             partialFailure ||= [membersResult, applicationsResult, attendanceResult, joinCodeResult]
                 .some((result) => result.status === "rejected");
+            if (attendanceResult.status === "rejected") {
+                attendanceFailure ??= attendanceResult.reason;
+            }
 
             const members = membersResult.status === "fulfilled" && Array.isArray(membersResult.value)
                 ? membersResult.value.map((member) => ({
@@ -69,6 +76,9 @@ async function hydrateDashboard(attendanceDate = store.getState().today) {
                 joinCode: joinCodeResult.status === "fulfilled" ? joinCodeResult.value : null
             };
         }));
+        if (rejectAttendanceFailure && attendanceFailure) {
+            throw attendanceFailure;
+        }
         store.dispatch({
             type: "HYDRATE_DASHBOARD",
             dashboard: {
@@ -82,6 +92,7 @@ async function hydrateDashboard(attendanceDate = store.getState().today) {
     } catch (error) {
         console.error("대시보드 데이터를 불러오지 못했습니다.", error);
         setBubble("대시보드 데이터를\n불러오지 못했습니다.");
+        throw error;
     }
 }
 
@@ -286,5 +297,7 @@ window.OmagotchiDashboardPanels.start({
         }
     }
 });
-hydrateDashboard();
+hydrateDashboard().catch(() => {
+    // 최초 로딩 오류는 hydrateDashboard에서 사용자 안내까지 완료한다.
+});
 })();

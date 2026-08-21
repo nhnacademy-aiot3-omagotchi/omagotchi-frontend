@@ -20,7 +20,7 @@ class LearningSessionAuthorizationTest {
             new LearningSessionAuthorization(sessionTokens);
 
     @Test
-    void relaysSessionAccessTokenAsBearerHeader() {
+    void relaysSessionAccessTokenAsBearerHeaderAndResolvesSessionUserId() {
         MockHttpServletRequest request = new MockHttpServletRequest();
         sessionTokens.save(request, new BrowserSessionTokenBundle(
                 UUID.fromString("00000000-0000-0000-0000-000000000001"),

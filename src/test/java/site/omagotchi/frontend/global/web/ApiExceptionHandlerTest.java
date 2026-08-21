@@ -73,123 +73,71 @@ class ApiExceptionHandlerTest {
 
     @Test
     @DisplayName("승인된 Learning 하류 4xx 오류는 공개 계약을 유지")
-    void forwardsApprovedLearningDownstreamClientError() {
-        // Given: Frontend 공개가 승인된 Learning 출석 충돌 오류
-        MockHttpServletRequest request =
-                new MockHttpServletRequest("POST", "/bff/v1/attendance/check-in");
-        ApiErrorResponse downstream = new ApiErrorResponse(
-                "ATTENDANCE_ALREADY_CHECKED_IN",
-                "이미 출석 처리된 날짜입니다.",
-                "/api/v1/cohorts/1/attendance-records/check-in",
-                "learning-request-4xx"
-        );
-
-        // When: 공개 코드와 기대 상태가 일치하는 하류 4xx 처리
-        ResponseEntity<ApiErrorResponse> response =
-                handler.handleLearningDownstreamException(
-                        new LearningDownstreamException(
-                                HttpStatus.CONFLICT,
-                                downstream,
-                                new IllegalStateException("approved downstream rejection")
+    void forwardsApprovedLearningDownstreamClientError() throws Exception {
+        // Given: REST Controller에서 Frontend 공개가 승인된 Learning 4xx가 발생
+        // When: 실제 Spring MVC 오류 경계를 통과
+        // Then: 공개 상태·Code·Message를 JSON 계약으로 유지
+        mockMvc.perform(post("/bff/v1/test/errors/learning-approved-4xx"))
+                .andExpectAll(
+                        status().isConflict(),
+                        content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON),
+                        header().string(HttpHeaders.CACHE_CONTROL, "no-store"),
+                        jsonPath("$.code").value("ATTENDANCE_ALREADY_CHECKED_IN"),
+                        jsonPath("$.message").value("이미 출석 처리된 날짜입니다."),
+                        jsonPath("$.path").value(
+                                "/bff/v1/test/errors/learning-approved-4xx"
                         ),
-                        request
+                        jsonPath("$.requestId").value("learning-request-4xx")
                 );
-
-        // Then: 공개 상태·Code·Message는 유지하고 Browser 요청 경로로 교체
-        assertSoftly(softly -> {
-            softly.assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
-            softly.assertThat(response.getHeaders().getCacheControl()).isEqualTo("no-store");
-            softly.assertThat(response.getBody()).isEqualTo(new ApiErrorResponse(
-                    downstream.code(),
-                    downstream.message(),
-                    request.getRequestURI(),
-                    downstream.requestId()
-            ));
-        });
     }
 
     @Test
     @DisplayName("Learning 하류 5xx 오류는 상세 정보를 기록하고 공통 500으로 은닉")
-    void hidesLearningDownstreamServerError(CapturedOutput output) {
-        // Given: 내부 저장소 정보를 포함한 Learning 5xx 오류
-        MockHttpServletRequest request =
-                new MockHttpServletRequest("POST", "/bff/v1/community/posts");
-        ApiErrorResponse downstream = new ApiErrorResponse(
-                "COMMUNITY_ATTACHMENT_STORAGE_FAILED",
-                "S3 bucket internal-name write failed",
-                "/api/v1/community/posts",
-                "learning-request-5xx"
-        );
-        IllegalStateException cause = new IllegalStateException("storage connection refused");
-
-        // When: 하류 5xx 처리
-        ResponseEntity<ApiErrorResponse> response =
-                handler.handleLearningDownstreamException(
-                        new LearningDownstreamException(
-                                HttpStatus.INTERNAL_SERVER_ERROR,
-                                downstream,
-                                cause
+    void hidesLearningDownstreamServerError(CapturedOutput output) throws Exception {
+        // Given: REST Controller에서 내부 저장소 정보를 포함한 Learning 5xx가 발생
+        // When: 실제 Spring MVC 오류 경계를 통과
+        // Then: Browser에는 공통 오류 JSON만 반환하고 원본 정보는 서버에 기록
+        mockMvc.perform(post("/bff/v1/test/errors/learning-5xx"))
+                .andExpectAll(
+                        status().isInternalServerError(),
+                        content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON),
+                        header().string(HttpHeaders.CACHE_CONTROL, "no-store"),
+                        jsonPath("$.code").value("COMMON_INTERNAL_SERVER_ERROR"),
+                        jsonPath("$.message").value(
+                                CommonErrorCode.INTERNAL_SERVER_ERROR.message()
                         ),
-                        request
+                        jsonPath("$.path").value("/bff/v1/test/errors/learning-5xx"),
+                        jsonPath("$.requestId").doesNotExist()
                 );
-
-        // Then: Browser에는 공통 오류만 반환하고 원본 정보는 서버에 기록
-        assertSoftly(softly -> {
-            softly.assertThat(response.getStatusCode())
-                    .isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
-            softly.assertThat(response.getHeaders().getCacheControl()).isEqualTo("no-store");
-            softly.assertThat(response.getBody()).isEqualTo(ApiErrorResponse.of(
-                    CommonErrorCode.INTERNAL_SERVER_ERROR,
-                    request.getRequestURI()
-            ));
-            softly.assertThat(response.getBody().message())
-                    .doesNotContain("S3 bucket", "storage connection refused");
-            softly.assertThat(response.getBody().requestId()).isNull();
-            softly.assertThat(output)
-                    .contains("downstream.status=500")
-                    .contains("downstream.code=COMMUNITY_ATTACHMENT_STORAGE_FAILED")
-                    .contains("downstream.requestId=learning-request-5xx")
-                    .contains("storage connection refused");
-        });
+        assertThat(output)
+                .contains("downstream.status=500")
+                .contains("downstream.code=COMMUNITY_ATTACHMENT_STORAGE_FAILED")
+                .contains("downstream.requestId=learning-request-5xx")
+                .contains("storage connection refused");
     }
 
     @Test
     @DisplayName("승인되지 않은 Learning 하류 4xx 오류는 계약 오류로 은닉")
-    void hidesUnapprovedLearningDownstreamClientError(CapturedOutput output) {
-        // Given: 공개 목록에 없는 하류 4xx 오류
-        MockHttpServletRequest request =
-                new MockHttpServletRequest("GET", "/bff/v1/cohorts");
-        ApiErrorResponse downstream = new ApiErrorResponse(
-                "LEARNING_INTERNAL_DIAGNOSTIC",
-                "internal validation class name leaked",
-                "/api/v1/cohorts",
-                "learning-request-unapproved"
-        );
-
-        // When: 승인되지 않은 하류 4xx 처리
-        ResponseEntity<ApiErrorResponse> response =
-                handler.handleLearningDownstreamException(
-                        new LearningDownstreamException(
-                                HttpStatus.BAD_REQUEST,
-                                downstream,
-                                new IllegalArgumentException("unapproved downstream error")
+    void hidesUnapprovedLearningDownstreamClientError(CapturedOutput output) throws Exception {
+        // Given: REST Controller에서 공개 목록에 없는 Learning 4xx가 발생
+        // When: 실제 Spring MVC 오류 경계를 통과
+        // Then: 공개 메시지는 숨기고 안전한 하류 계약 오류 JSON 반환
+        mockMvc.perform(get("/bff/v1/test/errors/learning-unapproved-4xx"))
+                .andExpectAll(
+                        status().isBadGateway(),
+                        content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON),
+                        header().string(HttpHeaders.CACHE_CONTROL, "no-store"),
+                        jsonPath("$.code").value("COMMON_DOWNSTREAM_INVALID_RESPONSE"),
+                        jsonPath("$.message").value(
+                                CommonErrorCode.DOWNSTREAM_INVALID_RESPONSE.message()
                         ),
-                        request
+                        jsonPath("$.path").value(
+                                "/bff/v1/test/errors/learning-unapproved-4xx"
+                        )
                 );
-
-        // Then: 공개 메시지를 전달하지 않고 안전한 하류 계약 오류 반환
-        assertSoftly(softly -> {
-            softly.assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_GATEWAY);
-            softly.assertThat(response.getBody()).isEqualTo(ApiErrorResponse.of(
-                    CommonErrorCode.DOWNSTREAM_INVALID_RESPONSE,
-                    request.getRequestURI()
-            ));
-            softly.assertThat(response.getBody().message())
-                    .doesNotContain("internal validation class name");
-            softly.assertThat(output)
-                    .contains("downstream.code=LEARNING_INTERNAL_DIAGNOSTIC")
-                    .contains("downstream.requestId=learning-request-unapproved");
-        });
+        assertThat(output)
+                .contains("downstream.code=LEARNING_INTERNAL_DIAGNOSTIC")
+                .contains("downstream.requestId=learning-request-unapproved");
     }
 
     @Test
@@ -413,6 +361,48 @@ class ApiExceptionHandlerTest {
         @GetMapping("/bff/v1/test/errors/unexpected")
         void unexpected() {
             throw new IllegalStateException("unexpected controller failure");
+        }
+
+        @PostMapping("/bff/v1/test/errors/learning-approved-4xx")
+        void approvedLearningClientError() {
+            throw new LearningDownstreamException(
+                    HttpStatus.CONFLICT,
+                    new ApiErrorResponse(
+                            "ATTENDANCE_ALREADY_CHECKED_IN",
+                            "이미 출석 처리된 날짜입니다.",
+                            "/api/v1/cohorts/1/attendance-records/check-in",
+                            "learning-request-4xx"
+                    ),
+                    new IllegalStateException("approved downstream rejection")
+            );
+        }
+
+        @PostMapping("/bff/v1/test/errors/learning-5xx")
+        void learningServerError() {
+            throw new LearningDownstreamException(
+                    HttpStatus.INTERNAL_SERVER_ERROR,
+                    new ApiErrorResponse(
+                            "COMMUNITY_ATTACHMENT_STORAGE_FAILED",
+                            "S3 bucket internal-name write failed",
+                            "/api/v1/community/posts",
+                            "learning-request-5xx"
+                    ),
+                    new IllegalStateException("storage connection refused")
+            );
+        }
+
+        @GetMapping("/bff/v1/test/errors/learning-unapproved-4xx")
+        void unapprovedLearningClientError() {
+            throw new LearningDownstreamException(
+                    HttpStatus.BAD_REQUEST,
+                    new ApiErrorResponse(
+                            "LEARNING_INTERNAL_DIAGNOSTIC",
+                            "internal validation class name leaked",
+                            "/api/v1/cohorts",
+                            "learning-request-unapproved"
+                    ),
+                    new IllegalArgumentException("unapproved downstream error")
+            );
         }
 
     }

@@ -28,6 +28,7 @@
         const rowTemplate = root.querySelector("[data-attendance-row-template]");
         const emptyTemplate = root.querySelector("[data-attendance-empty-template]");
         const today = store.getState().today;
+        let displayedDate = today;
         let pendingEdit = null;
         dateInput.value = today;
 
@@ -85,10 +86,18 @@
         }
 
         dateInput.addEventListener("change", () => {
-            refreshDashboard(dateInput.value).catch((error) => {
-                console.error("출결을 불러오지 못했습니다.", error);
-                setBubble("출결 기록을\n불러오지 못했습니다.");
-            });
+            const requestedDate = dateInput.value;
+            refreshDashboard(requestedDate, { rejectAttendanceFailure: true })
+                .then(() => {
+                    displayedDate = requestedDate;
+                    activate();
+                })
+                .catch((error) => {
+                    dateInput.value = displayedDate;
+                    activate();
+                    console.error("출결을 불러오지 못했습니다.", error);
+                    setBubble("출결 기록을\n불러오지 못했습니다.");
+                });
         });
         list.addEventListener("click", handleListClick);
 

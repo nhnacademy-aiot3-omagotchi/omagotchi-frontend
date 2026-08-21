@@ -55,7 +55,7 @@ const attendanceDetail = document.querySelector("[data-attendance-panel-toggle]"
     : null;
 
 const currentProfile = window.OmagotchiProfile || {};
-const currentCharacter = currentProfile.currentCharacter || {};
+let currentCharacter = currentProfile.currentCharacter || {};
 const currentUserId = currentProfile.userId;
 const currentUserName = currentProfile.nickname || currentCharacter.nickname || "나";
 const selectedCharacterId = currentCharacter.type || "study";
@@ -1073,7 +1073,8 @@ async function claimDailyQuest(button) {
         await api.gamification.claimQuest(button.dataset.homeClaim);
         const profile = await api.profile.get();
         Object.assign(currentProfile, profile);
-        levelController.update(profile.currentCharacter || {});
+        currentCharacter = currentProfile.currentCharacter || {};
+        levelController.update(currentCharacter);
         await loadProgressOverlay();
     } catch (error) {
         button.disabled = false;
