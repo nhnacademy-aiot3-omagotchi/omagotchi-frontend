@@ -109,7 +109,9 @@ flowchart LR
    - Signup·Login·Logout, Redis와 Identity 경계
 4. [오류·장애 흐름](03-error-and-failure-flow.md)
    - HTML·JSON 오류 경계, Identity·Redis 실패
-5. [기능 연동 개발 가이드](05-feature-integration-guide.md)
+5. [BFF 실제 요청 흐름](04-bff-request-flow.md)
+   - Browser·BFF·Gateway·Learning 역할과 출결·Presence·첨부파일 처리 순서
+6. [기능 연동 개발 가이드](05-feature-integration-guide.md)
    - Prototype 전환, SSR·JSON BFF 선택, Session·CSRF·내부 HTTP·검증 기준
 
 ## 5. Code 탐색 시작점

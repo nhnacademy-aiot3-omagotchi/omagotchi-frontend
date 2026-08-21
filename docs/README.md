@@ -32,6 +32,7 @@
 | [요청·Page·JavaScript 흐름](onboarding/01-request-page-and-browser-flow.md) | Route, View, Browser 코드의 책임 |
 | [Session 인증 흐름](onboarding/02-session-authentication-flow.md) | Signup, Login, Logout, Redis Session |
 | [오류·장애 흐름](onboarding/03-error-and-failure-flow.md) | HTML·JSON 오류와 외부 장애 처리 |
+| [팀원 누구나 이해하는 BFF 실제 요청 흐름](onboarding/04-bff-request-flow.md) | Browser·BFF·Gateway·Learning의 역할과 실제 요청 예시 |
 | [기능 연동 개발 가이드](onboarding/05-feature-integration-guide.md) | Prototype을 실제 BFF/API로 전환하는 기준 |
 | [Frontend 도구·라이브러리 역할 가이드](guides/frontend-toolchain-guide.md) | React, Vite, Storybook, Vitest, Playwright, Radix UI와 Motion의 역할·실행 방법 |
 | [Home UI 문서 인덱스](home-ui/README.md) | Home React Island, 반응형, Storybook 문서 분류 |

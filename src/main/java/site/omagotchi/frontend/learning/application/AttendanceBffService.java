@@ -7,13 +7,13 @@ import site.omagotchi.frontend.global.exception.BusinessException;
 import site.omagotchi.frontend.learning.infrastructure.LearningGatewayCallExecutor;
 import site.omagotchi.frontend.learning.infrastructure.LearningHttpService;
 import site.omagotchi.frontend.learning.infrastructure.response.AttendanceRecordResponse;
+import site.omagotchi.frontend.learning.infrastructure.response.AttendanceRecordPageResponse;
 import site.omagotchi.frontend.learning.infrastructure.response.UserProfileResponse;
 
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
-import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -27,17 +27,27 @@ public class AttendanceBffService {
     private final LearningGatewayCallExecutor callExecutor;
     private final LearningSessionAuthorization authorization;
 
-    public List<AttendanceRecordResponse> getHistory(HttpServletRequest request) {
+    public AttendanceRecordPageResponse getHistory(
+            HttpServletRequest request,
+            LocalDate from,
+            LocalDate to,
+            Integer page,
+            Integer size
+    ) {
         RequestContext context = context(request);
-        return List.copyOf(callExecutor.execute(() -> learningHttpService.getMyAttendanceRecords(
+        return callExecutor.execute(() -> learningHttpService.getMyAttendanceRecords(
                 context.bearerToken(),
-                context.cohortId()
-        )));
+                context.cohortId(),
+                from == null ? null : from.toString(),
+                to == null ? null : to.toString(),
+                page,
+                size
+        ));
     }
 
     public Optional<AttendanceRecordResponse> getToday(HttpServletRequest request) {
-        return getHistory(request).stream()
-                .filter(attendanceRecord -> serviceDate(Instant.now()).equals(attendanceRecord.attendanceDate()))
+        LocalDate today = serviceDate(Instant.now());
+        return getHistory(request, today, today, 0, 1).items().stream()
                 .findFirst();
     }
 

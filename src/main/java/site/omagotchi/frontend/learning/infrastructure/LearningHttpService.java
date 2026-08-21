@@ -1,6 +1,6 @@
 package site.omagotchi.frontend.learning.infrastructure;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpEntity;
@@ -19,6 +19,7 @@ import org.springframework.web.service.annotation.PutExchange;
 import org.springframework.web.bind.annotation.RequestPart;
 import site.omagotchi.frontend.learning.infrastructure.request.UpdateNicknameRequest;
 import site.omagotchi.frontend.learning.infrastructure.response.AttendanceRecordResponse;
+import site.omagotchi.frontend.learning.infrastructure.response.AttendanceRecordPageResponse;
 import site.omagotchi.frontend.learning.infrastructure.response.UserProfileResponse;
 import site.omagotchi.frontend.learning.infrastructure.response.UserNicknameResponse;
 
@@ -39,9 +40,13 @@ public interface LearningHttpService {
     );
 
     @GetExchange("/cohorts/{cohortId}/attendance-records/me")
-    List<AttendanceRecordResponse> getMyAttendanceRecords(
+    AttendanceRecordPageResponse getMyAttendanceRecords(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
-            @PathVariable Long cohortId
+            @PathVariable Long cohortId,
+            @RequestParam(required = false) String from,
+            @RequestParam(required = false) String to,
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size
     );
 
     @PostExchange("/cohorts/{cohortId}/attendance-records/check-in")
@@ -137,6 +142,13 @@ public interface LearningHttpService {
     JsonNode getCommunityPost(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
             @PathVariable Long postId
+    );
+
+    @GetExchange("/community/posts/{postId}/attachments/{attachmentId}")
+    ResponseEntity<Resource> downloadCommunityAttachment(
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
+            @PathVariable Long postId,
+            @PathVariable Long attachmentId
     );
 
     @PostExchange(value = "/community/posts", contentType = MediaType.APPLICATION_JSON_VALUE)
@@ -270,7 +282,9 @@ public interface LearningHttpService {
     JsonNode getAttendanceRecords(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
             @PathVariable Long cohortId,
-            @RequestParam String date
+            @RequestParam String date,
+            @RequestParam Integer page,
+            @RequestParam Integer size
     );
 
     @PatchExchange("/cohorts/{cohortId}/attendance-records/{attendanceRecordId}/status")

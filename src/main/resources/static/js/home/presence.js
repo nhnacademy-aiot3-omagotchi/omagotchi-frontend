@@ -77,9 +77,11 @@ export function createPresence({
         labCapacity = null;
         users = Array.isArray(snapshot.users) ? snapshot.users.map((user) => ({
             id: user.userId,
-            name: user.userId ? `사용자 ${user.userId.slice(0, 8)}…` : "사용자",
+            name: user.nickname || (user.userId ? `사용자 ${user.userId.slice(0, 8)}…` : "사용자"),
             status: ({ONLINE: "present", AWAY: "away", OFFLINE: "offline"})[user.status] || "offline",
-            characterImage: "/images/characters/default/omagotchi.png"
+            characterImage: user.currentCharacter?.assetKey
+                ? `/images/characters/${user.currentCharacter.assetKey}.png`
+                : "/images/characters/default/omagotchi.png"
         })) : [];
         render();
 

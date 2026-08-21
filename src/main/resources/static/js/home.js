@@ -953,8 +953,7 @@ async function openCommunityDetail(postId) {
             <div class="overlay-community-detail-content">${escapeHtml(post.content).replaceAll("\n", "<br>")}</div>
             ${attachments.length ? `<section class="overlay-community-attachments" aria-label="첨부파일">
                 <strong>첨부파일 ${attachments.length}개</strong>
-                <ul>${attachments.map((attachment) => `<li>${escapeHtml(attachment.originalFileName)} · ${Math.ceil(Number(attachment.sizeBytes || 0) / 1024)}KB</li>`).join("")}</ul>
-                <p>다운로드 기능은 백엔드 첨부파일 조회 계약이 추가된 뒤 제공됩니다.</p>
+                <ul>${attachments.map((attachment) => `<li><a href="${escapeHtml(api.community.downloadUrl(post.postId, attachment.attachmentId))}" download="${escapeHtml(attachment.originalFileName)}">${escapeHtml(attachment.originalFileName)}</a> · ${Math.ceil(Number(attachment.sizeBytes || 0) / 1024)}KB</li>`).join("")}</ul>
             </section>` : ""}
             <footer>
                 <button type="button" data-community-cancel>목록</button>

@@ -1,6 +1,6 @@
 package site.omagotchi.frontend.learning.presentation;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
@@ -48,6 +48,17 @@ public class CommunityBffController {
     public JsonNode getPost(HttpServletRequest request, @PathVariable Long postId) {
         return proxy.execute(request, context -> context.service()
                 .getCommunityPost(context.bearerToken(), postId));
+    }
+
+    @GetMapping("/{postId}/attachments/{attachmentId}")
+    public ResponseEntity<Resource> downloadAttachment(
+            HttpServletRequest request,
+            @PathVariable Long postId,
+            @PathVariable Long attachmentId
+    ) {
+        return proxy.execute(request, context -> context.service().downloadCommunityAttachment(
+                context.bearerToken(), postId, attachmentId
+        ));
     }
 
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)

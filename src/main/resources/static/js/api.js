@@ -142,7 +142,7 @@
             })
         },
         attendance: {
-            getHistory: () => optional("/attendance/history"),
+            getHistory: (query = {}) => optional(withQuery("/attendance/history", query)),
             getToday: () => optional("/attendance/today"),
             checkIn: () => request("/attendance/check-in", { method: "POST" }),
             checkOut: () => request("/attendance/check-out", { method: "POST" })
@@ -186,6 +186,9 @@
         community: {
             listPosts: (query = {}) => request(withQuery("/community/posts", query)),
             getPost: (postId) => request(`/community/posts/${encodeURIComponent(postId)}`),
+            downloadUrl: (postId, attachmentId) => toUrl(
+                `/community/posts/${encodeURIComponent(postId)}/attachments/${encodeURIComponent(attachmentId)}`
+            ),
             createPost: (payload) => request("/community/posts", {method: "POST", body: payload}),
             createPostWithAttachments: (post, attachments) => request("/community/posts", {
                 method: "POST",
@@ -216,7 +219,10 @@
             revokeJoinCode: (cohortId) => request(`/admin/cohorts/${encodeURIComponent(cohortId)}/join-code/revoke`, {method: "PATCH"}),
             getAttendancePolicy: (cohortId) => request(`/admin/cohorts/${encodeURIComponent(cohortId)}/attendance-policy`),
             updateAttendancePolicy: (cohortId, payload) => request(`/admin/cohorts/${encodeURIComponent(cohortId)}/attendance-policy`, {method: "PUT", body: payload}),
-            getAttendanceRecords: (cohortId, date) => request(withQuery(`/admin/cohorts/${encodeURIComponent(cohortId)}/attendance-records`, {date})),
+            getAttendanceRecords: (cohortId, date, page = 0, size = 100) => request(withQuery(
+                `/admin/cohorts/${encodeURIComponent(cohortId)}/attendance-records`,
+                {date, page, size}
+            )),
             updateAttendanceStatus: (cohortId, recordId, nextStatus, reason) => request(`/admin/cohorts/${encodeURIComponent(cohortId)}/attendance-records/${encodeURIComponent(recordId)}/status`, {
                 method: "PATCH",
                 body: {nextStatus, reason, requestId: crypto.randomUUID?.() || `manual-${Date.now()}`}

@@ -45,10 +45,11 @@ export function createAttendance({
     }
 
     function normalizeHistory(payload) {
-        if (!Array.isArray(payload)) {
+        const items = Array.isArray(payload) ? payload : payload?.items;
+        if (!Array.isArray(items)) {
             throw new Error("Attendance history API returned an invalid response");
         }
-        return payload.reduce((history, entry) => {
+        return items.reduce((history, entry) => {
             if (entry?.attendanceDate) history[entry.attendanceDate] = entry;
             return history;
         }, {});
@@ -73,10 +74,6 @@ export function createAttendance({
         }
         try {
             const history = await api.getHistory();
-            if (!Array.isArray(history)) {
-                throw new Error("Attendance history API returned an invalid response");
-            }
-
             // 서버 응답이 도착한 뒤에는 서버 이력을 정본으로 사용한다.
             serverHistory = normalizeHistory(history);
             if (panel) panel.dataset.uiSource = "server";
