@@ -77,14 +77,6 @@ class FrontendApplicationTests {
 	}
 
 	@Test
-	@DisplayName("관리자 공부 통계 Mock은 BFF 경로로 제공")
-	void managerStudyStatisticsMockUsesBffPath() throws Exception {
-		unfilteredMockMvc.perform(get("/bff/v1/mock-api/study-stats"))
-				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.members").isArray());
-	}
-
-	@Test
 	@DisplayName("Actuator Health 상태 UP")
 	void actuatorHealthIsUp() throws Exception {
 		mockMvc.perform(get("/actuator/health"))

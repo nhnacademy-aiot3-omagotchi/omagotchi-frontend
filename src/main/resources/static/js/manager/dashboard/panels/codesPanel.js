@@ -1,5 +1,5 @@
 (() => {
-    function create({ root, store, statusLabel, openDialog, setBubble }) {
+    function create({ root, store, statusLabel, openDialog, setBubble, refreshDashboard, updateCurrentCohort }) {
         if (!root) throw new Error("Codes panel root is required.");
 
         const issueButton = root.querySelector("[data-issue-code]");
@@ -13,8 +13,14 @@
 
         function activate() {
             const code = getCode();
-            if (!code?.value) {
+            if (!code) {
                 codeCard.replaceChildren(emptyTemplate.content.cloneNode(true));
+                return;
+            }
+            if (!code.value) {
+                codeCard.replaceChildren(emptyTemplate.content.cloneNode(true));
+                codeCard.querySelector("strong").textContent = "활성 가입 코드가 있습니다.";
+                codeCard.querySelector("p").textContent = "원문은 발급 시 한 번만 표시됩니다. 새 코드가 필요하면 다시 발급해 주세요.";
                 return;
             }
             codeCard.replaceChildren(cardTemplate.content.cloneNode(true));
@@ -37,7 +43,17 @@
                 confirmText: "발급"
             }, (expiresAt) => {
                 if (!expiresAt) return false;
-                return store.dispatch({ type: "ISSUE_JOIN_CODE", expiresAt }).ok;
+                const cohortId = store.getState().selectedCohortId;
+                window.OmagotchiApi.manager.createJoinCode(cohortId, `${expiresAt}T23:59:59+09:00`)
+                    .then((issued) => updateCurrentCohort({
+                        joinCode: {
+                            ...issued,
+                            value: issued.code,
+                            status: issued.status || "ACTIVE"
+                        }
+                    }))
+                    .catch((error) => console.error("가입 코드를 발급하지 못했습니다.", error));
+                return true;
             });
         });
 
@@ -56,7 +72,12 @@
                     title: "가입 코드 폐기",
                     message: "현재 코드를 더 이상 사용할 수 없게 합니다.",
                     confirmText: "폐기"
-                }, () => store.dispatch({ type: "REVOKE_JOIN_CODE" }).ok);
+                }, () => {
+                    window.OmagotchiApi.manager.revokeJoinCode(store.getState().selectedCohortId)
+                        .then(() => refreshDashboard())
+                        .catch((error) => console.error("가입 코드를 폐기하지 못했습니다.", error));
+                    return true;
+                });
             }
         });
 

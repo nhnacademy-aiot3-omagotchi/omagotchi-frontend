@@ -13,7 +13,7 @@ Controller의 응답 mapping만 연결한다. Domain Service의 `/api/v1/**`, `/
 ```text
 React·Thymeleaf DOM
   → 기존 data-* 계약
-  → 기능별 Controller
+  → 기능별 Controllerf
   → window.OmagotchiApi
   → /bff/v1/**
   → View BFF
