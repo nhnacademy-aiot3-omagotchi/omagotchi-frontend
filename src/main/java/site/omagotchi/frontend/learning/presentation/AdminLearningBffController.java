@@ -1,6 +1,6 @@
 package site.omagotchi.frontend.learning.presentation;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -93,8 +93,16 @@ public class AdminLearningBffController {
     }
 
     @GetMapping("/cohorts/{cohortId}/attendance-records")
-    public JsonNode getAttendanceRecords(HttpServletRequest request, @PathVariable Long cohortId, @RequestParam String date) {
-        return proxy.execute(request, context -> context.service().getAttendanceRecords(context.bearerToken(), cohortId, date));
+    public JsonNode getAttendanceRecords(
+            HttpServletRequest request,
+            @PathVariable Long cohortId,
+            @RequestParam String date,
+            @RequestParam(defaultValue = "0") Integer page,
+            @RequestParam(defaultValue = "100") Integer size
+    ) {
+        return proxy.execute(request, context -> context.service().getAttendanceRecords(
+                context.bearerToken(), cohortId, date, page, size
+        ));
     }
 
     @PatchMapping("/cohorts/{cohortId}/attendance-records/{attendanceRecordId}/status")

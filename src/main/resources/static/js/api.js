@@ -142,7 +142,7 @@
             })
         },
         attendance: {
-            getHistory: () => optional("/attendance/history"),
+            getHistory: (query = {}) => optional(withQuery("/attendance/history", query)),
             getToday: () => optional("/attendance/today"),
             checkIn: () => request("/attendance/check-in", { method: "POST" }),
             checkOut: () => request("/attendance/check-out", { method: "POST" })
@@ -166,26 +166,42 @@
         gamification: {
             getHome: () => request("/gamification/home"),
             getDailyQuests: () => request("/gamification/quests/daily"),
-            claimQuest: (questId) => request(`/gamification/quests/${encodeURIComponent(questId)}/claim`, {
-                method: "POST"
-            }),
-            getProgression: ({cohortId, aggregationDate}) => {
-                const query = new URLSearchParams({cohortId, aggregationDate});
-                return request(`/gamification/progression?${query}`);
+            // 서버 계약은 Quest 정의 ID가 아니라 사용자별 일일 Quest 인스턴스 ID를 받는다.
+            claimQuest: (userDailyQuestId) => request(
+                `/gamification/quests/${encodeURIComponent(userDailyQuestId)}/claim`,
+                {method: "POST"}
+            ),
+            // cohortId는 서버가 Session에서 확보하므로 Browser가 보내지 않는다.
+            // aggregationDate는 선택 값이며, 미지정 시 서버 기본 기준일을 따른다.
+            getProgression: ({aggregationDate} = {}) => {
+                const query = new URLSearchParams();
+                if (aggregationDate) {
+                    query.set("aggregationDate", aggregationDate);
+                }
+                const suffix = query.toString();
+                return request(`/gamification/progression${suffix ? `?${suffix}` : ""}`);
             }
         },
         ranking: {
-            getStudyRankings: (cohortId, {period = "WEEKLY", maxRank = 100} = {}) => {
-                const query = new URLSearchParams({period, maxRank});
-                return request(`/cohorts/${encodeURIComponent(cohortId)}/study-rankings?${query}`);
+            // cohortId는 서버가 Session 승인 기수에서 확보한다.
+            // maxRank는 선택 값이며, 미지정 시 서버 기본값을 따른다.
+            getStudyRankings: ({period = "WEEKLY", maxRank} = {}) => {
+                const query = new URLSearchParams({period});
+                if (maxRank !== undefined && maxRank !== null) {
+                    query.set("maxRank", maxRank);
+                }
+                return request(`/study-rankings?${query}`);
             },
-            getMine: (cohortId, period = "WEEKLY") => request(
-                `/cohorts/${encodeURIComponent(cohortId)}/study-rankings/me?period=${encodeURIComponent(period)}`
+            getMine: (period = "WEEKLY") => request(
+                `/study-rankings/me?period=${encodeURIComponent(period)}`
             )
         },
         community: {
             listPosts: (query = {}) => request(withQuery("/community/posts", query)),
             getPost: (postId) => request(`/community/posts/${encodeURIComponent(postId)}`),
+            downloadUrl: (postId, attachmentId) => toUrl(
+                `/community/posts/${encodeURIComponent(postId)}/attachments/${encodeURIComponent(attachmentId)}`
+            ),
             createPost: (payload) => request("/community/posts", {method: "POST", body: payload}),
             createPostWithAttachments: (post, attachments) => request("/community/posts", {
                 method: "POST",
@@ -216,7 +232,10 @@
             revokeJoinCode: (cohortId) => request(`/admin/cohorts/${encodeURIComponent(cohortId)}/join-code/revoke`, {method: "PATCH"}),
             getAttendancePolicy: (cohortId) => request(`/admin/cohorts/${encodeURIComponent(cohortId)}/attendance-policy`),
             updateAttendancePolicy: (cohortId, payload) => request(`/admin/cohorts/${encodeURIComponent(cohortId)}/attendance-policy`, {method: "PUT", body: payload}),
-            getAttendanceRecords: (cohortId, date) => request(withQuery(`/admin/cohorts/${encodeURIComponent(cohortId)}/attendance-records`, {date})),
+            getAttendanceRecords: (cohortId, date, page = 0, size = 100) => request(withQuery(
+                `/admin/cohorts/${encodeURIComponent(cohortId)}/attendance-records`,
+                {date, page, size}
+            )),
             updateAttendanceStatus: (cohortId, recordId, nextStatus, reason) => request(`/admin/cohorts/${encodeURIComponent(cohortId)}/attendance-records/${encodeURIComponent(recordId)}/status`, {
                 method: "PATCH",
                 body: {nextStatus, reason, requestId: crypto.randomUUID?.() || `manual-${Date.now()}`}

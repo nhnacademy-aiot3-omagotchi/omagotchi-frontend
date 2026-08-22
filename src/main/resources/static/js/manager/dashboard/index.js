@@ -61,8 +61,11 @@ async function hydrateDashboard(
                     email: "Identity 정보 미연결"
                 })));
             }
-            const attendance = attendanceResult.status === "fulfilled" && Array.isArray(attendanceResult.value)
-                ? attendanceResult.value.map((record) => ({
+            const attendanceItems = attendanceResult.status === "fulfilled"
+                ? (Array.isArray(attendanceResult.value) ? attendanceResult.value : attendanceResult.value?.items)
+                : [];
+            const attendance = Array.isArray(attendanceItems)
+                ? attendanceItems.map((record) => ({
                     ...record,
                     date: record.attendanceDate,
                     checkIn: timeLabel(record.checkedInAt),

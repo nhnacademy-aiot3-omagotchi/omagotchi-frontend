@@ -759,10 +759,14 @@ async function loadProgressOverlay() {
     const stats = homeOverlayRoot?.querySelector("[data-progress-stats]");
     if (!questList || !rankingList || !stats) return;
 
-    const cohortId = currentProfile.approvedCohort?.cohortId;
+    // 랭킹 조회 기수는 서버가 Session 승인 기수에서 확보하므로 Browser가 지정하지 않는다.
+    // 승인 기수가 없으면 서버가 업무 오류를 반환하므로, 빈 랭킹으로 표시하고 화면은 유지한다.
+    const hasApprovedCohort = Boolean(currentProfile.approvedCohort?.cohortId);
     const [home, rankings] = await Promise.all([
         api.gamification.getHome(),
-        cohortId ? api.ranking.getStudyRankings(cohortId) : Promise.resolve(null)
+        hasApprovedCohort
+            ? api.ranking.getStudyRankings().catch(() => null)
+            : Promise.resolve(null)
     ]);
 
     const quests = Array.isArray(home?.dailyQuests) ? home.dailyQuests : [];
@@ -953,8 +957,7 @@ async function openCommunityDetail(postId) {
             <div class="overlay-community-detail-content">${escapeHtml(post.content).replaceAll("\n", "<br>")}</div>
             ${attachments.length ? `<section class="overlay-community-attachments" aria-label="첨부파일">
                 <strong>첨부파일 ${attachments.length}개</strong>
-                <ul>${attachments.map((attachment) => `<li>${escapeHtml(attachment.originalFileName)} · ${Math.ceil(Number(attachment.sizeBytes || 0) / 1024)}KB</li>`).join("")}</ul>
-                <p>다운로드 기능은 백엔드 첨부파일 조회 계약이 추가된 뒤 제공됩니다.</p>
+                <ul>${attachments.map((attachment) => `<li><a href="${escapeHtml(api.community.downloadUrl(post.postId, attachment.attachmentId))}" download="${escapeHtml(attachment.originalFileName)}">${escapeHtml(attachment.originalFileName)}</a> · ${Math.ceil(Number(attachment.sizeBytes || 0) / 1024)}KB</li>`).join("")}</ul>
             </section>` : ""}
             <footer>
                 <button type="button" data-community-cancel>목록</button>

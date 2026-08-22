@@ -6,11 +6,13 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import site.omagotchi.frontend.learning.application.AttendanceBffService;
 import site.omagotchi.frontend.learning.infrastructure.response.AttendanceRecordResponse;
+import site.omagotchi.frontend.learning.infrastructure.response.AttendanceRecordPageResponse;
 
-import java.util.List;
+import java.time.LocalDate;
 
 @RestController
 @RequiredArgsConstructor
@@ -20,8 +22,14 @@ public class AttendanceBffController {
     private final AttendanceBffService attendanceBffService;
 
     @GetMapping("/history")
-    public List<AttendanceRecordResponse> getHistory(HttpServletRequest request) {
-        return attendanceBffService.getHistory(request);
+    public AttendanceRecordPageResponse getHistory(
+            HttpServletRequest request,
+            @RequestParam(required = false) LocalDate from,
+            @RequestParam(required = false) LocalDate to,
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size
+    ) {
+        return attendanceBffService.getHistory(request, from, to, page, size);
     }
 
     @GetMapping("/today")
