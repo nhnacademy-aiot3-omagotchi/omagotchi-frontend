@@ -70,7 +70,7 @@
         padding: 11px 18px;
     }
 
-    .home-menu a {
+    .home-menu button {
         min-height: 58px;
         padding: 8px 7px;
     }
@@ -111,7 +111,7 @@
         font-size: clamp(36px, 5.4vh, 44px);
     }
 
-    .home-menu a {
+    .home-menu button {
         min-height: 50px;
     }
 
@@ -159,7 +159,7 @@
         overflow-y: visible;
     }
 
-    .home-menu a {
+    .home-menu button {
         min-height: 44px;
         gap: 4px;
         padding: 6px 5px;
@@ -167,7 +167,7 @@
         font-size: 11px;
     }
 
-    .home-menu a img {
+    .home-menu button img {
         width: 24px;
         height: 24px;
     }
@@ -237,7 +237,7 @@
         padding: 10px 14px;
     }
 
-    .home-menu a {
+    .home-menu button {
         min-height: 56px;
         padding: 8px 6px;
     }
@@ -385,7 +385,7 @@
         border-radius: 22px;
     }
 
-    .home-menu a {
+    .home-menu button {
         min-height: 62px;
         gap: 5px;
         padding: 8px 5px;
@@ -551,7 +551,7 @@
         padding: 10px;
     }
 
-    .home-menu a {
+    .home-menu button {
         min-height: 56px;
         font-size: 10px;
     }
