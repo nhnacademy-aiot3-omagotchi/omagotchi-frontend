@@ -1050,11 +1050,15 @@ function logout(logoutButton) {
     }
 }
 
-document.querySelectorAll("[data-home-overlay]").forEach((link) => {
-    link.addEventListener("click", (event) => {
-        event.preventDefault();
-        openHomeOverlay(link.dataset.homeOverlay);
-    });
+// React 메뉴가 보내는 요청을 받아 현재 Home 안에서 오버레이를 연다.
+// React가 home.js보다 먼저 렌더링되므로 초기 로딩 중 클릭은
+// OmagotchiInitialOverlay에 보관되고 파일 하단에서 한 번 더 처리된다.
+window.addEventListener("omagotchi:home-overlay-request", (event) => {
+    const type = event.detail?.type;
+    if (!type) return;
+
+    window.OmagotchiInitialOverlay = null;
+    openHomeOverlay(type);
 });
 
 function deleteCommunityPost(button) {

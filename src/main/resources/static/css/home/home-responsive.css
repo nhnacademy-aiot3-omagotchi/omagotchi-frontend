@@ -103,14 +103,14 @@ body:has(.home-page)::after {
     overflow: visible;
 }
 
-.home-menu a {
+.home-menu button {
     min-width: 0;
     min-height: clamp(62px, 5.4vw, 76px);
     padding: 8px 5px;
     font-size: clamp(11px, 1vw, 14px);
 }
 
-.home-menu a img {
+.home-menu button img {
     width: clamp(28px, 2.6vw, 38px);
     height: clamp(28px, 2.6vw, 38px);
     object-fit: contain;
@@ -494,7 +494,7 @@ body:has(.home-page)::after {
         grid-template-columns: repeat(4, minmax(0, 1fr));
     }
 
-    .home-menu a {
+    .home-menu button {
         min-height: clamp(54px, 13vw, 72px);
     }
 
@@ -547,13 +547,13 @@ body:has(.home-page)::after {
         border-radius: 20px;
     }
 
-    .home-menu a {
+    .home-menu button {
         min-height: clamp(52px, 17vw, 68px);
         gap: 3px;
         font-size: clamp(9px, 2.8vw, 12px);
     }
 
-    .home-menu a img {
+    .home-menu button img {
         width: clamp(24px, 7vw, 32px);
         height: clamp(24px, 7vw, 32px);
     }
@@ -621,7 +621,7 @@ body:has(.home-page)::after {
         font-size: clamp(32px, 5.8svh, 46px);
     }
 
-    .home-menu a {
+    .home-menu button {
         min-height: clamp(48px, 10svh, 64px);
     }
 
