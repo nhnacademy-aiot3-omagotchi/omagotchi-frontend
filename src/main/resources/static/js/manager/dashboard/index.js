@@ -5,16 +5,26 @@ const SENSOR_LOCATION_ORDER = Object.freeze(["LAB", "OFFICE", "MEETING_ROOM"]);
 
 async function hydrateDashboard() {
     try {
-        const dashboard = await window.OmagotchiApi?.manager?.getDashboard?.();
-        if (dashboard) {
-            if (Array.isArray(dashboard.cohorts)) {
-                dashboard.cohorts.forEach((cohort) => {
-                    cohort.members = Array.isArray(cohort.members) ? cohort.members : [];
-                    cohort.attendance = Array.isArray(cohort.attendance) ? cohort.attendance : [];
-                });
+        const response = await window.OmagotchiApi?.manager?.getCohorts?.();
+        if (!Array.isArray(response)) throw new Error("관리 기수 응답을 확인할 수 없습니다.");
+        const cohorts = response.map((cohort) => ({
+            ...cohort,
+            id: String(cohort.id),
+            members: [],
+            attendance: [],
+            sensor: {},
+            joinCode: null
+        }));
+        const selected = store.getState().selectedCohortId;
+        store.dispatch({
+            type: "HYDRATE_DASHBOARD",
+            dashboard: {
+                cohorts,
+                selectedCohortId: cohorts.some((cohort) => cohort.id === selected)
+                    ? selected
+                    : cohorts[0]?.id || ""
             }
-            store.dispatch({ type: "HYDRATE_DASHBOARD", dashboard });
-        }
+        });
     } catch (error) {
         console.error("대시보드 데이터를 불러오지 못했습니다.", error);
         setBubble("대시보드 데이터를\n불러오지 못했습니다.");

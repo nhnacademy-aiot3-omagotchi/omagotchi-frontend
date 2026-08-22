@@ -12,7 +12,7 @@ Spring MVC·Thymeleaf 기반 화면 애플리케이션입니다.
 ## 로컬 실행
 
 - 런타임: JDK 21
-- 인증 의존성: Redis, Identity Service
+- 런타임 의존성: Redis, Identity Service, Learning Service
 - 통합 테스트 의존성: Docker 호환 Container Runtime
 - 빌드 도구: Maven Wrapper
 
@@ -32,6 +32,7 @@ SPRING_PROFILES_ACTIVE=local ./mvnw spring-boot:run
 - Git 추적 제외: `.env.local`
 - Redis 논리 DB: `SESSION_REDIS_DATABASE`, 로컬 기본값 `0`
 - Identity 주소: `IDENTITY_SERVICE_BASE_URL=http://localhost:8083`
+- Learning 주소: `LEARNING_SERVICE_BASE_URL=http://localhost:8084`
 - 서비스 인증 정보: Identity와 동일한 `FRONTEND_USERNAME`·`FRONTEND_PASSWORD`
 - 운영 Identity 주소: `lb://identity-service`
 - 운영 Service Discovery: `EUREKA_ENABLED=true`, `EUREKA_URL` 필수
@@ -42,6 +43,7 @@ SPRING_PROFILES_ACTIVE=local ./mvnw spring-boot:run
 - 관리자 대시보드: `templates/manager/dashboard/`
 - 공통 화면 조각: `templates/fragments/`
 - 관리자 대시보드 스크립트: `static/js/manager/dashboard/`
+- Learning BFF: `learningservice/{study,statistic,ranking}`
 - 정적 리소스: `static/{css,js,images}`
 
 ## 인증·호출 기준
@@ -59,10 +61,10 @@ SPRING_PROFILES_ACTIVE=local ./mvnw spring-boot:run
 
 ## 현재 제한
 
-- 관리자 대시보드: Learning Service 연동 전 Browser Prototype
+- 관리자 대시보드: 기수 선택·공부 통계는 Learning Service 연동, 나머지 패널은 Browser Prototype
 - 관리자 접근 제어: 공통 Session 인증만 적용, 역할·기수 권한 검증 미적용
 - 관리자 업무 데이터: Browser 저장소 기반 목업, 서버 권한 근거로 사용 불가
-- BFF 업무 기능: 기능별 Endpoint·Access Token 갱신 미구현
+- BFF 업무 기능: Learning study·statistic·ranking 구현, Access Token 갱신은 미구현
 - 레거시 관리자 인증 파일: Runtime Route·API 제거 상태
 
 ## 문서

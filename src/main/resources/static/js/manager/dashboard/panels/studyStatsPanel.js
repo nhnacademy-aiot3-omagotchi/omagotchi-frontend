@@ -444,6 +444,7 @@
         }
 
         function loadMissingResources() {
+            if (!state.cohortId) return;
             if (!state.today.data && !state.today.loading) void loadToday();
             if (!state.trend.data && !state.trend.loading) void loadTrend();
             if (!state.members.data && !state.members.loading) void loadMembers();
