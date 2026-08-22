@@ -1,5 +1,92 @@
-import React from "react";
+import { useEffect, useRef } from "react";
+import { expect, within } from "storybook/test";
+import { createStudyRecords } from "../../../resources/static/js/home/studyRecords.js";
 import { HomeOverlay } from "./HomeOverlay.jsx";
+
+function localDateKey(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function storyRecord({ id, daysAgo, startHour, startMinute, endHour, endMinute }) {
+  const startTime = new Date();
+  startTime.setDate(startTime.getDate() - daysAgo);
+  startTime.setHours(startHour, startMinute, 0, 0);
+  const endTime = new Date(startTime);
+  endTime.setHours(endHour, endMinute, 0, 0);
+
+  return {
+    id,
+    aggregationDate: localDateKey(startTime),
+    startTime: startTime.toISOString(),
+    endTime: endTime.toISOString(),
+    studySeconds: Math.floor((endTime.getTime() - startTime.getTime()) / 1000),
+    version: 0,
+    createdAt: endTime.toISOString(),
+    updatedAt: endTime.toISOString()
+  };
+}
+
+// Learning Service의 StudyRecordResponse 형태를 따른 Story 전용 fixture다.
+// 운영 Home에는 API 대역이나 고정 기록을 전달하지 않는다.
+const storyRecords = [
+  storyRecord({ id: "storybook-record-1", daysAgo: 0, startHour: 9, startMinute: 10, endHour: 10, endMinute: 30 }),
+  storyRecord({ id: "storybook-record-2", daysAgo: 0, startHour: 11, startMinute: 5, endHour: 12, endMinute: 10 }),
+  storyRecord({ id: "storybook-record-3", daysAgo: 2, startHour: 14, startMinute: 30, endHour: 16, endMinute: 45 }),
+  storyRecord({ id: "storybook-record-4", daysAgo: 5, startHour: 10, startMinute: 20, endHour: 11, endMinute: 50 })
+];
+
+function StudyRecordsOverlayStory({ initialView = "monthly", records = storyRecords }) {
+  const hostRef = useRef(null);
+  const storageKeyRef = useRef(null);
+
+  if (!storageKeyRef.current) {
+    storageKeyRef.current = `storybook:home-study-records:${globalThis.crypto?.randomUUID?.() || Date.now()}`;
+  }
+
+  useEffect(() => {
+    const target = hostRef.current?.querySelector("[data-story-study-records]");
+    if (!target) return undefined;
+
+    const storageKey = storageKeyRef.current;
+    const previous = localStorage.getItem(storageKey);
+    localStorage.setItem(storageKey, JSON.stringify(records));
+
+    const controller = createStudyRecords({
+      storageKey,
+      getElapsedSeconds: () => 0
+    });
+    const handleClick = (event) => controller.handleClick(event);
+
+    target.addEventListener("click", handleClick);
+    controller.mount(target);
+    target.querySelector(`[data-study-record-view="${initialView}"]`)?.click();
+
+    return () => {
+      target.removeEventListener("click", handleClick);
+      target.replaceChildren();
+      if (previous === null) localStorage.removeItem(storageKey);
+      else localStorage.setItem(storageKey, previous);
+    };
+  }, [initialView, records]);
+
+  return (
+    <div ref={hostRef}>
+      <HomeOverlay
+        type="write"
+        meta={{
+          icon: "/images/app/studyrecord.png",
+          title: "학습 기록",
+          description: "집중한 시간을 돌아보고 학습 흐름을 정리하세요."
+        }}
+        content={'<div data-story-study-records></div>'}
+        onClose={() => {}}
+      />
+    </div>
+  );
+}
 
 const meta = {
   title: "Home/HomeOverlay",
@@ -76,6 +163,23 @@ export const Progress = {
         </dl>
       </section>
     `
+  }
+};
+export const StudyRecords = {
+  render: () => <StudyRecordsOverlayStory />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    expect(await canvas.findByText("9시 10분")).toBeInTheDocument();
+    expect(canvas.getByText("10시 30분")).toBeInTheDocument();
+    expect(canvas.getByText("01:20:00")).toBeInTheDocument();
+    expect(canvasElement.querySelector(".study-record-tags")).toBeNull();
+  },
+  parameters: {
+    docs: {
+      description: {
+        story: "Home에서 사용하는 실제 createStudyRecords 렌더러를 마운트합니다. fixture는 Storybook localStorage에만 격리되며 mock API를 사용하지 않습니다."
+      }
+    }
   }
 };
 export const Settings = {

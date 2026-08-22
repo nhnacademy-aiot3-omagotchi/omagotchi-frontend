@@ -2,8 +2,9 @@
 .study-records {
     min-width: 0;
     display: grid;
-    gap: 18px;
-    color: var(--ink);
+    gap: 16px;
+    color: var(--ui-ink, var(--ink));
+    font-family: var(--ui-font-body, inherit);
 }
 
 .study-records-page {
@@ -29,31 +30,30 @@
 .study-record-load-error {
     margin: 0;
     padding: 12px 14px;
-    border: 1px solid #d99a76;
-    border-radius: 8px;
-    background: #fff1e8;
-    color: #7b351f;
+    border: 1px solid var(--ui-danger, #c73f52);
+    border-radius: 14px;
+    background: var(--ui-danger-soft, #fff0f2);
+    color: var(--ui-danger, #c73f52);
     font-size: 13px;
     font-weight: 800;
 }
 
 .study-record-tabs {
-    gap: 4px;
+    gap: 6px;
     padding: 4px;
-    border-radius: 8px;
-    background: rgba(8, 72, 47, 0.12);
+    border-radius: 14px;
+    background: var(--ui-emerald-50, #f0fcf6);
 }
 
 .study-record-tabs button,
 .study-period-navigation button,
-.study-record-view > button,
-.study-record-edit button {
-    min-height: 38px;
-    padding: 0 13px;
-    border: 1px solid rgba(8, 72, 47, 0.22);
-    border-radius: 6px;
-    background: #fff;
-    color: var(--ink);
+.study-record-view > button {
+    min-height: 40px;
+    padding: 0 14px;
+    border: 1px solid var(--ui-line, #cfe1d9);
+    border-radius: 10px;
+    background: var(--ui-surface, #fff);
+    color: var(--ui-ink-muted, #587067);
     font: inherit;
     font-size: 12px;
     font-weight: 900;
@@ -61,8 +61,8 @@
 }
 
 .study-record-tabs button.is-active {
-    border-color: #123c2d;
-    background: #123c2d;
+    border-color: var(--ui-emerald-800, #176b4a);
+    background: var(--ui-emerald-800, #176b4a);
     color: #fff;
 }
 
@@ -85,14 +85,14 @@
 }
 
 .study-period-navigation button[data-study-period-today]:hover {
-    border-color: #168b55;
-    background: #e2f6eb;
-    box-shadow: 0 3px 0 rgba(8, 72, 47, 0.22);
+    border-color: var(--ui-emerald-500, #2fc47c);
+    background: var(--ui-cream, #fff8e7);
+    box-shadow: 0 3px 0 rgba(23, 107, 74, 0.16);
 }
 
 .study-period-navigation button[data-study-period-today]:active {
-    background: #c9ecd9;
-    box-shadow: 0 1px 0 rgba(8, 72, 47, 0.22);
+    background: var(--ui-emerald-100, #ddf8ea);
+    box-shadow: 0 1px 0 rgba(23, 107, 74, 0.16);
     transform: translateY(2px);
 }
 
@@ -103,7 +103,7 @@
 
 .study-period-navigation strong {
     min-width: 150px;
-    color: var(--ink);
+    color: var(--ui-ink, var(--ink));
     text-align: center;
     font-size: 14px;
     font-variant-numeric: tabular-nums;
@@ -114,34 +114,32 @@
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 180px)) minmax(220px, 1fr);
     align-items: center;
-    gap: 12px;
-    padding: 18px;
-    border: 2px solid rgba(8, 72, 47, 0.32);
-    border-radius: 8px;
-    background: rgba(238, 255, 246, 0.9);
-}
-
-.study-records-summary div {
-    display: grid;
-    gap: 5px;
+    gap: 10px;
+    padding: 0;
+    border: 0;
+    background: transparent;
 }
 
 .study-records-summary span,
 .study-records-summary p {
     margin: 0;
-    color: rgba(0, 0, 0, 0.62);
+    color: var(--ui-ink-muted, #587067);
     font-size: 13px;
     font-weight: 800;
 }
 
 .study-records-summary strong {
-    color: var(--ink);
+    color: var(--ui-ink, var(--ink));
     font-size: 23px;
     font-variant-numeric: tabular-nums;
 }
 
 .study-records-summary p {
     justify-self: end;
+    padding: 14px 16px;
+    border: 1px solid var(--ui-line, #cfe1d9);
+    border-radius: 16px;
+    background: var(--ui-cream, #fff8e7);
     text-align: right;
 }
 
@@ -151,11 +149,11 @@
 .study-year-chart {
     min-width: 0;
     display: grid;
-    gap: 18px;
-    padding: 20px;
-    border: 2px solid rgba(8, 72, 47, 0.26);
-    border-radius: 8px;
-    background: rgba(238, 255, 246, 0.9);
+    gap: 14px;
+    padding: 18px;
+    border: 1px solid var(--ui-line, #cfe1d9);
+    border-radius: 18px;
+    background: var(--ui-surface, #fff);
 }
 
 .study-day-detail > header,
@@ -170,9 +168,10 @@
 .study-selected-day > header span,
 .study-calendar > header span,
 .study-year-chart > header span {
-    color: #087449;
-    font-size: 10px;
+    color: var(--ui-ink-muted, #587067);
+    font-size: 11px;
     font-weight: 900;
+    letter-spacing: 0.04em;
 }
 
 .study-day-detail > header h3,
@@ -180,13 +179,13 @@
 .study-calendar > header h3,
 .study-year-chart > header h3 {
     margin: 4px 0 0;
-    color: var(--ink);
-    font-size: 18px;
+    color: var(--ui-ink, var(--ink));
+    font-size: 19px;
 }
 
 .study-day-detail > header > strong,
 .study-selected-day > header > strong {
-    color: #075f3c;
+    color: var(--ui-emerald-800, #176b4a);
     font-size: 20px;
     font-variant-numeric: tabular-nums;
 }
@@ -194,7 +193,7 @@
 .study-calendar > header p,
 .study-year-chart > header p {
     margin: 0;
-    color: rgba(0, 0, 0, 0.56);
+    color: var(--ui-ink-muted, #587067);
     font-size: 12px;
     font-weight: 800;
 }
@@ -214,9 +213,9 @@
     grid-template-columns: 54px minmax(0, 1fr);
     gap: 14px;
     padding: 14px;
-    border: 2px solid rgba(8, 72, 47, 0.26);
-    border-radius: 8px;
-    background: rgba(255, 255, 255, 0.72);
+    border: 1px solid var(--ui-line, #cfe1d9);
+    border-radius: 16px;
+    background: var(--ui-canvas, #f3fbf7);
 }
 
 .study-record-sequence {
@@ -224,8 +223,8 @@
     height: 54px;
     display: grid;
     place-items: center;
-    border-radius: 50%;
-    background: #123c2d;
+    border-radius: 14px;
+    background: var(--ui-emerald-800, #176b4a);
     color: #fff;
     font-size: 20px;
     font-weight: 900;
@@ -238,9 +237,7 @@
 
 .study-record-view {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
-    gap: 14px;
 }
 
 .study-record-view header {
@@ -254,11 +251,26 @@
 
 .study-record-view h3 {
     overflow: hidden;
-    margin: 0 0 7px;
-    color: var(--ink);
+    margin: 0 0 8px;
+    color: var(--ui-ink, var(--ink));
     font-size: 18px;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+.study-record-range {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    margin: 0;
+    color: var(--ui-ink-muted, #587067);
+    font-size: 14px;
+    font-weight: 900;
+    font-variant-numeric: tabular-nums;
+}
+
+.study-record-range time {
+    color: var(--ui-ink, var(--ink));
 }
 
 .study-record-time {
@@ -270,83 +282,14 @@
 }
 
 .study-record-time strong {
-    color: #087449;
+    color: var(--ui-emerald-800, #176b4a);
     font-size: 20px;
 }
 
-.study-record-time span,
-.study-record-no-tag {
-    color: rgba(0, 0, 0, 0.55);
+.study-record-time span {
+    color: var(--ui-ink-muted, #587067);
     font-size: 12px;
     font-weight: 800;
-}
-
-.study-record-tags {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 5px;
-    margin: 0;
-    padding: 0;
-    list-style: none;
-}
-
-.study-record-tags li {
-    padding: 4px 7px;
-    border-radius: 4px;
-    background: rgba(16, 126, 80, 0.12);
-    color: #075f3c;
-    font-size: 11px;
-    font-weight: 900;
-}
-
-.study-record-edit {
-    display: none;
-    grid-template-columns: minmax(180px, 0.8fr) minmax(220px, 1.2fr) auto;
-    align-items: end;
-    gap: 10px;
-}
-
-.study-record.is-editing .study-record-view {
-    display: none;
-}
-
-.study-record.is-editing .study-record-edit {
-    display: grid;
-}
-
-.study-record-edit label {
-    display: grid;
-    gap: 6px;
-    color: rgba(0, 0, 0, 0.68);
-    font-size: 12px;
-    font-weight: 900;
-}
-
-.study-record-edit input {
-    width: 100%;
-    min-height: 42px;
-    padding: 0 11px;
-    border: 2px solid rgba(8, 72, 47, 0.3);
-    border-radius: 6px;
-    background: #fff;
-    color: var(--ink);
-    font: inherit;
-    font-size: 13px;
-}
-
-.study-record-edit small {
-    color: rgba(0, 0, 0, 0.5);
-    font-size: 10px;
-}
-
-.study-record-edit > div {
-    display: flex;
-    gap: 6px;
-}
-
-.study-record-edit button[type="submit"] {
-    background: #123c2d;
-    color: #fff;
 }
 
 .study-record-empty {
@@ -355,8 +298,9 @@
     place-content: center;
     justify-items: center;
     padding: 28px;
-    border: 2px dashed rgba(8, 72, 47, 0.34);
-    border-radius: 8px;
+    border: 1px dashed var(--ui-line, #cfe1d9);
+    border-radius: 16px;
+    background: var(--ui-canvas, #f3fbf7);
     text-align: center;
 }
 
@@ -366,7 +310,7 @@
 
 .study-record-empty p {
     margin: 8px 0 0;
-    color: rgba(0, 0, 0, 0.6);
+    color: var(--ui-ink-muted, #587067);
     font-size: 12px;
 }
 
@@ -390,7 +334,7 @@
 
 .study-calendar-weekdays li {
     padding: 6px 0;
-    color: rgba(0, 0, 0, 0.58);
+    color: var(--ui-ink-muted, #587067);
     text-align: center;
     font-size: 11px;
     font-weight: 900;
@@ -420,8 +364,8 @@
     gap: 8px;
     padding: 9px;
     border: 2px solid transparent;
-    border-radius: 7px;
-    color: #09271d;
+    border-radius: 12px;
+    color: var(--ui-ink, #17342a);
     font: inherit;
     cursor: pointer;
 }
@@ -438,33 +382,33 @@
 
 .study-calendar-day.heat-0,
 .study-heat-legend .heat-0 {
-    background: #e7efea;
+    background: var(--ui-canvas, #f3fbf7);
 }
 
 .study-calendar-day.heat-1,
 .study-heat-legend .heat-1 {
-    background: #bde4cf;
+    background: var(--ui-emerald-100, #ddf8ea);
 }
 
 .study-calendar-day.heat-2,
 .study-heat-legend .heat-2 {
-    background: #7fd1a6;
+    background: var(--ui-emerald-300, #80ddb0);
 }
 
 .study-calendar-day.heat-3,
 .study-heat-legend .heat-3 {
-    background: #42b97a;
+    background: var(--ui-emerald-500, #2fc47c);
 }
 
 .study-calendar-day.heat-4,
 .study-heat-legend .heat-4 {
-    background: #168b55;
+    background: var(--ui-emerald-600, #21a967);
     color: #fff;
 }
 
 .study-calendar-day.heat-5,
 .study-heat-legend .heat-5 {
-    background: #075c39;
+    background: var(--ui-emerald-800, #176b4a);
     color: #fff;
 }
 
@@ -473,8 +417,17 @@
 }
 
 .study-calendar-day.is-selected {
-    border-color: #092e21;
-    box-shadow: 0 3px 0 rgba(9, 46, 33, 0.18);
+    border-color: var(--ui-ink, #17342a);
+    box-shadow: 0 3px 0 rgba(23, 52, 42, 0.18);
+}
+
+.study-calendar-day:hover,
+.study-calendar-day:focus-visible,
+.study-record-tabs button:focus-visible,
+.study-period-navigation button:focus-visible,
+.study-record-view > button:focus-visible {
+    outline: 3px solid rgba(47, 196, 124, 0.3);
+    outline-offset: 2px;
 }
 
 .study-heat-legend {
@@ -485,7 +438,7 @@
 }
 
 .study-heat-legend span {
-    color: rgba(0, 0, 0, 0.56);
+    color: var(--ui-ink-muted, #587067);
     font-size: 10px;
     font-weight: 800;
 }
@@ -493,8 +446,8 @@
 .study-heat-legend i {
     width: 17px;
     height: 17px;
-    border: 1px solid rgba(8, 72, 47, 0.16);
-    border-radius: 3px;
+    border: 1px solid var(--ui-line, #cfe1d9);
+    border-radius: 5px;
 }
 
 .study-selected-day .study-record {
@@ -535,19 +488,19 @@
     align-content: space-between;
     gap: 12px;
     padding: 16px;
-    border: 2px solid rgba(8, 72, 47, 0.26);
-    border-radius: 8px;
-    background: rgba(238, 255, 246, 0.9);
+    border: 1px solid var(--ui-line, #cfe1d9);
+    border-radius: 16px;
+    background: var(--ui-canvas, #f3fbf7);
 }
 
 .study-year-stats span {
-    color: rgba(0, 0, 0, 0.58);
+    color: var(--ui-ink-muted, #587067);
     font-size: 11px;
     font-weight: 900;
 }
 
 .study-year-stats strong {
-    color: #075f3c;
+    color: var(--ui-ink, #17342a);
     font-size: 20px;
     font-variant-numeric: tabular-nums;
 }
@@ -565,7 +518,7 @@
     grid-template-columns: 38px minmax(0, 1fr) 86px;
     align-items: center;
     gap: 10px;
-    color: rgba(0, 0, 0, 0.48);
+    color: var(--ui-ink-muted, #587067);
     font-size: 11px;
     font-weight: 900;
 }
@@ -574,14 +527,14 @@
     height: 12px;
     overflow: hidden;
     border-radius: 6px;
-    background: rgba(8, 72, 47, 0.12);
+    background: var(--ui-emerald-100, #ddf8ea);
 }
 
 .study-year-chart li i {
     display: block;
     height: 100%;
     border-radius: inherit;
-    background: #168b55;
+    background: var(--ui-emerald-500, #2fc47c);
 }
 
 .study-year-chart li strong {
@@ -590,7 +543,7 @@
 }
 
 .study-year-chart li.has-record {
-    color: var(--ink);
+    color: var(--ui-ink, var(--ink));
 }
 
 @media (max-width: 900px) {
@@ -653,28 +606,20 @@
         text-overflow: ellipsis;
     }
 
-    .study-records-summary {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
+    .study-records-summary { grid-template-columns: 1fr; }
 
     .study-records-summary p {
-        grid-column: 1 / -1;
         justify-self: start;
         text-align: left;
     }
 
     .study-record-view,
-    .study-record-view header,
-    .study-record-edit {
+    .study-record-view header {
         grid-template-columns: 1fr;
     }
 
     .study-record-time {
         justify-items: start;
-    }
-
-    .study-record-view > button {
-        width: 100%;
     }
 
     .study-calendar-day {

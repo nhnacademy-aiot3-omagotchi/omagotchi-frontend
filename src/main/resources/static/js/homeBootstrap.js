@@ -1,5 +1,5 @@
 async function bootstrapHome() {
-    await import("./home-react/home-app.js?v=20260822-1");
+    await import("./home-react/home-app.js?v=20260822-3");
 
     let profile = null;
 
@@ -21,7 +21,7 @@ async function bootstrapHome() {
     globalThis.OmagotchiProfile = profile || {};
 
     if (profile) {
-        if (!profile?.currentCharacter) {
+        if (!profile.currentCharacter) {
             globalThis.location.replace("/character-selector");
             return;
         }
@@ -33,7 +33,7 @@ async function bootstrapHome() {
 
     try {
         await import("./spaceRoom.js?v=20260822-1");
-        await import("./home.js?v=20260822-1");
+        await import("./home.js?v=20260822-3");
     } catch (error) {
         const toast = document.querySelector("[data-home-toast]");
         if (toast) {
