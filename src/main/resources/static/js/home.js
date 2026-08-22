@@ -58,14 +58,26 @@ const currentProfile = window.OmagotchiProfile || {};
 let currentCharacter = currentProfile.currentCharacter || {};
 const currentUserId = currentProfile.userId;
 const currentUserName = currentProfile.nickname || currentCharacter.nickname || "나";
-const selectedCharacterId = currentCharacter.type || "study";
-const selectedCharacterColorId = currentCharacter.colorId || "original";
+const selectedCharacterAssetKey = typeof currentCharacter.assetKey === "string"
+    ? currentCharacter.assetKey.trim().replace(/^\/+/, "").replace(/\.(?:png|gif)$/i, "")
+    : "";
+const selectedCharacterAssetParts = selectedCharacterAssetKey
+    .split("/")
+    .filter(Boolean);
+const selectedCharacterAssetName = selectedCharacterAssetParts.at(-1) || "";
+const selectedCharacterId = selectedCharacterAssetParts.length > 1
+    ? selectedCharacterAssetParts.at(-2)
+    : currentCharacter.type || selectedCharacterAssetName || "study";
+const selectedCharacterColorId = currentCharacter.colorId
+    || (selectedCharacterAssetName && selectedCharacterAssetName !== selectedCharacterId
+        ? selectedCharacterAssetName
+        : "original");
 const characterAssets = window.OmagotchiCharacterAssets;
 const fallbackCharacterImage = "/images/characters/study/study.png";
 const fallbackCharacterAnimatedImage = "/images/characters/study/study_eye.gif";
 
-const selectedCharacterImage = currentCharacter.assetKey
-    ? `/images/characters/${currentCharacter.assetKey}.png`
+const selectedCharacterImage = selectedCharacterAssetKey
+    ? `/images/characters/${selectedCharacterAssetKey}.png`
     : characterAssets?.getPng(selectedCharacterId, selectedCharacterColorId) ?? fallbackCharacterImage;
 const selectedCharacterAnimatedImage = characterAssets
     ?.getEyeGif(selectedCharacterId, selectedCharacterColorId) ?? fallbackCharacterAnimatedImage;
@@ -126,7 +138,7 @@ function getPersonalSnapshot() {
         accountId: "로그인된 계정",
         nickname: currentUserName || "미설정",
         characterName: selectedCharacterName || "오마고치",
-        characterImage: selectedCharacterImage,
+        characterImage: selectedCharacterAnimatedImage,
         level: currentCharacter.level || 1,
         studyTime: formatDuration(Number(currentProfile.totalStudySeconds) || 0),
         sessions: Number(currentProfile.completedSessionCount) || 0,
