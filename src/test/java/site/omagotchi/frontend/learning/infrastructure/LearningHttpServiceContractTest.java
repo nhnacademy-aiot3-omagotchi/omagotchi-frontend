@@ -9,6 +9,7 @@ import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.support.RestClientAdapter;
 import org.springframework.web.service.invoker.HttpServiceProxyFactory;
+import site.omagotchi.frontend.learning.domain.StudyRankingPeriod;
 import site.omagotchi.frontend.learning.infrastructure.response.AttendanceRecordPageResponse;
 
 import java.io.IOException;
@@ -84,6 +85,68 @@ class LearningHttpServiceContractTest {
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().getContentAsString(StandardCharsets.UTF_8))
                 .isEqualTo("attachment-content");
+        server.verify();
+    }
+
+    // Learning의 aggregationDate는 required=false다. View가 더 엄격하면 정상 요청을 막는다.
+    @Test
+    void omitsOptionalAggregationDateFromProgressionQuery() {
+        server.expect(once(), requestTo(BASE_URL + "/api/v1/gamification/progression?cohortId=7"))
+                .andExpect(header(HttpHeaders.AUTHORIZATION, BEARER))
+                .andRespond(withSuccess("{\"level\": 3}", MediaType.APPLICATION_JSON));
+
+        service.getProgression(BEARER, 7L, null);
+
+        server.verify();
+    }
+
+    @Test
+    void includesAggregationDateWhenProvided() {
+        server.expect(once(), requestTo(BASE_URL
+                        + "/api/v1/gamification/progression?cohortId=7&aggregationDate=2026-08-21"))
+                .andExpect(header(HttpHeaders.AUTHORIZATION, BEARER))
+                .andRespond(withSuccess("{\"level\": 3}", MediaType.APPLICATION_JSON));
+
+        service.getProgression(BEARER, 7L, LocalDate.of(2026, 8, 21).toString());
+
+        server.verify();
+    }
+
+    // Learning의 maxRank는 required=false다. 미지정 시 하류 기본값을 따라야 한다.
+    @Test
+    void omitsOptionalMaxRankFromStudyRankingQuery() {
+        server.expect(once(), requestTo(BASE_URL
+                        + "/api/v1/cohorts/7/study-rankings?period=WEEKLY"))
+                .andExpect(header(HttpHeaders.AUTHORIZATION, BEARER))
+                .andRespond(withSuccess("{\"entries\": []}", MediaType.APPLICATION_JSON));
+
+        service.getStudyRankings(BEARER, 7L, StudyRankingPeriod.WEEKLY, null);
+
+        server.verify();
+    }
+
+    // period는 Learning에서 Enum이므로 Enum 이름 그대로 직렬화되어야 한다.
+    @Test
+    void serializesStudyRankingPeriodAsEnumName() {
+        server.expect(once(), requestTo(BASE_URL
+                        + "/api/v1/cohorts/7/study-rankings/me?period=MONTHLY"))
+                .andExpect(header(HttpHeaders.AUTHORIZATION, BEARER))
+                .andRespond(withSuccess("{\"rank\": 5}", MediaType.APPLICATION_JSON));
+
+        service.getMyStudyRanking(BEARER, 7L, StudyRankingPeriod.MONTHLY);
+
+        server.verify();
+    }
+
+    // Learning은 Quest 정의 ID가 아니라 사용자별 일일 Quest 인스턴스 ID를 Path로 받는다.
+    @Test
+    void mapsUserDailyQuestIdToClaimPath() {
+        server.expect(once(), requestTo(BASE_URL + "/api/v1/gamification/quests/42/claim"))
+                .andExpect(header(HttpHeaders.AUTHORIZATION, BEARER))
+                .andRespond(withSuccess("{\"status\": \"CLAIMED\"}", MediaType.APPLICATION_JSON));
+
+        service.claimQuest(BEARER, 42L);
+
         server.verify();
     }
 }

@@ -166,21 +166,34 @@
         gamification: {
             getHome: () => request("/gamification/home"),
             getDailyQuests: () => request("/gamification/quests/daily"),
-            claimQuest: (questId) => request(`/gamification/quests/${encodeURIComponent(questId)}/claim`, {
-                method: "POST"
-            }),
-            getProgression: ({cohortId, aggregationDate}) => {
-                const query = new URLSearchParams({cohortId, aggregationDate});
-                return request(`/gamification/progression?${query}`);
+            // 서버 계약은 Quest 정의 ID가 아니라 사용자별 일일 Quest 인스턴스 ID를 받는다.
+            claimQuest: (userDailyQuestId) => request(
+                `/gamification/quests/${encodeURIComponent(userDailyQuestId)}/claim`,
+                {method: "POST"}
+            ),
+            // cohortId는 서버가 Session에서 확보하므로 Browser가 보내지 않는다.
+            // aggregationDate는 선택 값이며, 미지정 시 서버 기본 기준일을 따른다.
+            getProgression: ({aggregationDate} = {}) => {
+                const query = new URLSearchParams();
+                if (aggregationDate) {
+                    query.set("aggregationDate", aggregationDate);
+                }
+                const suffix = query.toString();
+                return request(`/gamification/progression${suffix ? `?${suffix}` : ""}`);
             }
         },
         ranking: {
-            getStudyRankings: (cohortId, {period = "WEEKLY", maxRank = 100} = {}) => {
-                const query = new URLSearchParams({period, maxRank});
-                return request(`/cohorts/${encodeURIComponent(cohortId)}/study-rankings?${query}`);
+            // cohortId는 서버가 Session 승인 기수에서 확보한다.
+            // maxRank는 선택 값이며, 미지정 시 서버 기본값을 따른다.
+            getStudyRankings: ({period = "WEEKLY", maxRank} = {}) => {
+                const query = new URLSearchParams({period});
+                if (maxRank !== undefined && maxRank !== null) {
+                    query.set("maxRank", maxRank);
+                }
+                return request(`/study-rankings?${query}`);
             },
-            getMine: (cohortId, period = "WEEKLY") => request(
-                `/cohorts/${encodeURIComponent(cohortId)}/study-rankings/me?period=${encodeURIComponent(period)}`
+            getMine: (period = "WEEKLY") => request(
+                `/study-rankings/me?period=${encodeURIComponent(period)}`
             )
         },
         community: {

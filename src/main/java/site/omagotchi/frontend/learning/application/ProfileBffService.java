@@ -3,6 +3,8 @@ package site.omagotchi.frontend.learning.application;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import site.omagotchi.frontend.global.exception.BusinessException;
+import site.omagotchi.frontend.global.exception.CommonErrorCode;
 import site.omagotchi.frontend.learning.infrastructure.LearningGatewayCallExecutor;
 import site.omagotchi.frontend.learning.infrastructure.LearningHttpService;
 import site.omagotchi.frontend.learning.infrastructure.request.UpdateNicknameRequest;
@@ -22,6 +24,11 @@ public class ProfileBffService {
         UserProfileResponse profile = callExecutor.execute(
                 () -> learningHttpService.getMyProfile(bearerToken)
         );
+
+        // 하류가 2xx를 반환해도 Body가 비어 올 수 있다. NPE 대신 계약 위반으로 처리한다.
+        if (profile == null) {
+            throw new BusinessException(CommonErrorCode.DOWNSTREAM_INVALID_RESPONSE);
+        }
         return profile.withUserId(authorization.userId(request));
     }
 

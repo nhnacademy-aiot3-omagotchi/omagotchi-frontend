@@ -17,6 +17,7 @@ import org.springframework.web.service.annotation.PatchExchange;
 import org.springframework.web.service.annotation.PostExchange;
 import org.springframework.web.service.annotation.PutExchange;
 import org.springframework.web.bind.annotation.RequestPart;
+import site.omagotchi.frontend.learning.domain.StudyRankingPeriod;
 import site.omagotchi.frontend.learning.infrastructure.request.UpdateNicknameRequest;
 import site.omagotchi.frontend.learning.infrastructure.response.AttendanceRecordResponse;
 import site.omagotchi.frontend.learning.infrastructure.response.AttendanceRecordPageResponse;
@@ -98,32 +99,35 @@ public interface LearningHttpService {
     @GetExchange("/gamification/quests/daily")
     JsonNode getDailyQuests(@RequestHeader(HttpHeaders.AUTHORIZATION) String authorization);
 
-    @PostExchange("/gamification/quests/{questId}/claim")
+    // Learning 계약은 Quest 정의 ID가 아니라 사용자별 일일 Quest 인스턴스 ID를 받는다.
+    @PostExchange("/gamification/quests/{userDailyQuestId}/claim")
     JsonNode claimQuest(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
-            @PathVariable Long questId
+            @PathVariable Long userDailyQuestId
     );
 
+    // aggregationDate는 Learning에서 선택 값이다. View가 더 엄격하면 정상 요청을 막는다.
     @GetExchange("/gamification/progression")
     JsonNode getProgression(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
             @RequestParam Long cohortId,
-            @RequestParam String aggregationDate
+            @RequestParam(required = false) String aggregationDate
     );
 
+    // period는 Learning에서 Enum이므로 View도 Enum으로 고정한다. maxRank는 선택 값이다.
     @GetExchange("/cohorts/{cohortId}/study-rankings")
     JsonNode getStudyRankings(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
             @PathVariable Long cohortId,
-            @RequestParam String period,
-            @RequestParam Integer maxRank
+            @RequestParam StudyRankingPeriod period,
+            @RequestParam(required = false) Integer maxRank
     );
 
     @GetExchange("/cohorts/{cohortId}/study-rankings/me")
     JsonNode getMyStudyRanking(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
             @PathVariable Long cohortId,
-            @RequestParam String period
+            @RequestParam StudyRankingPeriod period
     );
 
     @GetExchange("/cohorts/me/presence")
