@@ -14,6 +14,7 @@ export function createAttendance({
     streakCount,
     streakList,
     api,
+    enabled = true,
     onCheckOutSuccess,
     onCheckOutError,
     confirmCheckOut,
@@ -59,9 +60,30 @@ export function createAttendance({
         return serverHistory;
     }
 
+    function renderUnavailable() {
+        const panel = calendarGrid?.closest("[data-ui-state]");
+        const stateMessage = panel?.querySelector("[data-attendance-state-message]");
+
+        if (panel) {
+            panel.dataset.uiState = "unavailable";
+            panel.dataset.uiSource = "cohort-unassigned";
+        }
+        if (stateMessage) {
+            stateMessage.hidden = false;
+            stateMessage.textContent = "기수에 가입하지 않았습니다. 관리자 승인이 완료되면 출석 현황을 확인할 수 있습니다.";
+        }
+        if (button) button.hidden = true;
+        calendarPrev?.setAttribute("disabled", "");
+        calendarNext?.setAttribute("disabled", "");
+    }
+
     async function loadServerHistory() {
         const panel = calendarGrid?.closest("[data-ui-state]");
         const stateMessage = panel?.querySelector("[data-attendance-state-message]");
+        if (!enabled) {
+            renderUnavailable();
+            return;
+        }
         if (!api?.getHistory) {
             if (panel) panel.dataset.uiSource = "local-prototype";
             return;
@@ -214,6 +236,11 @@ export function createAttendance({
     }
 
     function render() {
+        if (!enabled) {
+            renderUnavailable();
+            return;
+        }
+
         const history = getHistory();
         const attendance = history[getServiceDate()] || {};
         const hasCheckIn = Boolean(attendance.checkedInAt);
@@ -294,6 +321,10 @@ export function createAttendance({
 
     function init() {
         button?.addEventListener("click", toggle);
+        if (!enabled) {
+            renderUnavailable();
+            return;
+        }
         calendarPrev?.addEventListener("click", () => {
             visibleMonth.setMonth(visibleMonth.getMonth() - 1);
             render();

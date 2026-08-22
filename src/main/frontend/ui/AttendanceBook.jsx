@@ -18,6 +18,7 @@ export function AttendanceBook({
   streak = 3,
   loading = false,
   empty = false,
+  unavailable = false,
   embedded = false,
   closeControl
 }) {
@@ -38,7 +39,13 @@ export function AttendanceBook({
             : <GameButton variant="secondary" className="ui-attendance__close" aria-label="출석 현황 닫기">×</GameButton>}
         </header>
 
-        <div className="ui-attendance__layout">
+        {unavailable && (
+          <p className="ui-state-message ui-attendance__unavailable" role="status">
+            기수에 가입하지 않았습니다. 관리자 승인이 완료되면 출석 현황을 확인할 수 있습니다.
+          </p>
+        )}
+
+        {!unavailable && <div className="ui-attendance__layout">
           <section className="ui-attendance__main" aria-labelledby="today-attendance-title">
             <h2 id="today-attendance-title">오늘 출석</h2>
             <div className="ui-attendance__summary">
@@ -87,7 +94,7 @@ export function AttendanceBook({
               ))}
             </ol>
           </section>
-        </div>
+        </div>}
       </section>
     </main>
   );

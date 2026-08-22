@@ -42,6 +42,7 @@ const presenceList = document.querySelector("[data-presence-list]");
 const presenceRefresh = document.querySelector("[data-presence-refresh]");
 const presenceClose = document.querySelector("[data-presence-close]");
 const presenceUpdated = document.querySelector("[data-presence-updated]");
+const presenceRoomName = document.querySelector("[data-presence-room-name]");
 const bgmPlayerRoot = document.querySelector("[data-bgm-player]");
 const homePage = document.querySelector(".home-page");
 const musicToggle = document.querySelector("[data-home-music-toggle]");
@@ -100,6 +101,17 @@ const sessionOnlyKeys = [
     "omagotchiCharacterColor"
 ];
 const api = window.OmagotchiApi;
+
+function syncPresenceCohortHeading() {
+    if (!presenceRoomName) return;
+
+    const approvedCohort = currentProfile.approvedCohort;
+    const approvedCohortName = approvedCohort?.name?.trim();
+    presenceRoomName.textContent = approvedCohort
+        ? `${approvedCohortName || "소속 기수"} 실습실`
+        : "기수에 가입하지 않았습니다.";
+    presenceRoomName.parentElement?.classList.toggle("is-unassigned", !approvedCohort);
+}
 
 let communityFilter = "all";
 let communityKeyword = "";
@@ -322,6 +334,7 @@ const attendanceController = createAttendance({
     streakCount,
     streakList,
     api: api?.attendance,
+    enabled: Boolean(currentProfile.approvedCohort?.cohortId),
     onCheckOutSuccess: () => showHomeToast("퇴실 처리됐어요. 타이머는 계속 사용할 수 있어요."),
     onCheckOutError: () => showHomeToast("퇴실 처리에 실패했어요. 잠시 후 다시 시도해 주세요."),
     confirmCheckOut,
@@ -347,6 +360,7 @@ presenceController = createPresence({
     selectedCharacterImage,
     getAttendanceHistory: attendanceController.getHistory,
     api: api?.presence,
+    enabled: Boolean(currentProfile.approvedCohort?.cohortId),
     isOverlayOpen: () => document.body.classList.contains("has-home-overlay")
 });
 
@@ -1233,6 +1247,7 @@ document.addEventListener("keydown", (event) => {
 });
 
 // 저장된 사용자 설정을 적용한 뒤 최초 화면 렌더링
+syncPresenceCohortHeading();
 characterController.init();
 timerController.init();
 levelController.render();

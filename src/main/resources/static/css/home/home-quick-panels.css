@@ -193,6 +193,15 @@
     white-space: nowrap;
 }
 
+.presence-panel .presence-panel-heading.is-unassigned h2 {
+    max-width: min(52vw, 430px);
+    font-size: clamp(14px, 2vw, 20px);
+    line-height: 1.25;
+    overflow-wrap: anywhere;
+    text-overflow: clip;
+    white-space: normal;
+}
+
 .quick-panel-close,
 .presence-panel .quick-panel-close {
     width: 40px;
@@ -533,6 +542,23 @@
     border-color: rgba(180, 35, 24, 0.28);
     background: var(--ui-danger-soft);
     color: var(--ui-danger);
+}
+
+.attendance-detail[data-ui-state="unavailable"] .ui-state-message {
+    display: grid;
+    min-height: 180px;
+    place-items: center;
+    padding: 28px;
+    border-color: var(--ui-line);
+    background: var(--ui-emerald-50);
+    color: var(--ui-ink);
+    font-size: clamp(15px, 2vw, 20px);
+    line-height: 1.6;
+    text-align: center;
+}
+
+.attendance-detail[data-ui-state="unavailable"] .ui-attendance__layout {
+    display: none;
 }
 
 .attendance-detail .ui-attendance__main {

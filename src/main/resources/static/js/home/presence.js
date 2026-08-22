@@ -18,6 +18,7 @@ export function createPresence({
     refreshButton,
     updated,
     api,
+    enabled = true,
     isOverlayOpen
 }) {
     let users = [];
@@ -29,6 +30,13 @@ export function createPresence({
 
     function render() {
         if (!list) return;
+
+        if (!enabled) {
+            list.innerHTML = `<p class="presence-panel-empty">기수에 가입한 후 재실 인원을 확인할 수 있습니다.</p>`;
+            if (count) count.textContent = "0";
+            if (capacity) capacity.textContent = "—";
+            return;
+        }
 
         const normalizedKeyword = keyword.trim().toLowerCase();
         const filtered = users.filter((user) => (
@@ -97,6 +105,7 @@ export function createPresence({
     }
 
     async function refresh() {
+        if (!enabled) return;
         if (!refreshButton || refreshButton.disabled) return;
 
         refreshButton.disabled = true;
@@ -167,11 +176,19 @@ export function createPresence({
             if (panel?.hidden === false && hud && !hud.contains(event.target)) setOpen(false);
         });
         document.addEventListener("keydown", handleKeydown);
-        api?.subscribeLabPresence?.({
-            message: applySnapshot,
-            error: (_, source) => source.close()
-        });
-        refresh();
+        if (enabled) {
+            api?.subscribeLabPresence?.({
+                message: applySnapshot,
+                error: (_, source) => source.close()
+            });
+            refresh();
+        } else {
+            if (refreshButton) refreshButton.disabled = true;
+            if (search) search.disabled = true;
+            if (updated) updated.textContent = "가입 기수 없음";
+            if (panel) panel.dataset.uiState = "empty";
+            render();
+        }
     }
 
     return { init, render, close: () => setOpen(false) };

@@ -7,7 +7,7 @@ const inputs = document.querySelectorAll(".input-group input");
 function setFeedback(message) {
     if (bubble) {
         bubble.textContent = message;
-        bubble.classList.remove("auth-error");
+        bubble.classList.remove("auth-error", "auth-success");
     }
 }
 
