@@ -113,19 +113,23 @@ public interface LearningHttpService {
 HTTP `GET` 요청을 선언한다. 조회 전용이며 서버 상태를 변경하면 안 된다.
 
 ```java
+import org.springframework.web.bind.annotation.RequestParam;
+
 @GetExchange("/cohorts/{cohortId}/attendance-records/me")
 AttendanceRecordPageResponse getMyAttendanceRecords(
         @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
         @PathVariable Long cohortId,
         @RequestParam(required = false) String from,
-        @RequestParam(required = false) String to
-);
+        @RequestParam(required = false) String to,
+        @RequestParam(required = false) Integer page,
+        @RequestParam(required = false) Integer size
+        );
 ```
 
 호출 시 다음 요청이 만들어진다.
 
 ```http
-GET /api/v1/cohorts/7/attendance-records/me?from=2026-08-01&to=2026-08-31
+GET /api/v1/cohorts/7/attendance-records/me?from=2026-08-01&to=2026-08-31&page=0&size=20
 Authorization: Bearer <AccessToken>
 ```
 
