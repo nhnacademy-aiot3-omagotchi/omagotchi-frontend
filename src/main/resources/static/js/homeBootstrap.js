@@ -1,5 +1,5 @@
 async function bootstrapHome() {
-    await import("./home-react/home-app.js?v=20260820-1");
+    await import("./home-react/home-app.js?v=20260822-1");
 
     try {
         const profile = await globalThis.OmagotchiApi.profile.get();
@@ -15,7 +15,7 @@ async function bootstrapHome() {
         }
 
         await import("./spaceRoom.js?v=20260820-1");
-        await import("./home.js?v=20260820-1");
+        await import("./home.js?v=20260822-2");
     } catch (error) {
         if (error?.status === 401) {
             globalThis.location.replace("/login");

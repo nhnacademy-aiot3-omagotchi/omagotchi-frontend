@@ -5,6 +5,12 @@ const HEAT_LEGEND_LEVELS = [0, 1, 2, 3, 4, 5];
 const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
 const WEEKDAYS_LONG = ["일요일", "월요일", "화요일", "수요일", "목요일", "금요일", "토요일"];
 const STUDY_DAY_START_HOUR = 7;
+const SEOUL_MINUTE_FORMATTER = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Asia/Seoul",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23"
+});
 
 function createId(prefix) {
     if (window.crypto?.randomUUID) {
@@ -14,18 +20,37 @@ function createId(prefix) {
     return `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
-function parseTags(value) {
-    return [...new Set(
-        String(value || "")
-            .split(",")
-            .map((tag) => tag.trim())
-            .filter(Boolean)
-    )].slice(0, 5);
+function parseInstant(value) {
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? null : date;
 }
 
 function parseRecordedAt(record) {
-    const date = new Date(record.recordedAt);
-    return Number.isNaN(date.getTime()) ? null : date;
+    return parseInstant(record.endTime || record.recordedAt);
+}
+
+function getRecordStudySeconds(record) {
+    const seconds = Number(record.studySeconds ?? record.durationSeconds);
+    return Number.isFinite(seconds) ? Math.max(0, seconds) : 0;
+}
+
+function getRecordTimeRange(record) {
+    const endTime = parseInstant(record.endTime || record.recordedAt);
+    const explicitStartTime = parseInstant(record.startTime);
+    const startTime = explicitStartTime || (endTime
+        ? new Date(endTime.getTime() - getRecordStudySeconds(record) * 1000)
+        : null);
+
+    return { startTime, endTime };
+}
+
+function formatMinuteTime(date) {
+    if (!date) {
+        return "시간 정보 없음";
+    }
+
+    const [hour, minute] = SEOUL_MINUTE_FORMATTER.format(date).split(":");
+    return `${Number(hour)}시 ${minute}분`;
 }
 
 function isSameDay(left, right) {
@@ -51,7 +76,7 @@ function toStudyDateKey(date) {
 
 function getRecordStudyDateKey(record) {
     const recordedAt = parseRecordedAt(record);
-    const storedStudyDate = String(record.studyDate || "");
+    const storedStudyDate = String(record.aggregationDate || record.studyDate || "");
 
     if (/^\d{4}-\d{2}-\d{2}$/.test(storedStudyDate)) {
         return storedStudyDate;
@@ -144,7 +169,7 @@ function movePeriod(viewMode, date, amount) {
 
 function sumDuration(records) {
     return records.reduce(
-        (sum, record) => sum + (Number(record.durationSeconds) || 0),
+        (sum, record) => sum + getRecordStudySeconds(record),
         0
     );
 }
@@ -157,7 +182,7 @@ function groupDailyTotals(records) {
             return totals;
         }
 
-        totals.set(key, (totals.get(key) || 0) + (Number(record.durationSeconds) || 0));
+        totals.set(key, (totals.get(key) || 0) + getRecordStudySeconds(record));
         return totals;
     }, new Map());
 }
@@ -201,7 +226,7 @@ function createMonthTotals(records) {
         const date = parseRecordStudyDate(record);
 
         if (date) {
-            totals[date.getMonth()].seconds += Number(record.durationSeconds) || 0;
+            totals[date.getMonth()].seconds += getRecordStudySeconds(record);
         }
     });
 
@@ -212,7 +237,6 @@ function createMonthTotals(records) {
 export function createStudyRecords({ storageKey, getElapsedSeconds, api }) {
     const sessionId = createId("timer");
     let lastRecordedElapsed = null;
-    let editingId = null;
     let container = null;
     let viewMode = "daily";
     let referenceDate = getCurrentStudyDate();
@@ -255,7 +279,8 @@ export function createStudyRecords({ storageKey, getElapsedSeconds, api }) {
 
     async function loadRecords() {
         try {
-            const records = await api?.list?.();
+            const payload = await api?.list?.();
+            const records = Array.isArray(payload) ? payload : payload?.records;
             if (!Array.isArray(records)) return;
 
             writeRecords(records);
@@ -286,18 +311,20 @@ export function createStudyRecords({ storageKey, getElapsedSeconds, api }) {
 
         const records = readRecords();
         const sequence = records.filter((record) => record.sessionId === sessionId).length + 1;
-        const now = new Date().toISOString();
+        const endTime = new Date();
+        const startTime = new Date(endTime.getTime() - durationSeconds * 1000);
         const record = {
             id: createId("segment"),
             sessionId,
             sequence,
-            name: `${sequence}`,
-            tags: [],
-            durationSeconds,
+            aggregationDate: toStudyDateKey(endTime),
+            startTime: startTime.toISOString(),
+            endTime: endTime.toISOString(),
+            studySeconds: durationSeconds,
+            version: 0,
             elapsedSeconds,
-            studyDate: toStudyDateKey(new Date(now)),
-            recordedAt: now,
-            updatedAt: now
+            createdAt: endTime.toISOString(),
+            updatedAt: endTime.toISOString()
         };
 
         records.push(record);
@@ -309,7 +336,6 @@ export function createStudyRecords({ storageKey, getElapsedSeconds, api }) {
             render();
         });
         lastRecordedElapsed = elapsedSeconds;
-        editingId = null;
         viewMode = "daily";
         referenceDate = parseRecordStudyDate(record) || getCurrentStudyDate();
         render();
@@ -317,53 +343,35 @@ export function createStudyRecords({ storageKey, getElapsedSeconds, api }) {
         return { ok: true, record };
     }
 
-    function renderRecord(record) {
-        const isEditing = editingId === record.id;
-        const duration = formatDuration(record.durationSeconds);
-        const elapsed = formatDuration(record.elapsedSeconds);
-        const segmentTime = record.sequence === 1 ? duration : `+${duration}`;
-        const tags = record.tags?.length
-            ? `<ul class="study-record-tags" aria-label="태그">
-                ${record.tags.map((tag) => `<li>#${escapeHtml(tag)}</li>`).join("")}
-            </ul>`
-            : `<span class="study-record-no-tag">태그 없음</span>`;
+    function renderRecord(record, index) {
+        const sequence = Number(record.sequence) || index + 1;
+        const studySeconds = getRecordStudySeconds(record);
+        const { startTime, endTime } = getRecordTimeRange(record);
+        const startLabel = formatMinuteTime(startTime);
+        const endLabel = formatMinuteTime(endTime);
 
         return `
-            <li class="study-record${isEditing ? " is-editing" : ""}" data-study-record-id="${record.id}">
-                <div class="study-record-sequence" aria-label="${record.sequence}번째 구간">
-                    ${record.sequence}
+            <li class="study-record" data-study-record-id="${escapeHtml(record.id)}">
+                <div class="study-record-sequence" aria-label="${sequence}번째 구간">
+                    ${sequence}
                 </div>
                 <div class="study-record-content">
                     <div class="study-record-view">
                         <header>
                             <div>
-                                <h3>${escapeHtml(record.name)}</h3>
-                                ${tags}
+                                <h3>구간 ${sequence}</h3>
+                                <p class="study-record-range">
+                                    <time datetime="${startTime?.toISOString() || ""}">${startLabel}</time>
+                                    <span aria-hidden="true">~</span>
+                                    <time datetime="${endTime?.toISOString() || ""}">${endLabel}</time>
+                                </p>
                             </div>
                             <div class="study-record-time">
-                                <strong>${segmentTime}</strong>
-                                <span>누적 ${elapsed}</span>
+                                <span>총 공부 시간</span>
+                                <strong>${formatDuration(studySeconds)}</strong>
                             </div>
                         </header>
-                        <button type="button" data-study-record-edit="${record.id}">수정</button>
                     </div>
-                    <form class="study-record-edit" data-study-record-form="${record.id}">
-                        <label>
-                            <span>구간 이름</span>
-                            <input name="name" type="text" maxlength="40" value="${escapeHtml(record.name)}" required />
-                        </label>
-                        <label>
-                            <span>태그</span>
-                            <input name="tags" type="text" maxlength="100"
-                                   value="${escapeHtml((record.tags || []).join(", "))}"
-                                   placeholder="예: Java, API 명세" />
-                            <small>쉼표로 구분하며 최대 5개까지 저장됩니다.</small>
-                        </label>
-                        <div>
-                            <button type="button" data-study-record-cancel>취소</button>
-                            <button type="submit">저장</button>
-                        </div>
-                    </form>
                 </div>
             </li>
         `;
@@ -372,7 +380,7 @@ export function createStudyRecords({ storageKey, getElapsedSeconds, api }) {
     function renderRecordList(records, emptyMessage) {
         if (!records.length) {
             return `
-                <div class="study-record-empty">
+                <div class="study-record-empty ui-state-message" role="status">
                     <strong>${emptyMessage}</strong>
                     <p>홈에서 타이머를 시작하고 정지를 누르면 학습 기록이 저장됩니다.</p>
                 </div>
@@ -384,7 +392,7 @@ export function createStudyRecords({ storageKey, getElapsedSeconds, api }) {
 
     function renderDaily(records) {
         return `
-            <section class="study-day-detail" aria-label="선택 날짜의 구간 기록">
+            <section class="study-day-detail ui-menu-section" aria-label="선택 날짜의 구간 기록">
                 <header>
                     <div>
                         <span>DAILY LOG</span>
@@ -441,7 +449,7 @@ export function createStudyRecords({ storageKey, getElapsedSeconds, api }) {
 
         return `
             <div class="study-month-layout">
-                <section class="study-calendar" aria-label="${year}년 ${month + 1}월 학습 달력">
+                <section class="study-calendar ui-menu-section" aria-label="${year}년 ${month + 1}월 학습 달력">
                     <header>
                         <div>
                             <span>MONTHLY HEATMAP</span>
@@ -461,7 +469,7 @@ export function createStudyRecords({ storageKey, getElapsedSeconds, api }) {
                         <span>8시간 이상</span>
                     </div>
                 </section>
-                <section class="study-selected-day" aria-label="선택 날짜 기록">
+                <section class="study-selected-day ui-menu-section" aria-label="선택 날짜 기록">
                     <header>
                         <div>
                             <span>SELECTED DAY</span>
@@ -490,24 +498,24 @@ export function createStudyRecords({ storageKey, getElapsedSeconds, api }) {
         return `
             <section class="study-year-dashboard" aria-label="${referenceDate.getFullYear()}년 학습 통계">
                 <div class="study-year-stats">
-                    <article>
+                    <article class="ui-menu-stat">
                         <span>연간 총 학습</span>
                         <strong>${formatDuration(totalSeconds)}</strong>
                     </article>
-                    <article>
+                    <article class="ui-menu-stat">
                         <span>학습한 날</span>
                         <strong>${activeDays}일</strong>
                     </article>
-                    <article>
+                    <article class="ui-menu-stat">
                         <span>학습일 평균</span>
                         <strong>${formatDuration(averageSeconds)}</strong>
                     </article>
-                    <article>
+                    <article class="ui-menu-stat">
                         <span>가장 많이 공부한 달</span>
                         <strong>${bestMonth.seconds ? `${bestMonth.month}월` : "—"}</strong>
                     </article>
                 </div>
-                <section class="study-year-chart">
+                <section class="study-year-chart ui-menu-section">
                     <header>
                         <div>
                             <span>YEARLY TREND</span>
@@ -543,9 +551,9 @@ export function createStudyRecords({ storageKey, getElapsedSeconds, api }) {
         const periodText = formatPeriod(viewMode, referenceDate);
 
         container.innerHTML = `
-            <section class="study-records" aria-label="학습 기록">
+            <section class="study-records" aria-label="학습 기록" data-ui-state="ready">
                 <header class="study-record-toolbar">
-                    <div class="study-record-tabs" role="tablist" aria-label="기록 조회 기간">
+                    <div class="study-record-tabs ui-menu-tabs" role="tablist" aria-label="기록 조회 기간">
                         <button type="button" role="tab" data-study-record-view="daily"
                                 aria-selected="${viewMode === "daily"}"
                                 class="${viewMode === "daily" ? "is-active" : ""}">일간</button>
@@ -556,30 +564,30 @@ export function createStudyRecords({ storageKey, getElapsedSeconds, api }) {
                                 aria-selected="${viewMode === "yearly"}"
                                 class="${viewMode === "yearly" ? "is-active" : ""}">연간</button>
                     </div>
-                    <div class="study-period-navigation">
-                        <button type="button" data-study-period-move="-1" aria-label="이전 기간">←</button>
+                    <div class="study-period-navigation" role="group" aria-label="조회 기간 이동">
+                        <button class="ui-button ui-button--secondary" type="button" data-study-period-move="-1" aria-label="이전 기간">←</button>
                         <strong title="${escapeHtml(periodLabel)}">
                             <span aria-hidden="true">${escapeHtml(periodText)}</span>
                             <span class="sr-only">${escapeHtml(periodLabel)}</span>
                         </strong>
-                        <button type="button" data-study-period-today>오늘</button>
-                        <button type="button" data-study-period-move="1" aria-label="다음 기간">→</button>
+                        <button class="ui-button ui-button--soft" type="button" data-study-period-today>오늘</button>
+                        <button class="ui-button ui-button--secondary" type="button" data-study-period-move="1" aria-label="다음 기간">→</button>
                     </div>
                 </header>
                 ${loadErrorMessage
                     ? `<p class="study-record-load-error" role="status">${escapeHtml(loadErrorMessage)}</p>`
                     : ""}
-                <header class="study-records-summary">
-                    <div>
+                <section class="study-records-summary ui-menu-stats" aria-label="선택 기간 요약">
+                    <article class="ui-menu-stat">
                         <span>선택 기간의 구간</span>
                         <strong>${visibleRecords.length}개</strong>
-                    </div>
-                    <div>
+                    </article>
+                    <article class="ui-menu-stat">
                         <span>선택 기간 합계</span>
                         <strong>${formatDuration(totalSeconds)}</strong>
-                    </div>
-                    <p>창을 닫아도 타이머는 계속 실행됩니다.</p>
-                </header>
+                    </article>
+                    <p class="study-records-summary-note">창을 닫아도 타이머는 계속 실행됩니다.</p>
+                </section>
                 ${viewMode === "daily"
                     ? renderDaily(visibleRecords)
                     : viewMode === "monthly"
@@ -588,9 +596,6 @@ export function createStudyRecords({ storageKey, getElapsedSeconds, api }) {
             </section>
         `;
 
-        if (editingId) {
-            container.querySelector(`[data-study-record-form="${editingId}"] input`)?.focus();
-        }
     }
 
     function mount(target) {
@@ -599,8 +604,6 @@ export function createStudyRecords({ storageKey, getElapsedSeconds, api }) {
     }
 
     function handleClick(event) {
-        const editButton = event.target.closest("[data-study-record-edit]");
-        const cancelButton = event.target.closest("[data-study-record-cancel]");
         const viewButton = event.target.closest("[data-study-record-view]");
         const periodButton = event.target.closest("[data-study-period-move]");
         const todayButton = event.target.closest("[data-study-period-today]");
@@ -608,7 +611,6 @@ export function createStudyRecords({ storageKey, getElapsedSeconds, api }) {
 
         if (viewButton) {
             viewMode = viewButton.dataset.studyRecordView;
-            editingId = null;
             render();
             return true;
         }
@@ -619,14 +621,12 @@ export function createStudyRecords({ storageKey, getElapsedSeconds, api }) {
                 referenceDate,
                 Number(periodButton.dataset.studyPeriodMove)
             );
-            editingId = null;
             render();
             return true;
         }
 
         if (todayButton) {
             referenceDate = getCurrentStudyDate();
-            editingId = null;
             render();
             return true;
         }
@@ -636,50 +636,11 @@ export function createStudyRecords({ storageKey, getElapsedSeconds, api }) {
                 .split("-")
                 .map(Number);
             referenceDate = new Date(year, month - 1, day);
-            editingId = null;
-            render();
-            return true;
-        }
-
-        if (editButton) {
-            editingId = editButton.dataset.studyRecordEdit;
-            render();
-            return true;
-        }
-
-        if (cancelButton) {
-            editingId = null;
             render();
             return true;
         }
 
         return false;
-    }
-    // [API-REPLACE] 학습 기록 수정 PATH API 호출
-    function handleSubmit(event) {
-        const form = event.target.closest("[data-study-record-form]");
-
-        if (!form) {
-            return false;
-        }
-
-        event.preventDefault();
-        const records = readRecords();
-        const record = records.find((item) => item.id === form.dataset.studyRecordForm);
-
-        if (!record) {
-            return true;
-        }
-
-        const formData = new FormData(form);
-        record.name = String(formData.get("name") || "").trim() || `구간 ${record.sequence}`;
-        record.tags = parseTags(formData.get("tags"));
-        record.updatedAt = new Date().toISOString();
-        writeRecords(records);
-        api?.update?.(record.id, record);
-        editingId = null;
-        render();
-        return true;
     }
 
     return {
@@ -690,6 +651,6 @@ export function createStudyRecords({ storageKey, getElapsedSeconds, api }) {
             loadRecords();
         },
         handleClick,
-        handleSubmit
+        handleSubmit: () => false
     };
 }
