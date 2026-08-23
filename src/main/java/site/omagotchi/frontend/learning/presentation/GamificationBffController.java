@@ -49,6 +49,18 @@ public class GamificationBffController {
                 .getDailyQuests(context.bearerToken()));
     }
 
+    @PostMapping("/quests/actions/character-checked")
+    public JsonNode completeCharacterCheckedQuest(HttpServletRequest request) {
+        return proxy.execute(request, context -> context.service()
+                .completeCharacterCheckedQuest(context.bearerToken()));
+    }
+
+    @PostMapping("/quests/actions/routine-reviewed")
+    public JsonNode completeRoutineReviewedQuest(HttpServletRequest request) {
+        return proxy.execute(request, context -> context.service()
+                .completeRoutineReviewedQuest(context.bearerToken()));
+    }
+
     // Learning 계약과 동일하게 사용자별 일일 Quest 인스턴스 ID를 받는다.
     // Quest 정의 ID를 전달하면 하류에서 조회에 실패하므로 이름으로 의미를 고정한다.
     @PostMapping("/quests/{userDailyQuestId}/claim")

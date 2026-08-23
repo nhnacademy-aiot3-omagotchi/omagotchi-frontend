@@ -3,6 +3,7 @@ package site.omagotchi.frontend.learning.infrastructure;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.web.client.MockRestServiceServer;
@@ -19,6 +20,7 @@ import java.time.LocalDate;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.client.ExpectedCount.once;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.header;
+import static org.springframework.test.web.client.match.MockRestRequestMatchers.method;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
 
@@ -146,6 +148,32 @@ class LearningHttpServiceContractTest {
                 .andRespond(withSuccess("{\"status\": \"CLAIMED\"}", MediaType.APPLICATION_JSON));
 
         service.claimQuest(BEARER, 42L);
+
+        server.verify();
+    }
+
+    @Test
+    void mapsCharacterCheckedActionToSemanticQuestPath() {
+        server.expect(once(), requestTo(BASE_URL
+                        + "/api/v1/gamification/quests/actions/character-checked"))
+                .andExpect(method(HttpMethod.POST))
+                .andExpect(header(HttpHeaders.AUTHORIZATION, BEARER))
+                .andRespond(withSuccess("{\"code\": \"CHARACTER_CHECKED\"}", MediaType.APPLICATION_JSON));
+
+        service.completeCharacterCheckedQuest(BEARER);
+
+        server.verify();
+    }
+
+    @Test
+    void mapsRoutineReviewedActionToSemanticQuestPath() {
+        server.expect(once(), requestTo(BASE_URL
+                        + "/api/v1/gamification/quests/actions/routine-reviewed"))
+                .andExpect(method(HttpMethod.POST))
+                .andExpect(header(HttpHeaders.AUTHORIZATION, BEARER))
+                .andRespond(withSuccess("{\"code\": \"ROUTINE_REVIEW\"}", MediaType.APPLICATION_JSON));
+
+        service.completeRoutineReviewedQuest(BEARER);
 
         server.verify();
     }

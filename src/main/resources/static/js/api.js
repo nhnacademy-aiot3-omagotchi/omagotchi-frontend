@@ -166,6 +166,14 @@
         gamification: {
             getHome: () => request("/gamification/home"),
             getDailyQuests: () => request("/gamification/quests/daily"),
+            completeCharacterCheckedQuest: () => request(
+                "/gamification/quests/actions/character-checked",
+                {method: "POST"}
+            ),
+            completeRoutineReviewedQuest: () => request(
+                "/gamification/quests/actions/routine-reviewed",
+                {method: "POST"}
+            ),
             // 서버 계약은 Quest 정의 ID가 아니라 사용자별 일일 Quest 인스턴스 ID를 받는다.
             claimQuest: (userDailyQuestId) => request(
                 `/gamification/quests/${encodeURIComponent(userDailyQuestId)}/claim`,
