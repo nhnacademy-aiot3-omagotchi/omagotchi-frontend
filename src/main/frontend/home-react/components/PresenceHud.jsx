@@ -36,10 +36,12 @@ export function PresenceHud({
   count = 0,
   capacity = 50,
   panelOpen = false,
-  roomName = "AIoT 3기 실습실",
+  roomName = "기수에 가입하지 않았습니다.",
   updatedText = "아직 갱신하지 않음",
   users = []
 }) {
+  const isUnassigned = roomName === "기수에 가입하지 않았습니다.";
+
   return (
     <aside className="presence-hud" data-presence-hud>
       <button
@@ -63,7 +65,9 @@ export function PresenceHud({
       <section className="presence-panel" id="presence-panel" data-presence-panel aria-labelledby="presence-panel-title" hidden={!panelOpen}>
         <header>
           <span className="quick-panel-icon" aria-hidden="true"><img src="/images/app/social.png" alt="" /></span>
-          <div className="presence-panel-heading"><h2 id="presence-panel-title">{roomName}</h2></div>
+          <div className={`presence-panel-heading${isUnassigned ? " is-unassigned" : ""}`}>
+            <h2 id="presence-panel-title" data-presence-room-name>{roomName}</h2>
+          </div>
           <div className="presence-panel-actions">
             <button className="presence-refresh" type="button" data-presence-refresh aria-label="재실 인원 새로고침" title="재실 인원 새로고침">↻</button>
             <button className="quick-panel-close" type="button" data-presence-close aria-label="재실 인원 닫기">×</button>

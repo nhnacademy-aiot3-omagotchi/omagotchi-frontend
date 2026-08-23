@@ -30,7 +30,7 @@
         <form class="login-form auth-panel ui-auth-card ui-auth-form" method="post" th:action="@{/login}">
             <h1 id="login-title">환영합니다</h1>
             <p class="auth-subtitle" data-auth-feedback
-               th:classappend="${authFeedback != null} ? ' auth-error'"
+               th:classappend="${authFeedback != null} ? (${authFeedbackType == 'success'} ? ' auth-success' : ' auth-error') : ''"
                th:text="${authFeedback ?: '오마고치와 함께하는 학습'}">오마고치와 함께하는 학습</p>
 
             <div class="auth-segmented ui-auth-tabs" aria-label="인증 메뉴">

@@ -81,6 +81,20 @@
     image-rendering: pixelated;
 }
 
+.home-action-dock .home-dock-glyph {
+    width: clamp(25px, 2.6vw, 30px);
+    height: clamp(25px, 2.6vw, 30px);
+    display: grid;
+    place-items: center;
+    border: 1px solid rgba(255, 255, 255, 0.7);
+    border-radius: 8px;
+    background: rgba(229, 244, 235, 0.16);
+    color: #ffffff;
+    font-family: var(--game-font);
+    font-size: 10px;
+    line-height: 1;
+}
+
 .home-action-dock .home-dock-label,
 .home-action-dock .home-chat-toggle > span {
     color: #ffffff;
@@ -191,6 +205,15 @@
     line-height: 1;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+.presence-panel .presence-panel-heading.is-unassigned h2 {
+    max-width: min(52vw, 430px);
+    font-size: clamp(14px, 2vw, 20px);
+    line-height: 1.25;
+    overflow-wrap: anywhere;
+    text-overflow: clip;
+    white-space: normal;
 }
 
 .quick-panel-close,
@@ -533,6 +556,23 @@
     border-color: rgba(180, 35, 24, 0.28);
     background: var(--ui-danger-soft);
     color: var(--ui-danger);
+}
+
+.attendance-detail[data-ui-state="unavailable"] .ui-state-message {
+    display: grid;
+    min-height: 180px;
+    place-items: center;
+    padding: 28px;
+    border-color: var(--ui-line);
+    background: var(--ui-emerald-50);
+    color: var(--ui-ink);
+    font-size: clamp(15px, 2vw, 20px);
+    line-height: 1.6;
+    text-align: center;
+}
+
+.attendance-detail[data-ui-state="unavailable"] .ui-attendance__layout {
+    display: none;
 }
 
 .attendance-detail .ui-attendance__main {

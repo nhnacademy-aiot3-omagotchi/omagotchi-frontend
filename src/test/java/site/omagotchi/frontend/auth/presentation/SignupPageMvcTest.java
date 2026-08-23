@@ -168,7 +168,8 @@ class SignupPageMvcTest {
                         flash().attribute(
                                 "authFeedback",
                                 "계정이 생성됐습니다. 로그인해주세요."
-                        )
+                        ),
+                        flash().attribute("authFeedbackType", "success")
                 );
 
         // Then: 정규화된 가입 입력과 자동 Login 미수행

@@ -35,6 +35,7 @@
 | [팀원 누구나 이해하는 BFF 실제 요청 흐름](onboarding/04-bff-request-flow.md) | Browser·BFF·Gateway·Learning의 역할과 실제 요청 예시 |
 | [기능 연동 개발 가이드](onboarding/05-feature-integration-guide.md) | Prototype을 실제 BFF/API로 전환하는 기준 |
 | [BFF와 Learning HTTP Interface 경계](onboarding/06-bff-http-interface-boundary.md) | Browser·View·Learning의 의존 범위와 Spring `@HttpExchange`·`@GetExchange` 선언형 Client 설명 |
+| [새 기능 BFF 연결 Quick Start](onboarding/07-bff-feature-quickstart.md) | 새 Learning 기능을 Browser·View BFF에 연결하는 파일별 순서와 복사 가능한 예시·검증표 |
 | [Frontend 도구·라이브러리 역할 가이드](guides/frontend-toolchain-guide.md) | React, Vite, Storybook, Vitest, Playwright, Radix UI와 Motion의 역할·실행 방법 |
 | [Home UI 문서 인덱스](home-ui/README.md) | Home React Island, 반응형, Storybook 문서 분류 |
 | [Home React·Storybook 구조 가이드](home-ui/01-guides/home-react-storybook-structure.md) | React 소스, Story, CSS, Controller와 빌드 산출물의 경로·책임 |
@@ -82,6 +83,8 @@
 - [기능별 Backend 연동 Prompt Template](prompt/기능-연동-템플릿.md)
 - [Timer Backend 연동 Prompt](prompt/타이머.md)
 - [Space·Team Backend 연동 Prompt](prompt/공간-팀.md)
+- [Home AI 도우미 구현 Prompt](prompt/AI-도우미.md)
+- [MCP 기반 AI 도우미 연동 Prompt](prompt/MCP-연동.md)
 
 ## 라이선스
 

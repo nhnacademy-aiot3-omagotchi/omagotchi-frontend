@@ -125,6 +125,8 @@ flowchart LR
    - Prototype 전환, SSR·JSON BFF 선택, Session·CSRF·내부 HTTP·검증 기준
 7. [BFF와 Learning HTTP Interface 경계](06-bff-http-interface-boundary.md)
    - Browser·View·Learning의 의존 범위와 `@HttpExchange`·`@GetExchange` 동작 방식
+8. [새 기능 BFF 연결 Quick Start](07-bff-feature-quickstart.md)
+   - API 계약 확인부터 Controller·HTTP Client·`api.js`·오류·테스트까지의 실전 연결 순서
 
 ## 5. Code 탐색 시작점
 

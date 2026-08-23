@@ -14,6 +14,7 @@ public class LoginPageController {
 
     private static final String LOGIN_VIEW = "pages/auth/login";
     private static final String AUTH_FEEDBACK = "authFeedback";
+    private static final String AUTH_FEEDBACK_TYPE = "authFeedbackType";
 
     @GetMapping("/login")
     public String loginPage(
@@ -26,6 +27,7 @@ public class LoginPageController {
         }
         if (error != null) {
             model.addAttribute(AUTH_FEEDBACK, AuthErrorCode.INVALID_CREDENTIALS.message());
+            model.addAttribute(AUTH_FEEDBACK_TYPE, "error");
         }
         return LOGIN_VIEW;
     }
