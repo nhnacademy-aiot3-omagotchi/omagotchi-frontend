@@ -165,6 +165,7 @@ Browser BFF Endpoint:
 질문 Request DTO:
 Response·Stream Event DTO:
 대화 ID와 requestId 생성 주체:
+사용 가능한 모델 목록·기본 모델·사용자 선택 허용 범위:
 AI Orchestrator 위치와 책임:
 MCP Server 목록과 소유 서비스:
 허용 Tool 이름·설명·Input·Output Schema:

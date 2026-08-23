@@ -5,7 +5,12 @@ function InteractiveAiAssistantPanel({ initialOpen = false }) {
   const [open, setOpen] = useState(initialOpen);
   return (
     <div>
-      <AiAssistantPanel open={open} setOpen={setOpen} />
+      <AiAssistantPanel
+        open={open}
+        setOpen={setOpen}
+        characterImage="/images/characters/night/Light_Coral_eye3.gif"
+        characterName="m00n"
+      />
     </div>
   );
 }
