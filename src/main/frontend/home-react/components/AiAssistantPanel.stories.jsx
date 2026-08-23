@@ -20,7 +20,7 @@ const meta = {
   component: AiAssistantPanel,
   decorators: [
     (Story) => (
-      <div className="home-page" style={{ minHeight: "720px", padding: "32px", background: "#087046" }}>
+      <div className="home-page" style={{ minHeight: "100dvh", padding: "32px", background: "#087046" }}>
         <Story />
       </div>
     )
@@ -32,3 +32,21 @@ export default meta;
 
 export const Closed = { render: () => <InteractiveAiAssistantPanel /> };
 export const Preparing = { render: () => <InteractiveAiAssistantPanel initialOpen /> };
+export const Desktop = {
+  render: () => <InteractiveAiAssistantPanel initialOpen />,
+  parameters: {
+    viewport: {
+      options: {
+        desktop: {
+          name: "PC 1440 × 900",
+          styles: { width: "1440px", height: "900px" }
+        }
+      },
+      defaultViewport: "desktop"
+    }
+  }
+};
+export const Mobile = {
+  render: () => <InteractiveAiAssistantPanel initialOpen />,
+  parameters: { viewport: { defaultViewport: "mobile1" } }
+};
