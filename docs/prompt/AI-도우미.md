@@ -41,6 +41,44 @@ src/main/resources/static/js/home.js
 GLOBAL·COHORT 탭과 메시지 입력창을 복원하지 않는다. 클래스 이름 정리는 Home 하단 반응형
 레이아웃을 별도로 검증하는 리팩터링에서만 수행한다.
 
+## 창 크기·배치 변경 가이드
+
+현재 기준은 데스크톱의 오른쪽 Drawer와 모바일의 안전 여백을 둔 전체폭 Drawer다. 현재 CSS는
+`src/main/resources/static/css/home/ui/character-chat.css`의 `.home-ai-drawer`에서 관리한다.
+
+```text
+일반 PC: 480px × 최대 700px
+넓은 PC(1200px × 780px 이상): 520px × 최대 740px
+모바일(600px 이하): 화면 네 방향에 약 12px 안전 여백을 둔 크기
+```
+
+위 수치는 절대적인 제품 계약이 아니다. 실제 대화 길이, Tool 승인 UI, 첨부 영역 또는 모델
+선택 기능 때문에 공간이 부족하다면 구현 담당자가 PC 폭과 높이를 더 늘릴 수 있다. 다만
+고정 높이를 무조건 크게 만들지 말고 `min()`, `calc(100dvh - 여백)`처럼 현재 Viewport 안에
+머물도록 제한한다. 대화 영역만 스크롤되고 Header와 입력 Composer는 계속 접근 가능해야 한다.
+
+제품 요구가 오른쪽 보조 패널보다 집중형 대화에 가깝다면 중앙 오버레이로 바꿀 수도 있다.
+그 경우 다음 원칙을 지킨다.
+
+- 패널을 `position: fixed`인 화면 전체 Backdrop 안에서 가로·세로 중앙 정렬한다.
+- PC에서는 적절한 `max-width`와 `max-height`를 두고, 모바일에서는 안전 영역을 제외한 거의
+  전체 화면을 사용한다.
+- 배경 클릭으로 닫을지 여부를 명시하고, 패널 내부 클릭이 닫힘으로 전파되지 않게 한다.
+- 열릴 때 패널 또는 입력창으로 Focus를 이동하고, 닫을 때 원래 AI Dock 버튼으로 Focus를 돌린다.
+- `Escape`, 닫기 버튼, `omagotchi:home-ai-close`의 결과가 모두 동일한 닫기 경계를 사용하게 한다.
+- 열린 동안 배경 Home 조작을 막고 필요한 경우 Body Scroll을 잠근다. 닫을 때 잠금 Class를 반드시
+  제거한다.
+- `role="dialog"`, `aria-modal`, 제목 연결과 `aria-controls`·`aria-expanded` 계약을 유지한다.
+- BGM, 출석부, 재실 인원과 다른 Home 오버레이의 상호 배타적 닫힘 동작을 유지한다.
+
+Drawer를 오버레이로 바꾸더라도 `AiAssistantPanel`의 메시지 상태, MCP 요청 계약이나 캐릭터
+Source of Truth까지 함께 바꾸지 않는다. 배치 변경은 CSS와 열림·닫힘 경계에 한정하고, 새로운
+별도 AI 화면으로 복제하지 않는다.
+
+변경 후 Storybook의 `Home/AiAssistantPanel`에서 최소한 `Desktop`, `Mobile`, `Preparing`,
+`Closed`를 확인한다. 320px 모바일, 모바일 가로, 1440×900 PC, 낮은 높이의 노트북 화면에서
+잘림·배경 조작·Focus 복귀·내부 스크롤을 검증한 뒤 실제 `/home`에서도 다른 패널과 함께 확인한다.
+
 ## 제품 범위
 
 ### 현재 단계에서 허용
