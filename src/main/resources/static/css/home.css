@@ -1099,6 +1099,19 @@ a {
     image-rendering: pixelated;
 }
 
+.help-dock-guide .help-dock-ai-icon {
+    width: 42px;
+    height: 42px;
+    display: grid;
+    place-items: center;
+    border-radius: 10px;
+    background: #17754f;
+    color: #ffffff;
+    font-family: var(--game-font);
+    font-size: 12px;
+    line-height: 1;
+}
+
 .help-wing-guide strong,
 .help-wing-guide span,
 .help-dock-guide strong,

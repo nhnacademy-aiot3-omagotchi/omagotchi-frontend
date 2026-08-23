@@ -82,6 +82,8 @@
 - [기능별 Backend 연동 Prompt Template](prompt/기능-연동-템플릿.md)
 - [Timer Backend 연동 Prompt](prompt/타이머.md)
 - [Space·Team Backend 연동 Prompt](prompt/공간-팀.md)
+- [Home AI 도우미 구현 Prompt](prompt/AI-도우미.md)
+- [MCP 기반 AI 도우미 연동 Prompt](prompt/MCP-연동.md)
 
 ## 라이선스
 

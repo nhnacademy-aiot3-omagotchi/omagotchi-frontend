@@ -3,8 +3,8 @@ import { expect, userEvent, within } from "storybook/test";
 import { ActionDock } from "./ActionDock.jsx";
 
 function InteractiveDock({ attendanceVisible = false }) {
-  const [chatOpen, setChatOpen] = useState(false);
-  return <ActionDock chatOpen={chatOpen} onChatToggle={() => setChatOpen((open) => !open)} attendanceVisible={attendanceVisible} />;
+  const [aiOpen, setAiOpen] = useState(false);
+  return <ActionDock aiOpen={aiOpen} onAiToggle={() => setAiOpen((open) => !open)} attendanceVisible={attendanceVisible} />;
 }
 
 const meta = {
@@ -23,11 +23,11 @@ export const Default = {
     attendanceButton.hidden = false;
     attendanceButton.querySelector("[data-attendance-label]").textContent = "완료";
 
-    await userEvent.click(canvas.getByRole("button", { name: "채팅 입력 열기" }));
+    await userEvent.click(canvas.getByRole("button", { name: "AI 도우미 열기" }));
 
     await expect(attendanceButton).toBeVisible();
     await expect(attendanceButton).toHaveTextContent("완료");
   }
 };
-export const ChatOpen = { render: () => <ActionDock chatOpen /> };
+export const AiOpen = { render: () => <ActionDock aiOpen /> };
 export const CheckedIn = { render: () => <InteractiveDock attendanceVisible /> };

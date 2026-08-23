@@ -49,7 +49,7 @@ const musicToggle = document.querySelector("[data-home-music-toggle]");
 const musicClose = document.querySelector("[data-home-music-close]");
 const attendancePanelToggle = document.querySelector("[data-attendance-panel-toggle]");
 const attendancePanelClose = document.querySelector("[data-attendance-panel-close]");
-const chatToggle = document.querySelector(".home-chat-toggle");
+const aiAssistantToggle = document.querySelector(".home-ai-toggle");
 const homeToast = document.querySelector("[data-home-toast]");
 const attendanceDetail = document.querySelector("[data-attendance-panel-toggle]")?.getAttribute("aria-controls")
     ? document.getElementById(document.querySelector("[data-attendance-panel-toggle]").getAttribute("aria-controls"))
@@ -379,14 +379,14 @@ function setAttendancePanelOpen(open) {
     }
 }
 
-// React가 소유하는 채팅 상태는 DOM을 직접 조작하지 않고 단방향 이벤트로 닫는다.
-function closeHomeChat() {
-    window.dispatchEvent(new CustomEvent("omagotchi:home-chat-close"));
+// React가 소유하는 AI 도우미 상태는 DOM을 직접 조작하지 않고 단방향 이벤트로 닫는다.
+function closeHomeAiAssistant() {
+    window.dispatchEvent(new CustomEvent("omagotchi:home-ai-close"));
 }
 
 musicToggle?.addEventListener("click", () => {
     const nextOpen = !homePage?.classList.contains("is-bgm-open");
-    if (nextOpen) closeHomeChat();
+    if (nextOpen) closeHomeAiAssistant();
     presenceController?.close();
     setAttendancePanelOpen(false);
     setBgmPanelOpen(nextOpen);
@@ -396,7 +396,7 @@ musicClose?.addEventListener("click", () => setBgmPanelOpen(false));
 
 attendancePanelToggle?.addEventListener("click", () => {
     const nextOpen = !homePage?.classList.contains("is-attendance-panel-open");
-    if (nextOpen) closeHomeChat();
+    if (nextOpen) closeHomeAiAssistant();
     presenceController?.close();
     setBgmPanelOpen(false);
     setAttendancePanelOpen(nextOpen);
@@ -405,12 +405,12 @@ attendancePanelToggle?.addEventListener("click", () => {
 attendancePanelClose?.addEventListener("click", () => setAttendancePanelOpen(false));
 presenceClose?.addEventListener("click", () => presenceController?.close());
 presenceTrigger?.addEventListener("click", () => {
-    closeHomeChat();
+    closeHomeAiAssistant();
     setBgmPanelOpen(false);
     setAttendancePanelOpen(false);
 });
 
-chatToggle?.addEventListener("click", () => {
+aiAssistantToggle?.addEventListener("click", () => {
     presenceController?.close();
     setBgmPanelOpen(false);
     setAttendancePanelOpen(false);
@@ -546,7 +546,7 @@ const overlayContent = {
                     <li>사용자 목록에서 파티원을 초대할 수 있습니다.</li>
                     <li>파티를 만든 후 이용 가능한 회의실에 입장합니다.</li>
                     <li>현재 파티 인원과 각 사용자의 상태를 확인합니다.</li>
-                    <li>홈 하단 채팅 바는 GLOBAL 채팅방과 COHORT 채팅방을 구분합니다.</li>
+                    <li>실시간 채팅 기능은 사용하지 않습니다. 홈 하단의 같은 자리는 MCP 기반 AI 도우미 영역으로 전환 중입니다.</li>
                 </ul>
             </div>
         </details>
@@ -588,6 +588,11 @@ const overlayContent = {
                     <li>홈 화면 아래의 고정 버튼으로 자주 쓰는 기능을 빠르게 열 수 있습니다.</li>
                 </ul>
                 <ol class="help-dock-guide" aria-label="홈 하단 버튼 안내">
+                    <li>
+                        <span class="help-dock-ai-icon" aria-hidden="true">AI</span>
+                        <strong>AI 도우미</strong>
+                        <span>현재는 준비 상태만 표시하며, MCP 연동 후 질문과 답변 기능을 제공합니다.</span>
+                    </li>
                     <li>
                         <img src="/images/app/music.png" alt="BGM 버튼" />
                         <strong>BGM</strong>
@@ -1016,7 +1021,7 @@ function openHomeOverlay(type) {
         return;
     }
 
-    closeHomeChat();
+    closeHomeAiAssistant();
     presenceController?.close();
     setBgmPanelOpen(false);
     setAttendancePanelOpen(false);
