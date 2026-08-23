@@ -109,7 +109,7 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
         if (isPublicLearningDownstreamError(exception)) {
             ApiErrorResponse response = new ApiErrorResponse(
                     downstream.code(),
-                    downstream.message(),
+                    publicLearningDownstreamMessage(exception.getStatusCode().value()),
                     request.getRequestURI(),
                     downstream.requestId()
             );
@@ -133,6 +133,17 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
         Integer approvedStatus = PUBLIC_LEARNING_DOWNSTREAM_ERRORS.get(downstream.code());
         return approvedStatus != null
                 && approvedStatus == exception.getStatusCode().value();
+    }
+
+    private String publicLearningDownstreamMessage(int status) {
+        return switch (status) {
+            case 400 -> "요청값이 올바르지 않습니다.";
+            case 401 -> "인증이 필요합니다.";
+            case 403 -> "접근 권한이 없습니다.";
+            case 404 -> "요청한 정보를 찾을 수 없습니다.";
+            case 409 -> "현재 상태에서는 요청을 처리할 수 없습니다.";
+            default -> "요청을 처리할 수 없습니다.";
+        };
     }
 
     private void logLearningDownstreamFailure(

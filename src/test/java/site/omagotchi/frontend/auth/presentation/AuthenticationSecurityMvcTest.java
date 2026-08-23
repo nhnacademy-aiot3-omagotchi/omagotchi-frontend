@@ -298,7 +298,7 @@ class AuthenticationSecurityMvcTest {
                 .andExpectAll(
                         status().isForbidden(),
                         content().contentTypeCompatibleWith("application/json"),
-                        jsonPath("$.code").value("AUTH_ACCESS_DENIED")
+                        jsonPath("$.code").value("AUTH_CSRF_INVALID")
                 );
     }
 

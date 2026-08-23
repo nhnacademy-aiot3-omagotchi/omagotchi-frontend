@@ -72,18 +72,18 @@ class ApiExceptionHandlerTest {
     }
 
     @Test
-    @DisplayName("승인된 Learning 하류 4xx 오류는 공개 계약을 유지")
+    @DisplayName("승인된 Learning 하류 4xx 오류는 원문 대신 안전한 공개 메시지를 반환")
     void forwardsApprovedLearningDownstreamClientError() throws Exception {
         // Given: REST Controller에서 Frontend 공개가 승인된 Learning 4xx가 발생
         // When: 실제 Spring MVC 오류 경계를 통과
-        // Then: 공개 상태·Code·Message를 JSON 계약으로 유지
+        // Then: 공개 상태·Code를 유지하되 하류 원문 Message는 노출하지 않음
         mockMvc.perform(post("/bff/v1/test/errors/learning-approved-4xx"))
                 .andExpectAll(
                         status().isConflict(),
                         content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON),
                         header().string(HttpHeaders.CACHE_CONTROL, "no-store"),
                         jsonPath("$.code").value("ATTENDANCE_ALREADY_CHECKED_IN"),
-                        jsonPath("$.message").value("이미 출석 처리된 날짜입니다."),
+                        jsonPath("$.message").value("현재 상태에서는 요청을 처리할 수 없습니다."),
                         jsonPath("$.path").value(
                                 "/bff/v1/test/errors/learning-approved-4xx"
                         ),
@@ -369,7 +369,7 @@ class ApiExceptionHandlerTest {
                     HttpStatus.CONFLICT,
                     new ApiErrorResponse(
                             "ATTENDANCE_ALREADY_CHECKED_IN",
-                            "이미 출석 처리된 날짜입니다.",
+                            "internal attendance row id=8472 already exists",
                             "/api/v1/cohorts/1/attendance-records/check-in",
                             "learning-request-4xx"
                     ),
