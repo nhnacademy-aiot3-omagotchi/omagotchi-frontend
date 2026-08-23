@@ -1029,16 +1029,6 @@ function openHomeOverlay(type) {
     homeOverlayRoot.classList.add("is-open");
     document.body.classList.add("has-home-overlay");
 
-    if (type === "personal") {
-        api.gamification.completeCharacterCheckedQuest()
-            .catch((error) => showHomeToast(error.message));
-    }
-
-    if (type === "write") {
-        api.gamification.completeRoutineReviewedQuest()
-            .catch((error) => showHomeToast(error.message));
-    }
-
     if (type === "community") {
         loadCommunity().catch((error) => showHomeToast(error.message));
     }

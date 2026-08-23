@@ -152,29 +152,4 @@ class LearningHttpServiceContractTest {
         server.verify();
     }
 
-    @Test
-    void mapsCharacterCheckedActionToSemanticQuestPath() {
-        server.expect(once(), requestTo(BASE_URL
-                        + "/api/v1/gamification/quests/actions/character-checked"))
-                .andExpect(method(HttpMethod.POST))
-                .andExpect(header(HttpHeaders.AUTHORIZATION, BEARER))
-                .andRespond(withSuccess("{\"code\": \"CHARACTER_CHECKED\"}", MediaType.APPLICATION_JSON));
-
-        service.completeCharacterCheckedQuest(BEARER);
-
-        server.verify();
-    }
-
-    @Test
-    void mapsRoutineReviewedActionToSemanticQuestPath() {
-        server.expect(once(), requestTo(BASE_URL
-                        + "/api/v1/gamification/quests/actions/routine-reviewed"))
-                .andExpect(method(HttpMethod.POST))
-                .andExpect(header(HttpHeaders.AUTHORIZATION, BEARER))
-                .andRespond(withSuccess("{\"code\": \"ROUTINE_REVIEW\"}", MediaType.APPLICATION_JSON));
-
-        service.completeRoutineReviewedQuest(BEARER);
-
-        server.verify();
-    }
 }

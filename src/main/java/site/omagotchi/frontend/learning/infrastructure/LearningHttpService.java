@@ -99,16 +99,6 @@ public interface LearningHttpService {
     @GetExchange("/gamification/quests/daily")
     JsonNode getDailyQuests(@RequestHeader(HttpHeaders.AUTHORIZATION) String authorization);
 
-    @PostExchange("/gamification/quests/actions/character-checked")
-    JsonNode completeCharacterCheckedQuest(
-            @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization
-    );
-
-    @PostExchange("/gamification/quests/actions/routine-reviewed")
-    JsonNode completeRoutineReviewedQuest(
-            @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization
-    );
-
     // Learning 계약은 Quest 정의 ID가 아니라 사용자별 일일 Quest 인스턴스 ID를 받는다.
     @PostExchange("/gamification/quests/{userDailyQuestId}/claim")
     JsonNode claimQuest(
