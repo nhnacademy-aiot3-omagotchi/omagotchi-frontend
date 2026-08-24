@@ -72,7 +72,8 @@ public class SecurityConfig {
                                 "/actuator/health/**",
                                 "/actuator/info"
                         ).permitAll() // 배포 확인용 최소 Actuator endpoint
-                        .requestMatchers("/manager-dashboard").authenticated() // TODO 관리자 권한·기수 정책 적용
+                        .requestMatchers("/system-admin-dashboard").hasRole("SYSTEM_ADMIN")
+                        .requestMatchers("/manager-dashboard").authenticated() // TODO 기수 관리자 권한 정책 적용
                         .requestMatchers(bffApiRequestMatcher).authenticated() // Browser Session 기반 BFF API
                         .anyRequest().authenticated() // 기본 보호 정책
                 )

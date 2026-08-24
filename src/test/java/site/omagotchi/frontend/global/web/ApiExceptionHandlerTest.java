@@ -92,6 +92,18 @@ class ApiExceptionHandlerTest {
     }
 
     @Test
+    @DisplayName("기수 관리자 기간 중복 오류는 Frontend 409 계약으로 전달")
+    void forwardsCohortManagerPeriodConflict() throws Exception {
+        mockMvc.perform(post("/bff/v1/test/errors/cohort-manager-period-conflict"))
+                .andExpectAll(
+                        status().isConflict(),
+                        content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON),
+                        jsonPath("$.code").value("COHORT_MANAGER_PERIOD_CONFLICT"),
+                        jsonPath("$.path").value("/bff/v1/test/errors/cohort-manager-period-conflict")
+                );
+    }
+
+    @Test
     @DisplayName("Learning 하류 5xx 오류는 상세 정보를 기록하고 공통 500으로 은닉")
     void hidesLearningDownstreamServerError(CapturedOutput output) throws Exception {
         // Given: REST Controller에서 내부 저장소 정보를 포함한 Learning 5xx가 발생
@@ -374,6 +386,20 @@ class ApiExceptionHandlerTest {
                             "learning-request-4xx"
                     ),
                     new IllegalStateException("approved downstream rejection")
+            );
+        }
+
+        @PostMapping("/bff/v1/test/errors/cohort-manager-period-conflict")
+        void cohortManagerPeriodConflict() {
+            throw new LearningDownstreamException(
+                    HttpStatus.CONFLICT,
+                    new ApiErrorResponse(
+                            "COHORT_MANAGER_PERIOD_CONFLICT",
+                            "internal cohort period details",
+                            "/api/v1/cohorts/2/managers",
+                            "learning-manager-conflict"
+                    ),
+                    new IllegalStateException("manager period conflict")
             );
         }
 

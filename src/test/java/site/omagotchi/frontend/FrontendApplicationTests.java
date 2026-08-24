@@ -77,6 +77,18 @@ class FrontendApplicationTests {
 	}
 
 	@Test
+	@DisplayName("시스템 관리자 Dashboard는 인증을 요구하고 전용 View를 반환")
+	void systemAdminDashboardRequiresSystemAdminRole() throws Exception {
+		mockMvc.perform(get("/system-admin-dashboard"))
+				.andExpect(status().is3xxRedirection())
+				.andExpect(redirectedUrl("/login"));
+
+		unfilteredMockMvc.perform(get("/system-admin-dashboard"))
+				.andExpect(status().isOk())
+				.andExpect(view().name("system-admin/dashboard/index"));
+	}
+
+	@Test
 	@DisplayName("Actuator Health 상태 UP")
 	void actuatorHealthIsUp() throws Exception {
 		mockMvc.perform(get("/actuator/health"))
