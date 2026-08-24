@@ -57,6 +57,7 @@
 | [MVP 로드맵](roadmaps/mvp-roadmap.md) | MVP 범위와 우선순위 |
 | [Backend 연동 협의 정리](integration/backend-integration-todo.md) | API 후보와 Backend 협의 항목 |
 | [Frontend ↔ Backend 기능별 연결 지도](integration/frontend-backend-connection-map.md) | 기능별 adapter·Controller·UI 계약과 Backend 대기 항목 |
+| [통합 E2E 검증 현황 (2026-08-24)](integration/e2e-validation-status-2026-08-24.md) | 실제 브라우저·Testcontainers 검증 범위, 우회 검증과 미완료 항목 |
 | [React Island 학습·작업 로드맵](roadmaps/react-island-learning-roadmap.md) | 점진 이전 순서와 학습 범위 |
 | [게임 UI 프레임워크 도입 검토안](home-ui/03-research/react-ui-library.md) | UI 도구와 외부 에셋 검토 초안 |
 | [React 게임 UI 도입 실행 체크리스트](home-ui/02-checklists/react-ui-adoption-checklist.md) | 설치 순서, 선행 작업과 검증 기준 |
@@ -84,6 +85,7 @@
 - [Timer Backend 연동 Prompt](prompt/타이머.md)
 - [Space·Team Backend 연동 Prompt](prompt/공간-팀.md)
 - [관리자 공간·센서 Chart.js 연동 가이드](prompt/센서-차트.md)
+- [System Admin BFF 연동 가이드](prompt/시스템-관리자-BFF-연동.md)
 - [Home AI 도우미 구현 Prompt](prompt/AI-도우미.md)
 - [MCP 기반 AI 도우미 연동 Prompt](prompt/MCP-연동.md)
 
