@@ -83,6 +83,61 @@ test("기수 생성 요청에는 현재 Learning 계약 필드만 보내고 관�
     ]);
 });
 
+test("초기 관리자 배치가 실패하면 생성된 PREPARING 기수를 보상 삭제한다", async () => {
+    const fixture = apiFixture();
+    const assignmentFailure = Object.assign(new Error("관리자 기간 중복"), {
+        code: "COHORT_MANAGER_PERIOD_CONFLICT"
+    });
+    fixture.api.manager.addManager = async (cohortId, userId) => {
+        fixture.calls.push(["addManager", cohortId, userId]);
+        throw assignmentFailure;
+    };
+    const repository = createSystemAdminApiRepository(fixture.api);
+
+    await assert.rejects(
+        repository.createCohort({
+            name: "Cloud 3기",
+            startDate: "2027-02-01",
+            endDate: "2027-07-31",
+            managerUserId: "019d2a48-80c0-4d6a-9a15-0b16d2dd74f1"
+        }),
+        assignmentFailure
+    );
+
+    assert.deepEqual(fixture.calls, [
+        ["createCohort", {
+            name: "Cloud 3기",
+            description: null,
+            startDate: "2027-02-01",
+            endDate: "2027-07-31"
+        }],
+        ["addManager", 4, "019d2a48-80c0-4d6a-9a15-0b16d2dd74f1"],
+        ["deleteCohort", 4]
+    ]);
+});
+
+test("관리자 배치와 보상 삭제가 모두 실패하면 생성된 기수 ID를 반환한다", async () => {
+    const fixture = apiFixture();
+    fixture.api.manager.addManager = async () => {
+        throw new Error("관리자 배치 실패");
+    };
+    fixture.api.manager.deleteCohort = async () => {
+        throw new Error("보상 삭제 실패");
+    };
+    const repository = createSystemAdminApiRepository(fixture.api);
+
+    await assert.rejects(
+        repository.createCohort({
+            name: "Cloud 3기",
+            startDate: "2027-02-01",
+            endDate: "2027-07-31",
+            managerUserId: "manager-id"
+        }),
+        (error) => error.code === "COHORT_CREATED_MANAGER_ASSIGNMENT_FAILED"
+            && error.createdCohortId === 4
+    );
+});
+
 test("PREPARING 기수 삭제는 Admin Learning BFF 클라이언트로 위임한다", async () => {
     const fixture = apiFixture();
     const repository = createSystemAdminApiRepository(fixture.api);

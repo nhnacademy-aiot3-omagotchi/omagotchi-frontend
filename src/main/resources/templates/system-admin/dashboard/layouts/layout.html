@@ -19,8 +19,9 @@
         </a>
         <div class="manager-account">
             <span class="role-badge system-role-badge">SYSTEM_ADMIN</span>
-            <div><strong>시스템 관리자</strong><small>test@test.com</small></div>
+            <div><strong>시스템 관리자</strong><small th:text="${systemAdminIdentifier}">인증 사용자</small></div>
             <form action="/logout" th:action="@{/logout}" method="post">
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
                 <button type="submit">로그아웃</button>
             </form>
         </div>

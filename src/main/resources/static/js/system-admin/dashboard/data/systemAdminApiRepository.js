@@ -51,7 +51,23 @@ export function createSystemAdminApiRepository(api = window.OmagotchiApi) {
                 endDate: payload.endDate
             });
             if (payload.managerUserId) {
-                await client.manager.addManager(created.id, payload.managerUserId);
+                try {
+                    await client.manager.addManager(created.id, payload.managerUserId);
+                } catch (assignmentError) {
+                    try {
+                        await client.manager.deleteCohort(created.id);
+                    } catch (cleanupError) {
+                        const partialFailure = new Error(
+                            `기수는 생성되었지만 관리자 배치와 보상 삭제에 실패했습니다. 생성된 기수 ID: ${created.id}`,
+                            {cause: assignmentError}
+                        );
+                        partialFailure.code = "COHORT_CREATED_MANAGER_ASSIGNMENT_FAILED";
+                        partialFailure.createdCohortId = created.id;
+                        partialFailure.cleanupError = cleanupError;
+                        throw partialFailure;
+                    }
+                    throw assignmentError;
+                }
             }
             return normalizeCohort({
                 ...created,

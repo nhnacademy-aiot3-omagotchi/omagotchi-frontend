@@ -44,7 +44,5 @@ public class WebConfig implements WebMvcConfigurer {
         // 관리자 Prototype Page
         registry.addViewController("/manager-dashboard")
                 .setViewName("manager/dashboard/index");
-        registry.addViewController("/system-admin-dashboard")
-                .setViewName("system-admin/dashboard/index");
     }
 }

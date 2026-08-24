@@ -4,7 +4,7 @@
 
 `/system-admin-dashboard`의 실제 화면과 Storybook 미리보기를 분리하고, Frontend BFF가 Identity Service와 Learning Service를 조합하는 기준을 정의한다.
 
-현재 Storybook은 `systemAdminMockRepository.js`, 실제 Thymeleaf 화면은 `systemAdminApiRepository.js`를 주입한다. 실제 화면에서 목데이터로 대체하거나 Identity Service의 데이터베이스를 직접 조회하지 않는다.
+현재 Storybook은 [`src/main/resources/static/js/system-admin/dashboard/data/systemAdminMockRepository.js`](../../src/main/resources/static/js/system-admin/dashboard/data/systemAdminMockRepository.js), 실제 Thymeleaf 화면은 [`src/main/resources/static/js/system-admin/dashboard/data/systemAdminApiRepository.js`](../../src/main/resources/static/js/system-admin/dashboard/data/systemAdminApiRepository.js)를 주입한다. 실제 화면에서 목데이터로 대체하거나 Identity Service의 데이터베이스를 직접 조회하지 않는다.
 
 ## 현재 연결 상태
 
@@ -26,15 +26,15 @@
 
 ```text
 Storybook
-  SystemAdminDashboard.stories.jsx
+  src/main/frontend/system-admin/SystemAdminDashboard.stories.jsx
     -> createSystemAdminMockRepository()
 
 실제 Thymeleaf 화면
-  /js/system-admin/dashboard/index.js
+  src/main/resources/static/js/system-admin/dashboard/index.js
     -> createSystemAdminApiRepository(window.OmagotchiApi)
 ```
 
-`dashboardController.js`는 HTTP 경로나 목데이터를 알지 않는다. 다음 저장소 인터페이스만 사용한다.
+[`src/main/resources/static/js/system-admin/dashboard/dashboardController.js`](../../src/main/resources/static/js/system-admin/dashboard/dashboardController.js)는 HTTP 경로나 목데이터를 알지 않는다. 다음 저장소 인터페이스만 사용한다.
 
 ```javascript
 {
@@ -111,7 +111,7 @@ PATCH /bff/v1/system-admin/users/{userId}/status
 2. Browser Session의 access token을 Bearer Token으로 전달한다.
 3. BFF Controller에서 `ROLE_SYSTEM_ADMIN` 접근을 재검증한다.
 4. Identity 오류 코드를 `ApiExceptionHandler`의 공개 가능한 하류 계약에 등록한다.
-5. `systemAdminApiRepository.updateUserPermissions()`를 실제 BFF 호출로 교체한다.
+5. [`src/main/resources/static/js/system-admin/dashboard/data/systemAdminApiRepository.js`](../../src/main/resources/static/js/system-admin/dashboard/data/systemAdminApiRepository.js)의 `updateUserPermissions()`를 실제 BFF 호출로 교체한다.
 6. Identity 사용자 ID와 Learning의 `managerUserId`가 동일한 UUID 계약인지 통합 테스트로 확인한다.
 
 ## 사용자 권한 저장 시 서비스 분리
