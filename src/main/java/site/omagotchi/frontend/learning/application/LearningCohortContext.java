@@ -15,8 +15,10 @@ import site.omagotchi.frontend.learning.infrastructure.response.UserProfileRespo
  * Session Token과 Learning Profile을 통해서만 획득한다. 기능마다 획득 경로가 달라지면
  * 신뢰 경계가 어긋나므로 모든 BFF Service가 이 Component를 사용한다.
  *
- * <p>한 HTTP 요청 안에서 여러 BFF Service가 호출해도 Profile 조회는 1회만 수행한다.
- * Request Attribute Cache가 없으면 화면 하나에서 Gateway 왕복이 기능 수만큼 늘어난다.
+ * <p>한 BFF HTTP 요청 안에서 여러 BFF Service가 호출해도 Profile 조회는 최대 1회만 수행한다.
+ * Request Attribute는 요청 범위이므로 Browser가 여러 BFF Endpoint를 호출하면 각 요청마다
+ * Profile 조회가 발생할 수 있다. 화면 전체의 왕복 감소는 집계 Endpoint나 별도 서버 캐시로
+ * 해결해야 한다.
  */
 @Component
 @RequiredArgsConstructor

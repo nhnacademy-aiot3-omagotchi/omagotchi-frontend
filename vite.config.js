@@ -16,7 +16,8 @@ export default defineConfig({
     rollupOptions: {
       input: {
         home: "src/main/frontend/home-react/main.jsx",
-        "character-selector": "src/main/frontend/character-selector/main.jsx"
+        "character-selector": "src/main/frontend/character-selector/main.jsx",
+        "manager-sensors": "src/main/frontend/manager-dashboard/main.jsx"
       },
       output: {
         entryFileNames: "[name]-app.js",

@@ -82,16 +82,17 @@
             method: normalizedMethod,
             ...rest
         });
-        if (response.status === 403 && needsCsrf && !options.__csrfRetried) {
-            csrfTokenPromise = null;
-            return request(path, {...options, __csrfRetried: true});
-        }
-
         if (response.status === 204) {
             return null;
         }
 
         const payload = await parseResponsePayload(response);
+        const isCsrfFailure = response.status === 403
+            && errorDetails(payload).code === "AUTH_CSRF_INVALID";
+        if (isCsrfFailure && needsCsrf && !options.__csrfRetried) {
+            csrfTokenPromise = null;
+            return request(path, {...options, __csrfRetried: true});
+        }
 
         if (!response.ok) {
             throw new ApiRequestError(

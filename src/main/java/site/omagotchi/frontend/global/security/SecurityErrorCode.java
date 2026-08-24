@@ -20,6 +20,11 @@ public enum SecurityErrorCode implements ErrorCode {
             ErrorType.AUTHORIZATION,
             "AUTH_ACCESS_DENIED",
             "접근 권한이 없습니다."
+    ),
+    CSRF_INVALID(
+            ErrorType.AUTHORIZATION,
+            "AUTH_CSRF_INVALID",
+            "보안 토큰이 만료되었거나 올바르지 않습니다."
     );
 
     private final ErrorType type;
