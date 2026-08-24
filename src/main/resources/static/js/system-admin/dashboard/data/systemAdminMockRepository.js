@@ -67,7 +67,7 @@ export function createSystemAdminMockRepository(seed = cloneSystemAdminMockData(
             const cohort = state.cohorts.find((item) => item.id === cohortId);
             if (!cohort) throw new Error("기수를 찾을 수 없습니다.");
             if (status === "ACTIVE" && cohort.status === "PREPARING" && cohort.managerUserIds.length === 0) {
-                throw new Error("ACTIVE 전환 전에 활성 기수 관리자를 배치해야 합니다.");
+                throw new Error("기수 관리자가 최소 1명 필요합니다.");
             }
             const valid = (cohort.status === "PREPARING" && status === "ACTIVE")
                 || (cohort.status === "ACTIVE" && status === "CLOSED");
