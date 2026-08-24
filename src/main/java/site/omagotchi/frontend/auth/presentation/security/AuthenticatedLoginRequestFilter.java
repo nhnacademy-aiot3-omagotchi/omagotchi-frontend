@@ -38,7 +38,7 @@ public final class AuthenticatedLoginRequestFilter extends OncePerRequestFilter 
             redirectStrategy.sendRedirect(
                     request,
                     response,
-                    "/home"
+                    AuthenticatedLandingPage.resolve(authentication)
             );
             return;
         }

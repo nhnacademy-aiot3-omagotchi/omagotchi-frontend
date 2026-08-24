@@ -21,6 +21,7 @@ import org.springframework.security.web.util.matcher.AnyRequestMatcher;
 import org.springframework.security.web.util.matcher.RequestMatcher;
 import site.omagotchi.frontend.auth.application.AuthenticationService;
 import site.omagotchi.frontend.auth.presentation.security.AuthenticatedLoginRequestFilter;
+import site.omagotchi.frontend.auth.presentation.security.AuthenticatedLandingPage;
 import site.omagotchi.frontend.auth.presentation.security.BrowserTokenSessionAuthenticationStrategy;
 import site.omagotchi.frontend.auth.presentation.security.IdentityLoginAuthenticationProvider;
 import site.omagotchi.frontend.auth.presentation.security.IdentityLogoutHandler;
@@ -82,7 +83,8 @@ public class SecurityConfig {
                         .loginProcessingUrl("/login")
                         .usernameParameter("email")
                         .passwordParameter("password")
-                        .defaultSuccessUrl("/home", true)
+                        .successHandler((request, response, authentication) ->
+                                response.sendRedirect(AuthenticatedLandingPage.resolve(authentication)))
                         .failureHandler(loginFailureHandler)
                         .permitAll()
                 ) // Spring Security Filter 기반 HTML Form Login
