@@ -26,7 +26,7 @@ import site.omagotchi.frontend.global.exception.CommonErrorCode;
 import site.omagotchi.frontend.global.exception.ErrorCode;
 import site.omagotchi.frontend.global.exception.ErrorHttpMapper;
 import site.omagotchi.frontend.global.session.SessionStoreFailures;
-import site.omagotchi.frontend.learning.infrastructure.LearningDownstreamException;
+import site.omagotchi.frontend.global.learning.infrastructure.LearningDownstreamException;
 
 import java.util.Map;
 import java.util.Optional;

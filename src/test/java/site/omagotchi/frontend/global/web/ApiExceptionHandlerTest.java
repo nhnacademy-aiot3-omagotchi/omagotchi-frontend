@@ -27,7 +27,7 @@ import org.springframework.web.context.request.ServletWebRequest;
 import site.omagotchi.frontend.global.exception.ApiErrorResponse;
 import site.omagotchi.frontend.global.exception.BusinessException;
 import site.omagotchi.frontend.global.exception.CommonErrorCode;
-import site.omagotchi.frontend.learning.infrastructure.LearningDownstreamException;
+import site.omagotchi.frontend.global.learning.infrastructure.LearningDownstreamException;
 
 import java.util.Set;
 

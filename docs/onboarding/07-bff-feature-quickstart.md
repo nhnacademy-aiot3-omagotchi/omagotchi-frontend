@@ -14,10 +14,10 @@
 
 | # | 파일 | 하는 일 | 빠뜨리면 나오는 증상 |
 | --- | --- | --- | --- |
-| 1 | `src/main/java/site/omagotchi/frontend/learning/infrastructure/response/*.java` | 하류 응답 타입 | 응답이 `JsonNode`로 떠서 화면에서 필드 오타를 못 잡는다 |
-| 2 | `src/main/java/site/omagotchi/frontend/learning/infrastructure/LearningHttpService.java` | Gateway로 나가는 `/api/v1` 계약 | 컴파일은 되는데 하류가 `400`을 준다 |
-| 3 | `src/main/java/site/omagotchi/frontend/learning/application/*BffService.java` | Session Token·승인 기수 결합 | `cohortId`를 Browser에서 받게 되어 다른 기수 조회가 뚫린다 |
-| 4 | `src/main/java/site/omagotchi/frontend/learning/presentation/*BffController.java` | Browser용 `/bff/v1` 경로 | 화면에서 `404` |
+| 1 | `src/main/java/site/omagotchi/frontend/{feature}/infrastructure/response/*.java` | 하류 응답 타입 | 응답이 `JsonNode`로 떠서 화면에서 필드 오타를 못 잡는다 |
+| 2 | `src/main/java/site/omagotchi/frontend/global/learning/infrastructure/LearningHttpService.java` | Gateway로 나가는 `/api/v1` 계약 | 컴파일은 되는데 하류가 `400`을 준다 |
+| 3 | `src/main/java/site/omagotchi/frontend/{feature}/application/*BffService.java` | Session Token·승인 기수 결합 | `cohortId`를 Browser에서 받게 되어 다른 기수 조회가 뚫린다 |
+| 4 | `src/main/java/site/omagotchi/frontend/{feature}/presentation/*BffController.java` | Browser용 `/bff/v1` 경로 | 화면에서 `404` |
 | 5 | `src/main/resources/static/js/api.js` | Browser Adapter | 화면 파일마다 `fetch`가 복제된다 |
 | 6 | `src/main/java/site/omagotchi/frontend/global/web/ApiExceptionHandler.java` | 공개 4xx 허용 목록 | **가장 많이 빠뜨린다.** 정상 업무 오류가 화면에 "연결된 서비스의 응답이 올바르지 않습니다"로 뜬다 |
 
@@ -142,7 +142,7 @@ public JsonNode getCharacters(HttpServletRequest request) {
 
 ### B. 화면용 조합이 필요하면 기능별 Service를 만든다
 
-`src/main/java/site/omagotchi/frontend/learning/application/`에 `XxxBffService`를 만들고 `LearningHttpService`,
+`src/main/java/site/omagotchi/frontend/{feature}/application/`에 `XxxBffService`를 만들고 `LearningHttpService`,
 `LearningGatewayCallExecutor`, `LearningCohortContext`를 직접 주입한다.
 
 현재 예: `AttendanceBffService`(오늘 기록 1건 추출 + 4시 하루 경계 계산 + 빈 결과 `204`),
@@ -167,8 +167,8 @@ Controller에 이 로직을 직접 쌓지 않는다. Controller는 입력을 받
 위치:
 
 ```text
-src/main/java/site/omagotchi/frontend/learning/infrastructure/request/
-src/main/java/site/omagotchi/frontend/learning/infrastructure/response/
+src/main/java/site/omagotchi/frontend/{feature}/infrastructure/request/
+src/main/java/site/omagotchi/frontend/{feature}/infrastructure/response/
 ```
 
 - 계약이 확정된 핵심 응답은 `record` 등 명시적인 타입을 우선한다.
@@ -199,7 +199,7 @@ public record AttendanceRecordPageResponse(
 파일:
 
 ```text
-src/main/java/site/omagotchi/frontend/learning/infrastructure/LearningHttpService.java
+src/main/java/site/omagotchi/frontend/global/learning/infrastructure/LearningHttpService.java
 ```
 
 이 Interface의 `@HttpExchange("/api/v1")`가 공통 Prefix다. Method에는 그 뒤의 Learning
@@ -237,7 +237,7 @@ Learning의 Controller Signature를 열어 놓고 한 줄씩 비교한다. 실�
 원칙: **View는 하류보다 느슨해도 되고, 더 엄격하면 안 된다.**
 단 하나의 예외가 Enum이다. Enum은 값 집합이 유한하므로 View에서 먼저 거부하는 편이
 불필요한 Gateway 왕복을 줄인다. 이때 하류와 상수가 어긋나면 안 되므로
-`src/main/java/site/omagotchi/frontend/learning/domain/StudyRankingPeriod.java`처럼 View에도 Enum을 두고
+`src/main/java/site/omagotchi/frontend/ranking/domain/StudyRankingPeriod.java`처럼 View에도 Enum을 두고
 `StudyRankingPeriodContractTest`로 값 집합을 고정한다.
 
 ### 4.3 BFF Service에서 Session과 승인 기수를 연결한다
@@ -306,7 +306,7 @@ return callExecutor.execute(() -> learningHttpService.checkIn(
 위치:
 
 ```text
-src/main/java/site/omagotchi/frontend/learning/presentation/
+src/main/java/site/omagotchi/frontend/{feature}/presentation/
 ```
 
 ```java
@@ -496,7 +496,7 @@ Learning HTTP 실패
 ### View 자체 업무 오류가 필요할 때
 
 하류 호출 전에 View가 판단해서 막아야 하는 경우(예: 승인 기수 없음)에는
-`src/main/java/site/omagotchi/frontend/learning/application/LearningBffErrorCode.java`에 상수를 추가하고 `BusinessException`을 던진다.
+`src/main/java/site/omagotchi/frontend/global/learning/application/LearningBffErrorCode.java`에 상수를 추가하고 `BusinessException`을 던진다.
 `ErrorType`이 HTTP Status로 자동 변환되므로 Controller에서 Status를 직접 지정하지 않는다.
 
 ```java
@@ -556,8 +556,8 @@ HTML에 고정하여 우회하지 않는다. `request()`는 `403` 응답 중 오
 
 | 검증 대상 | 참고 테스트 |
 | --- | --- |
-| 하류 계약 Signature 고정 | `src/test/java/site/omagotchi/frontend/learning/infrastructure/LearningHttpServiceContractTest.java` |
-| Enum 값 집합 고정 | `src/test/java/site/omagotchi/frontend/learning/domain/StudyRankingPeriodContractTest.java` |
+| 하류 계약 Signature 고정 | `src/test/java/site/omagotchi/frontend/global/learning/infrastructure/LearningHttpServiceContractTest.java` |
+| Enum 값 집합 고정 | `src/test/java/site/omagotchi/frontend/ranking/domain/StudyRankingPeriodContractTest.java` |
 | 공개 4xx 전달·5xx 은닉 | `src/test/java/site/omagotchi/frontend/global/web/ApiExceptionHandlerTest.java` |
 | Session 없음 `401`, CSRF `403` | `src/test/java/site/omagotchi/frontend/auth/presentation/AuthenticationSecurityMvcTest.java` |
 | 하류 오류 변환 | `src/test/java/site/omagotchi/frontend/global/http/RestClientCallExecutorTest.java` |
@@ -655,18 +655,18 @@ Browser 개발자 도구의 Network에서 확인한다.
 
 | 목적 | 참고 파일 |
 | --- | --- |
-| 단순 Proxy와 승인 기수 분기 | `src/main/java/site/omagotchi/frontend/learning/application/LearningProxyBffService.java` |
-| 화면용 날짜·빈 결과 조합 | `src/main/java/site/omagotchi/frontend/learning/application/AttendanceBffService.java` |
-| Browser BFF Route | `src/main/java/site/omagotchi/frontend/learning/presentation/AttendanceBffController.java` |
-| 승인 기수를 경로에서 제거한 Route | `src/main/java/site/omagotchi/frontend/learning/presentation/RankingBffController.java` |
-| 내부 Gateway HTTP 계약 | `src/main/java/site/omagotchi/frontend/learning/infrastructure/LearningHttpService.java` |
-| HTTP Interface 등록 | `src/main/java/site/omagotchi/frontend/learning/infrastructure/LearningHttpServiceConfig.java` |
-| 하류 호출 오류 변환 | `src/main/java/site/omagotchi/frontend/learning/infrastructure/LearningGatewayCallExecutor.java` |
-| 하류 오류 보존 타입 | `src/main/java/site/omagotchi/frontend/learning/infrastructure/LearningDownstreamException.java` |
-| Session Token 추출 | `src/main/java/site/omagotchi/frontend/learning/application/LearningSessionAuthorization.java` |
-| 승인 기수의 신뢰 경계 | `src/main/java/site/omagotchi/frontend/learning/application/LearningCohortContext.java` |
-| View 자체 업무 오류 | `src/main/java/site/omagotchi/frontend/learning/application/LearningBffErrorCode.java` |
-| 하류와 맞춘 Enum 계약 | `src/main/java/site/omagotchi/frontend/learning/domain/StudyRankingPeriod.java` |
+| 단순 Proxy와 승인 기수 분기 | `src/main/java/site/omagotchi/frontend/global/learning/application/LearningProxyBffService.java` |
+| 화면용 날짜·빈 결과 조합 | `src/main/java/site/omagotchi/frontend/attendance/application/AttendanceBffService.java` |
+| Browser BFF Route | `src/main/java/site/omagotchi/frontend/attendance/presentation/AttendanceBffController.java` |
+| 승인 기수를 경로에서 제거한 Route | `src/main/java/site/omagotchi/frontend/ranking/presentation/RankingBffController.java` |
+| 내부 Gateway HTTP 계약 | `src/main/java/site/omagotchi/frontend/global/learning/infrastructure/LearningHttpService.java` |
+| HTTP Interface 등록 | `src/main/java/site/omagotchi/frontend/global/learning/infrastructure/LearningHttpServiceConfig.java` |
+| 하류 호출 오류 변환 | `src/main/java/site/omagotchi/frontend/global/learning/infrastructure/LearningGatewayCallExecutor.java` |
+| 하류 오류 보존 타입 | `src/main/java/site/omagotchi/frontend/global/learning/infrastructure/LearningDownstreamException.java` |
+| Session Token 추출 | `src/main/java/site/omagotchi/frontend/global/learning/application/LearningSessionAuthorization.java` |
+| 승인 기수의 신뢰 경계 | `src/main/java/site/omagotchi/frontend/global/learning/application/LearningCohortContext.java` |
+| View 자체 업무 오류 | `src/main/java/site/omagotchi/frontend/global/learning/application/LearningBffErrorCode.java` |
+| 하류와 맞춘 Enum 계약 | `src/main/java/site/omagotchi/frontend/ranking/domain/StudyRankingPeriod.java` |
 | Browser 공통 Adapter | `src/main/resources/static/js/api.js` |
 | BFF JSON 오류 응답·공개 허용 목록 | `src/main/java/site/omagotchi/frontend/global/web/ApiExceptionHandler.java` |
 | BFF Prefix 상수 | `src/main/java/site/omagotchi/frontend/global/web/BffApiPaths.java` |
