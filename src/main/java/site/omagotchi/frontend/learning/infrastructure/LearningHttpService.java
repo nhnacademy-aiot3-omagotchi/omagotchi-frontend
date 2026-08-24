@@ -17,12 +17,10 @@ import org.springframework.web.service.annotation.PatchExchange;
 import org.springframework.web.service.annotation.PostExchange;
 import org.springframework.web.service.annotation.PutExchange;
 import org.springframework.web.bind.annotation.RequestPart;
-import site.omagotchi.frontend.learning.domain.StudyRankingPeriod;
-import site.omagotchi.frontend.learning.infrastructure.request.UpdateNicknameRequest;
-import site.omagotchi.frontend.learning.infrastructure.response.AttendanceRecordResponse;
-import site.omagotchi.frontend.learning.infrastructure.response.AttendanceRecordPageResponse;
-import site.omagotchi.frontend.learning.infrastructure.response.UserProfileResponse;
-import site.omagotchi.frontend.learning.infrastructure.response.UserNicknameResponse;
+import site.omagotchi.frontend.learning.ranking.domain.StudyRankingPeriod;
+import site.omagotchi.frontend.learning.profile.infrastructure.request.UpdateNicknameRequest;
+import site.omagotchi.frontend.learning.profile.infrastructure.response.UserNicknameResponse;
+import site.omagotchi.frontend.learning.profile.infrastructure.response.UserProfileResponse;
 
 import java.util.List;
 
@@ -38,28 +36,6 @@ public interface LearningHttpService {
     UserNicknameResponse updateMyNickname(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
             @RequestBody UpdateNicknameRequest request
-    );
-
-    @GetExchange("/cohorts/{cohortId}/attendance-records/me")
-    AttendanceRecordPageResponse getMyAttendanceRecords(
-            @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
-            @PathVariable Long cohortId,
-            @RequestParam(required = false) String from,
-            @RequestParam(required = false) String to,
-            @RequestParam(required = false) Integer page,
-            @RequestParam(required = false) Integer size
-    );
-
-    @PostExchange("/cohorts/{cohortId}/attendance-records/check-in")
-    AttendanceRecordResponse checkIn(
-            @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
-            @PathVariable Long cohortId
-    );
-
-    @PostExchange("/cohorts/{cohortId}/attendance-records/check-out")
-    AttendanceRecordResponse checkOut(
-            @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
-            @PathVariable Long cohortId
     );
 
     @GetExchange("/cohorts")

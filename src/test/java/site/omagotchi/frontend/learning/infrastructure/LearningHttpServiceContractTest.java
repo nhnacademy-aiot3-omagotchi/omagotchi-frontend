@@ -10,8 +10,7 @@ import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.support.RestClientAdapter;
 import org.springframework.web.service.invoker.HttpServiceProxyFactory;
-import site.omagotchi.frontend.learning.domain.StudyRankingPeriod;
-import site.omagotchi.frontend.learning.infrastructure.response.AttendanceRecordPageResponse;
+import site.omagotchi.frontend.learning.ranking.domain.StudyRankingPeriod;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -40,34 +39,6 @@ class LearningHttpServiceContractTest {
                 .builderFor(RestClientAdapter.create(builder.build()))
                 .build()
                 .createClient(LearningHttpService.class);
-    }
-
-    @Test
-    void mapsAttendanceDateRangeAndPagination() {
-        server.expect(once(), requestTo(BASE_URL
-                        + "/api/v1/cohorts/7/attendance-records/me"
-                        + "?from=2026-08-01&to=2026-08-21&page=1&size=10"))
-                .andExpect(header(HttpHeaders.AUTHORIZATION, BEARER))
-                .andRespond(withSuccess("""
-                        {
-                          "items": [{"id": 3, "attendanceDate": "2026-08-20"}],
-                          "page": {"number": 1, "size": 10, "totalElements": 13, "totalPages": 2}
-                        }
-                        """, MediaType.APPLICATION_JSON));
-
-        AttendanceRecordPageResponse response = service.getMyAttendanceRecords(
-                BEARER,
-                7L,
-                LocalDate.of(2026, 8, 1).toString(),
-                LocalDate.of(2026, 8, 21).toString(),
-                1,
-                10
-        );
-
-        assertThat(response.items()).hasSize(1);
-        assertThat(response.items().getFirst().id()).isEqualTo(3L);
-        assertThat(response.page().totalElements()).isEqualTo(13L);
-        server.verify();
     }
 
     @Test

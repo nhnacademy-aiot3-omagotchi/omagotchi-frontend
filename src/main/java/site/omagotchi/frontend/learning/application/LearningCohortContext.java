@@ -6,7 +6,7 @@ import org.springframework.stereotype.Component;
 import site.omagotchi.frontend.global.exception.BusinessException;
 import site.omagotchi.frontend.learning.infrastructure.LearningGatewayCallExecutor;
 import site.omagotchi.frontend.learning.infrastructure.LearningHttpService;
-import site.omagotchi.frontend.learning.infrastructure.response.UserProfileResponse;
+import site.omagotchi.frontend.learning.profile.infrastructure.response.UserProfileResponse;
 
 /**
  * 승인 기수 컨텍스트 확보의 단일 지점.
