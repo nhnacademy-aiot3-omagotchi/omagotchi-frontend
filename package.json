@@ -4,7 +4,8 @@
     "build:home": "vite build",
     "dev:home": "vite build --watch",
     "storybook": "storybook dev -p 6006",
-    "build-storybook": "storybook build"
+    "build-storybook": "storybook build",
+    "test:system-admin": "node --test src/test/js/systemAdminApiRepository.test.mjs"
   },
   "dependencies": {
     "@vitejs/plugin-react": "^5.0.0",

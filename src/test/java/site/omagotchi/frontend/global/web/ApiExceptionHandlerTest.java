@@ -27,7 +27,7 @@ import org.springframework.web.context.request.ServletWebRequest;
 import site.omagotchi.frontend.global.exception.ApiErrorResponse;
 import site.omagotchi.frontend.global.exception.BusinessException;
 import site.omagotchi.frontend.global.exception.CommonErrorCode;
-import site.omagotchi.frontend.learning.infrastructure.LearningDownstreamException;
+import site.omagotchi.frontend.global.learning.infrastructure.LearningDownstreamException;
 
 import java.util.Set;
 
@@ -88,6 +88,18 @@ class ApiExceptionHandlerTest {
                                 "/bff/v1/test/errors/learning-approved-4xx"
                         ),
                         jsonPath("$.requestId").value("learning-request-4xx")
+                );
+    }
+
+    @Test
+    @DisplayName("기수 관리자 기간 중복 오류는 Frontend 409 계약으로 전달")
+    void forwardsCohortManagerPeriodConflict() throws Exception {
+        mockMvc.perform(post("/bff/v1/test/errors/cohort-manager-period-conflict"))
+                .andExpectAll(
+                        status().isConflict(),
+                        content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON),
+                        jsonPath("$.code").value("COHORT_MANAGER_PERIOD_CONFLICT"),
+                        jsonPath("$.path").value("/bff/v1/test/errors/cohort-manager-period-conflict")
                 );
     }
 
@@ -374,6 +386,20 @@ class ApiExceptionHandlerTest {
                             "learning-request-4xx"
                     ),
                     new IllegalStateException("approved downstream rejection")
+            );
+        }
+
+        @PostMapping("/bff/v1/test/errors/cohort-manager-period-conflict")
+        void cohortManagerPeriodConflict() {
+            throw new LearningDownstreamException(
+                    HttpStatus.CONFLICT,
+                    new ApiErrorResponse(
+                            "COHORT_MANAGER_PERIOD_CONFLICT",
+                            "internal cohort period details",
+                            "/api/v1/cohorts/2/managers",
+                            "learning-manager-conflict"
+                    ),
+                    new IllegalStateException("manager period conflict")
             );
         }
 
