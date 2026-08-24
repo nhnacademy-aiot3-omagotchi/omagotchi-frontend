@@ -23,10 +23,10 @@ export const SYSTEM_ADMIN_MOCK_DATA = Object.freeze({
         })
     ],
     cohorts: [
-        {id: "aiot-3", category: "AIOT", name: "AIoT 3기", description: "IoT 서비스 개발 과정", startDate: "2026-08-01", endDate: "2026-12-18", status: "ACTIVE", memberCount: 34, managerUserIds: ["usr-002"]},
-        {id: "aiot-4", category: "AIOT", name: "AIoT 4기", description: "차기 AIoT 교육 과정", startDate: "2027-01-05", endDate: "2027-05-21", status: "PREPARING", memberCount: 0, managerUserIds: ["usr-003"]},
-        {id: "cloud-2", category: "CLOUD", name: "Cloud 2기", description: "클라우드 네이티브 과정", startDate: "2026-07-06", endDate: "2026-11-20", status: "ACTIVE", memberCount: 28, managerUserIds: ["usr-004", "usr-005"]},
-        {id: "aiot-2", category: "AIOT", name: "AIoT 2기", description: "종료된 AIoT 교육 과정", startDate: "2026-02-02", endDate: "2026-06-19", status: "CLOSED", memberCount: 31, managerUserIds: []}
+        {id: "aiot-3", name: "AIoT 3기", description: "IoT 서비스 개발 과정", startDate: "2026-08-01", endDate: "2026-12-18", status: "ACTIVE", memberCount: 34, managerUserIds: ["usr-002"]},
+        {id: "aiot-4", name: "AIoT 4기", description: "차기 AIoT 교육 과정", startDate: "2027-01-05", endDate: "2027-05-21", status: "PREPARING", memberCount: 0, managerUserIds: ["usr-003"]},
+        {id: "cloud-2", name: "Cloud 2기", description: "클라우드 네이티브 과정", startDate: "2026-07-06", endDate: "2026-11-20", status: "ACTIVE", memberCount: 28, managerUserIds: ["usr-004", "usr-005"]},
+        {id: "aiot-2", name: "AIoT 2기", description: "종료된 AIoT 교육 과정", startDate: "2026-02-02", endDate: "2026-06-19", status: "CLOSED", memberCount: 31, managerUserIds: []}
     ],
     audits: [
         {id: 1, time: "오늘 12:42", actor: "test@test.com", action: "권한 변경", detail: "박서준 사용자를 AIoT 3기 COHORT_MANAGER로 배치"},

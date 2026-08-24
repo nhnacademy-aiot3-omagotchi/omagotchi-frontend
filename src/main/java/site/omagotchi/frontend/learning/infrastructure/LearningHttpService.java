@@ -171,6 +171,11 @@ public interface LearningHttpService {
             @RequestBody JsonNode request
     );
 
+    @GetExchange("/cohorts/admin-summary")
+    JsonNode getAdminCohortSummaries(
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization
+    );
+
     @PatchExchange("/cohorts/{cohortId}")
     JsonNode updateCohort(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
@@ -183,6 +188,12 @@ public interface LearningHttpService {
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
             @PathVariable Long cohortId,
             @RequestBody JsonNode request
+    );
+
+    @DeleteExchange("/cohorts/{cohortId}")
+    ResponseEntity<Void> deleteCohort(
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
+            @PathVariable Long cohortId
     );
 
     @GetExchange("/cohorts/{cohortId}/members")

@@ -17,8 +17,7 @@ function assertManagerSchedule(cohorts, managerCohortIds) {
     }
 }
 
-// TODO Identity 사용자 관리 API와 Learning 기수 삭제 API가 준비되면 구현체만 교체한다.
-export function createSystemAdminRepository(seed = cloneSystemAdminMockData()) {
+export function createSystemAdminMockRepository(seed = cloneSystemAdminMockData()) {
     const state = seed;
 
     return {
@@ -76,8 +75,17 @@ export function createSystemAdminRepository(seed = cloneSystemAdminMockData()) {
             cohort.status = status;
             return structuredClone(cohort);
         },
-        async deleteCohort() {
-            throw new Error("Learning Service에 기수 삭제 API가 아직 없습니다.");
+        async deleteCohort(cohortId) {
+            const index = state.cohorts.findIndex((cohort) => cohort.id === cohortId);
+            if (index < 0) throw new Error("기수를 찾을 수 없습니다.");
+            if (state.cohorts[index].status !== "PREPARING") {
+                throw new Error("준비 상태의 기수만 삭제할 수 있습니다.");
+            }
+            const [deleted] = state.cohorts.splice(index, 1);
+            state.users.forEach((user) => {
+                user.managerCohortIds = user.managerCohortIds.filter((id) => id !== cohortId);
+            });
+            return structuredClone(deleted);
         },
         appendAudit(entry) {
             state.audits.unshift({id: Date.now(), time: "방금", actor: "test@test.com", ...entry});

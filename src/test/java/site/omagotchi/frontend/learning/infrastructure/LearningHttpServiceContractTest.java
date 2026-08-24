@@ -22,6 +22,7 @@ import static org.springframework.test.web.client.match.MockRestRequestMatchers.
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.method;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
+import static org.springframework.test.web.client.response.MockRestResponseCreators.withNoContent;
 
 class LearningHttpServiceContractTest {
 
@@ -119,6 +120,30 @@ class LearningHttpServiceContractTest {
                 .andRespond(withSuccess("{\"status\": \"CLAIMED\"}", MediaType.APPLICATION_JSON));
 
         service.claimQuest(BEARER, 42L);
+
+        server.verify();
+    }
+
+    @Test
+    void mapsSystemAdminCohortSummaryPath() {
+        server.expect(once(), requestTo(BASE_URL + "/api/v1/cohorts/admin-summary"))
+                .andExpect(method(HttpMethod.GET))
+                .andExpect(header(HttpHeaders.AUTHORIZATION, BEARER))
+                .andRespond(withSuccess("[]", MediaType.APPLICATION_JSON));
+
+        service.getAdminCohortSummaries(BEARER);
+
+        server.verify();
+    }
+
+    @Test
+    void mapsPreparingCohortDeletePath() {
+        server.expect(once(), requestTo(BASE_URL + "/api/v1/cohorts/7"))
+                .andExpect(method(HttpMethod.DELETE))
+                .andExpect(header(HttpHeaders.AUTHORIZATION, BEARER))
+                .andRespond(withNoContent());
+
+        service.deleteCohort(BEARER, 7L);
 
         server.verify();
     }

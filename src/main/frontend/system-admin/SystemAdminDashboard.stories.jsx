@@ -2,7 +2,7 @@ import React, {useEffect, useMemo, useRef} from "react";
 import "../../resources/static/css/managerDashboard.css";
 import "../../resources/static/css/systemAdminDashboard.css";
 import {initializeSystemAdminDashboard} from "../../resources/static/js/system-admin/dashboard/dashboardController.js";
-import {createSystemAdminRepository} from "../../resources/static/js/system-admin/dashboard/data/systemAdminRepository.js";
+import {createSystemAdminMockRepository} from "../../resources/static/js/system-admin/dashboard/data/systemAdminMockRepository.js";
 import layoutHtml from "../../resources/templates/system-admin/dashboard/layouts/layout.html?raw";
 import overviewHtml from "../../resources/templates/system-admin/dashboard/panels/overview.html?raw";
 import usersHtml from "../../resources/templates/system-admin/dashboard/panels/users.html?raw";
@@ -31,7 +31,7 @@ function ThymeleafSystemAdminPreview({defaultPanel = "system-overview"}) {
   useEffect(() => {
     let controller;
     document.body.classList.add("system-admin-preview");
-    initializeSystemAdminDashboard(rootRef.current, createSystemAdminRepository()).then((value) => {
+    initializeSystemAdminDashboard(rootRef.current, createSystemAdminMockRepository()).then((value) => {
       controller = value;
       rootRef.current?.querySelector(`[data-panel-target="${defaultPanel}"]`)?.click();
     });

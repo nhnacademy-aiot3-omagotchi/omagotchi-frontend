@@ -5,6 +5,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -22,6 +23,12 @@ public class AdminLearningBffController {
 
     private final LearningProxyBffService proxy;
 
+    @GetMapping("/cohorts")
+    public JsonNode getCohorts(HttpServletRequest request) {
+        return proxy.execute(request, context -> context.service()
+                .getAdminCohortSummaries(context.bearerToken()));
+    }
+
     @PostMapping("/cohorts")
     public JsonNode createCohort(HttpServletRequest request, @RequestBody JsonNode body) {
         return proxy.execute(request, context -> context.service().createCohort(context.bearerToken(), body));
@@ -35,6 +42,12 @@ public class AdminLearningBffController {
     @PatchMapping("/cohorts/{cohortId}/status")
     public JsonNode updateCohortStatus(HttpServletRequest request, @PathVariable Long cohortId, @RequestBody JsonNode body) {
         return proxy.execute(request, context -> context.service().updateCohortStatus(context.bearerToken(), cohortId, body));
+    }
+
+    @DeleteMapping("/cohorts/{cohortId}")
+    public ResponseEntity<Void> deleteCohort(HttpServletRequest request, @PathVariable Long cohortId) {
+        proxy.execute(request, context -> context.service().deleteCohort(context.bearerToken(), cohortId));
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/cohorts/{cohortId}/members")

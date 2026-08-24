@@ -1,8 +1,5 @@
-import {createSystemAdminRepository} from "./data/systemAdminRepository.js";
-
 const STATUS_LABELS = {PREPARING: "준비 중", ACTIVE: "운영 중", CLOSED: "종료"};
 const ACCOUNT_STATUS_LABELS = {ACTIVE: "활성", LOCKED: "잠금", DISABLED: "비활성화", WITHDRAWN: "탈퇴"};
-const CATEGORY_LABELS = {AIOT: "AIoT", CLOUD: "Cloud", ETC: "기타"};
 const USER_PAGE_SIZE = 20;
 
 function escapeHtml(value) {
@@ -19,12 +16,14 @@ function periodsOverlap(first, second) {
     return first.startDate < second.endDate && second.startDate < first.endDate;
 }
 
-export async function initializeSystemAdminDashboard(root = document, repository = createSystemAdminRepository()) {
+export async function initializeSystemAdminDashboard(root = document, repository) {
+    if (!repository) throw new Error("System Admin 저장소 구현체가 필요합니다.");
     let state = await repository.loadDashboard();
     let selectedUserId = null;
     let currentUserPage = 1;
     const find = (selector) => root.querySelector(selector);
     const findAll = (selector) => [...root.querySelectorAll(selector)];
+    const capabilities = () => ({identity: true, audit: true, cohortDelete: true, cohortSummary: true, ...state.capabilities});
 
     function showToast(message, isError = false) {
         const toast = find("[data-system-toast]");
@@ -49,19 +48,20 @@ export async function initializeSystemAdminDashboard(root = document, repository
     }
 
     function renderSummary() {
+        const identityConnected = capabilities().identity;
         const privileged = state.users.filter((user) => user.globalRole === "SYSTEM_ADMIN" || user.managerCohortIds.length);
-        find("[data-summary-users]").textContent = state.users.length;
-        find("[data-summary-admins]").textContent = state.users.filter((user) => user.globalRole === "SYSTEM_ADMIN").length;
-        find("[data-summary-managers]").textContent = state.users.filter((user) => user.managerCohortIds.length).length;
+        find("[data-summary-users]").textContent = identityConnected ? state.users.length : "연동 대기";
+        find("[data-summary-admins]").textContent = identityConnected ? state.users.filter((user) => user.globalRole === "SYSTEM_ADMIN").length : "연동 대기";
+        find("[data-summary-managers]").textContent = identityConnected ? state.users.filter((user) => user.managerCohortIds.length).length : "연동 대기";
         find("[data-summary-cohorts]").textContent = state.cohorts.filter((cohort) => cohort.status === "ACTIVE").length;
         find("[data-summary-cohort-detail]").textContent = `전체 ${state.cohorts.length}개 기수`;
-        find("[data-privileged-user-list]").innerHTML = privileged.slice(0, 5).map((user) => `
+        find("[data-privileged-user-list]").innerHTML = identityConnected ? privileged.slice(0, 5).map((user) => `
             <li><b>${escapeHtml(user.name.slice(0, 1))}</b><div><strong>${escapeHtml(user.name)}</strong><small>${escapeHtml(user.email)}</small></div>
             <span class="system-chip ${user.globalRole === "SYSTEM_ADMIN" ? "is-system" : ""}">${user.globalRole === "SYSTEM_ADMIN" ? "SYSTEM_ADMIN" : `${user.managerCohortIds.length}개 기수 관리`}</span></li>
-        `).join("");
-        find("[data-recent-audit-list]").innerHTML = state.audits.slice(0, 4).map((audit) => `
+        `).join("") : '<li class="system-integration-message">Identity 관리자 API 연동 후 표시됩니다.</li>';
+        find("[data-recent-audit-list]").innerHTML = capabilities().audit ? state.audits.slice(0, 4).map((audit) => `
             <li><time>${escapeHtml(audit.time)}</time><div><strong>${escapeHtml(audit.action)}</strong><p>${escapeHtml(audit.detail)}</p><small>${escapeHtml(audit.actor)}</small></div></li>
-        `).join("");
+        `).join("") : '<li class="system-integration-message">감사 로그 API 연동 후 표시됩니다.</li>';
     }
 
     function userRole(user) {
@@ -70,6 +70,7 @@ export async function initializeSystemAdminDashboard(root = document, repository
     }
 
     function renderUsers() {
+        const identityConnected = capabilities().identity;
         const query = find("[data-user-search]")?.value.trim().toLowerCase() || "";
         const filter = find("[data-role-filter]")?.value || "all";
         const accountStatus = find("[data-account-status-filter]")?.value || "all";
@@ -83,6 +84,9 @@ export async function initializeSystemAdminDashboard(root = document, repository
         const pageStart = (currentUserPage - 1) * USER_PAGE_SIZE;
         const pageUsers = users.slice(pageStart, pageStart + USER_PAGE_SIZE);
         find("[data-user-result-count]").textContent = `${users.length}명`;
+        find("[data-user-empty]").textContent = identityConnected
+            ? "조건에 맞는 사용자가 없습니다."
+            : "Identity 관리자 API 연동 후 사용자 목록과 권한 관리 기능이 활성화됩니다.";
         find("[data-user-empty]").hidden = users.length > 0;
         find("[data-user-table-body]").innerHTML = pageUsers.map((user) => {
             const cohortBadges = user.managerCohortIds.length
@@ -95,6 +99,9 @@ export async function initializeSystemAdminDashboard(root = document, repository
         }).join("");
         find("[data-user-page-range]").textContent = `${users.length}명`;
         find("[data-user-pagination-footer]").hidden = users.length === 0;
+        [find("[data-user-search]"), find("[data-role-filter]"), find("[data-account-status-filter]")]
+            .filter(Boolean)
+            .forEach((control) => { control.disabled = !identityConnected; });
         find("[data-user-pagination]").innerHTML = [
             `<button type="button" data-user-page="${currentUserPage - 1}" ${currentUserPage === 1 ? "disabled" : ""}>이전</button>`,
             ...Array.from({length: totalPages}, (_, index) => index + 1).map((page) => `<button type="button" data-user-page="${page}" class="${page === currentUserPage ? "is-active" : ""}" ${page === currentUserPage ? 'aria-current="page"' : ""}>${page}</button>`),
@@ -104,33 +111,44 @@ export async function initializeSystemAdminDashboard(root = document, repository
 
     function renderCohorts() {
         const query = find("[data-cohort-search]")?.value.trim().toLowerCase() || "";
-        const category = find("[data-cohort-category-filter]")?.value || "all";
         const cohorts = state.cohorts.filter((cohort) => {
-            const managers = cohort.managerUserIds.map(userName).join(" ");
-            const searchTarget = `${cohort.name} ${cohort.description} ${CATEGORY_LABELS[cohort.category] || "기타"} ${managers}`.toLowerCase();
-            return (!query || searchTarget.includes(query)) && (category === "all" || cohort.category === category);
+            const managers = (cohort.managerUserIds || []).map(userName).join(" ");
+            const searchTarget = `${cohort.name} ${cohort.description} ${managers}`.toLowerCase();
+            return !query || searchTarget.includes(query);
         });
         find("[data-cohort-result-count]").textContent = `${cohorts.length}개`;
         find("[data-cohort-empty]").hidden = cohorts.length > 0;
         find("[data-cohort-grid]").innerHTML = cohorts.map((cohort) => {
-            const managers = cohort.managerUserIds.map(userName);
+            const managers = (cohort.managerUserIds || []).map(userName);
+            const managerAssignmentKnown = cohort.managerAssignmentKnown !== false;
             const statusAction = cohort.status === "PREPARING"
-                ? `<button type="button" data-change-cohort-status="${escapeHtml(cohort.id)}" data-next-status="ACTIVE" ${managers.length ? "" : "disabled"}>${managers.length ? "운영 시작" : "관리자 배치 필요"}</button>`
+                ? `<button type="button" data-change-cohort-status="${escapeHtml(cohort.id)}" data-next-status="ACTIVE" ${managerAssignmentKnown && !managers.length ? "disabled" : ""}>${managerAssignmentKnown && !managers.length ? "관리자 배치 필요" : "운영 시작"}</button>`
                 : cohort.status === "ACTIVE"
                     ? `<button type="button" data-change-cohort-status="${escapeHtml(cohort.id)}" data-next-status="CLOSED">운영 종료</button>`
                     : "";
-            return `<article class="system-cohort-card"><header><span class="system-status is-${cohort.status.toLowerCase()}">${STATUS_LABELS[cohort.status]}</span><span>${escapeHtml(cohort.status)}</span></header><span class="system-cohort-category">${escapeHtml(CATEGORY_LABELS[cohort.category] || "기타")}</span><h2>${escapeHtml(cohort.name)}</h2><p>${escapeHtml(cohort.description)}</p><strong class="system-cohort-period">${formatDate(cohort.startDate)} – ${formatDate(cohort.endDate)}</strong><dl><div><dt>구성원</dt><dd>${cohort.memberCount}명</dd></div><div><dt>기수 관리자</dt><dd>${managers.length}명</dd></div></dl><footer><div><span>담당</span><strong>${escapeHtml(managers.join(" · ") || "미배정")}</strong></div><div class="system-cohort-actions">${statusAction}<button class="is-danger" type="button" data-delete-cohort="${escapeHtml(cohort.id)}" ${cohort.status === "PREPARING" ? "" : "disabled"}>삭제</button></div></footer></article>`;
+            const memberCount = cohort.memberCount == null ? "연동 대기" : `${cohort.memberCount}명`;
+            const managerCount = managerAssignmentKnown ? `${managers.length}명` : "연동 대기";
+            const managerNames = managerAssignmentKnown ? (managers.join(" · ") || "미배정") : "상세 API 연동 대기";
+            const canDelete = capabilities().cohortDelete && cohort.status === "PREPARING";
+            return `<article class="system-cohort-card"><header><span class="system-status is-${cohort.status.toLowerCase()}">${STATUS_LABELS[cohort.status]}</span><span>${escapeHtml(cohort.status)}</span></header><h2>${escapeHtml(cohort.name)}</h2><p>${escapeHtml(cohort.description)}</p><strong class="system-cohort-period">${formatDate(cohort.startDate)} – ${formatDate(cohort.endDate)}</strong><dl><div><dt>구성원</dt><dd>${memberCount}</dd></div><div><dt>기수 관리자</dt><dd>${managerCount}</dd></div></dl><footer><div><span>담당</span><strong>${escapeHtml(managerNames)}</strong></div><div class="system-cohort-actions">${statusAction}<button class="is-danger" type="button" data-delete-cohort="${escapeHtml(cohort.id)}" ${canDelete ? "" : "disabled"}>삭제</button></div></footer></article>`;
         }).join("");
     }
 
     function renderAudits() {
-        find("[data-system-audit-list]").innerHTML = state.audits.map((audit) => `<li><time>${escapeHtml(audit.time)}</time><i aria-hidden="true"></i><div><span>${escapeHtml(audit.action)}</span><strong>${escapeHtml(audit.detail)}</strong><small>실행자 · ${escapeHtml(audit.actor)}</small></div></li>`).join("");
+        find("[data-system-audit-list]").innerHTML = capabilities().audit
+            ? state.audits.map((audit) => `<li><time>${escapeHtml(audit.time)}</time><i aria-hidden="true"></i><div><span>${escapeHtml(audit.action)}</span><strong>${escapeHtml(audit.detail)}</strong><small>실행자 · ${escapeHtml(audit.actor)}</small></div></li>`).join("")
+            : '<li class="system-integration-message">감사 로그 API 연동 후 서버 기록을 표시합니다.</li>';
     }
 
     function renderAll() {
         renderSummary(); renderUsers(); renderCohorts(); renderAudits();
         const options = find("[data-manager-options]");
-        if (options) options.innerHTML = '<option value="">나중에 배정</option>' + state.users.filter((user) => user.globalRole !== "SYSTEM_ADMIN").map((user) => `<option value="${escapeHtml(user.id)}">${escapeHtml(user.name)} · ${escapeHtml(user.email)}</option>`).join("");
+        if (options) {
+            options.innerHTML = capabilities().identity
+                ? '<option value="">나중에 배정</option>' + state.users.filter((user) => user.globalRole !== "SYSTEM_ADMIN").map((user) => `<option value="${escapeHtml(user.id)}">${escapeHtml(user.name)} · ${escapeHtml(user.email)}</option>`).join("")
+                : '<option value="">Identity API 연동 후 배정</option>';
+            options.disabled = !capabilities().identity;
+        }
     }
 
     function setDialogOpen(dialog, open) {
@@ -174,7 +192,6 @@ export async function initializeSystemAdminDashboard(root = document, repository
     find("[data-role-filter]")?.addEventListener("change", resetUserPageAndRender);
     find("[data-account-status-filter]")?.addEventListener("change", resetUserPageAndRender);
     find("[data-cohort-search]")?.addEventListener("input", renderCohorts);
-    find("[data-cohort-category-filter]")?.addEventListener("change", renderCohorts);
     find("[data-user-pagination]")?.addEventListener("click", (event) => {
         const button = event.target.closest("[data-user-page]");
         if (!button || button.disabled) return;

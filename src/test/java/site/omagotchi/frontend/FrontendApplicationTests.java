@@ -86,6 +86,15 @@ class FrontendApplicationTests {
 		unfilteredMockMvc.perform(get("/system-admin-dashboard"))
 				.andExpect(status().isOk())
 				.andExpect(view().name("system-admin/dashboard/index"));
+
+		mockMvc.perform(get("/js/system-admin/dashboard/index.js"))
+				.andExpect(status().isOk());
+
+		mockMvc.perform(get("/js/system-admin/dashboard/data/systemAdminApiRepository.js"))
+				.andExpect(status().isOk());
+
+		mockMvc.perform(get("/js/system-admin/dashboard/data/systemAdminMockRepository.js"))
+				.andExpect(status().isOk());
 	}
 
 	@Test
