@@ -1,4 +1,5 @@
 import { SensorWorkspace } from "./SensorWorkspace.jsx";
+import "./SensorWorkspace.css";
 
 const meta = {
   title: "SensorWorkspace",

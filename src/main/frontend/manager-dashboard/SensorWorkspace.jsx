@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Tabs } from "radix-ui";
-import "./SensorWorkspace.css";
 
 const SPACE_OPTIONS = [
   { value: "lab", label: "실습실" },
@@ -80,6 +79,13 @@ function ChartPlaceholder({ sensor, metric, period, month }) {
       <div className="sensor-chart-placeholder" role="img" aria-label={`${sensor.name} ${metricInfo.label} 차트 삽입 영역`}>
         <div className="sensor-chart-y-axis"><span>높음</span><span>평균</span><span>낮음</span></div>
         <div className="sensor-chart-grid">
+          <canvas
+            className="sensor-chart-canvas"
+            data-sensor-chart-canvas
+            data-sensor-id={sensor.id}
+            data-metric={metric}
+            aria-label={`${sensor.name} ${metricInfo.label} Chart.js canvas`}
+          />
           <span className="sensor-chart-mount">Chart.js canvas mount</span>
           <div className="sensor-chart-x-axis"><span>시작</span><span>중간</span><span>현재</span></div>
         </div>
@@ -285,11 +291,16 @@ function SensorDialog({ mode, sensor, onClose, onSave, onDelete }) {
   );
 }
 
-export function SensorWorkspace({ initialSensors = [], defaultTab = "dashboard" }) {
+export function SensorWorkspace({
+  initialSensors = [],
+  initialAuditEntries = INITIAL_AUDIT_ENTRIES,
+  defaultTab = "dashboard",
+  embedded = false
+}) {
   const [sensors, setSensors] = useState(initialSensors);
   const [activeTab, setActiveTab] = useState(defaultTab);
   const [dialog, setDialog] = useState(null);
-  const [auditEntries, setAuditEntries] = useState(INITIAL_AUDIT_ENTRIES);
+  const [auditEntries, setAuditEntries] = useState(initialAuditEntries);
 
   function saveSensor(nextSensor) {
     const exists = sensors.some((sensor) => sensor.id === nextSensor.id);
@@ -305,7 +316,7 @@ export function SensorWorkspace({ initialSensors = [], defaultTab = "dashboard" 
   }
 
   return (
-    <main className="sensor-story-canvas">
+    <main className={`sensor-story-canvas${embedded ? " is-embedded" : ""}`}>
       <section className="sensor-workspace" aria-label="관리자 센서 워크스페이스">
         <Tabs.Root value={activeTab} onValueChange={setActiveTab}>
           <Tabs.List className="sensor-tabs" aria-label="센서 관리 메뉴">

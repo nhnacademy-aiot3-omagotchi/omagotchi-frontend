@@ -1,4 +1,4 @@
-import{P as s,j as e,c as P,r as l}from"./chunks/index-cxE3rAl-.js";const w=[{id:"study",name:"공부쟁이",bubble:"오늘도 집중!",description:`기본기가 탄탄한 학습형 오마고치입니다.
+import{j as e,c as P,r as l}from"./chunks/client-Ccz8zIL1.js";import{P as s}from"./chunks/index-CxAHCDvI.js";const w=[{id:"study",name:"공부쟁이",bubble:"오늘도 집중!",description:`기본기가 탄탄한 학습형 오마고치입니다.
 매일의 기록과 퀘스트를 차분하게 쌓아갑니다.`,baseImage:"/images/characters/study/study.png"},{id:"debug",name:"디버깅이",bubble:"버그 잡자!",description:`문제를 발견하면 끝까지 추적하는 타입입니다.
 에러 로그 앞에서 특히 강해집니다.`,baseImage:"/images/characters/debug/debug.png"},{id:"sprout",name:"새싹이",bubble:"쑥쑥 자랄래!",description:`처음 시작하는 마음을 가장 잘 아는 성장형 오마고치입니다.
 작은 출석도 크게 반응합니다.`,baseImage:"/images/characters/sprout/sprout.png"},{id:"server",name:"서버지킴이",bubble:"응답 정상!",description:`조용하지만 안정적인 운영형 오마고치입니다.

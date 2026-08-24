@@ -354,6 +354,23 @@ button {
     display: block;
 }
 
+.dashboard-panel--sensor-react {
+    padding: 0;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+}
+
+.sensor-island-loading {
+    display: grid;
+    min-height: 360px;
+    place-items: center;
+    border: 1px dashed var(--line);
+    border-radius: 12px;
+    color: var(--muted);
+    background: var(--surface);
+}
+
 .panel-heading {
     display: flex;
     align-items: center;
