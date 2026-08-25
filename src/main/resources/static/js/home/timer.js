@@ -1,7 +1,5 @@
 import { formatDuration } from "./utils.js";
 
-const TIMER_STATE_VERSION = 1;
-// [POLICY-CHECK] 실제 서비스의 학습일 시작 마감 정책인지 확인
 const STUDY_DAY_START_HOUR = 7;
 const STUDY_DAY_CLOSE_HOUR = 4;
 
@@ -13,7 +11,6 @@ function formatDateKey(date) {
 }
 
 // 오전 7시 전 기록은 전날 학습일에 포함한다.
-// [POLICY-CHECK] 운영 제한이 실제 요구사항이 아니라면 삭제
 function getStudyDate(now = new Date()) {
     const studyDate = new Date(now);
     if (studyDate.getHours() < STUDY_DAY_START_HOUR) {
@@ -31,55 +28,31 @@ function isMaintenanceTime(now = new Date()) {
     const hour = now.getHours();
     return hour >= STUDY_DAY_CLOSE_HOUR && hour < STUDY_DAY_START_HOUR;
 }
-// [API-REPLACE 또는 LOCAL-KEEP]
-// 초단위 렌더링은 브라우저, 최종 기록은 서버에서
-function readState(storageKey) {
-    try {
-        const saved = JSON.parse(localStorage.getItem(storageKey));
-        if (saved?.version !== TIMER_STATE_VERSION) {
-            return null;
-        }
-        return saved;
-    } catch {
-        return null;
-    }
-}
 
 // 학습 타이머 생성
 export function createTimer({
     display,
     toggle,
     statusMessage,
-    storageKey,
+    api,
     onStart,
-    onPause
+    onPause,
+    onError
 }) {
     let status = "idle";
-    let studyDate = getStudyDate();
+    let currentTimerRunId = null;
     let startedAt = 0;
-    let elapsedBeforeStart = 0;
+    let studyDate = getStudyDate();
     let tickId = null;
+    let isTransitioning = false;
 
     function getElapsedSeconds(now = Date.now()) {
-        if (status !== "running") {
-            return elapsedBeforeStart;
+        if (status !== "running" || !startedAt) {
+            return 0;
         }
 
         const cappedNow = Math.min(now, getStudyDayCloseAt(studyDate));
-        return elapsedBeforeStart + Math.max(0, Math.floor((cappedNow - startedAt) / 1000));
-    }
-
-    function saveState(now = Date.now()) {
-        const elapsedSeconds = getElapsedSeconds(now);
-        // [LOCAL-CACHE-CHECK] 서버 세션 연동 후 보조 캐시로 유지할지 결정
-        localStorage.setItem(storageKey, JSON.stringify({
-            version: TIMER_STATE_VERSION,
-            studyDate,
-            status,
-            elapsedSeconds,
-            startedAt: status === "running" ? now : null,
-            updatedAt: now
-        }));
+        return Math.max(0, Math.floor((cappedNow - startedAt) / 1000));
     }
 
     function setMaintenanceUi(maintenance) {
@@ -87,10 +60,12 @@ export function createTimer({
             return;
         }
 
-        toggle.disabled = maintenance;
+        toggle.disabled = maintenance || isTransitioning;
         toggle.textContent = maintenance
             ? "이용 준비 중"
-            : status === "running" ? "정지" : "시작";
+            : isTransitioning
+                ? "처리 중..."
+                : status === "running" ? "정지" : "시작";
 
         if (statusMessage) {
             statusMessage.textContent = maintenance
@@ -99,29 +74,16 @@ export function createTimer({
         }
     }
 
-    function stop(reason = "user", now = Date.now()) {
-        elapsedBeforeStart = getElapsedSeconds(now);
-        status = "idle";
-        startedAt = 0;
-        saveState(now);
-        setMaintenanceUi(isMaintenanceTime(new Date(now)));
-        onPause?.({ reason, elapsedSeconds: elapsedBeforeStart });
-    }
-
     function synchronize(now = new Date()) {
         const nowMs = now.getTime();
         const currentStudyDate = getStudyDate(now);
 
         if (status === "running" && nowMs >= getStudyDayCloseAt(studyDate)) {
-            stop("daily-close", getStudyDayCloseAt(studyDate));
+            stop("daily-close");
         }
 
         if (currentStudyDate !== studyDate && !isMaintenanceTime(now)) {
             studyDate = currentStudyDate;
-            status = "idle";
-            startedAt = 0;
-            elapsedBeforeStart = 0;
-            saveState(nowMs);
         }
 
         setMaintenanceUi(isMaintenanceTime(now));
@@ -142,56 +104,106 @@ export function createTimer({
             : `${formattedTime} - Omagotchi`;
     }
 
-    function start() {
-        const now = new Date();
-        synchronize(now);
-        if (isMaintenanceTime(now) || status === "running") {
+    async function syncWithServer() {
+        if (!api?.getCurrentTimer) {
             return;
         }
 
-        status = "running";
-        startedAt = now.getTime();
-        saveState(startedAt);
-        setMaintenanceUi(false);
-        onStart?.({ restored: false });
-        render();
+        try {
+            const res = await api.getCurrentTimer();
+            if (res?.state === "RUNNING" && res?.timerRunId) {
+                currentTimerRunId = res.timerRunId;
+                status = "running";
+                startedAt = res.startedAt ? new Date(res.startedAt).getTime() : Date.now();
+                studyDate = getStudyDate(new Date(startedAt));
+                setMaintenanceUi(isMaintenanceTime(new Date()));
+                onStart?.({ restored: true });
+                render();
+            } else {
+                status = "idle";
+                currentTimerRunId = null;
+                startedAt = 0;
+                setMaintenanceUi(isMaintenanceTime(new Date()));
+                render();
+            }
+        } catch (error) {
+            console.error("타이머 상태 조회 실패:", error);
+            status = "idle";
+            currentTimerRunId = null;
+            startedAt = 0;
+            setMaintenanceUi(isMaintenanceTime(new Date()));
+            render();
+        }
     }
 
-    function restore() {
+    async function start() {
         const now = new Date();
-        const saved = readState(storageKey);
-        studyDate = getStudyDate(now);
-
-        if (!saved || saved.studyDate !== studyDate) {
-            saveState(now.getTime());
+        synchronize(now);
+        if (isMaintenanceTime(now) || status === "running" || isTransitioning) {
             return;
         }
 
-        elapsedBeforeStart = Math.max(0, Number(saved.elapsedSeconds) || 0);
-
-        if (saved.status !== "running") {
+        if (!api?.startTimer) {
+            onError?.(new Error("타이머 API가 설정되지 않았습니다."));
             return;
         }
 
-        const savedStartedAt = Number(saved.startedAt) || Number(saved.updatedAt) || now.getTime();
-        const cappedNow = Math.min(now.getTime(), getStudyDayCloseAt(studyDate));
-        elapsedBeforeStart += Math.max(0, Math.floor((cappedNow - savedStartedAt) / 1000));
+        isTransitioning = true;
+        setMaintenanceUi(false);
 
-        if (now.getTime() >= getStudyDayCloseAt(studyDate) || isMaintenanceTime(now)) {
+        try {
+            const res = await api.startTimer();
+            currentTimerRunId = res?.timerRunId;
+            status = "running";
+            startedAt = res?.startedAt ? new Date(res.startedAt).getTime() : now.getTime();
+            studyDate = getStudyDate(new Date(startedAt));
+            onStart?.({ restored: false });
+            render();
+        } catch (error) {
+            console.error("타이머 시작 실패:", error);
             status = "idle";
-            saveState(now.getTime());
+            currentTimerRunId = null;
+            startedAt = 0;
+            onError?.(error);
+        } finally {
+            isTransitioning = false;
+            setMaintenanceUi(isMaintenanceTime(new Date()));
+        }
+    }
+
+    async function stop(reason = "user") {
+        if (status !== "running" || !currentTimerRunId || isTransitioning) {
             return;
         }
 
-        status = "running";
-        startedAt = now.getTime();
-        saveState(startedAt);
-        onStart?.({ restored: true });
+        const timerRunId = currentTimerRunId;
+        const elapsed = getElapsedSeconds();
+
+        if (!api?.stopTimer) {
+            onError?.(new Error("타이머 API가 설정되지 않았습니다."));
+            return;
+        }
+
+        isTransitioning = true;
+        setMaintenanceUi(false);
+
+        try {
+            await api.stopTimer(timerRunId);
+            status = "idle";
+            currentTimerRunId = null;
+            startedAt = 0;
+            onPause?.({ reason, elapsedSeconds: elapsed });
+            render();
+        } catch (error) {
+            console.error("타이머 정지 실패:", error);
+            onError?.(error);
+        } finally {
+            isTransitioning = false;
+            setMaintenanceUi(isMaintenanceTime(new Date()));
+        }
     }
 
     function init() {
-        restore();
-
         toggle?.addEventListener("click", () => {
             if (status === "running") {
                 stop("user");
@@ -200,22 +212,26 @@ export function createTimer({
             }
         });
 
-        const persist = () => saveState();
-        window.addEventListener("pagehide", persist);
-        document.addEventListener("visibilitychange", () => {
-            if (document.visibilityState === "hidden") {
-                persist();
+        window.addEventListener("pagehide", () => {
+            if (status === "running" && currentTimerRunId) {
+                if (typeof api?.stopTimerKeepalive === "function") {
+                    api.stopTimerKeepalive(currentTimerRunId);
+                }
             }
         });
 
         tickId = window.setInterval(render, 1000);
         render();
+
+        syncWithServer();
     }
 
     return {
         init,
         getElapsedSeconds,
         isRunning: () => status === "running",
+        getTimerRunId: () => currentTimerRunId,
+        syncWithServer,
         destroy: () => window.clearInterval(tickId)
     };
 }

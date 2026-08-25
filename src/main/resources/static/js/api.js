@@ -2,6 +2,7 @@
     const API_BASE = window.OMAGOTCHI_API_BASE || document.documentElement.dataset.apiBase || "/bff/v1";
     const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS", "TRACE"]);
     let csrfTokenPromise = null;
+    let cachedCsrfToken = null;
 
     class ApiRequestError extends Error {
         constructor(status, message, details = {}) {
@@ -23,9 +24,12 @@
                 if (!response.ok) {
                     throw new ApiRequestError(response.status, "CSRF 토큰을 가져오지 못했습니다.");
                 }
-                return response.json();
+                const data = await response.json();
+                cachedCsrfToken = data;
+                return data;
             }).catch((error) => {
                 csrfTokenPromise = null;
+                cachedCsrfToken = null;
                 throw error;
             });
         }
@@ -174,7 +178,24 @@
             }),
             discardTimer: (timerRunId) => request(`/timer/${encodeURIComponent(timerRunId)}/discard`, {
                 method: "POST"
-            })
+            }),
+            stopTimerKeepalive: (timerRunId) => {
+                if (!timerRunId) return false;
+                const url = toUrl(`/timer/${encodeURIComponent(timerRunId)}/stop`);
+                const headers = {
+                    "Content-Type": "application/json",
+                    Accept: "application/json"
+                };
+                if (cachedCsrfToken) {
+                    headers[cachedCsrfToken.headerName] = cachedCsrfToken.token;
+                }
+                return fetch(url, {
+                    method: "POST",
+                    keepalive: true,
+                    credentials: "same-origin",
+                    headers
+                });
+            }
         },
         cohort: {
             list: () => request("/cohorts"),
