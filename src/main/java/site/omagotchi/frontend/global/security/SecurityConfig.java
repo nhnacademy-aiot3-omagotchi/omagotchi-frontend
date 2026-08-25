@@ -21,6 +21,7 @@ import org.springframework.security.web.util.matcher.AnyRequestMatcher;
 import org.springframework.security.web.util.matcher.RequestMatcher;
 import site.omagotchi.frontend.auth.application.AuthenticationService;
 import site.omagotchi.frontend.auth.presentation.security.AuthenticatedLoginRequestFilter;
+import site.omagotchi.frontend.auth.presentation.security.AuthenticatedLandingPage;
 import site.omagotchi.frontend.auth.presentation.security.BrowserTokenSessionAuthenticationStrategy;
 import site.omagotchi.frontend.auth.presentation.security.IdentityLoginAuthenticationProvider;
 import site.omagotchi.frontend.auth.presentation.security.IdentityLogoutHandler;
@@ -72,7 +73,8 @@ public class SecurityConfig {
                                 "/actuator/health/**",
                                 "/actuator/info"
                         ).permitAll() // 배포 확인용 최소 Actuator endpoint
-                        .requestMatchers("/manager-dashboard").authenticated() // TODO 관리자 권한·기수 정책 적용
+                        .requestMatchers("/system-admin-dashboard").hasRole("SYSTEM_ADMIN")
+                        .requestMatchers("/manager-dashboard").authenticated() // TODO 기수 관리자 권한 정책 적용
                         .requestMatchers(bffApiRequestMatcher).authenticated() // Browser Session 기반 BFF API
                         .anyRequest().authenticated() // 기본 보호 정책
                 )
@@ -81,7 +83,8 @@ public class SecurityConfig {
                         .loginProcessingUrl("/login")
                         .usernameParameter("email")
                         .passwordParameter("password")
-                        .defaultSuccessUrl("/home", true)
+                        .successHandler((request, response, authentication) ->
+                                response.sendRedirect(AuthenticatedLandingPage.resolve(authentication)))
                         .failureHandler(loginFailureHandler)
                         .permitAll()
                 ) // Spring Security Filter 기반 HTML Form Login

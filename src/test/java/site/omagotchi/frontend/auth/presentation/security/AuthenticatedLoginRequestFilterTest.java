@@ -7,6 +7,7 @@ import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -83,5 +84,28 @@ class AuthenticatedLoginRequestFilterTest {
             softly.assertThat(response.getRedirectedUrl()).isEqualTo("/home");
             softly.assertThat(chainInvoked).isFalse();
         });
+    }
+
+    @Test
+    @DisplayName("인증된 SYSTEM_ADMIN Login 요청의 전용 Dashboard Redirect")
+    void redirectsAuthenticatedSystemAdminLoginRequestToDashboard() throws Exception {
+        SecurityContextHolder.getContext().setAuthentication(
+                UsernamePasswordAuthenticationToken.authenticated(
+                        "system-admin-id",
+                        null,
+                        List.of(new SimpleGrantedAuthority("ROLE_SYSTEM_ADMIN"))
+                )
+        );
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        filter.doFilter(
+                new MockHttpServletRequest("POST", "/login"),
+                response,
+                (request, filterResponse) -> {
+                    throw new AssertionError("인증된 요청은 Login Filter로 전달되면 안 됩니다.");
+                }
+        );
+
+        assertThat(response.getRedirectedUrl()).isEqualTo("/system-admin-dashboard");
     }
 }

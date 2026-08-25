@@ -219,7 +219,9 @@
             deletePost: (postId) => request(`/community/posts/${encodeURIComponent(postId)}`, {method: "DELETE"})
         },
         manager: {
+            getCohorts: () => request("/admin/cohorts"),
             createCohort: (payload) => request("/admin/cohorts", {method: "POST", body: payload}),
+            deleteCohort: (cohortId) => request(`/admin/cohorts/${encodeURIComponent(cohortId)}`, {method: "DELETE"}),
             updateCohort: (cohortId, payload) => request(`/admin/cohorts/${encodeURIComponent(cohortId)}`, {method: "PATCH", body: payload}),
             updateCohortStatus: (cohortId, status) => request(`/admin/cohorts/${encodeURIComponent(cohortId)}/status`, {method: "PATCH", body: {status}}),
             getMembers: (cohortId) => request(`/admin/cohorts/${encodeURIComponent(cohortId)}/members`),

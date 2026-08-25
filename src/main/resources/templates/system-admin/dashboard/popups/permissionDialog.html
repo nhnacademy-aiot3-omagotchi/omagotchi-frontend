@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<body>
+<div class="system-dialog-backdrop" data-permission-dialog hidden th:fragment="dialog">
+    <section class="system-dialog" role="dialog" aria-modal="true" aria-labelledby="permission-dialog-title">
+        <header><div><span>ACCESS CONTROL</span><h2 id="permission-dialog-title">사용자 권한 관리</h2></div><button type="button" class="system-dialog-close" data-close-dialog aria-label="닫기">×</button></header>
+        <div class="system-dialog-user"><b data-dialog-user-initial>사</b><div><strong data-dialog-user-name>사용자</strong><small data-dialog-user-email>user@example.com</small></div></div>
+        <section class="system-permission-section">
+            <div><h3>계정 상태</h3><p>Identity AccountStatus 계약값만 선택할 수 있습니다.</p></div>
+            <label class="system-select-row"><span>AccountStatus</span><select data-account-status-select><option value="ACTIVE">ACTIVE · 활성</option><option value="LOCKED">LOCKED · 일시 잠금</option><option value="DISABLED">DISABLED · 전역 비활성화</option><option value="WITHDRAWN">WITHDRAWN · 탈퇴</option></select></label>
+        </section>
+        <section class="system-permission-section">
+            <div><h3>전역 시스템 권한</h3><p>모든 사용자와 기수를 관리할 수 있는 최고 권한입니다.</p></div>
+            <label class="system-switch-row"><span><strong>SYSTEM_ADMIN</strong><small>Omagotchi 전체 시스템 관리</small></span><input type="checkbox" data-system-admin-toggle /><i aria-hidden="true"></i></label>
+            <p class="system-warning">Identity Service 관리 API 연결 전까지 목업으로만 동작합니다.</p>
+        </section>
+        <section class="system-permission-section">
+            <div><h3>기수별 운영 권한</h3><p>운영 기간이 겹치지 않는 기수에만 COHORT_MANAGER로 배치할 수 있습니다.</p></div>
+            <div class="system-cohort-checks" data-dialog-cohort-options></div>
+        </section>
+        <p class="system-form-error" data-permission-error role="alert" hidden></p>
+        <footer><button type="button" class="secondary-button" data-close-dialog>취소</button><button type="button" class="system-primary-button" data-save-permission>변경 사항 저장</button></footer>
+    </section>
+</div>
+</body>
+</html>

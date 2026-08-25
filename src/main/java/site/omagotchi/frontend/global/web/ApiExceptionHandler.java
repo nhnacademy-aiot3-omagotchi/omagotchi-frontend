@@ -26,7 +26,7 @@ import site.omagotchi.frontend.global.exception.CommonErrorCode;
 import site.omagotchi.frontend.global.exception.ErrorCode;
 import site.omagotchi.frontend.global.exception.ErrorHttpMapper;
 import site.omagotchi.frontend.global.session.SessionStoreFailures;
-import site.omagotchi.frontend.learning.infrastructure.LearningDownstreamException;
+import site.omagotchi.frontend.global.learning.infrastructure.LearningDownstreamException;
 
 import java.util.Map;
 import java.util.Optional;
@@ -57,6 +57,9 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
             Map.entry("JOIN_CODE_NOT_FOUND", 404),
             Map.entry("COHORT_ALREADY_CLOSED", 409),
             Map.entry("COHORT_ACTIVE_MANAGER_REQUIRED", 409),
+            Map.entry("COHORT_MANAGER_PERIOD_CONFLICT", 409),
+            Map.entry("COHORT_DELETE_NOT_ALLOWED", 409),
+            Map.entry("COHORT_DELETE_CONFLICT", 409),
             Map.entry("MEMBERSHIP_DUPLICATED", 409),
             Map.entry("JOIN_CODE_EXPIRED", 409),
             Map.entry("JOIN_CODE_REVOKED", 409),
