@@ -817,7 +817,7 @@ async function loadProgressOverlay() {
 
     const entries = Array.isArray(rankings?.entries) ? rankings.entries : [];
     rankingList.innerHTML = entries.length ? entries.map((entry) => `
-        <li><strong>${entry.rank}</strong><span>${escapeHtml(entry.displayName)}</span><em>${formatDuration(entry.studySeconds)}</em></li>
+        <li><strong>${entry.rank}</strong><span>${escapeHtml(entry.displayName || `수강생 (${entry.rank}위)`)}</span><em>${formatDuration(entry.studySeconds)}</em></li>
     `).join("") : `<li data-empty-ranking><strong>-</strong><span>랭킹 데이터가 없습니다.</span><em>기록 없음</em></li>`;
 
     const growth = home?.growth || currentCharacter;

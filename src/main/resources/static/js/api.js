@@ -289,7 +289,25 @@
                 method: "PATCH",
                 body: {nextStatus, reason, requestId: crypto.randomUUID?.() || `manual-${Date.now()}`}
             }),
-            getRankings: (cohortId, query = {}) => request(withQuery(`/admin/cohorts/${encodeURIComponent(cohortId)}/study-rankings`, query)),
+            getStudyStatsToday: (cohortId) => request(
+                `/admin/cohorts/${encodeURIComponent(cohortId)}/study-statistics/today`
+            ),
+            getStudyStatsTrend: (cohortId, window = "7d") => request(withQuery(
+                `/admin/cohorts/${encodeURIComponent(cohortId)}/study-statistics/trend`,
+                { window }
+            )),
+            getStudyStatsMembers: (cohortId, query = {}) => request(withQuery(
+                `/admin/cohorts/${encodeURIComponent(cohortId)}/study-statistics/members`,
+                query
+            )),
+            getStudyStatsMemberOverview: (cohortId, cohortMembershipId, window = "7d") => request(withQuery(
+                `/admin/cohorts/${encodeURIComponent(cohortId)}/study-statistics/members/${encodeURIComponent(cohortMembershipId)}/overview`,
+                { window }
+            )),
+            getStudyStatsMemberDailyRecords: (cohortId, cohortMembershipId, date) => request(withQuery(
+                `/admin/cohorts/${encodeURIComponent(cohortId)}/study-statistics/members/${encodeURIComponent(cohortMembershipId)}/records`,
+                { date }
+            )),
             updatePostPin: (postId, pinned) => request(`/admin/community/posts/${encodeURIComponent(postId)}/pin`, {method: "PATCH", body: {pinned}}),
             getSensorSpaceSeries: (location, measurement, seriesWindow, options = {}) => request(
                 withQuery("/admin/sensors/space-series", {location, measurement, window: seriesWindow}),

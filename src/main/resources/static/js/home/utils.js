@@ -1,5 +1,7 @@
-// [KEEP] 공통 유틸리티 -> 삭제 X
 export function escapeHtml(value) {
+    if (value == null) {
+        return "";
+    }
     return String(value)
         .replaceAll("&", "&amp;")
         .replaceAll("<", "&lt;")
