@@ -1,119 +1,199 @@
 (() => {
     const CONTEXT_EVENT = "omagotchi:manager-sensors:context";
-    const SPACE_MAP = Object.freeze({
-        LAB: Object.freeze({ value: "실습실", label: "실습실" }),
-        MEETING: Object.freeze({ value: "회의실", label: "회의실" }),
-        MEETING_ROOM: Object.freeze({ value: "회의실", label: "회의실" }),
-        OFFICE: Object.freeze({ value: "사무실", label: "사무실" })
-    });
+    const EVENT_PAGE_SIZE = 8;
 
-    function sensorSource(cohort) {
-        if (Array.isArray(cohort.sensor?.devices)) return cohort.sensor.devices;
-        if (Array.isArray(cohort.sensors)) return cohort.sensors;
-        if (Array.isArray(cohort.sensorReadings)) return cohort.sensorReadings;
-        if (Array.isArray(cohort.sensor?.locations)) return cohort.sensor.locations;
-        return [];
+    /**
+     * 이 패널은 Learning Service 응답을 변환하지 않는다.
+     *
+     * React 섬(SensorWorkspace)이 서버 필드명을 그대로 읽도록 만들어져 있으므로,
+     * 여기에서 이름을 바꾸면 화면과 어긋난다. 배열 여부만 확인해서 실어 보낸다.
+     */
+    function asArray(value) {
+        return Array.isArray(value) ? value : [];
     }
 
-    function normalizeMetric(value) {
-        const metric = String(value || "").trim().toUpperCase();
-        if (["TEMPERATURE", "TEMP", "온도"].includes(metric)) return "temperature";
-        if (["HUMIDITY", "HUM", "습도"].includes(metric)) return "humidity";
-        if (["CO2", "CO₂", "이산화탄소"].includes(metric)) return "co2";
-        return null;
+    function sensorApi() {
+        return window.OmagotchiApi?.sensor || null;
     }
 
-    function sensorMetrics(sensor) {
-        const declared = Array.isArray(sensor.metrics)
-            ? sensor.metrics.map(normalizeMetric).filter(Boolean)
-            : [];
-        if (declared.length) return [...new Set(declared)];
-
-        const inferred = [];
-        if (sensor.temperature != null) inferred.push("temperature");
-        if (sensor.humidity != null) inferred.push("humidity");
-        if (sensor.co2 != null) inferred.push("co2");
-        return inferred.length ? inferred : ["temperature"];
-    }
-
-    function sensorSpace(sensor, index) {
-        const raw = String(
-            sensor.spaceCode
-            || sensor.locationType
-            || sensor.roomType
-            || sensor.space
-            || sensor.location
-            || (index === 0 ? "LAB" : "")
-        ).toUpperCase();
-        return SPACE_MAP[raw] || SPACE_MAP.LAB;
-    }
-
-    function normalizeSensor(sensor, index) {
-        const space = sensorSpace(sensor, index);
-        const status = String(sensor.status || "").toUpperCase();
-        return {
-            id: String(sensor.id || sensor.sensorId || sensor.deviceEui || `sensor-${index + 1}`),
-            name: sensor.name || sensor.deviceName || `${space.label} 환경 센서`,
-            eui: sensor.eui || sensor.deviceEui || sensor.devEui || "EUI 미연결",
-            space: space.value,
-            spaceLabel: space.label,
-            location: sensor.locationName || sensor.zoneName || sensor.detailLocation || space.label,
-            interval: Number(sensor.interval || sensor.collectionInterval || 60),
-            metrics: sensorMetrics(sensor),
-            active: sensor.active !== false && !["INACTIVE", "OFFLINE", "DISABLED"].includes(status)
-        };
-    }
-
-    function normalizeAudit(item, index) {
-        const target = String(item.target || "");
-        const action = String(item.action || "");
-        const space = target.includes("회의실")
-            ? SPACE_MAP.MEETING_ROOM
-            : target.includes("사무실") ? SPACE_MAP.OFFICE : SPACE_MAP.LAB;
-        const inactive = action.includes("비활성") || action.includes("삭제");
-        return {
-            id: String(item.id || `sensor-audit-${index + 1}`),
-            time: item.occurredAt || "-",
-            ageDays: 0,
-            title: action || "센서 작업",
-            detail: [target, item.detail].filter(Boolean).join(" · "),
-            space: space.value,
-            spaceLabel: space.label,
-            status: inactive ? "inactive" : "active"
-        };
-    }
-
-    function sensorAudits(state) {
-        return (Array.isArray(state.audits) ? state.audits : [])
-            .filter((item) => item.cohortId === state.selectedCohortId)
-            .filter((item) => `${item.action || ""} ${item.target || ""}`.includes("센서"))
-            .map(normalizeAudit);
-    }
-
-    function publishContext(state) {
-        const cohort = state.currentCohort;
-        const context = Object.freeze({
-            cohortId: String(cohort.id || ""),
-            cohortName: cohort.name || "",
-            sensors: sensorSource(cohort).map(normalizeSensor),
-            auditEntries: sensorAudits(state)
-        });
-        window.OmagotchiManagerSensorContext = context;
-        if (window.OmagotchiManagerSensorIsland?.render) {
-            window.OmagotchiManagerSensorIsland.render(context);
-        } else {
-            window.dispatchEvent(new CustomEvent(CONTEXT_EVENT, { detail: context }));
-        }
-    }
-
-    function create({ root, store }) {
+    function create({ root, setBubble }) {
         if (!root) throw new Error("Sensors panel root is required.");
         if (!root.querySelector("[data-manager-sensor-react-root]")) {
             throw new Error("Sensors React island root is missing.");
         }
 
+        // loadSequence: 공간·기기·임계값 쓰기를 지킨다.
+        // alertSequence: alertLog 쓰기를 지킨다 — loadAll과 loadEvents가 모두 쓰므로 공유한다.
+        let loadSequence = 0;
+        let alertSequence = 0;
+        let loaded = false;
+        let spaces = [];
+        let devices = [];
+        let spaceThresholds = [];
+        let alertLog = null;
+        let alertQuery = { type: null, deviceEui: null, page: 0, size: EVENT_PAGE_SIZE };
+        let loading = false;
+        let error = null;
+        let forbidden = false;
+
+        function publish() {
+            const context = Object.freeze({
+                spaces,
+                sensors: devices,
+                spaceThresholds,
+                alertLog,
+                loading,
+                error,
+                forbidden,
+                onSaveSensor: saveSensor,
+                onSaveThresholds: saveThresholds,
+                onAlertQueryChange: changeAlertQuery,
+                onRetry: loadAll
+            });
+            window.OmagotchiManagerSensorContext = context;
+            if (window.OmagotchiManagerSensorIsland?.render) {
+                window.OmagotchiManagerSensorIsland.render(context);
+            } else {
+                window.dispatchEvent(new CustomEvent(CONTEXT_EVENT, { detail: context }));
+            }
+        }
+
+        function warn(message, cause) {
+            console.error(message, cause);
+            setBubble?.(message);
+        }
+
+        async function loadAll() {
+            const api = sensorApi();
+            if (!api) {
+                warn("센서 API를 사용할 수 없습니다.\napi.js 로드를 확인해 주세요.");
+                return;
+            }
+
+            const sequence = ++loadSequence;
+            const alertSeq = ++alertSequence;
+            loading = true;
+            error = null;
+            forbidden = false;
+            publish();
+
+            const [spaceResult, deviceResult, thresholdResult, eventResult] = await Promise.allSettled([
+                api.listSpaces(),
+                api.listDevices(),
+                api.listSpaceThresholds(),
+                api.listEvents(alertQuery)
+            ]);
+
+            // 알림 로그는 그 사이 더 최신 질의가 시작됐으면 건드리지 않는다.
+            if (alertSeq === alertSequence) {
+                alertLog = eventResult.status === "fulfilled" && Array.isArray(eventResult.value?.content)
+                    ? eventResult.value
+                    : null;
+            }
+            if (sequence !== loadSequence) return;
+
+            spaces = spaceResult.status === "fulfilled" ? asArray(spaceResult.value) : [];
+            devices = deviceResult.status === "fulfilled" ? asArray(deviceResult.value) : [];
+            spaceThresholds = thresholdResult.status === "fulfilled" ? asArray(thresholdResult.value) : [];
+
+            loaded = true;
+            loading = false;
+
+            const failed = [spaceResult, deviceResult, thresholdResult, eventResult]
+                .filter((result) => result.status === "rejected");
+
+            // 하류는 센서·임계값을 SYSTEM_ADMIN으로 제한한다. 공간 조회만 공개라
+            // 권한이 없으면 "빈 화면"처럼 보이므로, 403은 따로 구분해 알린다.
+            forbidden = failed.some((result) => result.reason?.status === 403);
+            // 공간을 못 받으면 화면을 그릴 수 없다. 나머지는 부분 실패로 두고 받은 만큼 그린다.
+            error = !forbidden && spaceResult.status === "rejected"
+                ? (spaceResult.reason?.message || "공간 목록을 불러오지 못했습니다.")
+                : null;
+            publish();
+
+            if (forbidden) {
+                warn("센서 관리 권한이\n없습니다.", failed[0].reason);
+            } else if (failed.length) {
+                warn("일부 센서 데이터를\n불러오지 못했습니다.", failed[0].reason);
+            }
+        }
+
+        /** 알림 로그만 다시 부른다 — 필터·페이징은 서버가 처리한다. */
+        async function loadEvents() {
+            const api = sensorApi();
+            if (!api) return;
+            const alertSeq = ++alertSequence;
+            try {
+                const response = await api.listEvents(alertQuery);
+                if (alertSeq !== alertSequence) return;
+                alertLog = Array.isArray(response?.content) ? response : null;
+                publish();
+            } catch (cause) {
+                if (alertSeq !== alertSequence) return;
+                warn("센서 알림 로그를\n불러오지 못했습니다.", cause);
+            }
+        }
+
+        function changeAlertQuery({ type, deviceEui, page }) {
+            // 화면은 1-base, 서버는 0-base.
+            alertQuery = {
+                type: type || null,
+                deviceEui: deviceEui || null,
+                page: Math.max(0, (page || 1) - 1),
+                size: EVENT_PAGE_SIZE
+            };
+            loadEvents();
+        }
+
+        async function saveSensor(sensor, mode) {
+            const api = sensorApi();
+            if (!api) return;
+            try {
+                if (mode === "create") {
+                    await api.createDevice({
+                        deviceEui: sensor.deviceEui,
+                        spaceId: sensor.spaceId,
+                        model: sensor.model,
+                        displayName: sensor.displayName,
+                        installationPoint: sensor.installationPoint,
+                        expectedIntervalSeconds: sensor.expectedIntervalSeconds
+                    });
+                    // 등록 API는 active를 받지 않는다(서버 기본값 true). 다를 때만 따로 맞춘다.
+                    if (sensor.active === false) {
+                        await api.updateDeviceActive(sensor.deviceEui, false);
+                    }
+                } else {
+                    // UpdateSensorDeviceRequest에는 model이 없다. 보내도 무시되므로 넣지 않는다.
+                    await api.updateDevice(sensor.deviceEui, {
+                        spaceId: sensor.spaceId,
+                        displayName: sensor.displayName,
+                        installationPoint: sensor.installationPoint,
+                        expectedIntervalSeconds: sensor.expectedIntervalSeconds
+                    });
+                    await api.updateDeviceActive(sensor.deviceEui, sensor.active !== false);
+                }
+                await loadAll();
+            } catch (cause) {
+                warn("센서를 저장하지 못했습니다.", cause);
+            }
+        }
+
+        async function saveThresholds(spaceId, body) {
+            const api = sensorApi();
+            if (!api) return;
+            try {
+                await api.applySpaceThreshold(spaceId, body.rules);
+                // 저장 결과(ruleCount·mixed)는 서버가 다시 계산하므로 재조회한다.
+                spaceThresholds = asArray(await api.listSpaceThresholds());
+                publish();
+            } catch (cause) {
+                warn("임계값을 저장하지 못했습니다.", cause);
+            }
+        }
+
         function activate() {
-            publishContext(store.getState());
+            publish();
+            if (!loaded) loadAll();
         }
 
         return Object.freeze({ activate });
@@ -124,7 +204,8 @@
         route: "sensors",
         label: "공간·센서",
         order: 60,
-        topics: ["sensors", "audits", "selection"],
+        // 센서·공간·임계값은 설비 자원이라 기수에 매이지 않는다. 기수 변경으로 다시 부르지 않는다.
+        topics: [],
         create
     });
 })();
