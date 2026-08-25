@@ -231,14 +231,12 @@ Learning의 Controller Signature를 열어 놓고 한 줄씩 비교한다. 실�
 | --- | --- | --- |
 | **경로 변수의 의미** | 존재하는 ID인데 `404`가 난다 | Quest 수령 경로가 Quest 정의 ID가 아니라 사용자별 일일 Quest 인스턴스 ID(`userDailyQuestId`)였다 |
 | **`required` 여부** | View가 더 엄격해서 정상 요청을 View가 먼저 막는다 | `aggregationDate`는 Learning에서 선택인데 View가 필수로 선언했었다 |
-| **Parameter 타입** | 오타 값이 Gateway까지 갔다가 하류 `400`으로 돌아온다 | `period`는 Learning에서 Enum이므로 View도 `StudyRankingPeriod` Enum으로 고정했다 |
+| **Parameter 타입** | 잘못된 날짜가 Gateway까지 갔다가 하류 `400`으로 돌아온다 | 기간별 Ranking 경로의 날짜를 `LocalDate`·`YearMonth`로 먼저 검증한다 |
 | **선택 값의 기본값** | 화면이 기대한 개수와 다른 결과가 온다 | `maxRank`는 선택 값이므로 `required = false`로 두고 기본값은 하류에 맡긴다 |
 
-원칙: **View는 하류보다 느슨해도 되고, 더 엄격하면 안 된다.**
-단 하나의 예외가 Enum이다. Enum은 값 집합이 유한하므로 View에서 먼저 거부하는 편이
-불필요한 Gateway 왕복을 줄인다. 이때 하류와 상수가 어긋나면 안 되므로
-`src/main/java/site/omagotchi/frontend/ranking/domain/StudyRankingPeriod.java`처럼 View에도 Enum을 두고
-`StudyRankingPeriodContractTest`로 값 집합을 고정한다.
+원칙: **View는 하류가 허용하는 정상 요청을 막지 않으면서 경로 타입은 먼저 검증한다.**
+Ranking처럼 하류가 `today/daily/weekly/monthly` 경로를 분리하면 View도 같은 경로 구조를
+유지하고, 날짜·월 형식만 `LocalDate`·`YearMonth`로 검증한다.
 
 ### 4.3 BFF Service에서 Session과 승인 기수를 연결한다
 
@@ -388,11 +386,11 @@ window.OmagotchiApi = {
 
 ```javascript
 // 하지 않는다
-getRankings: (period, maxRank) => request(`/study-rankings?period=${period}&maxRank=${maxRank}`)
+getTodayRankings: (maxRank) => request(`/study-rankings/today?maxRank=${maxRank}`)
 
 // 한다: null·undefined·""는 자동으로 빠진다
-getRankings: ({period = "WEEKLY", maxRank} = {}) =>
-    request(withQuery("/study-rankings", {period, maxRank}))
+getTodayRankings: ({maxRank} = {}) =>
+    request(withQuery("/study-rankings/today", {maxRank}))
 ```
 
 #### 파일 업로드는 `FormData`를 그대로 넘긴다
@@ -557,7 +555,6 @@ HTML에 고정하여 우회하지 않는다. `request()`는 `403` 응답 중 오
 | 검증 대상 | 참고 테스트 |
 | --- | --- |
 | 하류 계약 Signature 고정 | `src/test/java/site/omagotchi/frontend/global/learning/infrastructure/LearningHttpServiceContractTest.java` |
-| Enum 값 집합 고정 | `src/test/java/site/omagotchi/frontend/ranking/domain/StudyRankingPeriodContractTest.java` |
 | 공개 4xx 전달·5xx 은닉 | `src/test/java/site/omagotchi/frontend/global/web/ApiExceptionHandlerTest.java` |
 | Session 없음 `401`, CSRF `403` | `src/test/java/site/omagotchi/frontend/auth/presentation/AuthenticationSecurityMvcTest.java` |
 | 하류 오류 변환 | `src/test/java/site/omagotchi/frontend/global/http/RestClientCallExecutorTest.java` |
@@ -659,6 +656,7 @@ Browser 개발자 도구의 Network에서 확인한다.
 | 화면용 날짜·빈 결과 조합 | `src/main/java/site/omagotchi/frontend/attendance/application/AttendanceBffService.java` |
 | Browser BFF Route | `src/main/java/site/omagotchi/frontend/attendance/presentation/AttendanceBffController.java` |
 | 승인 기수를 경로에서 제거한 Route | `src/main/java/site/omagotchi/frontend/ranking/presentation/RankingBffController.java` |
+| Study Record·Timer Route | `src/main/java/site/omagotchi/frontend/study/presentation/` |
 | 내부 Gateway HTTP 계약 | `src/main/java/site/omagotchi/frontend/global/learning/infrastructure/LearningHttpService.java` |
 | HTTP Interface 등록 | `src/main/java/site/omagotchi/frontend/global/learning/infrastructure/LearningHttpServiceConfig.java` |
 | 하류 호출 오류 변환 | `src/main/java/site/omagotchi/frontend/global/learning/infrastructure/LearningGatewayCallExecutor.java` |
@@ -666,7 +664,6 @@ Browser 개발자 도구의 Network에서 확인한다.
 | Session Token 추출 | `src/main/java/site/omagotchi/frontend/global/learning/application/LearningSessionAuthorization.java` |
 | 승인 기수의 신뢰 경계 | `src/main/java/site/omagotchi/frontend/global/learning/application/LearningCohortContext.java` |
 | View 자체 업무 오류 | `src/main/java/site/omagotchi/frontend/global/learning/application/LearningBffErrorCode.java` |
-| 하류와 맞춘 Enum 계약 | `src/main/java/site/omagotchi/frontend/ranking/domain/StudyRankingPeriod.java` |
 | Browser 공통 Adapter | `src/main/resources/static/js/api.js` |
 | BFF JSON 오류 응답·공개 허용 목록 | `src/main/java/site/omagotchi/frontend/global/web/ApiExceptionHandler.java` |
 | BFF Prefix 상수 | `src/main/java/site/omagotchi/frontend/global/web/BffApiPaths.java` |

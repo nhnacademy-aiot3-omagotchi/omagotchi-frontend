@@ -56,7 +56,8 @@ Browser JavaScript → Frontend /bff/v1/** → Domain Service Client → JSON �
 - Base Path
   - `/bff/v1`
 - 예시
-  - `GET /bff/v1/rankings?period=WEEKLY`
+  - `GET /bff/v1/study-rankings/today`
+  - `GET /bff/v1/study-records?date=2026-08-25`
   - `PUT /bff/v1/users/me/character`
   - `GET /bff/v1/manager/cohorts/{cohort-id}`
 - 구분
