@@ -151,10 +151,30 @@
         presence: {
             getLabPresence: () => request("/presence")
         },
-        studyRecords: {
-            list: () => optional("/study-records"),
-            create: (payload) => optional("/study-records", { method: "POST", body: payload }),
-            update: (id, payload) => optional(`/study-records/${encodeURIComponent(id)}`, { method: "PATCH", body: payload })
+        study: {
+            getRecord: (id) => request(`/study-records/${encodeURIComponent(id)}`),
+            getDailyRecords: (date) => request(withQuery("/study-records", {date})),
+            getMonthlySummary: (month) => request(withQuery("/study-time-summaries", {month})),
+            createRecord: (payload) => request("/study-records", {
+                method: "POST",
+                body: payload
+            }),
+            updateRecord: (id, payload) => request(`/study-records/${encodeURIComponent(id)}`, {
+                method: "PUT",
+                body: payload
+            }),
+            deleteRecord: (id, resourceVersion) => request(`/study-records/${encodeURIComponent(id)}`, {
+                method: "DELETE",
+                headers: {"X-RESOURCE-VERSION": resourceVersion}
+            }),
+            getCurrentTimer: () => request("/timer"),
+            startTimer: () => request("/timer/start", {method: "POST"}),
+            stopTimer: (timerRunId) => request(`/timer/${encodeURIComponent(timerRunId)}/stop`, {
+                method: "POST"
+            }),
+            discardTimer: (timerRunId) => request(`/timer/${encodeURIComponent(timerRunId)}/discard`, {
+                method: "POST"
+            })
         },
         cohort: {
             list: () => request("/cohorts"),
@@ -185,17 +205,22 @@
         },
         ranking: {
             // cohortId는 서버가 Session 승인 기수에서 확보한다.
-            // maxRank는 선택 값이며, 미지정 시 서버 기본값을 따른다.
-            getStudyRankings: ({period = "WEEKLY", maxRank} = {}) => {
-                const query = new URLSearchParams({period});
-                if (maxRank !== undefined && maxRank !== null) {
-                    query.set("maxRank", maxRank);
-                }
-                return request(`/study-rankings?${query}`);
-            },
-            getMine: (period = "WEEKLY") => request(
-                `/study-rankings/me?period=${encodeURIComponent(period)}`
-            )
+            getToday: ({maxRank} = {}) => request(withQuery(
+                "/study-rankings/today",
+                {maxRank}
+            )),
+            getDaily: (date, {maxRank} = {}) => request(withQuery(
+                `/study-rankings/daily/${encodeURIComponent(date)}`,
+                {maxRank}
+            )),
+            getWeekly: (weekStartDate, {maxRank} = {}) => request(withQuery(
+                `/study-rankings/weekly/${encodeURIComponent(weekStartDate)}`,
+                {maxRank}
+            )),
+            getMonthly: (month, {maxRank} = {}) => request(withQuery(
+                `/study-rankings/monthly/${encodeURIComponent(month)}`,
+                {maxRank}
+            ))
         },
         community: {
             listPosts: (query = {}) => request(withQuery("/community/posts", query)),
@@ -243,7 +268,6 @@
                 method: "PATCH",
                 body: {nextStatus, reason, requestId: crypto.randomUUID?.() || `manual-${Date.now()}`}
             }),
-            getRankings: (cohortId, query = {}) => request(withQuery(`/admin/cohorts/${encodeURIComponent(cohortId)}/study-rankings`, query)),
             updatePostPin: (postId, pinned) => request(`/admin/community/posts/${encodeURIComponent(postId)}/pin`, {method: "PATCH", body: {pinned}})
         }
     };

@@ -3,7 +3,7 @@ import { createBgmPlayer } from "./home/bgm.js";
 import { createCharacter } from "./home/character.js";
 import { createLevel } from "./home/level.js";
 import { createPresence } from "./home/presence.js";
-import { createStudyRecords } from "./home/studyRecords.js?v=20260822-2";
+import { createStudyRecords } from "./home/studyRecords.js?v=20260825-5";
 import { createTimer } from "./home/timer.js";
 import { escapeHtml, formatDuration, getLocalDateKey } from "./home/utils.js";
 
@@ -244,7 +244,7 @@ const timerController = createTimer({
             const result = studyRecordsController.addRecord();
             characterController.showMessage(
                 result.ok
-                    ? `${result.record.sequence}번째 학습 기록을 저장했어요.`
+                    ? "학습 기록을 저장했어요."
                     : result.message
             );
             return;
@@ -254,10 +254,11 @@ const timerController = createTimer({
     }
 });
 
+// 월간 요약과 선택 날짜 기록, 수정·삭제를 Study BFF 계약에 연결한다.
 studyRecordsController = createStudyRecords({
     storageKey: studyRecordsKey,
     getElapsedSeconds: timerController.getElapsedSeconds,
-    api: api?.studyRecords
+    api: api?.study
 });
 
 const levelController = createLevel({
@@ -486,7 +487,7 @@ const overlayContent = {
                 <ul>
                     <li><strong>시작</strong>: 학습 시간 측정 시작</li>
                     <li><strong>정지</strong>: 타이머를 멈추고 직전 시작 이후의 학습 시간을 저장</li>
-                    <li><strong>학습 기록</strong>: 저장된 학습 기록을 일·월·연간으로 구분</li>
+                    <li><strong>학습 기록</strong>: 월간 달력에서 날짜별 학습 기록을 확인</li>
                     <li>측정 중에는 브라우저 탭 제목에 시간이 표시됩니다.</li>
                     <li>저장된 학습 시간은 퀘스트 진행도와 경험치에 반영됩니다.</li>
                 </ul>
@@ -558,7 +559,7 @@ const overlayContent = {
                     <li><strong>진행</strong>: 퀘스트, 업적, 랭킹, 타임라인, 통계 확인</li>
                     <li><strong>내 정보</strong>: 학습 시간, 출석, 캐릭터 정보 확인</li>
                     <li><strong>기수</strong>: 참여 중이거나 가입 가능한 기수 확인</li>
-                    <li><strong>학습 기록</strong>: 저장한 구간을 일간·월간·연간으로 확인하고 수정</li>
+                    <li><strong>학습 기록</strong>: 월간 달력에서 저장한 기록을 확인·수정·삭제</li>
                     <li><strong>공간</strong>: 실습실, 회의실, 도서관 이용</li>
                     <li><strong>커뮤</strong>: 공지 및 자유 게시판 이용</li>
                     <li><strong>설정</strong>: 비밀번호 변경, 로그아웃</li>
@@ -796,7 +797,7 @@ async function loadProgressOverlay() {
     const [home, rankings] = await Promise.all([
         api.gamification.getHome(),
         hasApprovedCohort
-            ? api.ranking.getStudyRankings().catch(() => null)
+            ? api.ranking.getToday().catch(() => null)
             : Promise.resolve(null)
     ]);
 
@@ -1197,6 +1198,10 @@ homeOverlayRoot?.addEventListener("click", (event) => {
 
 // 슬라이더와 검색창처럼 입력 즉시 반영되는 이벤트
 homeOverlayRoot?.addEventListener("input", (event) => {
+    if (studyRecordsController.handleInput(event)) {
+        return;
+    }
+
     const communitySearch = event.target.closest("[data-community-search]");
 
     if (communitySearch) {
