@@ -243,6 +243,28 @@
             }),
             getRankings: (cohortId, query = {}) => request(withQuery(`/admin/cohorts/${encodeURIComponent(cohortId)}/study-rankings`, query)),
             updatePostPin: (postId, pinned) => request(`/admin/community/posts/${encodeURIComponent(postId)}/pin`, {method: "PATCH", body: {pinned}})
+        },
+        // 응답 필드는 Learning Service 계약 그대로다. 화면이 그 이름으로 읽으므로 여기서 바꾸지 않는다.
+        sensor: {
+            listSpaces: () => request("/sensors/spaces"),
+            listDevices: () => request("/sensors/devices"),
+            createDevice: (payload) => request("/sensors/devices", {method: "POST", body: payload}),
+            updateDevice: (deviceEui, payload) => request(`/sensors/devices/${encodeURIComponent(deviceEui)}`, {
+                method: "PUT",
+                body: payload
+            }),
+            updateDeviceActive: (deviceEui, active) => request(`/sensors/devices/${encodeURIComponent(deviceEui)}/active`, {
+                method: "PATCH",
+                body: {active}
+            }),
+            // query: {type, deviceEui, from, to, page, size} — 비운 값은 withQuery가 떨어뜨린다.
+            listEvents: (query = {}) => request(withQuery("/sensors/events", query)),
+            listSpaceThresholds: () => request("/sensors/thresholds"),
+            applySpaceThreshold: (spaceId, rules) => request(`/sensors/thresholds/${encodeURIComponent(spaceId)}`, {
+                method: "PATCH",
+                headers: {"X-Request-ID": crypto.randomUUID?.() || `threshold-${Date.now()}`},
+                body: {rules}
+            })
         }
     };
 })();

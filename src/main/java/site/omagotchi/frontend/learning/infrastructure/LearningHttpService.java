@@ -289,4 +289,53 @@ public interface LearningHttpService {
             @PathVariable Long postId,
             @RequestBody JsonNode request
     );
+
+    @GetExchange("/spaces")
+    JsonNode getSpaces(@RequestHeader(HttpHeaders.AUTHORIZATION) String authorization);
+
+    @GetExchange("/sensors")
+    JsonNode getSensorDevices(@RequestHeader(HttpHeaders.AUTHORIZATION) String authorization);
+
+    @PostExchange("/sensors")
+    JsonNode createSensorDevice(
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
+            @RequestBody JsonNode request
+    );
+
+    @PutExchange("/sensors/{deviceEui}")
+    JsonNode updateSensorDevice(
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
+            @PathVariable String deviceEui,
+            @RequestBody JsonNode request
+    );
+
+    @PatchExchange("/sensors/{deviceEui}/active")
+    JsonNode updateSensorDeviceActive(
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
+            @PathVariable String deviceEui,
+            @RequestBody JsonNode request
+    );
+
+
+    @GetExchange("/sensors/events")
+    JsonNode getSensorEvents(
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
+            @RequestParam(required = false) String type,
+            @RequestParam(required = false) String deviceEui,
+            @RequestParam(required = false) String from,
+            @RequestParam(required = false) String to,
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size
+    );
+
+    @GetExchange("/threshold-rules/spaces")
+    JsonNode getSpaceThresholds(@RequestHeader(HttpHeaders.AUTHORIZATION) String authorization);
+
+    @PatchExchange("/threshold-rules/spaces/{spaceId}")
+    JsonNode applySpaceThreshold(
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
+            @PathVariable Long spaceId,
+            @RequestHeader(value = "X-Request-ID", required = false) String requestId,
+            @RequestBody JsonNode request
+    );
 }
