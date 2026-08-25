@@ -7,6 +7,9 @@ const statusMeta = {
     offline: { label: "퇴실", order: 3 }
 };
 
+// 운영 권고 TTL 120초의 1/4. 숨김 탭에서도 유지하되 visible 복귀 시 즉시 한 번 더 갱신한다.
+const HEARTBEAT_INTERVAL_MS = 30_000;
+
 export function createPresence({
     hud,
     trigger,
@@ -27,6 +30,9 @@ export function createPresence({
     let labCapacity = initialCapacity;
     let occupiedCount = 0;
     let keyTimer = null;
+    // 실시간 재실 정보를 실제로 받았는지. false면 인원 수를 0으로 표시하지 않는다.
+    let realtimeAvailable = false;
+    let heartbeatTimer = null;
 
     function render() {
         if (!list) return;
@@ -66,7 +72,9 @@ export function createPresence({
         `).join("") : `<p class="presence-panel-empty">검색 결과가 없습니다.</p>`;
 
         occupiedCount = users.filter((user) => ["present", "meeting"].includes(user.status)).length;
-        if (count) count.textContent = String(occupiedCount);
+        // 재실 정보를 못 받은 상태를 "0명"으로 표시하면 차단 상태를 정상 동작으로 위장하게 된다.
+        // 진짜 0명과 확인 불가를 화면에서 구분한다.
+        if (count) count.textContent = realtimeAvailable ? String(occupiedCount) : "—";
         if (capacity) capacity.textContent = labCapacity == null ? "—" : String(labCapacity);
     }
 
@@ -82,15 +90,23 @@ export function createPresence({
     }
 
     function applySnapshot(snapshot) {
+        // 2xx라도 계약이 어긋난 응답이 올 수 있다. 그것을 "재실 0명"으로 표시하지 않는다.
+        const items = Array.isArray(snapshot?.users) ? snapshot.users : null;
+        if (items === null) {
+            markRealtimeUnavailable();
+            return false;
+        }
+
         labCapacity = null;
-        users = Array.isArray(snapshot.users) ? snapshot.users.map((user) => ({
+        realtimeAvailable = true;
+        users = items.map((user) => ({
             id: user.userId,
             name: user.nickname || (user.userId ? `사용자 ${user.userId.slice(0, 8)}…` : "사용자"),
             status: ({ONLINE: "present", AWAY: "away", OFFLINE: "offline"})[user.status] || "offline",
             characterImage: user.currentCharacter?.assetKey
                 ? `/images/characters/${user.currentCharacter.assetKey}.png`
                 : "/images/characters/default/omagotchi.png"
-        })) : [];
+        }));
         render();
 
         if (updated) {
@@ -102,6 +118,36 @@ export function createPresence({
             }).format(new Date());
             updated.textContent = `${time} 갱신`;
         }
+        return true;
+    }
+
+    function markRealtimeUnavailable() {
+        realtimeAvailable = false;
+        render();
+        if (updated) updated.textContent = "실시간 재실 확인 불가";
+        if (panel) panel.dataset.uiState = "error";
+    }
+
+    async function sendHeartbeat() {
+        try {
+            // 응답 본문이 곧 최신 snapshot이다. 조회를 위해 한 번 더 왕복하지 않는다.
+            if (!applySnapshot(await api.sendHeartbeat())) return;
+            if (panel) panel.dataset.uiState = users.length ? "ready" : "empty";
+        } catch {
+            markRealtimeUnavailable();
+        }
+    }
+
+    function startHeartbeat() {
+        if (heartbeatTimer !== null) return;   // 중복 타이머 방지
+        sendHeartbeat();
+        heartbeatTimer = window.setInterval(sendHeartbeat, HEARTBEAT_INTERVAL_MS);
+    }
+
+    function stopHeartbeat() {
+        if (heartbeatTimer === null) return;
+        window.clearInterval(heartbeatTimer);
+        heartbeatTimer = null;
     }
 
     async function refresh() {
@@ -113,11 +159,10 @@ export function createPresence({
         if (panel) panel.dataset.uiState = "loading";
         try {
             const snapshot = await loadSnapshot();
-            applySnapshot(snapshot);
+            if (!applySnapshot(snapshot)) return;
             if (panel) panel.dataset.uiState = users.length ? "ready" : "empty";
         } catch {
-            if (updated) updated.textContent = "갱신 실패 · 기존 목록 표시 중";
-            if (panel) panel.dataset.uiState = "error";
+            markRealtimeUnavailable();
         } finally {
             refreshButton.disabled = false;
             refreshButton.classList.remove("is-loading");
@@ -177,11 +222,22 @@ export function createPresence({
         });
         document.addEventListener("keydown", handleKeydown);
         if (enabled) {
-            api?.subscribeLabPresence?.({
-                message: applySnapshot,
-                error: (_, source) => source.close()
+            // 재실의 의미는 "현재 탭을 보고 있음"이 아니라 "브라우저 세션이 살아 있음"이다.
+            // 숨김 탭에서도 interval을 유지하고, 스로틀링 후 visible로 돌아오면 즉시 복구한다.
+            document.addEventListener("visibilitychange", () => {
+                if (document.visibilityState === "visible") {
+                    sendHeartbeat();
+                }
             });
-            refresh();
+
+            // 같은 로그인 Session을 여러 탭이 공유한다. 한 탭의 pagehide에서 leave를 호출하면
+            // 남은 탭까지 OFFLINE이 되므로 즉시 종료하지 않고 Redis TTL 정리에 맡긴다.
+            window.addEventListener("pagehide", () => {
+                stopHeartbeat();
+            });
+
+            // heartbeat는 패널 표시 여부와 무관하게 항상 돈다. "내가 재실 중"을 알리는 신호이기 때문이다.
+            startHeartbeat();
         } else {
             if (refreshButton) refreshButton.disabled = true;
             if (search) search.disabled = true;

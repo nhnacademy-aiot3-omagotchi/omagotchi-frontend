@@ -148,9 +148,6 @@
             checkIn: () => request("/attendance/check-in", { method: "POST" }),
             checkOut: () => request("/attendance/check-out", { method: "POST" })
         },
-        presence: {
-            getLabPresence: () => request("/presence")
-        },
         study: {
             getRecord: (id) => request(`/study-records/${encodeURIComponent(id)}`),
             getDailyRecords: (date) => request(withQuery("/study-records", {date})),
