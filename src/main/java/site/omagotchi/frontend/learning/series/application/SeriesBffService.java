@@ -3,8 +3,8 @@ package site.omagotchi.frontend.learning.series.application;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import site.omagotchi.frontend.learning.application.LearningCohortContext;
-import site.omagotchi.frontend.learning.infrastructure.LearningGatewayCallExecutor;
+import site.omagotchi.frontend.global.learning.application.LearningCohortContext;
+import site.omagotchi.frontend.global.learning.infrastructure.LearningGatewayCallExecutor;
 import site.omagotchi.frontend.learning.series.infrastructure.SensorHttpService;
 import tools.jackson.databind.JsonNode;
 
