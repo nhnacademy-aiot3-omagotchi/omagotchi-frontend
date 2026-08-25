@@ -1,7 +1,7 @@
 # Frontend 디렉터리 구조와 파일 소유권
 
 - 상태: 현재 구현 기준
-- 최종 정리일: 2026-08-14
+- 최종 정리일: 2026-08-24
 - 목적: Backend 연동과 Frontend UI 작업이 서로의 파일을 덮어쓰지 않도록 경로별 책임을 고정한다.
 
 ## 전체 구조
@@ -28,9 +28,16 @@ view/
 │   │   └── main.jsx                    Island 진입점
 │   └── ui/                             재사용 UI·Pattern과 Story
 ├── src/main/java/site/omagotchi/frontend/
+│   ├── attendance/                     사용자·관리자 출결 BFF·Gateway 계약·응답 모델
 │   ├── auth/                           Identity 연동과 인증 use case
+│   ├── cohort/                         사용자·관리자 기수 BFF
+│   ├── community/                      사용자·관리자 커뮤니티 BFF
+│   ├── gamification/                   캐릭터·퀘스트·성장 BFF
 │   ├── global/                         Security·Session·HTTP·공통 Web 설정
-│   ├── onboarding/                     온보딩 Page Controller
+│   │   └── learning/                   여러 기능이 공유하는 Learning Gateway·Session 경계
+│   ├── presence/                       실시간 재실 snapshot BFF
+│   ├── profile/                        Learning 사용자 Profile BFF
+│   ├── ranking/                        사용자·관리자 학습 랭킹 BFF와 기간 Enum
 │   └── presentation/                   사용자 View Page Controller
 ├── src/main/resources/templates/
 │   ├── pages/                          실제 사용자·인증·공개 Thymeleaf Page
@@ -81,7 +88,29 @@ Spring Controller
 | 실제 Page DOM | `templates/pages/**` | Controller 선택자, 반응형 CSS |
 | Home 배치·반응형 | `static/css/home/**` | 320·390·844·1024·1440px 검증 |
 | 인증·Session | `auth/**`, `global/security/**`, 인증 Template | Identity 계약·회귀 테스트 |
+| Learning 기능 BFF | `attendance/**`, `cohort/**`, `community/**`, `gamification/**`, `presence/**`, `profile/**`, `ranking/**` | `global/learning/**`, Gateway·Learning 계약 |
+| Learning 공통 경계 | `global/learning/**` | 모든 기능 패키지의 import와 계약 테스트 |
 | Backend 연동 문서 | `docs/integration/**` | `docs/prompt/**` 보호 규칙 |
+
+## Java 기능 패키지 기준
+
+`learning`을 최상위 묶음 패키지로 사용하지 않는다. 화면과 BFF 기능은 `auth`와 동일하게
+기능명을 최상위 패키지로 둔다.
+
+```text
+site.omagotchi.frontend
+├── attendance
+├── cohort
+├── community
+├── gamification
+├── presence
+├── profile
+└── ranking
+```
+
+두 개 이상의 기능이 함께 사용하는 Session Token 추출, 승인 기수 해석, Gateway HTTP
+호출과 하류 오류 변환만 `global.learning`에 둔다. 기능 전용 Controller, Service, DTO와
+Enum을 `global.learning`으로 올리지 않는다.
 
 ## Backend 연동 시 수정하지 않는 경로
 

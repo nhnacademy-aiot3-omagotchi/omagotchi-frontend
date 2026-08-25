@@ -1,0 +1,354 @@
+package site.omagotchi.frontend.global.learning.infrastructure;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.test.web.client.MockRestServiceServer;
+import org.springframework.web.client.RestClient;
+import org.springframework.web.client.support.RestClientAdapter;
+import org.springframework.web.service.invoker.HttpServiceProxyFactory;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
+
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
+import java.util.UUID;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.client.ExpectedCount.once;
+import static org.springframework.test.web.client.match.MockRestRequestMatchers.content;
+import static org.springframework.test.web.client.match.MockRestRequestMatchers.header;
+import static org.springframework.test.web.client.match.MockRestRequestMatchers.method;
+import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
+import static org.springframework.test.web.client.response.MockRestResponseCreators.withNoContent;
+import static org.springframework.test.web.client.response.MockRestResponseCreators.withStatus;
+import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
+
+class LearningHttpServiceContractTest {
+
+    private static final String BASE_URL = "http://localhost:8084";
+    private static final String BEARER = "Bearer test-access-token";
+    private static final UUID STUDY_RECORD_ID = UUID.fromString(
+            "10000000-0000-0000-0000-000000000001"
+    );
+    private static final UUID TIMER_RUN_ID = UUID.fromString(
+            "20000000-0000-0000-0000-000000000001"
+    );
+    private static final JsonMapper JSON_MAPPER = JsonMapper.builder().build();
+
+    private MockRestServiceServer server;
+    private LearningHttpService service;
+
+    @BeforeEach
+    void setUp() {
+        RestClient.Builder builder = RestClient.builder().baseUrl(BASE_URL);
+        server = MockRestServiceServer.bindTo(builder).build();
+        service = HttpServiceProxyFactory
+                .builderFor(RestClientAdapter.create(builder.build()))
+                .build()
+                .createClient(LearningHttpService.class);
+    }
+
+    @Nested
+    @DisplayName("커뮤니티 계약")
+    class CommunityContract {
+
+        @Test
+        @DisplayName("첨부파일 본문과 헤더를 전달한다")
+        void relaysAttachmentBodyAndDownloadHeaders() throws IOException {
+            server.expect(once(), requestTo(BASE_URL
+                            + "/api/v1/community/posts/11/attachments/29"))
+                    .andExpect(header(HttpHeaders.AUTHORIZATION, BEARER))
+                    .andRespond(request -> withSuccess("attachment-content", MediaType.TEXT_PLAIN)
+                            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=note.txt")
+                            .createResponse(request));
+
+            ResponseEntity<Resource> response =
+                    service.downloadCommunityAttachment(BEARER, 11L, 29L);
+
+            String contentDisposition = response.getHeaders()
+                    .getFirst(HttpHeaders.CONTENT_DISPOSITION);
+            Resource body = response.getBody();
+            assertThat(contentDisposition).contains("note.txt");
+            assertThat(body).isNotNull();
+            assertThat(body.getContentAsString(StandardCharsets.UTF_8))
+                    .isEqualTo("attachment-content");
+            server.verify();
+        }
+    }
+
+    @Nested
+    @DisplayName("게이미피케이션 계약")
+    class GamificationContract {
+
+        // Learning의 aggregationDate는 required=false다. View가 더 엄격하면 정상 요청을 막는다.
+        @Test
+        @DisplayName("집계일 미지정 요청을 전달한다")
+        void omitsOptionalAggregationDateFromProgressionQuery() {
+            server.expect(once(), requestTo(BASE_URL + "/api/v1/gamification/progression?cohortId=7"))
+                    .andExpect(header(HttpHeaders.AUTHORIZATION, BEARER))
+                    .andRespond(withSuccess("{\"level\": 3}", MediaType.APPLICATION_JSON));
+
+            service.getProgression(BEARER, 7L, null);
+
+            server.verify();
+        }
+
+        @Test
+        @DisplayName("집계일 지정 요청을 전달한다")
+        void includesAggregationDateWhenProvided() {
+            server.expect(once(), requestTo(BASE_URL
+                            + "/api/v1/gamification/progression?cohortId=7&aggregationDate=2026-08-21"))
+                    .andExpect(header(HttpHeaders.AUTHORIZATION, BEARER))
+                    .andRespond(withSuccess("{\"level\": 3}", MediaType.APPLICATION_JSON));
+
+            service.getProgression(BEARER, 7L, LocalDate.of(2026, 8, 21).toString());
+
+            server.verify();
+        }
+
+        // Learning은 Quest 정의 ID가 아니라 사용자별 일일 Quest 인스턴스 ID를 Path로 받는다.
+        @Test
+        @DisplayName("일일 퀘스트 인스턴스 경로를 사용한다")
+        void mapsUserDailyQuestIdToClaimPath() {
+            server.expect(once(), requestTo(BASE_URL + "/api/v1/gamification/quests/42/claim"))
+                    .andExpect(header(HttpHeaders.AUTHORIZATION, BEARER))
+                    .andRespond(withSuccess("{\"status\": \"CLAIMED\"}", MediaType.APPLICATION_JSON));
+
+            service.claimQuest(BEARER, 42L);
+
+            server.verify();
+        }
+    }
+
+    @Nested
+    @DisplayName("랭킹 계약")
+    class RankingContract {
+
+        @Test
+        @DisplayName("오늘 랭킹 경로를 사용한다")
+        void mapsTodayStudyRankingPathWithoutOptionalMaxRank() {
+            server.expect(once(), requestTo(BASE_URL
+                            + "/api/v1/cohorts/7/study-rankings/today"))
+                    .andExpect(header(HttpHeaders.AUTHORIZATION, BEARER))
+                    .andRespond(withSuccess("{\"entries\": []}", MediaType.APPLICATION_JSON));
+
+            service.getTodayStudyRankings(BEARER, 7L, null);
+
+            server.verify();
+        }
+
+        @Test
+        @DisplayName("일간 랭킹 경로를 사용한다")
+        void mapsDailyStudyRankingPath() {
+            server.expect(once(), requestTo(BASE_URL
+                            + "/api/v1/cohorts/7/study-rankings/daily/2026-08-24?maxRank=10"))
+                    .andExpect(header(HttpHeaders.AUTHORIZATION, BEARER))
+                    .andRespond(withSuccess("{\"entries\": []}", MediaType.APPLICATION_JSON));
+
+            service.getDailyStudyRankings(BEARER, 7L, "2026-08-24", 10);
+
+            server.verify();
+        }
+
+        @Test
+        @DisplayName("주간 랭킹 경로를 사용한다")
+        void mapsWeeklyStudyRankingPath() {
+            server.expect(once(), requestTo(BASE_URL
+                            + "/api/v1/cohorts/7/study-rankings/weekly/2026-08-24?maxRank=20"))
+                    .andExpect(header(HttpHeaders.AUTHORIZATION, BEARER))
+                    .andRespond(withSuccess("{\"entries\": []}", MediaType.APPLICATION_JSON));
+
+            service.getWeeklyStudyRankings(BEARER, 7L, "2026-08-24", 20);
+
+            server.verify();
+        }
+
+        @Test
+        @DisplayName("월간 랭킹 경로를 사용한다")
+        void mapsMonthlyStudyRankingPath() {
+            server.expect(once(), requestTo(BASE_URL
+                            + "/api/v1/cohorts/7/study-rankings/monthly/2026-08?maxRank=30"))
+                    .andExpect(header(HttpHeaders.AUTHORIZATION, BEARER))
+                    .andRespond(withSuccess("{\"entries\": []}", MediaType.APPLICATION_JSON));
+
+            service.getMonthlyStudyRankings(BEARER, 7L, "2026-08", 30);
+
+            server.verify();
+        }
+    }
+
+    @Nested
+    @DisplayName("학습 기록 계약")
+    class StudyRecordContract {
+
+        @Test
+        @DisplayName("기록과 월 요약 조회 경로를 사용한다")
+        void mapsStudyRecordAndSummaryReadPaths() {
+            server.expect(once(), requestTo(BASE_URL
+                            + "/api/v1/cohorts/7/study-records/" + STUDY_RECORD_ID))
+                    .andExpect(header(HttpHeaders.AUTHORIZATION, BEARER))
+                    .andRespond(withSuccess("{\"id\":\"" + STUDY_RECORD_ID + "\"}", MediaType.APPLICATION_JSON));
+            server.expect(once(), requestTo(BASE_URL
+                            + "/api/v1/cohorts/7/study-records?date=2026-08-24"))
+                    .andExpect(header(HttpHeaders.AUTHORIZATION, BEARER))
+                    .andRespond(withSuccess("{\"records\":[]}", MediaType.APPLICATION_JSON));
+            server.expect(once(), requestTo(BASE_URL
+                            + "/api/v1/cohorts/7/study-time-summaries?month=2026-08"))
+                    .andExpect(header(HttpHeaders.AUTHORIZATION, BEARER))
+                    .andRespond(withSuccess("{\"dailyStudySeconds\":[]}", MediaType.APPLICATION_JSON));
+
+            service.getStudyRecord(BEARER, 7L, STUDY_RECORD_ID);
+            service.getDailyStudyRecords(BEARER, 7L, "2026-08-24");
+            service.getMonthlyStudyTimeSummary(BEARER, 7L, "2026-08");
+
+            server.verify();
+        }
+
+        @Test
+        @DisplayName("기록 생성과 수정 계약을 전달한다")
+        void mapsStudyRecordCreateAndUpdateContracts() {
+            JsonNode createRequest = JSON_MAPPER.createObjectNode()
+                    .put("startDateTime", "2026-08-24T23:30")
+                    .put("endDateTime", "2026-08-25T00:30");
+            JsonNode updateRequest = JSON_MAPPER.createObjectNode()
+                    .put("startDateTime", "2026-08-24T23:40")
+                    .put("endDateTime", "2026-08-25T00:40")
+                    .put("expectedVersion", 2L);
+
+            server.expect(once(), requestTo(BASE_URL + "/api/v1/cohorts/7/study-records"))
+                    .andExpect(method(HttpMethod.POST))
+                    .andExpect(header(HttpHeaders.AUTHORIZATION, BEARER))
+                    .andExpect(content().json(createRequest.toString()))
+                    .andRespond(withStatus(HttpStatus.CREATED)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .body("{\"id\":\"" + STUDY_RECORD_ID + "\"}"));
+            server.expect(once(), requestTo(BASE_URL
+                            + "/api/v1/cohorts/7/study-records/" + STUDY_RECORD_ID))
+                    .andExpect(method(HttpMethod.PUT))
+                    .andExpect(header(HttpHeaders.AUTHORIZATION, BEARER))
+                    .andExpect(content().json(updateRequest.toString()))
+                    .andRespond(withSuccess(
+                            "{\"id\":\"" + STUDY_RECORD_ID + "\",\"version\":3}",
+                            MediaType.APPLICATION_JSON
+                    ));
+
+            ResponseEntity<JsonNode> created = service.createStudyRecord(
+                    BEARER, 7L, createRequest
+            );
+            JsonNode updated = service.updateStudyRecord(
+                    BEARER, 7L, STUDY_RECORD_ID, updateRequest
+            );
+
+            assertThat(created.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+            assertThat(updated.get("version").asLong()).isEqualTo(3L);
+
+            server.verify();
+        }
+
+        @Test
+        @DisplayName("삭제 버전 헤더를 전달한다")
+        void relaysResourceVersionWhenDeletingStudyRecord() {
+            server.expect(once(), requestTo(BASE_URL
+                            + "/api/v1/cohorts/7/study-records/" + STUDY_RECORD_ID))
+                    .andExpect(method(HttpMethod.DELETE))
+                    .andExpect(header(HttpHeaders.AUTHORIZATION, BEARER))
+                    .andExpect(header("X-RESOURCE-VERSION", "3"))
+                    .andRespond(withNoContent());
+
+            ResponseEntity<Void> response = service.deleteStudyRecord(
+                    BEARER, 7L, STUDY_RECORD_ID, 3L
+            );
+
+            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+
+            server.verify();
+        }
+    }
+
+    @Nested
+    @DisplayName("학습 타이머 계약")
+    class StudyTimerContract {
+
+        @Test
+        @DisplayName("타이머 조회와 시작 계약을 전달한다")
+        void mapsTimerReadAndStartContracts() {
+            server.expect(once(), requestTo(BASE_URL + "/api/v1/cohorts/7/timer"))
+                    .andExpect(method(HttpMethod.GET))
+                    .andExpect(header(HttpHeaders.AUTHORIZATION, BEARER))
+                    .andRespond(withSuccess("{\"running\":false}", MediaType.APPLICATION_JSON));
+            server.expect(once(), requestTo(BASE_URL + "/api/v1/cohorts/7/timer/start"))
+                    .andExpect(method(HttpMethod.POST))
+                    .andExpect(header(HttpHeaders.AUTHORIZATION, BEARER))
+                    .andRespond(withStatus(HttpStatus.CREATED)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .body("{\"timerRunId\":\"" + TIMER_RUN_ID + "\"}"));
+
+            service.getCurrentTimer(BEARER, 7L);
+            ResponseEntity<JsonNode> started = service.startTimer(BEARER, 7L);
+
+            assertThat(started.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+
+            server.verify();
+        }
+
+        @Test
+        @DisplayName("타이머 종료와 폐기 계약을 전달한다")
+        void mapsTimerStopAndDiscardContracts() {
+            server.expect(once(), requestTo(BASE_URL
+                            + "/api/v1/cohorts/7/timer/" + TIMER_RUN_ID + "/stop"))
+                    .andExpect(method(HttpMethod.POST))
+                    .andExpect(header(HttpHeaders.AUTHORIZATION, BEARER))
+                    .andRespond(withNoContent());
+            server.expect(once(), requestTo(BASE_URL
+                            + "/api/v1/cohorts/7/timer/" + TIMER_RUN_ID + "/discard"))
+                    .andExpect(method(HttpMethod.POST))
+                    .andExpect(header(HttpHeaders.AUTHORIZATION, BEARER))
+                    .andRespond(withNoContent());
+
+            service.stopTimer(BEARER, 7L, TIMER_RUN_ID);
+            service.discardTimer(BEARER, 7L, TIMER_RUN_ID);
+
+            server.verify();
+        }
+    }
+
+    @Nested
+    @DisplayName("관리자 기수 계약")
+    class AdminCohortContract {
+
+        @Test
+        @DisplayName("기수 요약 경로를 사용한다")
+        void mapsSystemAdminCohortSummaryPath() {
+            server.expect(once(), requestTo(BASE_URL + "/api/v1/cohorts/admin-summary"))
+                    .andExpect(method(HttpMethod.GET))
+                    .andExpect(header(HttpHeaders.AUTHORIZATION, BEARER))
+                    .andRespond(withSuccess("[]", MediaType.APPLICATION_JSON));
+
+            service.getAdminCohortSummaries(BEARER);
+
+            server.verify();
+        }
+
+        @Test
+        @DisplayName("준비 기수 삭제 경로를 사용한다")
+        void mapsPreparingCohortDeletePath() {
+            server.expect(once(), requestTo(BASE_URL + "/api/v1/cohorts/7"))
+                    .andExpect(method(HttpMethod.DELETE))
+                    .andExpect(header(HttpHeaders.AUTHORIZATION, BEARER))
+                    .andRespond(withNoContent());
+
+            service.deleteCohort(BEARER, 7L);
+
+            server.verify();
+        }
+    }
+}

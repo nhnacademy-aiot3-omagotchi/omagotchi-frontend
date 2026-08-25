@@ -1,14 +1,11 @@
 (() => {
     const stateKey = "omagotchiSpaceState";
-    const currentUserEmail = sessionStorage.getItem("omagotchiEmail")
-        || localStorage.getItem("omagotchiLastEmail")
-        || "guest";
+    const profile = window.OmagotchiProfile || {};
     const currentUser = {
         id: "current-user",
-        name: sessionStorage.getItem("omagotchiUsername")
-            || (currentUserEmail === "guest" ? "나" : currentUserEmail.split("@")[0]),
-        cohortId: null,
-        cohortName: ""
+        name: profile.currentCharacter?.nickname || profile.nickname || "나",
+        cohortId: profile.approvedCohort?.cohortId || null,
+        cohortName: profile.approvedCohort?.name || ""
     };
 
     const initialState = {
@@ -22,6 +19,7 @@
     };
 
     const cohortMembers = [];
+    let currentAttendance = null;
 
     const memberStatusLabels = {
         present: "재실",
@@ -33,6 +31,17 @@
     const roots = new Set();
     let state = loadState();
     let ticker = null;
+
+    window.OmagotchiApi?.attendance?.getToday?.()
+        .then((attendance) => {
+            currentAttendance = attendance;
+        })
+        .catch(() => {
+            currentAttendance = null;
+        });
+    window.addEventListener("omagotchi:attendance", (event) => {
+        currentAttendance = event.detail || null;
+    });
 
     function cloneInitialState() {
         return JSON.parse(JSON.stringify(initialState));
@@ -68,14 +77,7 @@
     }
 
     function isCheckedIn() {
-        try {
-            const attendanceKey = `omagotchiAttendance:${currentUserEmail}`;
-            const history = JSON.parse(localStorage.getItem(attendanceKey) || "{}");
-            const today = history[getLocalDateKey()] || {};
-            return Boolean(today.checkInAt) && !today.checkOutAt;
-        } catch {
-            return false;
-        }
+        return Boolean(currentAttendance?.checkedInAt) && !currentAttendance?.checkedOutAt;
     }
 
     function getCurrentOccupancyRoom() {

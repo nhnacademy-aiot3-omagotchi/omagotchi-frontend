@@ -5,7 +5,7 @@ import { PresenceHud } from "./PresenceHud.jsx";
 const EMPTY_PRESENCE_PROPS = Object.freeze({});
 
 // 이 영역의 열림·출석 상태와 내부 목록은 기존 home.js Controller가 소유한다.
-// 채팅 상태로 ActionDock이 다시 렌더링되어도 Controller가 갱신한 DOM을 덮어쓰지 않는다.
+// AI 도우미 상태로 ActionDock이 다시 렌더링되어도 Controller가 갱신한 DOM을 덮어쓰지 않는다.
 const LegacyDockControls = React.memo(function LegacyDockControls({ attendanceVisible, presenceProps }) {
   return (
     <>
@@ -20,10 +20,10 @@ const LegacyDockControls = React.memo(function LegacyDockControls({ attendanceVi
   );
 });
 
-export function ActionDock({ chatOpen = false, onChatToggle = () => {}, attendanceVisible = false, presenceProps = EMPTY_PRESENCE_PROPS }) {
+export function ActionDock({ aiOpen = false, onAiToggle = () => {}, attendanceVisible = false, presenceProps = EMPTY_PRESENCE_PROPS }) {
   return (
     <div className="home-action-dock" aria-label="홈 빠른 실행">
-      <HomeDockButton className="home-chat-toggle" label="채팅" iconSrc="/images/app/commu.png" expanded={chatOpen} controls="home-chat-input-panel" title={chatOpen ? "채팅 입력 닫기" : "채팅 입력 열기"} onClick={onChatToggle} />
+      <HomeDockButton className="home-chat-toggle home-ai-toggle" label="AI" iconSrc="/images/app/commu.png" expanded={aiOpen} controls="home-ai-assistant-panel" title={aiOpen ? "AI 도우미 닫기" : "AI 도우미 열기"} onClick={onAiToggle} />
       <LegacyDockControls attendanceVisible={attendanceVisible} presenceProps={presenceProps} />
     </div>
   );

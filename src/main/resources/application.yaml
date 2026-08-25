@@ -11,6 +11,10 @@ server:
 spring:
   application:
     name: frontend
+  cloud:
+    loadbalancer:
+      cache:
+        enabled: false
   http:
     clients:
       connect-timeout: ${HTTP_CLIENT_CONNECT_TIMEOUT}
@@ -18,6 +22,8 @@ spring:
     serviceclient:
       identity-service:
         base-url: ${IDENTITY_SERVICE_BASE_URL}
+      gateway-service:
+        base-url: ${GATEWAY_SERVICE_BASE_URL}
   data:
     redis:
       host: ${SESSION_REDIS_HOST}

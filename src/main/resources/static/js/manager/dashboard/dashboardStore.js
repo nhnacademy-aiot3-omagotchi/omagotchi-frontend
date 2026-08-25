@@ -28,7 +28,14 @@
     const STORAGE_KEYS_TO_CLEAR = Object.freeze(Object.values(STORAGE_KEYS));
     const SESSION_KEYS_TO_CLEAR = Object.freeze(Object.values(SESSION_KEYS));
     const MEMBER_STATUSES = new Set(["ACTIVE", "INACTIVE", "ENDED"]);
-    const ATTENDANCE_STATUSES = new Set(["NORMAL", "LATE", "ABSENT", "EARLY_LEAVE"]);
+    const ATTENDANCE_STATUSES = new Set([
+        "PRESENT",
+        "LATE",
+        "ABSENT",
+        "LEFT_EARLY",
+        "LATE_LEFT_EARLY",
+        "MISSING_CHECK_OUT"
+    ]);
     const SENSOR_LOCATION_NAMES = Object.freeze({
         LAB: "실습실",
         OFFICE: "사무실",
@@ -75,8 +82,18 @@
         return JSON.parse(JSON.stringify(value));
     }
 
+    function createMemoryStorage() {
+        const values = new Map();
+        return {
+            getItem: (key) => values.has(key) ? values.get(key) : null,
+            setItem: (key, value) => values.set(key, String(value)),
+            removeItem: (key) => values.delete(key)
+        };
+    }
+
     function create({
-        local = window.localStorage,
+        // Learning Service가 운영 데이터의 Source of Truth다. 대시보드 상태는 탭 메모리에만 둔다.
+        local = createMemoryStorage(),
         session = window.sessionStorage,
         now = () => new Date(),
         random = Math.random,
@@ -333,14 +350,10 @@
                 role: "STUDENT",
                 status: "ACTIVE"
             });
-            const joinedKey = `omagotchiJoinedCohorts:${application.userId}`;
-            const joined = readJson(joinedKey, []);
-            const joinedValue = JSON.stringify([...new Set([...joined, application.cohortId])]);
             appendAudit(next, "참가 신청 승인", application.email, "PENDING → ACTIVE");
             return commit(command.type, next, {
                 changes: ["shell", "members", "applications", "audits"],
-                message: `${application.name} 님을\n승인했습니다.`,
-                writes: operationWrites(next, [{ storage: local, key: joinedKey, value: joinedValue }])
+                message: `${application.name} 님을\n승인했습니다.`
             });
         }
 

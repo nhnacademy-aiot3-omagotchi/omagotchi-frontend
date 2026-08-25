@@ -5,18 +5,13 @@ export function createLevel({
     nextLevelLabel,
     characterImage,
     characterStage,
-    storageKey,
-    xpPerLevel = 50
+    initialLevel = 1,
+    initialCurrentXp = 0,
+    initialRequiredXp = 1
 }) {
-    // [API-REPLACE] 서버에서 사용자 레벨 경험치를 조회하도록 교체
-    function getStoredXp() {
-        const storedXp = Number(localStorage.getItem(storageKey));
-        return Number.isFinite(storedXp) && storedXp > 0 ? storedXp : 0;
-    }
-    // [POLICY-CHECK] 레벨 계산을 프론트에서 할지 서버에서 할지 결정
-    function getLevel(totalXp) {
-        return Math.floor(totalXp / xpPerLevel) + 1;
-    }
+    let level = Number(initialLevel) || 1;
+    let currentXp = Number(initialCurrentXp) || 0;
+    let requiredXp = Math.max(1, Number(initialRequiredXp) || 1);
 
     function showLevelUpCelebration(level) {
         document.querySelector(".level-up-celebration")?.remove();
@@ -76,40 +71,24 @@ export function createLevel({
     }
 
     function render() {
-        const totalXp = getStoredXp();
-        const level = getLevel(totalXp);
-        const xpInLevel = totalXp % xpPerLevel;
-        const progress = Math.min(100, Math.round((xpInLevel / xpPerLevel) * 100));
+        const progress = Math.min(100, Math.round((currentXp / requiredXp) * 100));
 
         if (levelElement) levelElement.textContent = String(level);
         if (xpFill) xpFill.style.width = `${progress}%`;
-        if (currentXpLabel) currentXpLabel.textContent = `${xpInLevel}xp`;
-        if (nextLevelLabel) nextLevelLabel.textContent = `${xpInLevel}  /  ${xpPerLevel}`;
+        if (currentXpLabel) currentXpLabel.textContent = `${currentXp}xp`;
+        if (nextLevelLabel) nextLevelLabel.textContent = `${currentXp}  /  ${requiredXp}`;
     }
 
-    // 경험치 +
-    // [API-REPLACE] 클라이언트에서 경험치를 직접 증가시키면 안 됨.
-    // 퀘스트 출석 결과를 서버에서 검증한 뒤 경험치를 반영해야 함
-    function addXp(amount) {
-        const earnedXp = Number(amount);
-
-        if (!Number.isFinite(earnedXp) || earnedXp <= 0) {
-            render();
-            return;
-        }
-
-        const currentXp = getStoredXp();
-        const nextXp = currentXp + earnedXp;
-        const previousLevel = getLevel(currentXp);
-        const nextLevel = getLevel(nextXp);
-
-        localStorage.setItem(storageKey, String(nextXp));
+    function update(next = {}) {
+        const previousLevel = level;
+        level = Number(next.level) || level;
+        currentXp = Number(next.currentExp) || 0;
+        requiredXp = Math.max(1, Number(next.requiredExp) || requiredXp);
         render();
-
-        if (nextLevel > previousLevel) {
-            playLevelUpEffect(nextLevel);
+        if (level > previousLevel) {
+            playLevelUpEffect(level);
         }
     }
 
-    return { render, addXp };
+    return { render, update };
 }

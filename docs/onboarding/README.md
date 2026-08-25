@@ -72,12 +72,21 @@ flowchart LR
 | Signup·Login·Logout | Identity 연동 | Identity DB, Spring Session Redis |
 | CSRF | 구현 | Spring Security, HTTP Session |
 | Page 인증 | 구현 | Redis Session의 SecurityContext |
-| 캐릭터·출석·학습·XP | Browser Prototype | `sessionStorage`, `localStorage`, JS Memory |
-| 관리자 Dashboard 데이터 | Browser Prototype | Browser 저장소 |
-| 관리자 기수 권한 | 미구현 | 향후 Learning 연동 |
 | BFF JSON 공통 경계 | 구현 | `/bff/v1/**`, MVC·Security·Redis |
-| 기능별 BFF Endpoint | 미구현 | Prototype Adapter만 존재 |
-| Access Token Refresh | 미구현 | 없음 |
+| 기능별 BFF Endpoint | 구현 | Controller 8개 · Route 45개 |
+| 캐릭터 선택·표시 | Learning 연동 | `GamificationBffController`, Learning DB |
+| 출석 입퇴실·이력 | Learning 연동 | `AttendanceBffController`, Learning DB |
+| XP·레벨·퀘스트 | Learning 연동 | `GamificationBffController`, Learning DB |
+| 재실 현황 | Learning 연동 | `PresenceBffController` |
+| 커뮤니티 | Learning 연동 | `CommunityBffController` |
+| 기수 조회·신청 | Learning 연동 | `CohortBffController` |
+| 학습 랭킹 | Learning 연동 | `RankingBffController` |
+| 관리자 Dashboard | Learning 연동 | `AdminLearningBffController` Route 18개 |
+| 관리자 기수 권한 | 구현 | 승인·거절·역할 변경·참여 코드 |
+| 학습 기록 | Browser Prototype | `home/studyRecords.js` `[API-REPLACE]` 4곳 |
+| 학습 타이머 | Browser | `home/timer.js` `[API-REPLACE 또는 LOCAL-KEEP]` |
+| 학습 통계 Panel | 미구현 | Adapter 미정의 |
+| Access Token Refresh | 미구현 | Logout만 Refresh Token 사용 |
 | 비밀번호 변경·재설정 | 미구현 | 안내 Page만 유지 |
 
 - 지원 인증 Route
@@ -93,11 +102,12 @@ flowchart LR
   - 경로: `/username`
   - 상태: Learning 게임 프로필 연동 전 Browser Prototype
   - Identity 이름·권한 근거: 아님
-- Prototype 업무 API Adapter
+- 업무 API Adapter
   - 파일: `static/js/api.js`
   - 경로: Frontend `/bff/v1/**`
-  - 실패 정책: Browser Prototype fallback
-  - BFF 구현 완료 근거: 아님
+  - 실패 정책: Prototype fallback 없음. `data-ui-state="error"`로 표시
+  - 남은 Prototype: 학습 기록(`home/studyRecords.js`), 학습 타이머(`home/timer.js`)
+  - Prototype 추적 표시: `[API-REPLACE]` 주석, `data-ui-source="local-prototype"`
 
 ## 4. 문서 순서
 
@@ -109,8 +119,14 @@ flowchart LR
    - Signup·Login·Logout, Redis와 Identity 경계
 4. [오류·장애 흐름](03-error-and-failure-flow.md)
    - HTML·JSON 오류 경계, Identity·Redis 실패
-5. [기능 연동 개발 가이드](05-feature-integration-guide.md)
+5. [BFF 실제 요청 흐름](04-bff-request-flow.md)
+   - Browser·BFF·Gateway·Learning 역할과 출결·Presence·첨부파일 처리 순서
+6. [기능 연동 개발 가이드](05-feature-integration-guide.md)
    - Prototype 전환, SSR·JSON BFF 선택, Session·CSRF·내부 HTTP·검증 기준
+7. [BFF와 Learning HTTP Interface 경계](06-bff-http-interface-boundary.md)
+   - Browser·View·Learning의 의존 범위와 `@HttpExchange`·`@GetExchange` 동작 방식
+8. [새 기능 BFF 연결 Quick Start](07-bff-feature-quickstart.md)
+   - API 계약 확인부터 Controller·HTTP Client·`api.js`·오류·테스트까지의 실전 연결 순서
 
 ## 5. Code 탐색 시작점
 

@@ -18,12 +18,13 @@ const meta = {
       </div>
     )
   ],
-  args: { count: 2, capacity: 50, panelOpen: false, roomName: "AIoT 3기 실습실", updatedText: "17:42:00 갱신", users },
+  args: { count: 2, capacity: 50, panelOpen: false, updatedText: "17:42:00 갱신", users },
   parameters: { layout: "fullscreen" }
 };
 
 export default meta;
 export const Closed = {};
+export const ApprovedCohort = { args: { panelOpen: true, roomName: "AIoT 3기 실습실" } };
 export const Open = {
   args: { panelOpen: true },
   play: async ({ canvasElement }) => {

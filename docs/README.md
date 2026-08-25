@@ -32,7 +32,10 @@
 | [요청·Page·JavaScript 흐름](onboarding/01-request-page-and-browser-flow.md) | Route, View, Browser 코드의 책임 |
 | [Session 인증 흐름](onboarding/02-session-authentication-flow.md) | Signup, Login, Logout, Redis Session |
 | [오류·장애 흐름](onboarding/03-error-and-failure-flow.md) | HTML·JSON 오류와 외부 장애 처리 |
+| [팀원 누구나 이해하는 BFF 실제 요청 흐름](onboarding/04-bff-request-flow.md) | Browser·BFF·Gateway·Learning의 역할과 실제 요청 예시 |
 | [기능 연동 개발 가이드](onboarding/05-feature-integration-guide.md) | Prototype을 실제 BFF/API로 전환하는 기준 |
+| [BFF와 Learning HTTP Interface 경계](onboarding/06-bff-http-interface-boundary.md) | Browser·View·Learning의 의존 범위와 Spring `@HttpExchange`·`@GetExchange` 선언형 Client 설명 |
+| [새 기능 BFF 연결 Quick Start](onboarding/07-bff-feature-quickstart.md) | 새 Learning 기능을 Browser·View BFF에 연결하는 파일별 순서와 복사 가능한 예시·검증표 |
 | [Frontend 도구·라이브러리 역할 가이드](guides/frontend-toolchain-guide.md) | React, Vite, Storybook, Vitest, Playwright, Radix UI와 Motion의 역할·실행 방법 |
 | [Home UI 문서 인덱스](home-ui/README.md) | Home React Island, 반응형, Storybook 문서 분류 |
 | [Home React·Storybook 구조 가이드](home-ui/01-guides/home-react-storybook-structure.md) | React 소스, Story, CSS, Controller와 빌드 산출물의 경로·책임 |
@@ -54,6 +57,8 @@
 | [MVP 로드맵](roadmaps/mvp-roadmap.md) | MVP 범위와 우선순위 |
 | [Backend 연동 협의 정리](integration/backend-integration-todo.md) | API 후보와 Backend 협의 항목 |
 | [Frontend ↔ Backend 기능별 연결 지도](integration/frontend-backend-connection-map.md) | 기능별 adapter·Controller·UI 계약과 Backend 대기 항목 |
+| [통합 E2E 검증 현황 (2026-08-24)](integration/e2e-validation-status-2026-08-24.md) | 실제 브라우저·Testcontainers 검증 범위, 우회 검증과 미완료 항목 |
+| [Gateway Presence 통합 검증 인계서](integration/gateway-presence-handoff-2026-08-24.md) | Gateway `/ws` 통합 차단 원인, 담당자 요청 사항과 완료 조건 |
 | [React Island 학습·작업 로드맵](roadmaps/react-island-learning-roadmap.md) | 점진 이전 순서와 학습 범위 |
 | [게임 UI 프레임워크 도입 검토안](home-ui/03-research/react-ui-library.md) | UI 도구와 외부 에셋 검토 초안 |
 | [React 게임 UI 도입 실행 체크리스트](home-ui/02-checklists/react-ui-adoption-checklist.md) | 설치 순서, 선행 작업과 검증 기준 |
@@ -80,6 +85,10 @@
 - [기능별 Backend 연동 Prompt Template](prompt/기능-연동-템플릿.md)
 - [Timer Backend 연동 Prompt](prompt/타이머.md)
 - [Space·Team Backend 연동 Prompt](prompt/공간-팀.md)
+- [관리자 공간·센서 Chart.js 연동 가이드](prompt/센서-차트.md)
+- [System Admin BFF 연동 가이드](prompt/시스템-관리자-BFF-연동.md)
+- [Home AI 도우미 구현 Prompt](prompt/AI-도우미.md)
+- [MCP 기반 AI 도우미 연동 Prompt](prompt/MCP-연동.md)
 
 ## 라이선스
 

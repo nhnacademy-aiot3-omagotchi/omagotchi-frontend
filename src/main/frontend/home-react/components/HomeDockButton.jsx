@@ -3,6 +3,7 @@ import React from "react";
 export function HomeDockButton({
   label,
   iconSrc,
+  iconText,
   className = "",
   expanded,
   controls,
@@ -22,7 +23,8 @@ export function HomeDockButton({
       aria-label={accessibleLabel}
       title={accessibleLabel}
     >
-      <img src={iconSrc} alt="" aria-hidden="true" />
+      {iconSrc ? <img src={iconSrc} alt="" aria-hidden="true" /> : null}
+      {!iconSrc && iconText ? <span className="home-dock-glyph" aria-hidden="true">{iconText}</span> : null}
       <span className="home-dock-label">{label}</span>
     </button>
   );

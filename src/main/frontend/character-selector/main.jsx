@@ -1,53 +1,94 @@
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { CHARACTER_COLORS, CHARACTERS, CharacterSelector } from "./CharacterSelector.jsx";
 
 function CharacterSelectorApp() {
-  const [characterId, setCharacterId] = useState("study");
+  const [characters, setCharacters] = useState([]);
+  const [characterId, setCharacterId] = useState("");
   const [colorId, setColorId] = useState("original");
+  const [nickname, setNickname] = useState("");
   const [loading, setLoading] = useState(false);
+  const [initializing, setInitializing] = useState(true);
   const [feedback, setFeedback] = useState("");
   const [completed, setCompleted] = useState(false);
   const assets = window.OmagotchiCharacterAssets;
-  const character = CHARACTERS.find(({ id }) => id === characterId) || CHARACTERS[0];
+  const character = useMemo(
+    () => characters.find(({ id }) => id === characterId) || characters[0] || CHARACTERS[0],
+    [characters, characterId]
+  );
   const color = CHARACTER_COLORS.find(({ id }) => id === colorId) || CHARACTER_COLORS[0];
   const resolveImage = (nextCharacter, nextColor) => nextColor.id === "original"
     ? nextCharacter.baseImage
     : assets.getPng(nextCharacter.id, nextColor.id);
   const resolveAnimatedImage = (nextCharacter, nextColor) => assets.getEyeGif(nextCharacter.id, nextColor.id);
 
+  useEffect(() => {
+    let active = true;
+
+    Promise.all([
+      window.OmagotchiApi?.character?.list?.(),
+      window.OmagotchiApi?.profile?.get?.()
+    ]).then(([serverCharacters, profile]) => {
+      if (!active) return;
+
+      const mappedCharacters = Array.isArray(serverCharacters)
+        ? serverCharacters.map((item) => {
+            const local = CHARACTERS.find(({ id }) => id === item.assetKey);
+            return {
+              ...local,
+              id: item.assetKey,
+              gameCharacterId: item.gameCharacterId,
+              name: item.name || local?.name || item.assetKey,
+              description: item.description || local?.description || "함께 성장할 오마고치입니다.",
+              bubble: local?.bubble || "같이 공부해요!",
+              baseImage: assets.getPng(item.assetKey, "original")
+            };
+          }).filter((item) => item.id && Number.isInteger(item.gameCharacterId))
+        : [];
+
+      if (!mappedCharacters.length) {
+        throw new Error("사용 가능한 캐릭터가 없습니다.");
+      }
+
+      setCharacters(mappedCharacters);
+      setCharacterId(mappedCharacters[0].id);
+      setNickname(profile?.nickname || "");
+      setInitializing(false);
+    }).catch((error) => {
+      if (!active) return;
+      setFeedback(error.message || "캐릭터 목록을 불러오지 못했습니다.");
+      setInitializing(false);
+    });
+
+    return () => {
+      active = false;
+    };
+  }, [assets]);
+
   async function saveSelection() {
-    if (loading) return;
+    if (loading || initializing) return;
+    const normalizedNickname = nickname.normalize("NFC").trim();
+    if (!/^[0-9A-Za-z가-힣]{2,12}$/.test(normalizedNickname)) {
+      setFeedback("닉네임은 2~12자의 한글·영문·숫자로 입력해 주세요.");
+      return;
+    }
+    if (!Number.isInteger(character.gameCharacterId)) {
+      setFeedback("캐릭터 정보를 다시 불러와 주세요.");
+      return;
+    }
     setLoading(true);
     setFeedback("");
 
     try {
-      await window.OmagotchiApi?.character?.saveSelection?.({ characterId, colorId });
-      const image = resolveImage(character, color);
-      const animatedImage = resolveAnimatedImage(character, color);
-      const email = sessionStorage.getItem("omagotchiEmail") || localStorage.getItem("omagotchiLastEmail") || "guest";
-
-      sessionStorage.setItem("omagotchiCharacterId", character.id);
-      sessionStorage.setItem("omagotchiCharacterName", character.name);
-      sessionStorage.setItem("omagotchiCharacterImage", image);
-      sessionStorage.setItem("omagotchiCharacterAnimatedImage", animatedImage);
-      sessionStorage.setItem("omagotchiCharacterBaseImage", character.baseImage);
-      sessionStorage.setItem("omagotchiCharacterColorId", color.id);
-      sessionStorage.setItem("omagotchiCharacterColorName", color.name);
-      sessionStorage.setItem("omagotchiCharacterColor", color.value || "");
-      localStorage.setItem(`omagotchiHasCharacter:${email}`, "true");
-      localStorage.setItem(`omagotchiCharacterId:${email}`, character.id);
-      localStorage.setItem(`omagotchiCharacterName:${email}`, character.name);
-      localStorage.setItem(`omagotchiCharacterImage:${email}`, image);
-      localStorage.setItem(`omagotchiCharacterAnimatedImage:${email}`, animatedImage);
-      localStorage.setItem(`omagotchiCharacterBaseImage:${email}`, character.baseImage);
-      localStorage.setItem(`omagotchiCharacterColorId:${email}`, color.id);
-      localStorage.setItem(`omagotchiCharacterColorName:${email}`, color.name);
-      localStorage.setItem(`omagotchiCharacterColor:${email}`, color.value || "");
+      await window.OmagotchiApi.character.saveSelection({
+        gameCharacterId: character.gameCharacterId,
+        nickname: normalizedNickname,
+        colorId
+      });
       setCompleted(true);
       window.setTimeout(() => window.location.assign("/check-in"), 600);
-    } catch {
-      setFeedback("캐릭터를 저장하지 못했습니다. 잠시 후 다시 시도해 주세요.");
+    } catch (error) {
+      setFeedback(error.message || "캐릭터를 저장하지 못했습니다. 잠시 후 다시 시도해 주세요.");
       setLoading(false);
     }
   }
@@ -55,14 +96,17 @@ function CharacterSelectorApp() {
   return (
     <CharacterSelector
       characterId={characterId}
+      characters={characters}
       colorId={colorId}
-      loading={loading}
+      nickname={nickname}
+      loading={loading || initializing}
       feedback={feedback}
       completed={completed}
       resolveImage={resolveImage}
       resolveAnimatedImage={resolveAnimatedImage}
       onCharacterChange={setCharacterId}
       onColorChange={setColorId}
+      onNicknameChange={setNickname}
       onSubmit={saveSelection}
     />
   );

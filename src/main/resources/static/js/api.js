@@ -1,132 +1,301 @@
 (() => {
     const API_BASE = window.OMAGOTCHI_API_BASE || document.documentElement.dataset.apiBase || "/bff/v1";
-    const STRICT = Boolean(window.OMAGOTCHI_API_STRICT);
-    const PROTOTYPE_FALLBACK_STATUSES = new Set([404]);
+    const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS", "TRACE"]);
+    let csrfTokenPromise = null;
 
     class ApiRequestError extends Error {
-        constructor(status, message) {
+        constructor(status, message, details = {}) {
             super(message);
             this.name = "ApiRequestError";
             this.status = status;
+            this.code = details.code || null;
+            this.path = details.path || null;
+            this.requestId = details.requestId || null;
         }
+    }
+
+    async function getCsrfToken() {
+        if (!csrfTokenPromise) {
+            csrfTokenPromise = fetch(toUrl("/csrf"), {
+                credentials: "same-origin",
+                headers: {Accept: "application/json"}
+            }).then(async (response) => {
+                if (!response.ok) {
+                    throw new ApiRequestError(response.status, "CSRF 토큰을 가져오지 못했습니다.");
+                }
+                return response.json();
+            }).catch((error) => {
+                csrfTokenPromise = null;
+                throw error;
+            });
+        }
+        return csrfTokenPromise;
     }
 
     function toUrl(path) {
         return `${API_BASE}${path.startsWith("/") ? path : `/${path}`}`;
     }
 
+    function isFormDataBody(body) {
+        return typeof FormData !== "undefined" && body instanceof FormData;
+    }
+
+    function serializeRequestBody(body) {
+        if (body === undefined || isFormDataBody(body)) {
+            return body;
+        }
+        return JSON.stringify(body);
+    }
+
+    async function parseResponsePayload(response) {
+        const contentType = response.headers.get("content-type") || "";
+        if (contentType.includes("application/json")) {
+            return response.json();
+        }
+        return response.text();
+    }
+
+    function errorDetails(payload) {
+        return payload !== null && typeof payload === "object" ? payload : {};
+    }
+
+    function errorMessage(payload, status) {
+        return errorDetails(payload).message || `API request failed: ${status}`;
+    }
+
     async function request(path, options = {}) {
-        const { body, headers = {}, ...rest } = options;
+        const { body, headers = {}, method = "GET", ...rest } = options;
         const hasBody = body !== undefined;
+        const isFormData = isFormDataBody(body);
+        const normalizedMethod = method.toUpperCase();
+        const needsCsrf = !SAFE_METHODS.has(normalizedMethod);
+        const csrf = needsCsrf ? await getCsrfToken() : null;
         const response = await fetch(toUrl(path), {
             credentials: "same-origin",
             headers: {
                 Accept: "application/json",
-                ...(hasBody ? { "Content-Type": "application/json" } : {}),
+                ...(hasBody && !isFormData ? {"Content-Type": "application/json"} : {}),
+                ...(csrf ? {[csrf.headerName]: csrf.token} : {}),
                 ...headers
             },
-            body: hasBody ? JSON.stringify(body) : undefined,
+            body: serializeRequestBody(body),
+            method: normalizedMethod,
             ...rest
         });
-
         if (response.status === 204) {
             return null;
         }
 
-        const contentType = response.headers.get("content-type") || "";
-        const payload = contentType.includes("application/json")
-            ? await response.json()
-            : await response.text();
+        const payload = await parseResponsePayload(response);
+        const isCsrfFailure = response.status === 403
+            && errorDetails(payload).code === "AUTH_CSRF_INVALID";
+        if (isCsrfFailure && needsCsrf && !options.__csrfRetried) {
+            csrfTokenPromise = null;
+            return request(path, {...options, __csrfRetried: true});
+        }
 
         if (!response.ok) {
-            const message = typeof payload === "object" && payload?.message
-                ? payload.message
-                : `API request failed: ${response.status}`;
-            throw new ApiRequestError(response.status, message);
+            throw new ApiRequestError(
+                response.status,
+                errorMessage(payload, response.status),
+                errorDetails(payload)
+            );
         }
 
         return payload;
     }
 
     async function optional(path, options) {
-        try {
-            return await request(path, options);
-        } catch (error) {
-            const fallbackAllowed = error instanceof ApiRequestError
-                && PROTOTYPE_FALLBACK_STATUSES.has(error.status);
-            if (STRICT || !fallbackAllowed) {
-                throw error;
-            }
-            console.info("[API] Fallback active:", path, error.message);
-            return null;
-        }
+        return request(path, options);
     }
 
-    function subscribe(path, handlers = {}) {
-        if (!("EventSource" in window)) {
-            return null;
-        }
-
-        const source = new EventSource(toUrl(path), { withCredentials: true });
-        source.onmessage = (event) => {
-            try {
-                handlers.message?.(JSON.parse(event.data));
-            } catch {
-                handlers.message?.(event.data);
-            }
-        };
-        source.onerror = (event) => handlers.error?.(event, source);
-        return source;
-    }
-
-    function withDateRange(path, range = {}) {
+    function withQuery(path, values = {}) {
         const query = new URLSearchParams();
-        if (range.from) query.set("from", range.from);
-        if (range.to) query.set("to", range.to);
+        Object.entries(values).forEach(([key, value]) => {
+            if (value !== undefined && value !== null && value !== "") query.set(key, value);
+        });
         const queryString = query.toString();
         return queryString ? `${path}?${queryString}` : path;
+    }
+
+    function communityFormData(post, attachments = []) {
+        const formData = new FormData();
+        formData.append("post", new Blob([JSON.stringify(post)], {type: "application/json"}));
+        Array.from(attachments).forEach((file) => formData.append("attachments", file));
+        return formData;
     }
 
     window.OmagotchiApi = {
         request,
         optional,
+        profile: {
+            get: () => request("/me/profile"),
+            updateNickname: (nickname) => request("/me/nickname", {
+                method: "PATCH",
+                body: {nickname}
+            })
+        },
         character: {
-            saveSelection: (payload) => optional("/me/character", { method: "PUT", body: payload })
+            list: () => request("/gamification/characters"),
+            saveSelection: (payload) => request("/gamification/characters/representative", {
+                method: "POST",
+                body: payload
+            })
         },
         attendance: {
-            getHistory: () => optional("/attendance/history"),
+            getHistory: (query = {}) => optional(withQuery("/attendance/history", query)),
             getToday: () => optional("/attendance/today"),
             checkIn: () => request("/attendance/check-in", { method: "POST" }),
             checkOut: () => request("/attendance/check-out", { method: "POST" })
         },
         presence: {
-            getLabPresence: () => optional("/presence/lab"),
-            subscribeLabPresence: (handlers) => subscribe("/presence/lab/stream", handlers)
+            getLabPresence: () => request("/presence")
         },
-        studyRecords: {
-            list: () => optional("/study-records"),
-            create: (payload) => optional("/study-records", { method: "POST", body: payload }),
-            update: (id, payload) => optional(`/study-records/${encodeURIComponent(id)}`, { method: "PATCH", body: payload })
+        study: {
+            getRecord: (id) => request(`/study-records/${encodeURIComponent(id)}`),
+            getDailyRecords: (date) => request(withQuery("/study-records", {date})),
+            getMonthlySummary: (month) => request(withQuery("/study-time-summaries", {month})),
+            createRecord: (payload) => request("/study-records", {
+                method: "POST",
+                body: payload
+            }),
+            updateRecord: (id, payload) => request(`/study-records/${encodeURIComponent(id)}`, {
+                method: "PUT",
+                body: payload
+            }),
+            deleteRecord: (id, resourceVersion) => request(`/study-records/${encodeURIComponent(id)}`, {
+                method: "DELETE",
+                headers: {"X-RESOURCE-VERSION": resourceVersion}
+            }),
+            getCurrentTimer: () => request("/timer"),
+            startTimer: () => request("/timer/start", {method: "POST"}),
+            stopTimer: (timerRunId) => request(`/timer/${encodeURIComponent(timerRunId)}/stop`, {
+                method: "POST"
+            }),
+            discardTimer: (timerRunId) => request(`/timer/${encodeURIComponent(timerRunId)}/discard`, {
+                method: "POST"
+            })
         },
         cohort: {
-            applyByCode: (payload) => optional("/cohorts/applications", { method: "POST", body: payload })
+            list: () => request("/cohorts"),
+            getMyApplications: () => request("/cohorts/applications/me"),
+            applyByCode: (joinCode) => request("/cohorts/applications", {
+                method: "POST",
+                body: {joinCode}
+            })
+        },
+        gamification: {
+            getHome: () => request("/gamification/home"),
+            getDailyQuests: () => request("/gamification/quests/daily"),
+            // 서버 계약은 Quest 정의 ID가 아니라 사용자별 일일 Quest 인스턴스 ID를 받는다.
+            claimQuest: (userDailyQuestId) => request(
+                `/gamification/quests/${encodeURIComponent(userDailyQuestId)}/claim`,
+                {method: "POST"}
+            ),
+            // cohortId는 서버가 Session에서 확보하므로 Browser가 보내지 않는다.
+            // aggregationDate는 선택 값이며, 미지정 시 서버 기본 기준일을 따른다.
+            getProgression: ({aggregationDate} = {}) => {
+                const query = new URLSearchParams();
+                if (aggregationDate) {
+                    query.set("aggregationDate", aggregationDate);
+                }
+                const suffix = query.toString();
+                return request(`/gamification/progression${suffix ? `?${suffix}` : ""}`);
+            }
+        },
+        ranking: {
+            // cohortId는 서버가 Session 승인 기수에서 확보한다.
+            getToday: ({maxRank} = {}) => request(withQuery(
+                "/study-rankings/today",
+                {maxRank}
+            )),
+            getDaily: (date, {maxRank} = {}) => request(withQuery(
+                `/study-rankings/daily/${encodeURIComponent(date)}`,
+                {maxRank}
+            )),
+            getWeekly: (weekStartDate, {maxRank} = {}) => request(withQuery(
+                `/study-rankings/weekly/${encodeURIComponent(weekStartDate)}`,
+                {maxRank}
+            )),
+            getMonthly: (month, {maxRank} = {}) => request(withQuery(
+                `/study-rankings/monthly/${encodeURIComponent(month)}`,
+                {maxRank}
+            ))
         },
         community: {
-            createPost: (payload) => optional("/community/posts", { method: "POST", body: payload })
+            listPosts: (query = {}) => request(withQuery("/community/posts", query)),
+            getPost: (postId) => request(`/community/posts/${encodeURIComponent(postId)}`),
+            downloadUrl: (postId, attachmentId) => toUrl(
+                `/community/posts/${encodeURIComponent(postId)}/attachments/${encodeURIComponent(attachmentId)}`
+            ),
+            createPost: (payload) => request("/community/posts", {method: "POST", body: payload}),
+            createPostWithAttachments: (post, attachments) => request("/community/posts", {
+                method: "POST",
+                body: communityFormData(post, attachments)
+            }),
+            updatePost: (postId, payload) => request(`/community/posts/${encodeURIComponent(postId)}`, {
+                method: "PATCH",
+                body: payload
+            }),
+            updatePostWithAttachments: (postId, post, attachments) => request(`/community/posts/${encodeURIComponent(postId)}`, {
+                method: "PATCH",
+                body: communityFormData(post, attachments)
+            }),
+            deletePost: (postId) => request(`/community/posts/${encodeURIComponent(postId)}`, {method: "DELETE"})
         },
         manager: {
-            getDashboard: () => optional("/manager/dashboard"),
-            // TEMPORARY: Learning Service 연동 전 관리자 공부 통계 화면 검증용 Mock 경로입니다.
-            // 실제 연동 시 목록은 /v1/cohorts/{cohortId}/study-statistics,
-            // 상세는 위 경로의 /members/{cohortMembershipId}/records로 복원합니다.
-            getStudyStatistics: (_cohortId, range) => optional(withDateRange(
-                "/mock-api/study-stats",
-                range
+            getCohorts: () => request("/admin/cohorts"),
+            createCohort: (payload) => request("/admin/cohorts", {method: "POST", body: payload}),
+            deleteCohort: (cohortId) => request(`/admin/cohorts/${encodeURIComponent(cohortId)}`, {method: "DELETE"}),
+            updateCohort: (cohortId, payload) => request(`/admin/cohorts/${encodeURIComponent(cohortId)}`, {method: "PATCH", body: payload}),
+            updateCohortStatus: (cohortId, status) => request(`/admin/cohorts/${encodeURIComponent(cohortId)}/status`, {method: "PATCH", body: {status}}),
+            getMembers: (cohortId) => request(`/admin/cohorts/${encodeURIComponent(cohortId)}/members`),
+            getApplications: (cohortId) => request(`/admin/cohorts/${encodeURIComponent(cohortId)}/applications`),
+            addManager: (cohortId, userId) => request(`/admin/cohorts/${encodeURIComponent(cohortId)}/managers`, {method: "POST", body: {userId}}),
+            updateMemberRole: (cohortId, userId, role) => request(`/admin/cohorts/${encodeURIComponent(cohortId)}/members/${encodeURIComponent(userId)}/role`, {method: "PATCH", body: {role}}),
+            approveMembership: (membershipId, role) => request(`/admin/memberships/${encodeURIComponent(membershipId)}/approve`, {method: "PATCH", body: {role}}),
+            rejectMembership: (membershipId, reason) => request(`/admin/memberships/${encodeURIComponent(membershipId)}/reject`, {method: "PATCH", body: {reason}}),
+            getJoinCode: (cohortId) => request(`/admin/cohorts/${encodeURIComponent(cohortId)}/join-code`),
+            createJoinCode: (cohortId, expiresAt) => request(`/admin/cohorts/${encodeURIComponent(cohortId)}/join-code`, {method: "POST", body: {expiresAt}}),
+            revokeJoinCode: (cohortId) => request(`/admin/cohorts/${encodeURIComponent(cohortId)}/join-code/revoke`, {method: "PATCH"}),
+            getAttendancePolicy: (cohortId) => request(`/admin/cohorts/${encodeURIComponent(cohortId)}/attendance-policy`),
+            updateAttendancePolicy: (cohortId, payload) => request(`/admin/cohorts/${encodeURIComponent(cohortId)}/attendance-policy`, {method: "PUT", body: payload}),
+            getAttendanceRecords: (cohortId, date, page = 0, size = 100) => request(withQuery(
+                `/admin/cohorts/${encodeURIComponent(cohortId)}/attendance-records`,
+                {date, page, size}
             )),
-            getStudyMemberRecords: (_cohortId, cohortMembershipId, range) => optional(withDateRange(
-                `/mock-api/study-stats/members/${encodeURIComponent(cohortMembershipId)}/records`,
-                range
-            ))
+            updateAttendanceStatus: (cohortId, recordId, nextStatus, reason) => request(`/admin/cohorts/${encodeURIComponent(cohortId)}/attendance-records/${encodeURIComponent(recordId)}/status`, {
+                method: "PATCH",
+                body: {nextStatus, reason, requestId: crypto.randomUUID?.() || `manual-${Date.now()}`}
+            }),
+            getRankings: (cohortId, query = {}) => request(withQuery(`/admin/cohorts/${encodeURIComponent(cohortId)}/study-rankings`, query)),
+            updatePostPin: (postId, pinned) => request(`/admin/community/posts/${encodeURIComponent(postId)}/pin`, {method: "PATCH", body: {pinned}}),
+            getSensorSpaceSeries: (location, measurement, seriesWindow, options = {}) => request(
+                withQuery("/admin/sensors/space-series", {location, measurement, window: seriesWindow}),
+                options
+            ),
+        },
+        // 응답 필드는 Learning Service 계약 그대로다. 화면이 그 이름으로 읽으므로 여기서 바꾸지 않는다.
+        sensor: {
+            listSpaces: () => request("/admin/sensors/spaces"),
+            listDevices: () => request("/admin/sensors/devices"),
+            createDevice: (payload) => request("/admin/sensors/devices", {method: "POST", body: payload}),
+            updateDevice: (deviceEui, payload) => request(`/admin/sensors/devices/${encodeURIComponent(deviceEui)}`, {
+                method: "PUT",
+                body: payload
+            }),
+            updateDeviceActive: (deviceEui, active) => request(`/admin/sensors/devices/${encodeURIComponent(deviceEui)}/active`, {
+                method: "PATCH",
+                body: {active}
+            }),
+            // query: {type, deviceEui, from, to, page, size} — 비운 값은 withQuery가 떨어뜨린다.
+            listEvents: (query = {}) => request(withQuery("/admin/sensors/events", query)),
+            listSpaceThresholds: () => request("/admin/sensors/thresholds"),
+            applySpaceThreshold: (spaceId, rules) => request(`/admin/sensors/thresholds/${encodeURIComponent(spaceId)}`, {
+                method: "PATCH",
+                headers: {"X-Request-ID": crypto.randomUUID?.() || `threshold-${Date.now()}`},
+                body: {rules}
+            })
         }
     };
 })();

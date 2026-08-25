@@ -3,7 +3,7 @@ import { createBgmPlayer } from "./home/bgm.js";
 import { createCharacter } from "./home/character.js";
 import { createLevel } from "./home/level.js";
 import { createPresence } from "./home/presence.js";
-import { createStudyRecords } from "./home/studyRecords.js?v=20260812-1";
+import { createStudyRecords } from "./home/studyRecords.js?v=20260825-5";
 import { createTimer } from "./home/timer.js";
 import { escapeHtml, formatDuration, getLocalDateKey } from "./home/utils.js";
 
@@ -42,56 +42,52 @@ const presenceList = document.querySelector("[data-presence-list]");
 const presenceRefresh = document.querySelector("[data-presence-refresh]");
 const presenceClose = document.querySelector("[data-presence-close]");
 const presenceUpdated = document.querySelector("[data-presence-updated]");
+const presenceRoomName = document.querySelector("[data-presence-room-name]");
 const bgmPlayerRoot = document.querySelector("[data-bgm-player]");
 const homePage = document.querySelector(".home-page");
 const musicToggle = document.querySelector("[data-home-music-toggle]");
 const musicClose = document.querySelector("[data-home-music-close]");
 const attendancePanelToggle = document.querySelector("[data-attendance-panel-toggle]");
 const attendancePanelClose = document.querySelector("[data-attendance-panel-close]");
-const chatToggle = document.querySelector(".home-chat-toggle");
+const aiAssistantToggle = document.querySelector(".home-ai-toggle");
 const homeToast = document.querySelector("[data-home-toast]");
 const attendanceDetail = document.querySelector("[data-attendance-panel-toggle]")?.getAttribute("aria-controls")
     ? document.getElementById(document.querySelector("[data-attendance-panel-toggle]").getAttribute("aria-controls"))
     : null;
 
-const currentUserEmail = sessionStorage.getItem("omagotchiEmail")
-    || localStorage.getItem("omagotchiLastEmail")
-    || "guest";
-const currentUserName = sessionStorage.getItem("omagotchiUsername")
-    || localStorage.getItem(`omagotchiUsername:${currentUserEmail}`)
-    || (currentUserEmail === "guest" ? "나" : currentUserEmail.split("@")[0]);
-const selectedCharacterId = sessionStorage.getItem("omagotchiCharacterId")
-    || localStorage.getItem(`omagotchiCharacterId:${currentUserEmail}`);
-const selectedCharacterColorId = sessionStorage.getItem("omagotchiCharacterColorId")
-    || localStorage.getItem(`omagotchiCharacterColorId:${currentUserEmail}`)
-    || "original";
+const currentProfile = window.OmagotchiProfile || {};
+let currentCharacter = currentProfile.currentCharacter || {};
+const currentUserId = currentProfile.userId;
+const currentUserName = currentProfile.nickname || currentCharacter.nickname || "나";
+const selectedCharacterAssetKey = typeof currentCharacter.assetKey === "string"
+    ? currentCharacter.assetKey.trim().replace(/^\/+/, "").replace(/\.(?:png|gif)$/i, "")
+    : "";
+const selectedCharacterAssetParts = selectedCharacterAssetKey
+    .split("/")
+    .filter(Boolean);
+const selectedCharacterAssetName = selectedCharacterAssetParts.at(-1) || "";
+const selectedCharacterId = selectedCharacterAssetParts.length > 1
+    ? selectedCharacterAssetParts.at(-2)
+    : currentCharacter.type || selectedCharacterAssetName || "study";
+const selectedCharacterColorId = currentCharacter.colorId
+    || (selectedCharacterAssetName && selectedCharacterAssetName !== selectedCharacterId
+        ? selectedCharacterAssetName
+        : "original");
+const characterAssets = window.OmagotchiCharacterAssets;
+const fallbackCharacterImage = "/images/characters/study/study.png";
+const fallbackCharacterAnimatedImage = "/images/characters/study/study_eye.gif";
 
-const selectedCharacterImage = sessionStorage.getItem("omagotchiCharacterImage")
-    || localStorage.getItem(`omagotchiCharacterImage:${currentUserEmail}`)
-    || "/images/characters/default/omagotchi.png";
-const selectedCharacterAnimatedImage = sessionStorage.getItem("omagotchiCharacterAnimatedImage")
-    || localStorage.getItem(`omagotchiCharacterAnimatedImage:${currentUserEmail}`)
-    || (selectedCharacterId
-        ? window.OmagotchiCharacterAssets.getEyeGif(selectedCharacterId, selectedCharacterColorId)
-        : "/images/characters/default/omagotchi_eye.gif");
+const selectedCharacterImage = selectedCharacterAssetKey
+    ? `/images/characters/${selectedCharacterAssetKey}.png`
+    : characterAssets?.getPng(selectedCharacterId, selectedCharacterColorId) ?? fallbackCharacterImage;
+const selectedCharacterAnimatedImage = characterAssets
+    ?.getEyeGif(selectedCharacterId, selectedCharacterColorId) ?? fallbackCharacterAnimatedImage;
 
-const storedCharacterName = sessionStorage.getItem("omagotchiCharacterName")
-    || localStorage.getItem(`omagotchiCharacterName:${currentUserEmail}`)
-    || "오마고치";
-const selectedCharacterName = storedCharacterName
-    .replace(/^\[([^\]]+)]$/, "$1")
-    .trim();
-const displayCharacterName = currentUserName || selectedCharacterName;
+const selectedCharacterName = currentCharacter.name || "오마고치";
+const displayCharacterName = currentCharacter.nickname || currentUserName;
 
-if (selectedCharacterName !== storedCharacterName) {
-    sessionStorage.setItem("omagotchiCharacterName", selectedCharacterName);
-    localStorage.setItem(`omagotchiCharacterName:${currentUserEmail}`, selectedCharacterName);
-}
-
-const attendanceKey = `omagotchiAttendance:${currentUserEmail}`;
-const xpKey = `omagotchiXp:${currentUserEmail}`;
-const studyRecordsKey = `omagotchiStudyRecords:${currentUserEmail}`;
-const timerKey = `omagotchiStudyTimer:${currentUserEmail}`;
+const studyRecordsKey = `omagotchiStudyRecords:${currentUserId}`;
+const timerKey = `omagotchiStudyTimer:${currentUserId}`;
 const sessionOnlyKeys = [
     "omagotchiEmail",
     "omagotchiUsername",
@@ -106,17 +102,24 @@ const sessionOnlyKeys = [
 ];
 const api = window.OmagotchiApi;
 
+function syncPresenceCohortHeading() {
+    if (!presenceRoomName) return;
+
+    const approvedCohort = currentProfile.approvedCohort;
+    const approvedCohortName = approvedCohort?.name?.trim();
+    presenceRoomName.textContent = approvedCohort
+        ? `${approvedCohortName || "소속 기수"} 실습실`
+        : "기수에 가입하지 않았습니다.";
+    presenceRoomName.parentElement?.classList.toggle("is-unassigned", !approvedCohort);
+}
+
 let communityFilter = "all";
 let communityKeyword = "";
 let communityPage = 1;
 const communityPageSize = 3;
 
 function getHomeManagedCohorts() {
-    try {
-        return JSON.parse(localStorage.getItem("omagotchiCohortOperations") || "[]");
-    } catch {
-        return [];
-    }
+    return currentProfile.approvedCohort ? [currentProfile.approvedCohort] : [];
 }
 
 function renderHomeCohortCards() {
@@ -132,74 +135,27 @@ function renderHomeCohortCards() {
     }
 
     return managed.map((cohort) => {
-        const activeMembers = cohort.members?.filter((member) => member.status === "ACTIVE").length || 0;
         return `
             <article>
                 <h3>${escapeHtml(cohort.name)}</h3>
-                <p>${escapeHtml(cohort.description || "가입 코드로 참가 신청할 수 있습니다.")}</p>
-                <span class="overlay-pill">${activeMembers} / ${cohort.capacity}</span>
-                <span class="overlay-pill">${cohort.status === "ACTIVE" ? "운영 중" : "모집 중"}</span>
+                <p>${escapeHtml(`${cohort.startDate} ~ ${cohort.endDate}`)}</p>
+                <span class="overlay-pill">${escapeHtml(cohort.role || "STUDENT")}</span>
+                <span class="overlay-pill">${cohort.cohortStatus === "ACTIVE" ? "운영 중" : "대기"}</span>
             </article>`;
     }).join("");
 }
 
 function getPersonalSnapshot() {
-    let records = [];
-    let attendanceHistory = {};
-
-    try {
-        const storedRecords = JSON.parse(localStorage.getItem(studyRecordsKey) || "[]");
-        records = Array.isArray(storedRecords) ? storedRecords : [];
-    } catch {
-        records = [];
-    }
-
-    try {
-        attendanceHistory = JSON.parse(localStorage.getItem(attendanceKey) || "{}");
-    } catch {
-        attendanceHistory = {};
-    }
-
-    const recordedSeconds = records.reduce(
-        (total, record) => total + (Number(record.durationSeconds) || 0),
-        0
-    );
-    const sessionCount = new Set(records.map((record) => record.sessionId || record.id)).size;
-    const cursor = new Date();
-    const isWeekend = (date) => [0, 6].includes(date.getDay());
-    const moveToPreviousWeekday = (date) => {
-        while (isWeekend(date)) date.setDate(date.getDate() - 1);
-    };
-    let streak = 0;
-
-    moveToPreviousWeekday(cursor);
-    if (!attendanceHistory[getLocalDateKey(cursor)]?.checkInAt) {
-        cursor.setDate(cursor.getDate() - 1);
-        moveToPreviousWeekday(cursor);
-    }
-    while (attendanceHistory[getLocalDateKey(cursor)]?.checkInAt) {
-        streak += 1;
-        cursor.setDate(cursor.getDate() - 1);
-        moveToPreviousWeekday(cursor);
-    }
-
-    const managedCohort = getHomeManagedCohorts().find((cohort) => (
-        cohort.members?.some((member) => (
-            member.status === "ACTIVE"
-            && [member.email, member.id].includes(currentUserEmail)
-        ))
-    ));
-
     return {
-        accountId: currentUserEmail === "guest" ? "로그인 정보 없음" : currentUserEmail,
+        accountId: "로그인된 계정",
         nickname: currentUserName || "미설정",
         characterName: selectedCharacterName || "오마고치",
-        characterImage: selectedCharacterImage,
-        level: characterLevel?.textContent || "1",
-        studyTime: formatDuration(recordedSeconds + studyRecordsController.getUnrecordedSeconds()),
-        sessions: sessionCount,
-        streak,
-        cohort: managedCohort?.name || "미연결"
+        characterImage: selectedCharacterAnimatedImage,
+        level: currentCharacter.level || 1,
+        studyTime: formatDuration(Number(currentProfile.totalStudySeconds) || 0),
+        sessions: Number(currentProfile.completedSessionCount) || 0,
+        streak: Number(currentProfile.attendanceStreakDays) || 0,
+        cohort: currentProfile.approvedCohort?.name || "미연결"
     };
 }
 
@@ -237,8 +193,10 @@ function renderPersonalOverlay() {
         </section>
     `;
 }
-const communityPosts = [];
+let communityPosts = [];
+let communityPageCount = 1;
 let homeToastTimer;
+let communitySearchTimer;
 
 function showHomeToast(message) {
     if (!homeToast) return;
@@ -286,7 +244,7 @@ const timerController = createTimer({
             const result = studyRecordsController.addRecord();
             characterController.showMessage(
                 result.ok
-                    ? `${result.record.sequence}번째 학습 기록을 저장했어요.`
+                    ? "학습 기록을 저장했어요."
                     : result.message
             );
             return;
@@ -296,10 +254,11 @@ const timerController = createTimer({
     }
 });
 
+// 월간 요약과 선택 날짜 기록, 수정·삭제를 Study BFF 계약에 연결한다.
 studyRecordsController = createStudyRecords({
     storageKey: studyRecordsKey,
     getElapsedSeconds: timerController.getElapsedSeconds,
-    api: api?.studyRecords
+    api: api?.study
 });
 
 const levelController = createLevel({
@@ -309,7 +268,9 @@ const levelController = createLevel({
     nextLevelLabel,
     characterImage: homeCharacter,
     characterStage,
-    storageKey: xpKey
+    initialLevel: currentCharacter.level,
+    initialCurrentXp: currentCharacter.currentExp,
+    initialRequiredXp: currentCharacter.requiredExp
 });
 
 let presenceController;
@@ -373,8 +334,8 @@ const attendanceController = createAttendance({
     calendarNext,
     streakCount,
     streakList,
-    storageKey: attendanceKey,
     api: api?.attendance,
+    enabled: Boolean(currentProfile.approvedCohort?.cohortId),
     onCheckOutSuccess: () => showHomeToast("퇴실 처리됐어요. 타이머는 계속 사용할 수 있어요."),
     onCheckOutError: () => showHomeToast("퇴실 처리에 실패했어요. 잠시 후 다시 시도해 주세요."),
     confirmCheckOut,
@@ -400,6 +361,7 @@ presenceController = createPresence({
     selectedCharacterImage,
     getAttendanceHistory: attendanceController.getHistory,
     api: api?.presence,
+    enabled: Boolean(currentProfile.approvedCohort?.cohortId),
     isOverlayOpen: () => document.body.classList.contains("has-home-overlay")
 });
 
@@ -418,14 +380,14 @@ function setAttendancePanelOpen(open) {
     }
 }
 
-// React가 소유하는 채팅 상태는 DOM을 직접 조작하지 않고 단방향 이벤트로 닫는다.
-function closeHomeChat() {
-    window.dispatchEvent(new CustomEvent("omagotchi:home-chat-close"));
+// React가 소유하는 AI 도우미 상태는 DOM을 직접 조작하지 않고 단방향 이벤트로 닫는다.
+function closeHomeAiAssistant() {
+    window.dispatchEvent(new CustomEvent("omagotchi:home-ai-close"));
 }
 
 musicToggle?.addEventListener("click", () => {
     const nextOpen = !homePage?.classList.contains("is-bgm-open");
-    if (nextOpen) closeHomeChat();
+    if (nextOpen) closeHomeAiAssistant();
     presenceController?.close();
     setAttendancePanelOpen(false);
     setBgmPanelOpen(nextOpen);
@@ -435,7 +397,7 @@ musicClose?.addEventListener("click", () => setBgmPanelOpen(false));
 
 attendancePanelToggle?.addEventListener("click", () => {
     const nextOpen = !homePage?.classList.contains("is-attendance-panel-open");
-    if (nextOpen) closeHomeChat();
+    if (nextOpen) closeHomeAiAssistant();
     presenceController?.close();
     setBgmPanelOpen(false);
     setAttendancePanelOpen(nextOpen);
@@ -444,12 +406,12 @@ attendancePanelToggle?.addEventListener("click", () => {
 attendancePanelClose?.addEventListener("click", () => setAttendancePanelOpen(false));
 presenceClose?.addEventListener("click", () => presenceController?.close());
 presenceTrigger?.addEventListener("click", () => {
-    closeHomeChat();
+    closeHomeAiAssistant();
     setBgmPanelOpen(false);
     setAttendancePanelOpen(false);
 });
 
-chatToggle?.addEventListener("click", () => {
+aiAssistantToggle?.addEventListener("click", () => {
     presenceController?.close();
     setBgmPanelOpen(false);
     setAttendancePanelOpen(false);
@@ -525,7 +487,7 @@ const overlayContent = {
                 <ul>
                     <li><strong>시작</strong>: 학습 시간 측정 시작</li>
                     <li><strong>정지</strong>: 타이머를 멈추고 직전 시작 이후의 학습 시간을 저장</li>
-                    <li><strong>학습 기록</strong>: 저장된 학습 기록을 일·월·연간으로 구분</li>
+                    <li><strong>학습 기록</strong>: 월간 달력에서 날짜별 학습 기록을 확인</li>
                     <li>측정 중에는 브라우저 탭 제목에 시간이 표시됩니다.</li>
                     <li>저장된 학습 시간은 퀘스트 진행도와 경험치에 반영됩니다.</li>
                 </ul>
@@ -585,7 +547,7 @@ const overlayContent = {
                     <li>사용자 목록에서 파티원을 초대할 수 있습니다.</li>
                     <li>파티를 만든 후 이용 가능한 회의실에 입장합니다.</li>
                     <li>현재 파티 인원과 각 사용자의 상태를 확인합니다.</li>
-                    <li>홈 하단 채팅 바는 GLOBAL 채팅방과 COHORT 채팅방을 구분합니다.</li>
+                    <li>실시간 채팅 기능은 사용하지 않습니다. 홈 하단의 같은 자리는 MCP 기반 AI 도우미 영역으로 전환 중입니다.</li>
                 </ul>
             </div>
         </details>
@@ -597,7 +559,7 @@ const overlayContent = {
                     <li><strong>진행</strong>: 퀘스트, 업적, 랭킹, 타임라인, 통계 확인</li>
                     <li><strong>내 정보</strong>: 학습 시간, 출석, 캐릭터 정보 확인</li>
                     <li><strong>기수</strong>: 참여 중이거나 가입 가능한 기수 확인</li>
-                    <li><strong>학습 기록</strong>: 저장한 구간을 일간·월간·연간으로 확인하고 수정</li>
+                    <li><strong>학습 기록</strong>: 월간 달력에서 저장한 기록을 확인·수정·삭제</li>
                     <li><strong>공간</strong>: 실습실, 회의실, 도서관 이용</li>
                     <li><strong>커뮤</strong>: 공지 및 자유 게시판 이용</li>
                     <li><strong>설정</strong>: 비밀번호 변경, 로그아웃</li>
@@ -627,6 +589,11 @@ const overlayContent = {
                     <li>홈 화면 아래의 고정 버튼으로 자주 쓰는 기능을 빠르게 열 수 있습니다.</li>
                 </ul>
                 <ol class="help-dock-guide" aria-label="홈 하단 버튼 안내">
+                    <li>
+                        <span class="help-dock-ai-icon" aria-hidden="true">AI</span>
+                        <strong>AI 도우미</strong>
+                        <span>현재는 준비 상태만 표시하며, MCP 연동 후 질문과 답변 기능을 제공합니다.</span>
+                    </li>
                     <li>
                         <img src="/images/app/music.png" alt="BGM 버튼" />
                         <strong>BGM</strong>
@@ -723,7 +690,7 @@ const overlayContent = {
         </div>
         <section class="overlay-tab-panel is-active" role="tabpanel" data-overlay-panel="quests">
             <div class="overlay-section-label"><strong>일일</strong><span></span><em>익일 4시에 초기화</em></div>
-            <ul class="overlay-state-list" aria-label="퀘스트 목록">
+            <ul class="overlay-state-list" aria-label="퀘스트 목록" data-progress-quests>
                 <li><div><strong>등록된 퀘스트가 없습니다.</strong><p>퀘스트가 제공되면 이 목록에 표시됩니다.</p></div><em>대기</em></li>
             </ul>
         </section>
@@ -733,7 +700,7 @@ const overlayContent = {
         </section>
         <section class="overlay-tab-panel" role="tabpanel" data-overlay-panel="leaders" hidden>
             <div class="overlay-section-label"><strong>명예의 전당</strong><span></span><em>전체 학습 시간</em></div>
-            <ol class="overlay-list overlay-leader-list" aria-label="학습 시간 랭킹">
+            <ol class="overlay-list overlay-leader-list" aria-label="학습 시간 랭킹" data-progress-ranking>
                 <li data-empty-ranking><strong>-</strong><span>랭킹 데이터가 없습니다.</span><em>기록 없음</em></li>
             </ol>
         </section>
@@ -745,7 +712,7 @@ const overlayContent = {
         </section>
         <section class="overlay-tab-panel" role="tabpanel" data-overlay-panel="stats" hidden>
             <div class="overlay-section-label"><strong>학습 통계</strong><span></span><em>나의 기록</em></div>
-            <dl class="overlay-metric-list">
+            <dl class="overlay-metric-list" data-progress-stats>
                 <div><dt>오늘 집중</dt><dd>0분</dd></div>
                 <div><dt>세션</dt><dd>0회</dd></div>
                 <div><dt>연속 출석</dt><dd>0일</dd></div>
@@ -812,18 +779,65 @@ const overlayContent = {
     `
 };
 
+function questStatusLabel(quest) {
+    if (quest.status === "CLAIMED") return "수령 완료";
+    if (quest.status === "COMPLETED") return "보상 받기";
+    return `${quest.progressCount}/${quest.targetCount}`;
+}
+
+async function loadProgressOverlay() {
+    const questList = homeOverlayRoot?.querySelector("[data-progress-quests]");
+    const rankingList = homeOverlayRoot?.querySelector("[data-progress-ranking]");
+    const stats = homeOverlayRoot?.querySelector("[data-progress-stats]");
+    if (!questList || !rankingList || !stats) return;
+
+    // 랭킹 조회 기수는 서버가 Session 승인 기수에서 확보하므로 Browser가 지정하지 않는다.
+    // 승인 기수가 없으면 서버가 업무 오류를 반환하므로, 빈 랭킹으로 표시하고 화면은 유지한다.
+    const hasApprovedCohort = Boolean(currentProfile.approvedCohort?.cohortId);
+    const [home, rankings] = await Promise.all([
+        api.gamification.getHome(),
+        hasApprovedCohort
+            ? api.ranking.getToday().catch(() => null)
+            : Promise.resolve(null)
+    ]);
+
+    const quests = Array.isArray(home?.dailyQuests) ? home.dailyQuests : [];
+    questList.innerHTML = quests.length ? quests.map((quest) => {
+        const canClaim = quest.status === "COMPLETED";
+        const statusLabel = questStatusLabel(quest);
+        return `<li>
+            <div><strong>${escapeHtml(quest.title)}</strong><p>${quest.progressCount} / ${quest.targetCount} · ${quest.rewardXp} XP</p></div>
+            ${canClaim
+                ? `<button type="button" data-home-claim="${quest.id}">${statusLabel}</button>`
+                : `<em>${statusLabel}</em>`}
+        </li>`;
+    }).join("") : `<li><div><strong>등록된 퀘스트가 없습니다.</strong><p>오늘 제공된 퀘스트가 없습니다.</p></div><em>대기</em></li>`;
+
+    const entries = Array.isArray(rankings?.entries) ? rankings.entries : [];
+    rankingList.innerHTML = entries.length ? entries.map((entry) => `
+        <li><strong>${entry.rank}</strong><span>${escapeHtml(entry.displayName)}</span><em>${formatDuration(entry.studySeconds)}</em></li>
+    `).join("") : `<li data-empty-ranking><strong>-</strong><span>랭킹 데이터가 없습니다.</span><em>기록 없음</em></li>`;
+
+    const growth = home?.growth || currentCharacter;
+    stats.innerHTML = `
+        <div><dt>총 학습 시간</dt><dd>${formatDuration(Number(currentProfile.totalStudySeconds) || 0)}</dd></div>
+        <div><dt>완료 세션</dt><dd>${Number(currentProfile.completedSessionCount) || 0}회</dd></div>
+        <div><dt>연속 출석</dt><dd>${Number(currentProfile.attendanceStreakDays) || 0}일</dd></div>
+        <div><dt>레벨</dt><dd>Lv ${Number(growth?.level) || 1}</dd></div>
+    `;
+}
+
 // 커뮤니티 검색, 필터, 페이지 이동 및 글쓰기 처리
-function getFilteredCommunityPosts() {
-    const normalizedKeyword = communityKeyword.trim().toLowerCase();
-
-    return communityPosts.filter((post) => {
-        const matchesFilter = communityFilter === "all" || post.type === communityFilter;
-        const matchesKeyword = !normalizedKeyword
-            || post.title.toLowerCase().includes(normalizedKeyword)
-            || post.content.toLowerCase().includes(normalizedKeyword);
-
-        return matchesFilter && matchesKeyword;
+async function loadCommunity() {
+    const result = await api.community.listPosts({
+        page: communityPage - 1,
+        size: communityPageSize,
+        type: communityFilter === "all" ? undefined : communityFilter.toUpperCase(),
+        search: communityKeyword.trim() || undefined
     });
+    communityPosts = Array.isArray(result?.items) ? result.items : [];
+    communityPageCount = Math.max(1, Number(result?.page?.totalPages) || 1);
+    renderCommunity();
 }
 
 function renderCommunity() {
@@ -836,30 +850,27 @@ function renderCommunity() {
         return;
     }
 
-    const filteredPosts = getFilteredCommunityPosts();
-    const pageCount = Math.max(1, Math.ceil(filteredPosts.length / communityPageSize));
+    const pageCount = communityPageCount;
     communityPage = Math.min(Math.max(communityPage, 1), pageCount);
-    const pagePosts = filteredPosts.slice(
-        (communityPage - 1) * communityPageSize,
-        communityPage * communityPageSize
-    );
+    const pagePosts = communityPosts;
 
     const hasSearchCondition = communityFilter !== "all" || communityKeyword.trim();
     list.innerHTML = pagePosts.length
         ? pagePosts.map((post) => `
             <li>
-                <span class="overlay-community-type${post.type === "notice" ? " is-notice" : ""}">
-                    ${post.type === "notice" ? "공지" : "자유"}
+                <button class="overlay-community-open" type="button" data-community-post="${post.postId}" aria-label="${escapeHtml(post.title)} 상세 보기">
+                <span class="overlay-community-type${post.type === "NOTICE" ? " is-notice" : ""}">
+                    ${post.type === "NOTICE" ? "공지" : "자유"}
                 </span>
                 <div>
                     <h3>${escapeHtml(post.title)}</h3>
-                    <p>${escapeHtml(post.content)}</p>
+                    <p>${escapeHtml(new Date(post.createdAt).toLocaleString("ko-KR"))}</p>
                 </div>
                 <footer>
-                    <span>좋아요 ${post.likes}</span>
-                    <span>댓글 ${post.comments}</span>
-                    ${post.attachments ? `<span>첨부 ${post.attachments}</span>` : ""}
+                    ${post.pinned ? "<span>고정</span>" : ""}
+                    ${post.attachmentCount ? `<span>첨부 ${post.attachmentCount}</span>` : ""}
                 </footer>
+                </button>
             </li>
         `).join("")
         : `
@@ -883,7 +894,7 @@ function renderCommunity() {
     });
 }
 
-function openCommunityComposer() {
+function openCommunityComposer(post = null) {
     const title = homeOverlayRoot?.querySelector("#home-overlay-title");
     const body = homeOverlayRoot?.querySelector(".home-overlay-body");
 
@@ -891,27 +902,31 @@ function openCommunityComposer() {
         return;
     }
 
-    title.textContent = "새 게시글";
+    title.textContent = post ? "게시글 수정" : "새 게시글";
     body.innerHTML = `
-        <form class="overlay-community-compose" data-community-compose>
+        <form class="overlay-community-compose" data-community-compose${post ? ` data-community-post-id="${post.postId}"` : ""}>
             <label>
                 <span>게시판</span>
                 <select name="type">
-                    <option value="free">자유 게시판</option>
-                    <option value="notice">공지 게시판</option>
+                    <option value="free"${post?.type === "FREE" ? " selected" : ""}>자유 게시판</option>
+                    <option value="notice"${post?.type === "NOTICE" ? " selected" : ""}>공지 게시판</option>
                 </select>
             </label>
             <label>
                 <span>제목</span>
-                <input type="text" name="title" maxlength="100" placeholder="게시글 제목을 입력하세요" required />
+                <input type="text" name="title" maxlength="100" value="${escapeHtml(post?.title || "")}" placeholder="게시글 제목을 입력하세요" required />
             </label>
             <label>
                 <span>내용</span>
-                <textarea name="content" maxlength="1000" placeholder="기수 구성원과 공유할 내용을 입력하세요" required></textarea>
+                <textarea name="content" maxlength="1000" placeholder="기수 구성원과 공유할 내용을 입력하세요" required>${escapeHtml(post?.content || "")}</textarea>
+            </label>
+            <label>
+                <span>이미지 첨부</span>
+                <input type="file" name="attachments" accept="image/jpeg,image/png,image/gif" multiple />
             </label>
             <div>
                 <button type="button" data-community-cancel>취소</button>
-                <button type="submit">등록하기</button>
+                <button type="submit">${post ? "수정하기" : "등록하기"}</button>
             </div>
         </form>
     `;
@@ -926,22 +941,64 @@ async function submitCommunityPost(form) {
     if (!title || !content) {
         return;
     }
+    const cohortId = currentProfile.approvedCohort?.cohortId;
+       if (!cohortId) {
+            throw new Error("승인된 기수가 없어 게시글을 작성할 수 없습니다.");
+       }
 
-    const draft = {
-        id: Date.now(),
-        type: formData.get("type") === "notice" ? "notice" : "free",
+    const post = {
+        type: formData.get("type") === "notice" ? "NOTICE" : "FREE",
         title,
         content,
-        likes: 0,
-        comments: 0,
-        attachments: 0
+        scope: "COHORT",
+        cohortId
+
     };
-    const saved = await api?.community?.createPost?.(draft);
-    communityPosts.unshift(saved || draft);
+    const attachments = form.querySelector("input[name='attachments']")?.files || [];
+    const postId = form.dataset.communityPostId;
+    if (postId) {
+        if (attachments.length) await api.community.updatePostWithAttachments(postId, post, attachments);
+        else await api.community.updatePost(postId, post);
+    } else if (attachments.length) {
+        await api.community.createPostWithAttachments(post, attachments);
+    } else {
+        await api.community.createPost(post);
+    }
     communityFilter = "all";
     communityKeyword = "";
     communityPage = 1;
     openHomeOverlay("community");
+}
+
+async function openCommunityDetail(postId) {
+    const title = homeOverlayRoot?.querySelector("#home-overlay-title");
+    const body = homeOverlayRoot?.querySelector(".home-overlay-body");
+    if (!title || !body) return;
+
+    title.textContent = "게시글";
+    body.innerHTML = `<p class="overlay-community-loading">게시글을 불러오는 중입니다.</p>`;
+    const post = await api.community.getPost(postId);
+    const attachments = Array.isArray(post?.attachments) ? post.attachments : [];
+    body.innerHTML = `
+        <article class="overlay-community-detail" data-community-detail="${post.postId}">
+            <header>
+                <span class="overlay-community-type${post.type === "NOTICE" ? " is-notice" : ""}">${post.type === "NOTICE" ? "공지" : "자유"}</span>
+                <h3>${escapeHtml(post.title)}</h3>
+                <p>${escapeHtml(new Date(post.createdAt).toLocaleString("ko-KR"))}</p>
+            </header>
+            <div class="overlay-community-detail-content">${escapeHtml(post.content).replaceAll("\n", "<br>")}</div>
+            ${attachments.length ? `<section class="overlay-community-attachments" aria-label="첨부파일">
+                <strong>첨부파일 ${attachments.length}개</strong>
+                <ul>${attachments.map((attachment) => `<li><a href="${escapeHtml(api.community.downloadUrl(post.postId, attachment.attachmentId))}" download="${escapeHtml(attachment.originalFileName)}">${escapeHtml(attachment.originalFileName)}</a> · ${Math.ceil(Number(attachment.sizeBytes || 0) / 1024)}KB</li>`).join("")}</ul>
+            </section>` : ""}
+            <footer>
+                <button type="button" data-community-cancel>목록</button>
+                <button type="button" data-community-edit>수정</button>
+                <button type="button" data-community-delete>삭제</button>
+            </footer>
+        </article>
+    `;
+    body.querySelector("[data-community-edit]")?.addEventListener("click", () => openCommunityComposer(post));
 }
 
 // 홈 화면을 유지한 채 메뉴 내용을 모달 오버레이로 전환
@@ -965,7 +1022,7 @@ function openHomeOverlay(type) {
         return;
     }
 
-    closeHomeChat();
+    closeHomeAiAssistant();
     presenceController?.close();
     setBgmPanelOpen(false);
     setAttendancePanelOpen(false);
@@ -974,7 +1031,11 @@ function openHomeOverlay(type) {
     document.body.classList.add("has-home-overlay");
 
     if (type === "community") {
-        renderCommunity();
+        loadCommunity().catch((error) => showHomeToast(error.message));
+    }
+
+    if (type === "progress") {
+        loadProgressOverlay().catch((error) => showHomeToast(error.message));
     }
 
     if (type === "write") {
@@ -1021,12 +1082,44 @@ function logout(logoutButton) {
     }
 }
 
-document.querySelectorAll("[data-home-overlay]").forEach((link) => {
-    link.addEventListener("click", (event) => {
-        event.preventDefault();
-        openHomeOverlay(link.dataset.homeOverlay);
-    });
+// React 메뉴가 보내는 요청을 받아 현재 Home 안에서 오버레이를 연다.
+// React가 home.js보다 먼저 렌더링되므로 초기 로딩 중 클릭은
+// OmagotchiInitialOverlay에 보관되고 파일 하단에서 한 번 더 처리된다.
+window.addEventListener("omagotchi:home-overlay-request", (event) => {
+    const type = event.detail?.type;
+    if (!type) return;
+
+    window.OmagotchiInitialOverlay = null;
+    openHomeOverlay(type);
 });
+
+function deleteCommunityPost(button) {
+    const detail = button.closest("[data-community-detail]");
+    if (!detail || !globalThis.confirm("이 게시글을 삭제하시겠습니까?")) return;
+
+    button.disabled = true;
+    api.community.deletePost(detail.dataset.communityDetail)
+        .then(() => openHomeOverlay("community"))
+        .catch((error) => {
+            button.disabled = false;
+            showHomeToast(error.message || "게시글을 삭제하지 못했습니다.");
+        });
+}
+
+async function claimDailyQuest(button) {
+    button.disabled = true;
+    try {
+        await api.gamification.claimQuest(button.dataset.homeClaim);
+        const profile = await api.profile.get();
+        Object.assign(currentProfile, profile);
+        currentCharacter = currentProfile.currentCharacter || {};
+        levelController.update(currentCharacter);
+        await loadProgressOverlay();
+    } catch (error) {
+        button.disabled = false;
+        showHomeToast(error.message);
+    }
+}
 
 // 동적으로 생성되는 오버레이 버튼은 상위 요소에서 한 번에 처리
 homeOverlayRoot?.addEventListener("click", (event) => {
@@ -1042,6 +1135,8 @@ homeOverlayRoot?.addEventListener("click", (event) => {
     const communityPageButton = event.target.closest("[data-community-page]");
     const communityWriteButton = event.target.closest("[data-community-write]");
     const communityCancelButton = event.target.closest("[data-community-cancel]");
+    const communityPostButton = event.target.closest("[data-community-post]");
+    const communityDeleteButton = event.target.closest("[data-community-delete]");
 
     if (closeTarget && (event.target === closeTarget || closeTarget.matches("button, a"))) {
         closeHomeOverlay();
@@ -1060,18 +1155,29 @@ homeOverlayRoot?.addEventListener("click", (event) => {
     if (communityFilterButton) {
         communityFilter = communityFilterButton.dataset.communityFilter;
         communityPage = 1;
-        renderCommunity();
+        loadCommunity().catch((error) => showHomeToast(error.message));
         return;
     }
 
     if (communityPageButton) {
         communityPage += Number(communityPageButton.dataset.communityPage);
-        renderCommunity();
+        loadCommunity().catch((error) => showHomeToast(error.message));
         return;
     }
 
     if (communityWriteButton) {
         openCommunityComposer();
+        return;
+    }
+
+    if (communityPostButton) {
+        openCommunityDetail(communityPostButton.dataset.communityPost)
+            .catch((error) => showHomeToast(error.message || "게시글을 불러오지 못했습니다."));
+        return;
+    }
+
+    if (communityDeleteButton) {
+        deleteCommunityPost(communityDeleteButton);
         return;
     }
 
@@ -1081,10 +1187,7 @@ homeOverlayRoot?.addEventListener("click", (event) => {
     }
 
     if (claimButton) {
-        const quest = claimButton.closest(".overlay-quest");
-        quest?.classList.add("is-claimed");
-        levelController.addXp(Number(claimButton.dataset.xpReward) || 0);
-        claimButton.disabled = true;
+        claimDailyQuest(claimButton);
         return;
     }
 
@@ -1095,12 +1198,19 @@ homeOverlayRoot?.addEventListener("click", (event) => {
 
 // 슬라이더와 검색창처럼 입력 즉시 반영되는 이벤트
 homeOverlayRoot?.addEventListener("input", (event) => {
+    if (studyRecordsController.handleInput(event)) {
+        return;
+    }
+
     const communitySearch = event.target.closest("[data-community-search]");
 
     if (communitySearch) {
         communityKeyword = communitySearch.value;
         communityPage = 1;
-        renderCommunity();
+        window.clearTimeout(communitySearchTimer);
+        communitySearchTimer = window.setTimeout(() => {
+            loadCommunity().catch((error) => showHomeToast(error.message));
+        }, 250);
     }
 });
 
@@ -1117,54 +1227,14 @@ homeOverlayRoot?.addEventListener("submit", async (event) => {
         event.preventDefault();
         const code = cohortForm.cohortCode.value.trim().toUpperCase();
         const message = cohortForm.querySelector("[data-home-cohort-message]");
-        const serverResult = await api?.cohort?.applyByCode?.({ code });
-        if (serverResult) {
-            message.textContent = serverResult.message || "참가 신청이 완료되었습니다. 관리자 승인을 기다려주세요.";
+        try {
+            await api.cohort.applyByCode(code);
+            message.textContent = "참가 신청이 완료되었습니다. 관리자 승인을 기다려주세요.";
             cohortForm.reset();
             return;
+        } catch (error) {
+            message.textContent = error.message || "가입 코드를 확인하고 다시 시도해 주세요.";
         }
-        const managed = getHomeManagedCohorts();
-        const cohort = managed.find((item) => (
-            item.joinCode?.value === code
-            && item.joinCode?.status === "ACTIVE"
-            && (!item.joinCode.expiresAt || item.joinCode.expiresAt >= new Date().toISOString().slice(0, 10))
-        ));
-
-        if (!cohort) {
-            message.textContent = "사용할 수 없거나 만료된 가입 코드입니다.";
-            return;
-        }
-
-        let applications = [];
-        try {
-            applications = JSON.parse(localStorage.getItem("omagotchiCohortApplications") || "[]");
-        } catch {
-            applications = [];
-        }
-
-        const duplicate = applications.some((application) => (
-            application.cohortId === cohort.id
-            && application.userId === currentUserEmail
-            && application.status === "PENDING"
-        ));
-
-        if (duplicate) {
-            message.textContent = `${cohort.name} 참가 승인을 기다리고 있습니다.`;
-            return;
-        }
-
-        applications.push({
-            id: `application-${Date.now()}`,
-            cohortId: cohort.id,
-            userId: currentUserEmail,
-            name: displayCharacterName,
-            email: currentUserEmail,
-            requestedAt: new Date().toLocaleString("ko-KR", { hour12: false }),
-            status: "PENDING"
-        });
-        localStorage.setItem("omagotchiCohortApplications", JSON.stringify(applications));
-        message.textContent = `${cohort.name} 참가 신청이 완료되었습니다. 관리자 승인을 기다려주세요.`;
-        cohortForm.reset();
         return;
     }
 
@@ -1173,7 +1243,11 @@ homeOverlayRoot?.addEventListener("submit", async (event) => {
     }
 
     event.preventDefault();
-    await submitCommunityPost(communityForm);
+    try {
+        await submitCommunityPost(communityForm);
+    } catch (error) {
+        showHomeToast(error.message || "게시글을 저장하지 못했습니다.");
+    }
 });
 
 document.addEventListener("keydown", (event) => {
@@ -1183,9 +1257,14 @@ document.addEventListener("keydown", (event) => {
 });
 
 // 저장된 사용자 설정을 적용한 뒤 최초 화면 렌더링
+syncPresenceCohortHeading();
 characterController.init();
 timerController.init();
 levelController.render();
 attendanceController.init();
 presenceController?.init();
 bgmPlayer.init();
+
+if (window.OmagotchiInitialOverlay) {
+    openHomeOverlay(window.OmagotchiInitialOverlay);
+}

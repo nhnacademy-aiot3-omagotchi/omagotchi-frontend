@@ -25,6 +25,7 @@ public class SignupPageController {
 
     private static final String REGISTER_VIEW = "pages/auth/register";
     private static final String AUTH_FEEDBACK = "authFeedback";
+    private static final String AUTH_FEEDBACK_TYPE = "authFeedbackType";
 
     private final AuthenticationService authenticationService;
 
@@ -73,6 +74,7 @@ public class SignupPageController {
                         AUTH_FEEDBACK,
                         "계정이 생성됐습니다. 로그인해주세요."
                 );
+                redirectAttributes.addFlashAttribute(AUTH_FEEDBACK_TYPE, "success");
                 return "redirect:/login";
             }
             case SignupResult.Rejected(ErrorCode rejectionCode) -> {

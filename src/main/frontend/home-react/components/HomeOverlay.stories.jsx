@@ -1,5 +1,122 @@
-import React from "react";
+import { useEffect, useRef } from "react";
+import { expect, fireEvent, fn, userEvent, waitFor, within } from "storybook/test";
+import { createStudyRecords } from "../../../resources/static/js/home/studyRecords.js";
 import { HomeOverlay } from "./HomeOverlay.jsx";
+
+function localDateKey(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function localDateTimeValue(date) {
+  const hour = String(date.getHours()).padStart(2, "0");
+  const minute = String(date.getMinutes()).padStart(2, "0");
+  return `${localDateKey(date)}T${hour}:${minute}`;
+}
+
+function localTimeValue(date) {
+  return localDateTimeValue(date).slice(11);
+}
+
+function storyRecord({ id, daysAgo, startHour, startMinute, startSecond = 0, endHour, endMinute, endSecond = 0 }) {
+  const startTime = new Date();
+  startTime.setDate(startTime.getDate() - daysAgo);
+  startTime.setHours(startHour, startMinute, startSecond, 0);
+  const endTime = new Date(startTime);
+  endTime.setHours(endHour, endMinute, endSecond, 0);
+  if (endTime <= startTime) {
+    endTime.setDate(endTime.getDate() + 1);
+  }
+
+  return {
+    id,
+    aggregationDate: localDateKey(startTime),
+    startTime: startTime.toISOString(),
+    endTime: endTime.toISOString(),
+    studySeconds: Math.floor((endTime.getTime() - startTime.getTime()) / 1000),
+    version: 0,
+    createdAt: endTime.toISOString(),
+    updatedAt: endTime.toISOString()
+  };
+}
+
+// Learning Service의 StudyRecordResponse 형태를 따른 Story 전용 fixture다.
+// 운영 Home에는 API 대역이나 고정 기록을 전달하지 않는다.
+const storyRecords = [
+  storyRecord({ id: "storybook-record-1", daysAgo: 0, startHour: 9, startMinute: 10, endHour: 10, endMinute: 30 }),
+  storyRecord({ id: "storybook-record-2", daysAgo: 0, startHour: 11, startMinute: 5, endHour: 12, endMinute: 10 }),
+  storyRecord({ id: "storybook-record-3", daysAgo: 2, startHour: 14, startMinute: 30, endHour: 16, endMinute: 45 }),
+  storyRecord({ id: "storybook-record-4", daysAgo: 5, startHour: 10, startMinute: 20, endHour: 11, endMinute: 50 })
+];
+const midnightStoryRecords = [
+  storyRecord({ id: "storybook-midnight-record", daysAgo: 1, startHour: 23, startMinute: 30, endHour: 0, endMinute: 30 })
+];
+const timelineStoryRecords = [
+  storyRecord({ id: "storybook-timeline-record-1", daysAgo: 1, startHour: 9, startMinute: 0, endHour: 10, endMinute: 0, endSecond: 30 }),
+  storyRecord({ id: "storybook-timeline-record-2", daysAgo: 1, startHour: 11, startMinute: 0, startSecond: 30, endHour: 12, endMinute: 0 })
+];
+const updateStoryRecord = fn(async (id) => ({ id, version: 1 }));
+const createStoryRecord = fn(async () => ({ id: "storybook-created-record", version: 0 }));
+const storyApi = { createRecord: createStoryRecord, updateRecord: updateStoryRecord };
+
+function StudyRecordsOverlayStory({ records = storyRecords, api, selectedDateKey }) {
+  const hostRef = useRef(null);
+  const storageKeyRef = useRef(null);
+
+  if (!storageKeyRef.current) {
+    storageKeyRef.current = `storybook:home-study-records:${globalThis.crypto?.randomUUID?.() || Date.now()}`;
+  }
+
+  useEffect(() => {
+    const target = hostRef.current?.querySelector("[data-story-study-records]");
+    if (!target) return undefined;
+
+    const storageKey = storageKeyRef.current;
+    const previous = localStorage.getItem(storageKey);
+    localStorage.setItem(storageKey, JSON.stringify(records));
+
+    const controller = createStudyRecords({
+      storageKey,
+      getElapsedSeconds: () => 0,
+      api
+    });
+    const handleClick = (event) => controller.handleClick(event);
+    const handleInput = (event) => controller.handleInput(event);
+    const handleSubmit = (event) => controller.handleSubmit(event);
+
+    target.addEventListener("click", handleClick);
+    target.addEventListener("input", handleInput);
+    target.addEventListener("submit", handleSubmit);
+    controller.mount(target);
+    target.querySelector(`[data-study-calendar-day="${selectedDateKey}"]`)?.click();
+
+    return () => {
+      target.removeEventListener("click", handleClick);
+      target.removeEventListener("input", handleInput);
+      target.removeEventListener("submit", handleSubmit);
+      target.replaceChildren();
+      if (previous === null) localStorage.removeItem(storageKey);
+      else localStorage.setItem(storageKey, previous);
+    };
+  }, [api, records, selectedDateKey]);
+
+  return (
+    <div ref={hostRef}>
+      <HomeOverlay
+        type="write"
+        meta={{
+          icon: "/images/app/studyrecord.png",
+          title: "학습 기록",
+          description: "집중한 시간을 돌아보고 학습 흐름을 정리하세요."
+        }}
+        content={'<div data-story-study-records></div>'}
+        onClose={() => {}}
+      />
+    </div>
+  );
+}
 
 const meta = {
   title: "Home/HomeOverlay",
@@ -76,6 +193,139 @@ export const Progress = {
         </dl>
       </section>
     `
+  }
+};
+export const StudyRecords = {
+  render: () => <StudyRecordsOverlayStory api={storyApi} />,
+  play: async ({ canvasElement }) => {
+    updateStoryRecord.mockClear();
+    const canvas = within(canvasElement);
+    expect(await canvas.findByText("09:10")).toBeInTheDocument();
+    expect(canvas.getByText("10:30")).toBeInTheDocument();
+    expect(canvas.getByText("1시간 20분")).toBeInTheDocument();
+    expect(canvas.getByText("월간 학습")).toBeInTheDocument();
+    expect(canvas.getByText("선택한 날짜")).toBeInTheDocument();
+    expect(canvas.getAllByText("공부 시간")).not.toHaveLength(0);
+    expect(canvas.getAllByText("학습 시간대")).not.toHaveLength(0);
+    expect(canvas.queryByText("구간 1")).not.toBeInTheDocument();
+    expect(canvasElement.querySelector(".study-record-sequence")).toBeNull();
+    expect(canvasElement.querySelectorAll(".study-timeline-marker--record")).not.toHaveLength(0);
+    expect(canvasElement.querySelector(".study-records-summary")).toBeNull();
+    expect(canvas.queryByRole("tab")).not.toBeInTheDocument();
+    expect(canvas.queryByText("연간")).not.toBeInTheDocument();
+    const calendarOverview = canvasElement.querySelector(".study-calendar-overview");
+    expect(calendarOverview?.firstElementChild).toHaveClass("study-section-total");
+    expect(calendarOverview?.lastElementChild).toHaveClass("study-period-navigation");
+    expect(canvas.getAllByRole("button", { name: "수정" })).not.toHaveLength(0);
+    expect(canvas.getAllByRole("button", { name: "삭제" })).not.toHaveLength(0);
+    await userEvent.click(canvas.getAllByRole("button", { name: "수정" })[0]);
+    expect(canvas.getByLabelText(/시작 시간/)).toHaveAttribute("type", "text");
+    expect(canvas.getByLabelText(/종료 시간/)).toHaveAttribute("type", "text");
+    expect(canvas.getByLabelText(/시작 시간/)).toHaveAttribute("inputmode", "numeric");
+    expect(canvas.getByLabelText(/시작 시간/)).toHaveValue("09:10");
+    expect(canvas.getByLabelText(/종료 시간/)).toHaveValue("10:30");
+    fireEvent.input(canvas.getByLabelText(/시작 시간/), { target: { value: "0910" } });
+    expect(canvas.getByLabelText(/시작 시간/)).toHaveValue("09:10");
+    expect(canvas.getByRole("button", { name: "저장" })).toBeInTheDocument();
+    expect(canvas.getByRole("button", { name: "취소" })).toBeInTheDocument();
+    await userEvent.click(canvas.getByRole("button", { name: "저장" }));
+    expect(updateStoryRecord).toHaveBeenCalledWith("storybook-record-1", {
+      startDateTime: localDateTimeValue(new Date(storyRecords[0].startTime)),
+      endDateTime: localDateTimeValue(new Date(storyRecords[0].endTime)),
+      expectedVersion: 0
+    });
+    expect(canvasElement.querySelector(".study-record-tags")).toBeNull();
+  },
+  parameters: {
+    docs: {
+      description: {
+        story: "Home에서 사용하는 실제 createStudyRecords 렌더러를 마운트합니다. 조회 fixture는 Storybook localStorage에 격리하고 수정 요청 계약은 Story mock 함수로 검증합니다."
+      }
+    }
+  }
+};
+export const MidnightStudyRecord = {
+  render: () => (
+    <StudyRecordsOverlayStory
+      records={midnightStoryRecords}
+      api={storyApi}
+      selectedDateKey={midnightStoryRecords[0].aggregationDate}
+    />
+  ),
+  play: async ({ canvasElement }) => {
+    updateStoryRecord.mockClear();
+    const canvas = within(canvasElement);
+    expect(await canvas.findByText("23:30")).toBeInTheDocument();
+    expect(canvas.getByText("00:30")).toBeInTheDocument();
+    await userEvent.click(canvas.getByRole("button", { name: "수정" }));
+    expect(canvas.getByLabelText(/시작 시간/)).toHaveValue("23:30");
+    expect(canvas.getByLabelText(/종료 시간/)).toHaveValue("00:30");
+    await userEvent.click(canvas.getByRole("button", { name: "저장" }));
+    expect(updateStoryRecord).toHaveBeenCalledWith("storybook-midnight-record", {
+      startDateTime: localDateTimeValue(new Date(midnightStoryRecords[0].startTime)),
+      endDateTime: localDateTimeValue(new Date(midnightStoryRecords[0].endTime)),
+      expectedVersion: 0
+    });
+  }
+};
+export const StudyRecordTimelineInsertion = {
+  render: () => (
+    <StudyRecordsOverlayStory
+      records={timelineStoryRecords}
+      api={storyApi}
+      selectedDateKey={timelineStoryRecords[0].aggregationDate}
+    />
+  ),
+  play: async ({ canvasElement }) => {
+    createStoryRecord.mockClear();
+    const canvas = within(canvasElement);
+    const insertButtons = await canvas.findAllByRole("button", { name: /사이에 학습 기록 추가/ });
+
+    expect(insertButtons).toHaveLength(3);
+    expect(insertButtons[2]).toHaveAccessibleName(/익일 04:00 사이에 학습 기록 추가/);
+    await userEvent.click(insertButtons[1]);
+
+    const startInput = canvas.getByLabelText(/시작 시간/);
+    const endInput = canvas.getByLabelText(/종료 시간/);
+    const gapStart = new Date(Math.ceil(
+      new Date(timelineStoryRecords[0].endTime).getTime() / (60 * 1000)
+    ) * 60 * 1000);
+    const gapEnd = new Date(Math.floor(
+      new Date(timelineStoryRecords[1].startTime).getTime() / (60 * 1000)
+    ) * 60 * 1000);
+    const adjustedStart = new Date(gapEnd.getTime() - 60 * 1000);
+    const outsideEnd = new Date(gapEnd.getTime() + 60 * 60 * 1000);
+
+    expect(startInput).toHaveAttribute("type", "text");
+    expect(endInput).toHaveAttribute("type", "text");
+    fireEvent.input(startInput, { target: { value: localTimeValue(outsideEnd) } });
+    fireEvent.input(endInput, { target: { value: localTimeValue(outsideEnd) } });
+
+    expect(startInput).toHaveValue(localTimeValue(adjustedStart));
+    expect(endInput).toHaveValue(localTimeValue(gapEnd));
+    expect(canvas.getByText("입력 가능한 시간 범위로 조정했습니다.")).toBeInTheDocument();
+    expect(canvasElement.querySelector("[data-study-record-draft-duration]")).toHaveTextContent("1분");
+
+    await userEvent.click(canvas.getByRole("button", { name: "저장" }));
+    await waitFor(() => expect(createStoryRecord).toHaveBeenCalledWith({
+      startDateTime: localDateTimeValue(adjustedStart),
+      endDateTime: localDateTimeValue(gapEnd)
+    }));
+  },
+  parameters: {
+    docs: {
+      description: {
+        story: "선택한 학습일을 세로 타임라인으로 표현하고 최상단, 기록 사이, 최하단에서 기록을 추가합니다. 화면에서는 시간만 입력하고 자정 이후 값은 다음 날짜의 LocalDateTime으로 변환하며, 입력값은 가능한 구간으로 보정됩니다."
+      }
+    }
+  }
+};
+export const EmptyStudyRecords = {
+  render: () => <StudyRecordsOverlayStory records={[]} />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    expect(await canvas.findByText("선택한 날짜에 기록이 없습니다.")).toBeInTheDocument();
+    expect(canvas.queryByText(/홈에서 타이머를 시작하고/)).not.toBeInTheDocument();
   }
 };
 export const Settings = {

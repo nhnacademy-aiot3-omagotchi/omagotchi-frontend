@@ -9,6 +9,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.access.AccessDeniedHandler;
+import org.springframework.security.web.csrf.CsrfException;
 import org.springframework.stereotype.Component;
 import site.omagotchi.frontend.global.web.ServletApiErrorResponseWriter;
 
@@ -41,10 +42,13 @@ public class BffApiSecurityErrorHandler implements AuthenticationEntryPoint, Acc
             @NonNull HttpServletResponse response,
             @NonNull AccessDeniedException exception
     ) throws IOException {
+        SecurityErrorCode errorCode = exception instanceof CsrfException
+                ? SecurityErrorCode.CSRF_INVALID
+                : SecurityErrorCode.ACCESS_DENIED;
         responseWriter.write(
                 response,
                 HttpStatus.FORBIDDEN,
-                SecurityErrorCode.ACCESS_DENIED,
+                errorCode,
                 request.getRequestURI()
         );
     }

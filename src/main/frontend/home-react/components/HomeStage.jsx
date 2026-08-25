@@ -2,27 +2,27 @@ import React, { useEffect, useState } from "react";
 import { ActionDock } from "./ActionDock.jsx";
 import { BgmPlayer } from "./BgmPlayer.jsx";
 import { CharacterStage } from "./CharacterStage.jsx";
-import { ChatDrawer } from "./ChatDrawer.jsx";
+import { AiAssistantPanel } from "./AiAssistantPanel.jsx";
 import { StatusHud } from "./StatusHud.jsx";
 import { TimerPanel } from "./TimerPanel.jsx";
 import { TopMenu } from "./TopMenu.jsx";
 
 export function HomeStage({
-  initialChatOpen = false,
+  initialAiOpen = false,
   topMenuProps = {},
   timerProps = {},
   characterProps = {},
   statusProps = {},
-  chatProps = {},
+  aiAssistantProps = {},
   actionDockProps = {},
   bgmProps = {}
 }) {
-  const [chatOpen, setChatOpen] = useState(initialChatOpen);
+  const [aiOpen, setAiOpen] = useState(initialAiOpen);
 
   useEffect(() => {
-    const closeChat = () => setChatOpen(false);
-    window.addEventListener("omagotchi:home-chat-close", closeChat);
-    return () => window.removeEventListener("omagotchi:home-chat-close", closeChat);
+    const closeAiAssistant = () => setAiOpen(false);
+    window.addEventListener("omagotchi:home-ai-close", closeAiAssistant);
+    return () => window.removeEventListener("omagotchi:home-ai-close", closeAiAssistant);
   }, []);
 
   return (
@@ -32,8 +32,8 @@ export function HomeStage({
       <section className="home-character-zone" aria-label="오마고치 영역"><CharacterStage {...characterProps} /></section>
       <section className="home-bottom-hud" aria-label="캐릭터 요약과 빠른 실행">
         <StatusHud {...statusProps} />
-        <ChatDrawer {...chatProps} chatOpen={chatOpen} setChatOpen={setChatOpen} />
-        <ActionDock {...actionDockProps} chatOpen={chatOpen} onChatToggle={() => setChatOpen((open) => !open)} />
+        <AiAssistantPanel {...aiAssistantProps} open={aiOpen} setOpen={setAiOpen} />
+        <ActionDock {...actionDockProps} aiOpen={aiOpen} onAiToggle={() => setAiOpen((open) => !open)} />
       </section>
       <section className="home-floating-layer" aria-label="홈 보조 패널"><BgmPlayer {...bgmProps} /></section>
     </div>

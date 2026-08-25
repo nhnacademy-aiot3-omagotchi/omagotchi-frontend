@@ -1,4 +1,3 @@
-import React from "react";
 import { GameButton } from "./GameButton.jsx";
 import { GameField } from "./GameField.jsx";
 import { GameTabs } from "./GameTabs.jsx";
@@ -7,7 +6,6 @@ const menuMeta = {
   progress: { title: "진행", description: "퀘스트와 성장 기록", icon: "/images/app/quest.png" },
   personal: { title: "내 정보", description: "나의 학습과 캐릭터", icon: "/images/app/userList.png" },
   cohort: { title: "기수", description: "참여 기수와 가입 상태", icon: "/images/app/cohort.png" },
-  records: { title: "학습 기록", description: "집중 시간과 학습 흐름", icon: "/images/app/studyrecord.png" },
   space: { title: "공간", description: "함께 공부할 공간", icon: "/images/app/door.png" },
   community: { title: "커뮤", description: "공지와 동료들의 이야기", icon: "/images/app/commu.png" },
   settings: { title: "설정", description: "계정과 이용 환경", icon: "/images/app/set.png" }
@@ -73,26 +71,6 @@ function CohortPanel() {
   );
 }
 
-const studySessions = [
-  ["08.13", "UI 컴포넌트 정리", "1시간 22분"],
-  ["08.12", "React Island 학습", "2시간 05분"],
-  ["08.11", "출석 화면 설계", "54분"]
-];
-
-function RecordsPanel() {
-  return (
-    <>
-      <div className="ui-menu-stats"><Stat label="오늘" value="2시간 18분" /><Stat label="이번 주" value="8시간 40분" tone="sky" /><Stat label="평균 세션" value="48분" tone="cream" /></div>
-      <section className="ui-menu-section">
-        <header><div><span className="ui-menu-eyebrow">최근 기록</span><h3>집중 학습 세션</h3></div><GameButton variant="secondary">기록 추가</GameButton></header>
-        <ol className="ui-record-list">
-          {studySessions.map(([date, title, duration]) => <li key={`${date}-${title}`}><time>{date}</time><strong>{title}</strong><span>{duration}</span></li>)}
-        </ol>
-      </section>
-    </>
-  );
-}
-
 const rooms = [
   { name: "7기 실습실", description: "현재 참여 중인 기수 공간", status: "18명 학습 중", tone: "mint" },
   { name: "회의실 A", description: "팀 회고와 페어 프로그래밍", status: "2자리 남음", tone: "sky" },
@@ -133,7 +111,7 @@ function SettingsPanel() {
   );
 }
 
-const panelByMenu = { progress: ProgressPanel, personal: PersonalPanel, cohort: CohortPanel, records: RecordsPanel, space: SpacePanel, community: CommunityPanel, settings: SettingsPanel };
+const panelByMenu = { progress: ProgressPanel, personal: PersonalPanel, cohort: CohortPanel, space: SpacePanel, community: CommunityPanel, settings: SettingsPanel };
 
 export function HomeMenuPanel({ menu = "progress" }) {
   const meta = menuMeta[menu] || menuMeta.progress;

@@ -16,7 +16,7 @@
         return row;
     }
 
-    function create({ root, store, statusLabel, openDialog }) {
+    function create({ root, store, statusLabel, openDialog, setBubble, refreshDashboard }) {
         if (!root) throw new Error("Applications panel root is required.");
 
         const count = root.querySelector("[data-application-count]");
@@ -41,7 +41,17 @@
             list.replaceChildren(fragment);
         }
 
-        list.addEventListener("click", (event) => {
+        async function rejectApplication(applicationId, reason) {
+            try {
+                await globalThis.OmagotchiApi.manager.rejectMembership(applicationId, reason);
+                await refreshDashboard();
+            } catch (error) {
+                console.error("참가 신청을 거절하지 못했습니다.", error);
+                setBubble("참가 신청을\n거절하지 못했습니다.");
+            }
+        }
+
+        list.addEventListener("click", async (event) => {
             const approveButton = event.target.closest("[data-approve]");
             const rejectButton = event.target.closest("[data-reject]");
             const applicationId = approveButton?.dataset.approve || rejectButton?.dataset.reject;
@@ -49,7 +59,15 @@
             if (application?.status !== "PENDING") return;
 
             if (approveButton) {
-                store.dispatch({ type: "APPROVE_APPLICATION", applicationId: application.id });
+                approveButton.disabled = true;
+                try {
+                    await globalThis.OmagotchiApi.manager.approveMembership(application.id, "STUDENT");
+                    await refreshDashboard();
+                } catch (error) {
+                    approveButton.disabled = false;
+                    console.error("참가 신청을 승인하지 못했습니다.", error);
+                    setBubble("참가 신청을\n승인하지 못했습니다.");
+                }
                 return;
             }
             openDialog({
@@ -58,12 +76,10 @@
                 inputLabel: "거절 사유",
                 confirmText: "거절"
             }, (reason) => {
-                if (!reason.trim()) return false;
-                return store.dispatch({
-                    type: "REJECT_APPLICATION",
-                    applicationId: application.id,
-                    reason: reason.trim()
-                }).ok;
+                const normalizedReason = reason.trim();
+                if (!normalizedReason) return false;
+                rejectApplication(application.id, normalizedReason);
+                return true;
             });
         });
 

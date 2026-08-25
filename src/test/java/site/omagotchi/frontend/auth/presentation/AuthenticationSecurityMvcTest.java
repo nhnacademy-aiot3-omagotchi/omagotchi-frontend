@@ -178,6 +178,22 @@ class AuthenticationSecurityMvcTest {
     }
 
     @Test
+    @DisplayName("SYSTEM_ADMIN Login 성공 뒤 전용 Dashboard Redirect")
+    void redirectsSystemAdminToDedicatedDashboardAfterLogin() throws Exception {
+        given(identityAuthClient.login("test@test.com", "00000000000000000000"))
+                .willReturn(systemAdminTokenBundle());
+
+        mockMvc.perform(post("/login")
+                        .with(csrf())
+                        .param("email", "test@test.com")
+                        .param("password", "00000000000000000000"))
+                .andExpectAll(
+                        status().isFound(),
+                        redirectedUrl("/system-admin-dashboard")
+                );
+    }
+
+    @Test
     @DisplayName("인증된 Session의 중복 Login 차단")
     void rejectsLoginForAuthenticatedSessionBeforeIdentityCall() throws Exception {
         // Given: 기존 Token Family를 보유한 인증 Session
@@ -298,7 +314,7 @@ class AuthenticationSecurityMvcTest {
                 .andExpectAll(
                         status().isForbidden(),
                         content().contentTypeCompatibleWith("application/json"),
-                        jsonPath("$.code").value("AUTH_ACCESS_DENIED")
+                        jsonPath("$.code").value("AUTH_CSRF_INVALID")
                 );
     }
 
@@ -414,6 +430,17 @@ class AuthenticationSecurityMvcTest {
                 "access-token",
                 Instant.parse("2099-01-01T00:00:00Z"),
                 "refresh-token",
+                Instant.parse("2099-01-02T00:00:00Z")
+        );
+    }
+
+    private BrowserSessionTokenBundle systemAdminTokenBundle() {
+        return new BrowserSessionTokenBundle(
+                UUID.fromString("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"),
+                GlobalRole.SYSTEM_ADMIN,
+                "system-admin-access-token",
+                Instant.parse("2099-01-01T00:00:00Z"),
+                "system-admin-refresh-token",
                 Instant.parse("2099-01-02T00:00:00Z")
         );
     }

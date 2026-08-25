@@ -9,14 +9,26 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
+import site.omagotchi.frontend.auth.application.result.BrowserSessionTokenBundle;
+import site.omagotchi.frontend.auth.domain.GlobalRole;
+
+import java.time.Instant;
+import java.util.List;
+import java.util.UUID;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
+import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
@@ -31,11 +43,16 @@ class FrontendApplicationTests {
 	@Autowired
 	private WebApplicationContext applicationContext;
 	private MockMvc unfilteredMockMvc;
+	private MockMvc securityMockMvc;
 
 	@BeforeEach
 	void setUpUnfilteredMockMvc() {
 		unfilteredMockMvc = MockMvcBuilders
 				.webAppContextSetup(applicationContext)
+				.build();
+		securityMockMvc = MockMvcBuilders
+				.webAppContextSetup(applicationContext)
+				.apply(springSecurity())
 				.build();
 	}
 
@@ -77,11 +94,46 @@ class FrontendApplicationTests {
 	}
 
 	@Test
-	@DisplayName("관리자 공부 통계 Mock은 BFF 경로로 제공")
-	void managerStudyStatisticsMockUsesBffPath() throws Exception {
-		unfilteredMockMvc.perform(get("/bff/v1/mock-api/study-stats"))
+	@DisplayName("시스템 관리자 Dashboard는 SYSTEM_ADMIN에게만 전용 View를 반환")
+	void systemAdminDashboardRequiresSystemAdminRole() throws Exception {
+		securityMockMvc.perform(get("/system-admin-dashboard"))
+				.andExpect(status().is3xxRedirection())
+				.andExpect(redirectedUrl("/login"));
+
+		securityMockMvc.perform(get("/system-admin-dashboard")
+					.with(authenticatedUser(
+							"11111111-1111-1111-1111-111111111111",
+							GlobalRole.USER
+					)))
+				.andExpect(status().isForbidden());
+
+		securityMockMvc.perform(get("/system-admin-dashboard")
+					.with(authenticatedUser(
+							"22222222-2222-2222-2222-222222222222",
+							GlobalRole.SYSTEM_ADMIN
+					)))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.members").isArray());
+				.andExpect(view().name("system-admin/dashboard/index"))
+				.andExpect(model().attribute(
+						"systemAdminIdentifier",
+						"22222222-2222-2222-2222-222222222222"
+				))
+				.andExpect(content().string(org.hamcrest.Matchers.containsString("name=\"_csrf\"")))
+				.andExpect(content().string(org.hamcrest.Matchers.containsString(
+						"22222222-2222-2222-2222-222222222222"
+				)))
+				.andExpect(content().string(org.hamcrest.Matchers.not(
+						org.hamcrest.Matchers.containsString("test@test.com")
+				)));
+
+		mockMvc.perform(get("/js/system-admin/dashboard/index.js"))
+				.andExpect(status().isOk());
+
+		mockMvc.perform(get("/js/system-admin/dashboard/data/systemAdminApiRepository.js"))
+				.andExpect(status().isOk());
+
+		mockMvc.perform(get("/js/system-admin/dashboard/data/systemAdminMockRepository.js"))
+				.andExpect(status().isOk());
 	}
 
 	@Test
@@ -115,6 +167,26 @@ class FrontendApplicationTests {
 			request.setAttribute(RequestDispatcher.ERROR_REQUEST_URI, "/test/error");
 			return request;
 		};
+	}
+
+	private static RequestPostProcessor authenticatedUser(String userId, GlobalRole globalRole) {
+		UUID parsedUserId = UUID.fromString(userId);
+		BrowserSessionTokenBundle tokenBundle = new BrowserSessionTokenBundle(
+				parsedUserId,
+				globalRole,
+				"test-access-token",
+				Instant.parse("2099-01-01T00:00:00Z"),
+				"test-refresh-token",
+				Instant.parse("2099-01-02T00:00:00Z")
+		);
+		UsernamePasswordAuthenticationToken authentication =
+				UsernamePasswordAuthenticationToken.authenticated(
+						userId,
+						null,
+						List.of(new SimpleGrantedAuthority("ROLE_" + globalRole.name()))
+				);
+		authentication.setDetails(tokenBundle);
+		return authentication(authentication);
 	}
 
 }

@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{system-admin/dashboard/layouts/layout}">
+<head><title>Omagotchi 시스템 관리</title></head>
+<body>
+<div class="manager-content system-admin-content" layout:fragment="content">
+    <th:block th:replace="~{system-admin/dashboard/panels/overview :: panel}"></th:block>
+    <th:block th:replace="~{system-admin/dashboard/panels/users :: panel}"></th:block>
+    <th:block th:replace="~{system-admin/dashboard/panels/cohorts :: panel}"></th:block>
+    <th:block th:replace="~{system-admin/dashboard/panels/audits :: panel}"></th:block>
+</div>
+
+<th:block layout:fragment="pageDialogs">
+    <th:block th:replace="~{system-admin/dashboard/popups/permissionDialog :: dialog}"></th:block>
+    <th:block th:replace="~{system-admin/dashboard/popups/cohortDialog :: dialog}"></th:block>
+</th:block>
+
+<th:block layout:fragment="pageScripts">
+    <script src="/js/api.js" th:src="@{/js/api.js}"></script>
+    <script type="module" src="/js/system-admin/dashboard/index.js" th:src="@{/js/system-admin/dashboard/index.js}"></script>
+</th:block>
+</body>
+</html>
