@@ -149,7 +149,13 @@
             checkOut: () => request("/attendance/check-out", { method: "POST" })
         },
         presence: {
-            getLabPresence: () => request("/presence")
+            getLabPresence: () => request("/presence"),
+            // 응답 본문이 곧 최신 snapshot이므로 조회를 위한 추가 왕복이 없다.
+            sendHeartbeat: () => request("/presence/heartbeat", { method: "POST" }),
+            // 페이지 이탈 중에도 전송되도록 keepalive를 쓴다.
+            // navigator.sendBeacon은 커스텀 Header를 붙일 수 없어 CSRF Token을 실을 수 없다.
+            // heartbeat가 이미 POST라 CSRF Token은 캐시되어 있으므로 즉시 전송된다.
+            leave: () => request("/presence/leave", { method: "POST", keepalive: true })
         },
         studyRecords: {
             list: () => optional("/study-records"),

@@ -106,9 +106,6 @@ public interface LearningHttpService {
             @RequestParam StudyRankingPeriod period
     );
 
-    @GetExchange("/cohorts/me/presence")
-    JsonNode getPresence(@RequestHeader(HttpHeaders.AUTHORIZATION) String authorization);
-
     @GetExchange("/community/posts")
     JsonNode getCommunityPosts(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,

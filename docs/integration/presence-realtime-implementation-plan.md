@@ -15,6 +15,7 @@
 | 2026-08-24 | 인계서 작성. 인증 방식 미정으로 Presence 차단 판정 | Browser가 Access Token을 갖지 않아 STOMP CONNECT 인증 경로가 없음 |
 | 2026-08-25 (오전) | 1차 결정: **View STOMP ↔ Browser SSE** | Learning 변경 0, ticket 불필요 |
 | **2026-08-25 (확정)** | **최종 결정: REST heartbeat + Learning의 기존 Redis TTL 구조 재사용** | 아래 §1 참고. **WebSocket 자체를 Presence 경로에서 제외한다** |
+| 2026-08-25 (확정) | 재실 정책: **"화면을 보고 있어야 재실"**. TTL 60초 유지, heartbeat 15초, 숨겨진 탭은 중단 | §3 L-3 · §4 F-5 |
 
 1차 결정을 뒤집은 이유는 §1의 "왜 STOMP+SSE를 접었는가"에 적는다. 기각한 설계의 상세는
 [부록 A](#부록-a-기각한-stomp--sse-설계)에 남긴다. 나중에 채팅·실시간 알림처럼 **진짜 push가
@@ -117,6 +118,8 @@ realtime:
 | `heartbeat()`는 세션이 없으면 `registerSession()`을 호출한다 | `realtime/application/CohortPresenceService.java` |
 | `heartbeat()`는 세션 소유자를 대조한다 (`AccessDeniedException`) | 같은 파일 |
 | **`disconnectSession()`은 소유자를 대조하지 않는다** | 같은 파일 → §3 L-2에서 수정 |
+| **`heartbeat()`는 `AccessDeniedException`을 던진다.** REST로 열면 `GlobalExceptionHandler`의 catch-all에 걸려 403이 아니라 **500**이 된다 | `global/exception/GlobalExceptionHandler.java` → §3 L-0·L-2에서 수정 |
+| 이 저장소의 REST 규약은 `BusinessException` + `ErrorCode` (`ErrorType.AUTHORIZATION → 403`) | `global/exception/ErrorHttpStatusMapper.java`, 각 도메인 `XxxErrorCode` |
 | `snapshot()`이 TTL 만료 세션을 lazy cleanup 한다 | 같은 파일 `cleanupAndSnapshotUser()` |
 | Presence 세션 TTL은 환경 변수 `REALTIME_PRESENCE_SESSION_TTL` | `realtime/application/PresenceProperties.java`, `application.yaml:133` |
 | `GET /api/v1/cohorts/me/presence` snapshot REST가 이미 있다 | `realtime/presentation/PresenceController.java` |
@@ -129,7 +132,7 @@ realtime:
 ## 2. 전체 그림과 소유권
 
 ```text
-┌─────────┐  30초 주기 POST   ┌──────────┐   Bearer    ┌─────────┐        ┌──────────┐
+┌─────────┐  30초 주기 POST    ┌──────────┐   Bearer    ┌─────────┐        ┌──────────┐
 │ Browser │──────────────────►│   View   │────────────►│ Gateway │───────►│ Learning │
 │         │◄──── snapshot ────│  (8082)  │◄────────────│ (8080)  │◄───────│  (8084)  │
 └─────────┘   Session Cookie  └──────────┘             └─────────┘        └──────────┘
@@ -162,19 +165,60 @@ Session에 저장하고, 하류 호출 헤더에만 실어 보낸다. `LearningC
 
 ## 3. Learning 작업
 
-> 변경 범위: `realtime` 패키지 Controller 1개 + Service 3줄 + 환경 변수 1개.
+> 변경 범위: ErrorCode 1개(신규) + `CohortPresenceService` 2곳 + `PresenceController` + 테스트.
 > **선행 확인:** `realtime` 패키지를 직접 수정할 수 있는 영역인지 확인한다(§9-1).
+
+### L-0. `PresenceErrorCode` 신규 (선행)
+
+**이 저장소의 REST 규약은 `BusinessException` + `ErrorCode`다.**
+`GlobalExceptionHandler`에 `@ExceptionHandler(Exception.class)` catch-all이 있어서,
+`AccessDeniedException`을 던지면 Spring Security의 `ExceptionTranslationFilter`에 닿기 전에
+advice가 먼저 삼켜 **403이 아니라 500으로 응답된다.** STOMP 경로에는 MVC advice가 적용되지
+않아 지금까지 드러나지 않았을 뿐이다.
+
+`realtime/application/PresenceErrorCode.java`
+
+```java
+@Getter
+@Accessors(fluent = true)
+@RequiredArgsConstructor
+public enum PresenceErrorCode implements ErrorCode {
+
+    SESSION_ID_REQUIRED(
+            ErrorType.INVALID_INPUT,
+            "PRESENCE_SESSION_ID_REQUIRED",
+            "Presence 세션 식별자가 필요합니다."
+    ),
+    SESSION_ACCESS_DENIED(
+            ErrorType.AUTHORIZATION,
+            "PRESENCE_SESSION_ACCESS_DENIED",
+            "다른 사용자의 Presence 세션을 조작할 수 없습니다."
+    );
+
+    private final ErrorType type;
+    private final String code;
+    private final String message;
+}
+```
+
+`ErrorHttpStatusMapper`가 `AUTHORIZATION → 403`, `INVALID_INPUT → 400`으로 매핑한다.
+`CohortErrorCode.COHORT_ACCESS_DENIED`, `TeamErrorCode.COHORT_ACCESS_DENIED` 등 다른 도메인과
+같은 패턴이다.
 
 ### L-1. REST heartbeat·leave 엔드포인트 추가
 
 `realtime/presentation/PresenceController.java`에 추가한다. `CohortPresenceService`는 그대로 쓴다.
 
 ```java
+/**
+ * 호출자가 소유한 Presence 세션 식별자.
+ * Browser가 아니라 View(BFF)가 생성해 Session에 보관하고 하류 호출에만 싣는다.
+ */
 public static final String PRESENCE_SESSION_HEADER = "X-Presence-Session";
 
 /**
  * REST heartbeat. 최초 호출은 세션 등록, 이후 호출은 TTL 연장으로 동작한다.
- * 응답으로 현재 snapshot을 함께 반환해 별도 polling 왕복을 없앤다.
+ * 응답에 snapshot을 함께 실어 화면이 조회를 위해 한 번 더 왕복하지 않게 한다.
  */
 @PostMapping("/heartbeat")
 public CohortPresenceSnapshot heartbeat(
@@ -182,19 +226,32 @@ public CohortPresenceSnapshot heartbeat(
         @RequestHeader(PRESENCE_SESSION_HEADER) String presenceSessionId
 ) {
     AuthenticatedUser user = AuthenticatedUser.from(authentication);
-    presenceService.heartbeat(presenceSessionId, user);
+    presenceService.heartbeat(requireSessionId(presenceSessionId), user);
     return presenceService.currentUserSnapshot(user.userId());
 }
 
-/** 로그아웃·이탈 시 TTL을 기다리지 않고 즉시 제거한다. */
+/** 이탈 통지. TTL 만료를 기다리지 않고 즉시 제거한다. */
 @DeleteMapping
 public ResponseEntity<Void> leave(
         JwtAuthenticationToken authentication,
         @RequestHeader(PRESENCE_SESSION_HEADER) String presenceSessionId
 ) {
     AuthenticatedUser user = AuthenticatedUser.from(authentication);
-    presenceService.disconnectSession(presenceSessionId, user.userId());
+    presenceService.disconnectSession(requireSessionId(presenceSessionId), user.userId());
     return ResponseEntity.noContent().build();
+}
+
+/**
+ * CohortPresenceService는 빈 sessionId를 조용히 무시하고 반환한다.
+ * 그대로 두면 heartbeat가 아무것도 등록하지 않은 채 200을 반환해 장애가 숨는다.
+ * Header 자체가 없는 경우는 MissingRequestHeaderException이 400으로 변환하므로
+ * 여기서는 공백 값만 막는다.
+ */
+private static String requireSessionId(String presenceSessionId) {
+    if (presenceSessionId == null || presenceSessionId.isBlank()) {
+        throw new BusinessException(PresenceErrorCode.SESSION_ID_REQUIRED);
+    }
+    return presenceSessionId;
 }
 ```
 
@@ -204,72 +261,128 @@ public ResponseEntity<Void> leave(
 - `heartbeat()` + `currentUserSnapshot()`가 membership을 각각 조회한다(요청당 2회).
   30명 규모에서는 무시할 수준이지만, 부하가 커지면 `heartbeat`가 snapshot을 직접 반환하도록
   Service에 메서드를 하나 두어 1회로 줄인다.
+- Gateway의 `default-filters`는 `X-User-Id`·`X-Global-Role`·`Cookie`만 제거하므로
+  `X-Presence-Session`은 그대로 전달된다. Route 추가도 필요 없다.
 
-### L-2. `disconnectSession`에 소유자 대조 추가 (보안 갭)
+### L-2. 소유자 대조 정리 (보안 갭)
+
+`CohortPresenceService` 두 곳을 함께 고친다. **`heartbeat()`만 두고 `disconnectSession()`만
+고치면 안 된다.** `heartbeat()`도 REST로 열리므로 `AccessDeniedException`이 500이 된다.
+
+**① `heartbeat()` — 예외 타입 교체**
 
 ```java
-// heartbeat()에는 대조가 있다
 if (!session.userId().equals(user.userId())) {
-    throw new AccessDeniedException("WebSocket session does not belong to the authenticated user");
+    // REST heartbeat로도 호출되므로 AccessDeniedException 대신 BusinessException을 던진다.
+    // GlobalExceptionHandler의 catch-all이 AccessDeniedException을 500으로 바꾸기 때문이다.
+    throw new BusinessException(PresenceErrorCode.SESSION_ACCESS_DENIED);
 }
-
-// disconnectSession()에는 없다 → REST에서는 남의 세션을 강제 종료시킬 수 있다
 ```
+
+**② `disconnectSession()` — 소유자 대조 신규 추가**
 
 STOMP에서는 `sessionId`를 프레임워크가 넣어 줘서 드러나지 않던 문제다. REST로 열면 요청자가
 값을 실어 보내므로 대조가 필요하다.
 
 ```java
+/**
+ * 세션 종료. requesterId는 요청자 본인의 userId이며, session hash가 이미 만료된 경우의
+ * fallback 정리 대상으로도 쓰인다. Principal이 없는 STOMP disconnect에서는 null이 들어온다.
+ */
 public void disconnectSession(String sessionId, UUID requesterId) {
-    ...
+    if (sessionId == null || sessionId.isBlank()) {
+        return;
+    }
+
     Optional<SessionPresence> sessionPresence = findSession(sessionId);
     if (sessionPresence.isPresent()) {
         SessionPresence session = sessionPresence.get();
         // REST 경로에서는 요청자가 sessionId를 실어 보내므로 소유자 대조가 없으면
         // 남의 재실 세션을 강제로 종료시킬 수 있다. heartbeat()와 같은 규칙을 적용한다.
-        // WebSocketPresenceEventListener는 requesterId를 null로 넘기므로 기존 동작은 유지된다.
+        // WebSocketPresenceEventListener는 Principal이 없을 때 null을 넘기므로 기존 동작은 유지된다.
         if (requesterId != null && !session.userId().equals(requesterId)) {
-            throw new AccessDeniedException(
-                    "Presence session does not belong to the authenticated user");
+            throw new BusinessException(PresenceErrorCode.SESSION_ACCESS_DENIED);
         }
         removeSession(sessionId, session.userId(), session.cohortId());
         return;
     }
-    ...
+
+    if (requesterId != null) {
+        removeFallbackSession(sessionId, requesterId);
+    }
 }
 ```
 
-`presenceSessionId`가 Browser에 노출되지 않는 설계(§2)가 1차 방어이고, 이 대조가 2차 방어다.
-설계에 기대어 코드 방어를 생략하지 않는다.
+- 파라미터 이름을 `fallbackUserId` → `requesterId`로 바꾼다. 두 역할을 겸하므로 이 이름이 정확하다.
+  호출부(`WebSocketPresenceEventListener`)는 인자 순서가 같아 수정이 필요 없다.
+- `org.springframework.security.access.AccessDeniedException` import는 사용처가 사라지므로 제거한다.
+- `presenceSessionId`가 Browser에 노출되지 않는 설계(§2)가 1차 방어이고, 이 대조가 2차 방어다.
+  설계에 기대어 코드 방어를 생략하지 않는다.
 
-### L-3. 세션 TTL 상향
+**fallback 분기는 대조가 필요 없다.** session hash가 만료된 경우 `removeFallbackSession`은
+요청자 본인의 userId로만 정리하므로 남에게 영향을 줄 수 없다.
 
-| 항목 | 기존 | 변경 | 이유 |
-| --- | --- | --- | --- |
-| `REALTIME_PRESENCE_SESSION_TTL` | `60s` | **`120s`** | Chrome은 백그라운드 탭의 `setInterval`을 1분 이상으로 스로틀링한다. TTL 60초면 다른 탭을 보는 동안 OFFLINE으로 떨어진다 |
+### L-3. 세션 TTL — **60초 유지 (변경 없음)**
 
-`.env.local`과 `.env.local.example` 양쪽을 갱신한다. 코드 변경은 없다.
+| 항목 | 값 | 결정 |
+| --- | --- | --- |
+| `REALTIME_PRESENCE_SESSION_TTL` | `60s` | **기존 값 유지. `.env` 변경 없음** |
 
-**정책 판단이 필요한 지점:** "자리에 있지만 다른 탭을 보는 중"을 재실로 인정할 것인가.
-인정한다면 120초, 인정하지 않는다면 60초를 유지한다. 이 문서는 **인정하는 쪽**을 전제로 한다.
+**정책 확정: "화면을 보고 있어야 재실"이다.** 다른 탭으로 이동한 상태는 재실로 인정하지 않는다.
+
+이 선택의 결과를 화면이 흡수해야 한다. Chrome은 백그라운드 탭의 `setInterval`을 약 1분
+주기로 스로틀링하므로, 아무 조치 없이 두면 숨겨진 탭이 **TTL 경계에서 ONLINE↔OFFLINE을
+반복(깜빡임)** 한다. 따라서 §4 F-5에서 `visibilitychange`로 **명시적으로** heartbeat를
+멈추고 재개해, 스로틀링에 맡기는 대신 결정론적으로 동작하게 만든다.
+
+- 탭이 보이는 동안: 15초 주기 heartbeat (TTL 60초의 1/4)
+- 탭이 숨겨지면: heartbeat 중단 → 최대 60초 후 OFFLINE
+- 탭이 다시 보이면: 즉시 1회 heartbeat → 즉시 ONLINE
+
+TTL을 120초로 올리면 "다른 탭을 봐도 재실"이 되지만, 이번에는 채택하지 않는다.
 
 ### L-4. 테스트 추가
 
-| 테스트 | 대상 |
-| --- | --- |
-| 최초 heartbeat가 세션을 등록하고 snapshot에 사용자가 나타난다 | `PresenceControllerTest` |
-| 반복 heartbeat가 TTL을 연장한다 | `CohortPresenceServiceTest` |
-| **남의 `presenceSessionId`로 leave를 호출하면 `403`** | `CohortPresenceServiceTest` |
-| `X-Presence-Session` 헤더 누락 시 `400` | `PresenceControllerTest` |
-| 승인 기수 없는 사용자의 heartbeat 거부 | `PresenceControllerTest` |
+| 테스트 | 대상 | 기대 |
+| --- | --- | --- |
+| 최초 heartbeat가 세션을 등록하고 snapshot을 반환 | `PresenceControllerTest` | `200` + `$.users[0].userId` |
+| `X-Presence-Session` 헤더 누락 | `PresenceControllerTest` | `400` `COMMON_INVALID_REQUEST` |
+| **공백 헤더** | `PresenceControllerTest` | `400` `PRESENCE_SESSION_ID_REQUIRED` |
+| leave가 `204`를 반환하고 `disconnectSession`을 호출 | `PresenceControllerTest` | `204` + `verify` |
+| 반복 heartbeat가 TTL을 연장한다 | `CohortPresenceServiceTest` | `expire` 호출 |
+| **남의 sessionId로 leave → 403** | `CohortPresenceServiceTest` | `BusinessException(SESSION_ACCESS_DENIED)` |
+| 남의 sessionId로 heartbeat → 403 | `CohortPresenceServiceTest` | 위와 같음 |
+
+기존 `PresenceControllerTest`의 `@WebMvcTest` + `@MockitoBean` + `TestJwtKeyConfig.issue()`
+패턴을 따른다.
+
+### L-5. REST Docs 갱신
+
+컨트롤러 테스트에 `.andDo(document("presence/heartbeat"))`, `.andDo(document("presence/leave"))`를
+붙이고 `src/docs/asciidoc/index.adoc`의 Presence 절 아래에 추가한다.
+
+```adoc
+=== Presence heartbeat
+
+include::{snippets}/presence/heartbeat/http-request.adoc[]
+include::{snippets}/presence/heartbeat/http-response.adoc[]
+
+=== Presence 이탈 통지
+
+include::{snippets}/presence/leave/http-request.adoc[]
+include::{snippets}/presence/leave/http-response.adoc[]
+```
 
 ### Learning 완료 조건
 
+- [ ] `PresenceErrorCode`가 존재하고 `AccessDeniedException`을 쓰지 않는다.
 - [ ] `POST /api/v1/cohorts/me/presence/heartbeat`가 snapshot을 반환한다.
 - [ ] `DELETE /api/v1/cohorts/me/presence`가 `204`를 반환한다.
-- [ ] `disconnectSession`에 소유자 대조가 있고 테스트가 이를 고정한다.
-- [ ] `REALTIME_PRESENCE_SESSION_TTL`이 `120s`로 설정되어 있다.
+- [ ] `heartbeat`·`disconnectSession` 모두 소유자 대조가 있고 테스트가 이를 고정한다.
+- [ ] 공백 `X-Presence-Session`이 `400`으로 거부된다.
+- [ ] `REALTIME_PRESENCE_SESSION_TTL`이 `60s`로 유지되어 있다(변경하지 않음).
 - [ ] 기존 STOMP 경로(`WebSocketConfig`, 두 interceptor, 이벤트 리스너)를 **삭제하지 않았다.**
+- [ ] REST Docs snippet이 `index.adoc`에 포함되어 있다.
 - [ ] Learning 전체 테스트가 통과한다.
 
 ---
@@ -278,17 +391,26 @@ public void disconnectSession(String sessionId, UUID requesterId) {
 
 > View는 **stateless**를 유지한다. 커넥션 보유·스케줄러·SSE가 없다.
 
-### 추가·변경할 파일
+### 추가·변경할 파일 (구현 완료)
 
 ```text
 src/main/java/site/omagotchi/frontend/presence/
-├─ presentation/PresenceBffController.java      (변경) heartbeat·leave 라우트 추가
+├─ presentation/PresenceBffController.java      (변경) 클래스 레벨 /bff/v1/presence + heartbeat·leave
+├─ application/PresenceBffService.java          (신규) Session Token·세션 식별자 결합
 ├─ application/PresenceSessionId.java           (신규) Session에 UUID 보관·조회
-└─ infrastructure/PresenceHttpService.java      (신규) 하류 계약
+└─ infrastructure/PresenceHttpService.java      (신규) 하류 계약 3개
 
-src/main/resources/static/js/api.js             (변경) presence 어댑터 2개
+src/main/java/.../global/learning/infrastructure/
+├─ LearningHttpService.java                     (변경) getPresence 제거 (presence 패키지로 이동)
+└─ LearningHttpServiceConfig.java               (변경) PresenceHttpService 등록
+
+src/main/resources/static/js/api.js             (변경) sendHeartbeat·leave 추가
 src/main/resources/static/js/home/presence.js   (변경) subscribe → heartbeat 주기 호출
 ```
+
+`getPresence`를 `LearningHttpService`에서 `PresenceHttpService`로 옮겼다.
+`AttendanceHttpService`를 분리한 것과 같은 방향이며, §2.5의 "떼어낼 수 있게 경계를 긋는다"에도
+맞는다. `LearningHttpServiceContractTest`는 presence를 다루지 않으므로 영향이 없다.
 
 ### F-1. `PresenceSessionId` — 신뢰 경계의 단일 지점
 
@@ -393,26 +515,48 @@ OFFLINE이 된다. leave는 즉시성을 위한 최적화다.
 `static/js/home/presence.js`의 `subscribeLabPresence` 호출부를 교체한다.
 
 ```javascript
-const HEARTBEAT_INTERVAL_MS = 30_000;
+// TTL 60초의 1/4. 브라우저 스로틀링에 맡기지 않고 visibilitychange로 직접 제어한다.
+const HEARTBEAT_INTERVAL_MS = 15_000;
+let heartbeatTimer = null;
+
+async function sendHeartbeat() {
+    try {
+        applySnapshot(await api.sendPresenceHeartbeat());   // 응답이 곧 snapshot
+    } catch {
+        markRealtimeUnavailable();                          // 0명으로 표시하지 않는다
+    }
+}
 
 function startHeartbeat() {
-    const tick = async () => {
-        try {
-            applySnapshot(await api.sendPresenceHeartbeat());   // 응답이 곧 snapshot
-        } catch {
-            markRealtimeUnavailable();                          // 0명으로 표시하지 않는다
-        }
-    };
-    tick();
-    return window.setInterval(tick, HEARTBEAT_INTERVAL_MS);
+    if (heartbeatTimer !== null) return;                    // 중복 타이머 방지
+    sendHeartbeat();
+    heartbeatTimer = window.setInterval(sendHeartbeat, HEARTBEAT_INTERVAL_MS);
 }
+
+function stopHeartbeat() {
+    if (heartbeatTimer === null) return;
+    window.clearInterval(heartbeatTimer);
+    heartbeatTimer = null;
+}
+
+// 숨겨진 탭은 브라우저가 타이머를 약 1분 주기로 스로틀링해 TTL 경계에서 깜빡인다.
+// 정책상 "화면을 보고 있어야 재실"이므로 스로틀링에 맡기지 않고 명시적으로 멈춘다.
+document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") {
+        startHeartbeat();       // 즉시 1회 전송되어 바로 ONLINE으로 복귀한다
+    } else {
+        stopHeartbeat();        // 최대 60초 후 TTL 만료로 OFFLINE
+    }
+});
 ```
 
 | 항목 | 값 | 이유 |
 | --- | --- | --- |
-| heartbeat 주기 | **30초** | TTL 120초의 1/4. 백그라운드 스로틀링(약 60초)이 걸려도 TTL 안에 들어온다 |
+| heartbeat 주기 | **15초** | TTL 60초의 1/4. 지연이 한두 번 나도 만료되지 않는다 |
+| 숨겨진 탭 | **중단** | 정책상 재실이 아니다. 스로틀링에 맡기면 깜빡이므로 명시적으로 멈춘다 |
 | 패널 상태와의 관계 | **패널이 닫혀 있어도 계속 보낸다** | heartbeat는 "내가 재실 중"을 알리는 것이므로 패널 표시 여부와 무관하다 |
 | 기존 `refresh()` 버튼 | 유지 | 즉시 갱신용. `GET /bff/v1/presence`를 그대로 쓴다 |
+| 트래픽 | 30명 × 4회/분 = **초당 2회** | WebSocket을 쓸 이유가 트래픽에는 없다 |
 
 `applySnapshot`의 상태 매핑(`ONLINE/AWAY/OFFLINE` → `present/away/offline`)은 변경하지 않는다.
 응답 형태가 기존 snapshot과 같기 때문이다.
@@ -431,6 +575,25 @@ Learning 작업 전에 먼저 반영해도 된다.
 | **정상, 재실자 0명** | `0명` | — |
 
 마지막 두 행이 핵심이다. **"진짜 0명"과 "연결 안 됨"을 화면에서 구분해야 한다.**
+
+### 구현 상태 (2026-08-25)
+
+| 단계 | 상태 |
+| --- | --- |
+| F-1 의존성 | **불필요** — WebSocket 의존성이 필요 없어졌다 |
+| F-2 하류 계약 | 완료 (`PresenceHttpService`) |
+| F-3 BFF 라우트 | 완료 (`GET /presence`, `POST /presence/heartbeat`, `POST /presence/leave`) |
+| F-4 CSRF·keepalive | 완료 (`fetch(keepalive)` 사용, `sendBeacon` 미사용) |
+| F-5 heartbeat 주기 호출 | 완료 (15초, `visibilitychange` 제어) |
+| F-6 실패 표시 정책 | 완료 (`markRealtimeUnavailable`) |
+| 자동 테스트 | 완료 (3개 파일) |
+
+```text
+src/test/java/site/omagotchi/frontend/presence/
+├─ infrastructure/PresenceHttpServiceContractTest.java   하류 계약 3개(GET·POST·DELETE)와 Header 고정
+├─ application/PresenceSessionIdTest.java                Session 범위·재사용·격리·Session 없음 거부
+└─ application/PresenceBffServiceTest.java               Token·식별자 전달, 식별자 안정성, 조기 중단
+```
 
 ### Frontend 완료 조건
 
@@ -490,7 +653,8 @@ curl -i -X POST \
   http://localhost:8080/api/v1/cohorts/me/presence/heartbeat
 ```
 
-`200`과 `{"cohortId":..., "users":[...], "generatedAt":...}`를 기대한다.
+`200`과 `{"cohortId":..., "users":[...], "occurredAt":...}`를 기대한다.
+(`CohortPresenceSnapshot`의 세 번째 컴포넌트 이름은 `generatedAt`이 아니라 `occurredAt`이다.)
 
 ---
 
@@ -502,10 +666,11 @@ curl -i -X POST \
 | --- | --- | --- |
 | 1 | 계정 A 로그인 → Home | 30초 이내에 재실 목록에 A가 표시 |
 | 2 | 계정 B를 다른 브라우저에서 로그인 | A 화면의 인원이 2명으로 증가 (최대 30초) |
-| 3 | B가 탭을 닫음 | A 화면에서 B가 사라짐 (leave 성공 시 즉시, 실패해도 120초 이내) |
-| 4 | B가 로그아웃 | Session 소멸로 heartbeat 중단 → 최대 120초 이내 사라짐 |
+| 3 | B가 탭을 닫음 | A 화면에서 B가 사라짐 (leave 성공 시 즉시, 실패해도 60초 이내) |
+| 4 | B가 로그아웃 | Session 소멸로 heartbeat 중단 → 최대 60초 이내 사라짐 |
 | 5 | A가 탭을 2개 열기 | 인원은 1명 유지 |
-| 6 | A가 다른 탭으로 이동 후 3분 대기 | 여전히 재실로 표시 (TTL 120초 > 스로틀 주기 60초) |
+| 6 | A가 다른 탭으로 이동 후 3분 대기 | **60초 이내 OFFLINE.** 깜빡이지 않고 한 번만 내려간다 |
+| 6-1 | A가 원래 탭으로 복귀 | **즉시 ONLINE.** 15초를 기다리지 않는다 |
 | 7 | Learning 강제 종료 | "실시간 재실 확인 불가" 표시. `0명` 아님 |
 | 8 | Learning 재기동 | 다음 heartbeat에서 자동 복구 |
 | 9 | 개발자 도구 Network·Application 확인 | Access Token과 `presenceSessionId`가 **어디에도** 없음 |
@@ -525,7 +690,7 @@ curl -i -X POST \
 5. 실제 Learning·Redis 환경에서 두 사용자의 등록·갱신·이탈을 확인했다.
 6. Home 재실 목록에서 인원 증감이 실제로 표시된다.
 7. **연결 불가와 재실자 0명이 화면에서 구분된다.**
-8. 백그라운드 탭 3분 후에도 재실 상태가 유지된다.
+8. 숨겨진 탭이 60초 이내에 한 번만 OFFLINE으로 내려가고 깜빡이지 않는다. 복귀 시 즉시 ONLINE이 된다.
 9. View에 stateful 커넥션 관리 코드가 없다.
 10. 최종 통합 SHA에서 REST 출결·기수·퀘스트 흐름에 회귀가 없다.
 
@@ -540,7 +705,7 @@ curl -i -X POST \
 | 1 | **`realtime` 패키지 수정 권한** | 착수 전 확인 필요. 불가하면 부록 A로 되돌린다 |
 | 2 | 실시간성이 즉시가 아니다 (최대 30초 지연) | 재실 현황에는 충분하다. 즉시성이 필요한 기능이 생기면 부록 A를 꺼낸다 |
 | 3 | heartbeat 요청당 membership 조회 2회 | 30명 규모에서 무시 가능. 부하 증가 시 Service 메서드 1개로 합친다 |
-| 4 | 백그라운드 탭 스로틀링 | TTL 120초 + heartbeat 30초로 흡수. "다른 탭 보는 중"을 재실로 인정하는 정책 전제 |
+| 4 | 백그라운드 탭 스로틀링 | TTL 60초 유지 + heartbeat 15초 + `visibilitychange` 명시 제어. **"화면을 보고 있어야 재실"** 정책으로 확정 |
 | 5 | 커뮤니티 실시간 알림 | 별건. `WebSocketSubscribeAuthorizationInterceptor`가 허용하는 destination은 presence topic과 `/user/queue/notifications` 둘뿐이다. 후자만 쓰면 Learning 변경이 없고, 전용 topic을 신설하면 구독 인가 규칙과 이벤트 발행이 모두 필요하다. **Presence 완료 후 착수** |
 | 6 | Native App 전환 시 | 앱은 토큰을 안전하게 보관할 수 있으므로 앱 → Gateway 직결이 가능하다. REST heartbeat 방식은 그대로 재사용된다 |
 | 7 | View 다중 인스턴스 | **제약 없음.** 상태를 View가 갖지 않으므로 어느 인스턴스가 받아도 동작이 같다 |
