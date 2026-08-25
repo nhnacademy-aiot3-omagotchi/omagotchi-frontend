@@ -3,7 +3,6 @@ import { createBgmPlayer } from "./home/bgm.js";
 import { createCharacter } from "./home/character.js";
 import { createLevel } from "./home/level.js";
 import { createStudyRecords } from "./home/studyRecords.js?v=20260825-5";
-import { createStudyRecords } from "./home/studyRecords.js?v=20260822-2";
 import { createTimer } from "./home/timer.js";
 import { escapeHtml, formatDuration, getLocalDateKey } from "./home/utils.js";
 

@@ -172,10 +172,6 @@
             discardTimer: (timerRunId) => request(`/timer/${encodeURIComponent(timerRunId)}/discard`, {
                 method: "POST"
             })
-        studyRecords: {
-            list: () => optional("/study-records"),
-            create: (payload) => optional("/study-records", { method: "POST", body: payload }),
-            update: (id, payload) => optional(`/study-records/${encodeURIComponent(id)}`, { method: "PATCH", body: payload })
         },
         cohort: {
             list: () => request("/cohorts"),
