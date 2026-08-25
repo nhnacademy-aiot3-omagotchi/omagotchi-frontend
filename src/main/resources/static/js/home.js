@@ -2,7 +2,6 @@ import { createAttendance } from "./home/attendance.js";
 import { createBgmPlayer } from "./home/bgm.js";
 import { createCharacter } from "./home/character.js";
 import { createLevel } from "./home/level.js";
-import { createPresence } from "./home/presence.js";
 import { createStudyRecords } from "./home/studyRecords.js?v=20260825-5";
 import { createTimer } from "./home/timer.js";
 import { escapeHtml, formatDuration, getLocalDateKey } from "./home/utils.js";
@@ -32,17 +31,6 @@ const calendarNext = document.querySelector("[data-calendar-next]");
 const streakCount = document.querySelector("[data-streak-count]");
 const streakList = document.querySelector("[data-streak-list]");
 const homeOverlayRoot = document.querySelector("[data-home-overlay-root]");
-const presenceHud = document.querySelector("[data-presence-hud]");
-const presenceTrigger = document.querySelector("[data-presence-trigger]");
-const presencePanel = document.querySelector("[data-presence-panel]");
-const presenceCount = document.querySelector("[data-presence-count]");
-const presenceCapacity = document.querySelector("[data-presence-capacity]");
-const presenceSearch = document.querySelector("[data-presence-search]");
-const presenceList = document.querySelector("[data-presence-list]");
-const presenceRefresh = document.querySelector("[data-presence-refresh]");
-const presenceClose = document.querySelector("[data-presence-close]");
-const presenceUpdated = document.querySelector("[data-presence-updated]");
-const presenceRoomName = document.querySelector("[data-presence-room-name]");
 const bgmPlayerRoot = document.querySelector("[data-bgm-player]");
 const homePage = document.querySelector(".home-page");
 const musicToggle = document.querySelector("[data-home-music-toggle]");
@@ -101,17 +89,6 @@ const sessionOnlyKeys = [
     "omagotchiCharacterColor"
 ];
 const api = window.OmagotchiApi;
-
-function syncPresenceCohortHeading() {
-    if (!presenceRoomName) return;
-
-    const approvedCohort = currentProfile.approvedCohort;
-    const approvedCohortName = approvedCohort?.name?.trim();
-    presenceRoomName.textContent = approvedCohort
-        ? `${approvedCohortName || "소속 기수"} 실습실`
-        : "기수에 가입하지 않았습니다.";
-    presenceRoomName.parentElement?.classList.toggle("is-unassigned", !approvedCohort);
-}
 
 let communityFilter = "all";
 let communityKeyword = "";
@@ -273,7 +250,6 @@ const levelController = createLevel({
     initialRequiredXp: currentCharacter.requiredExp
 });
 
-let presenceController;
 function confirmCheckOut() {
     return new Promise((resolve) => {
         const backdrop = document.createElement("section");
@@ -341,28 +317,7 @@ const attendanceController = createAttendance({
     confirmCheckOut,
     onChange: ({ streakCount: currentStreakCount } = {}) => {
         characterController.setAttendanceStreak(currentStreakCount);
-        presenceController?.render();
     }
-});
-
-presenceController = createPresence({
-    hud: presenceHud,
-    trigger: presenceTrigger,
-    panel: presencePanel,
-    count: presenceCount,
-    capacity: presenceCapacity,
-    search: presenceSearch,
-    list: presenceList,
-    refreshButton: presenceRefresh,
-    updated: presenceUpdated,
-    currentUser: {
-        name: displayCharacterName
-    },
-    selectedCharacterImage,
-    getAttendanceHistory: attendanceController.getHistory,
-    api: api?.presence,
-    enabled: Boolean(currentProfile.approvedCohort?.cohortId),
-    isOverlayOpen: () => document.body.classList.contains("has-home-overlay")
 });
 
 function setBgmPanelOpen(open) {
@@ -388,7 +343,6 @@ function closeHomeAiAssistant() {
 musicToggle?.addEventListener("click", () => {
     const nextOpen = !homePage?.classList.contains("is-bgm-open");
     if (nextOpen) closeHomeAiAssistant();
-    presenceController?.close();
     setAttendancePanelOpen(false);
     setBgmPanelOpen(nextOpen);
 });
@@ -398,21 +352,12 @@ musicClose?.addEventListener("click", () => setBgmPanelOpen(false));
 attendancePanelToggle?.addEventListener("click", () => {
     const nextOpen = !homePage?.classList.contains("is-attendance-panel-open");
     if (nextOpen) closeHomeAiAssistant();
-    presenceController?.close();
     setBgmPanelOpen(false);
     setAttendancePanelOpen(nextOpen);
 });
 
 attendancePanelClose?.addEventListener("click", () => setAttendancePanelOpen(false));
-presenceClose?.addEventListener("click", () => presenceController?.close());
-presenceTrigger?.addEventListener("click", () => {
-    closeHomeAiAssistant();
-    setBgmPanelOpen(false);
-    setAttendancePanelOpen(false);
-});
-
 aiAssistantToggle?.addEventListener("click", () => {
-    presenceController?.close();
     setBgmPanelOpen(false);
     setAttendancePanelOpen(false);
 });
@@ -1023,7 +968,6 @@ function openHomeOverlay(type) {
     }
 
     closeHomeAiAssistant();
-    presenceController?.close();
     setBgmPanelOpen(false);
     setAttendancePanelOpen(false);
     window.OmagotchiHomeOverlay?.open({ type, meta, content });
@@ -1257,12 +1201,10 @@ document.addEventListener("keydown", (event) => {
 });
 
 // 저장된 사용자 설정을 적용한 뒤 최초 화면 렌더링
-syncPresenceCohortHeading();
 characterController.init();
 timerController.init();
 levelController.render();
 attendanceController.init();
-presenceController?.init();
 bgmPlayer.init();
 
 if (window.OmagotchiInitialOverlay) {
