@@ -166,6 +166,19 @@ export const SensorListNullable = {
 };
 
 export const ThresholdSettings = { name: "임계값 설정", args: { ...baseArgs, defaultTab: "thresholds" } };
+// 서버 applyToSpace 는 규칙 없는 기기를 건너뛴다. 화면이 "저장되지 않습니다"라고 알려야 한다.
+export const ThresholdPartialRules = {
+  name: "임계값 설정 · 일부 항목 규칙 없음",
+  args: {
+    ...baseArgs,
+    defaultTab: "thresholds",
+    initialSpaceThresholds: [
+      { spaceId: 1, deviceCount: 3, metrics: [{ metric: "co2", operator: "GTE", threshold: 1000, ruleCount: 1, mixed: false }] },
+      ...spaceThresholds.slice(1)
+    ]
+  }
+};
+
 export const ThresholdMixed = {
   name: "임계값 설정 · 조건 혼재",
   args: { ...baseArgs, initialSpaceThresholds: mixedThresholds, defaultTab: "thresholds" }

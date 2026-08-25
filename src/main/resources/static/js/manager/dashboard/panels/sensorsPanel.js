@@ -145,9 +145,12 @@
             loadEvents();
         }
 
+        /** 성공하면 true, 실패하면 false. 화면은 이 값으로 다이얼로그를 닫을지 정한다. */
         async function saveSensor(sensor, mode) {
             const api = sensorApi();
-            if (!api) return;
+            if (!api) return false;
+
+            const previous = devices.find((device) => device.deviceEui === sensor.deviceEui);
             try {
                 if (mode === "create") {
                     await api.createDevice({
@@ -156,38 +159,57 @@
                         model: sensor.model,
                         displayName: sensor.displayName,
                         installationPoint: sensor.installationPoint,
-                        expectedIntervalSeconds: sensor.expectedIntervalSeconds
+                        expectedIntervalSeconds: sensor.expectedIntervalSeconds,
+                        installedAt: sensor.installedAt ?? null
                     });
-                    // 등록 API는 active를 받지 않는다(서버 기본값 true). 다를 때만 따로 맞춘다.
+                    // 등록 API는 active를 받지 않는다(서버 기본값 true).
                     if (sensor.active === false) {
-                        await api.updateDeviceActive(sensor.deviceEui, false);
+                        try {
+                            await api.updateDeviceActive(sensor.deviceEui, false);
+                        } catch (cause) {
+                            // 센서는 이미 등록됐다. "저장 실패"로 뭉뚱그리면 오해를 부른다.
+                            await loadAll();
+                            warn("센서는 등록됐지만\n비활성화에 실패했습니다.", cause);
+                            return true;
+                        }
                     }
                 } else {
                     // UpdateSensorDeviceRequest에는 model이 없다. 보내도 무시되므로 넣지 않는다.
+                    // installedAt은 서버가 조건 없이 덮어쓰므로, 빼면 설치일자가 지워진다.
                     await api.updateDevice(sensor.deviceEui, {
                         spaceId: sensor.spaceId,
                         displayName: sensor.displayName,
                         installationPoint: sensor.installationPoint,
-                        expectedIntervalSeconds: sensor.expectedIntervalSeconds
+                        expectedIntervalSeconds: sensor.expectedIntervalSeconds,
+                        installedAt: sensor.installedAt ?? null
                     });
-                    await api.updateDeviceActive(sensor.deviceEui, sensor.active !== false);
+                    // 값이 실제로 달라졌을 때만 부른다. 저장 한 번에 요청이 두 번 나가지 않도록.
+                    const nextActive = sensor.active !== false;
+                    if (!previous || previous.active !== nextActive) {
+                        await api.updateDeviceActive(sensor.deviceEui, nextActive);
+                    }
                 }
                 await loadAll();
+                return true;
             } catch (cause) {
                 warn("센서를 저장하지 못했습니다.", cause);
+                return false;
             }
         }
 
+        /** 서버 응답 { applied, unchanged, missing }을 그대로 돌려준다. 실패하면 false. */
         async function saveThresholds(spaceId, body) {
             const api = sensorApi();
-            if (!api) return;
+            if (!api) return false;
             try {
-                await api.applySpaceThreshold(spaceId, body.rules);
+                const result = await api.applySpaceThreshold(spaceId, body.rules);
                 // 저장 결과(ruleCount·mixed)는 서버가 다시 계산하므로 재조회한다.
                 spaceThresholds = asArray(await api.listSpaceThresholds());
                 publish();
+                return result || null;
             } catch (cause) {
                 warn("임계값을 저장하지 못했습니다.", cause);
+                return false;
             }
         }
 

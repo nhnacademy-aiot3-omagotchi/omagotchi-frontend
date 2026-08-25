@@ -361,6 +361,26 @@ function formatRetention(retention) {
 }
 
 /**
+ * 현재 페이지 주변만 번호로 보여준다. 알림이 쌓이면 페이지가 수십 개가 되므로
+ * 전부 그리면 버튼이 한 줄을 가득 채운다. null 은 생략 표시(…) 자리다.
+ */
+function pageWindow(page, totalPages, span = 2) {
+  if (totalPages <= 7) return Array.from({ length: totalPages }, (_, index) => index + 1);
+  const pages = new Set([1, totalPages]);
+  for (let offset = -span; offset <= span; offset += 1) {
+    const candidate = page + offset;
+    if (candidate >= 1 && candidate <= totalPages) pages.add(candidate);
+  }
+  const sorted = [...pages].sort((left, right) => left - right);
+  const withGaps = [];
+  sorted.forEach((value, index) => {
+    if (index > 0 && value - sorted[index - 1] > 1) withGaps.push(null);
+    withGaps.push(value);
+  });
+  return withGaps;
+}
+
+/**
  * GET /api/v1/sensors/events 응답을 그대로 그린다.
  *
  * onQueryChange가 주어지면 서버 페이징 모드로 동작한다 — 필터·페이지 변경을 위로 올리고
@@ -466,7 +486,13 @@ function AuditLog({ entries, loaded = true, loading = false, page: pageProp, tot
             : ""}
         </span>
         <div>
-          {Array.from({ length: totalPages }, (_, index) => index + 1).map((pageNumber) => <button type="button" key={pageNumber} className={page === pageNumber ? "is-current" : ""} aria-current={page === pageNumber ? "page" : undefined} onClick={() => changePage(pageNumber)}>{pageNumber}</button>)}
+          <button type="button" disabled={page === 1} onClick={() => changePage(page - 1)} aria-label="이전 페이지">‹</button>
+          {pageWindow(page, totalPages).map((pageNumber, index) => (
+            pageNumber === null
+              ? <span key={`gap-${index}`} className="sensor-pagination-gap" aria-hidden="true">…</span>
+              : <button type="button" key={pageNumber} className={page === pageNumber ? "is-current" : ""} aria-current={page === pageNumber ? "page" : undefined} onClick={() => changePage(pageNumber)}>{pageNumber}</button>
+          ))}
+          <button type="button" disabled={page === totalPages} onClick={() => changePage(page + 1)} aria-label="다음 페이지">›</button>
         </div>
       </footer>
     </section>
@@ -530,11 +556,13 @@ function ThresholdContent({ spaces, spaceThresholds, onSave }) {
   );
   const [draft, setDraft] = useState(() => metricsOf(current));
   const [savedTick, setSavedTick] = useState(0);
+  const [saveResult, setSaveResult] = useState(null);
+  const [saving, setSaving] = useState(false);
 
   // 저장 직후 서버 재조회가 이 effect를 깨우므로, 여기서 savedTick을 지우면 성공 메시지가
   // 한 프레임 만에 사라진다. 메시지는 공간을 바꿀 때만 지운다.
   useEffect(() => { setDraft(metricsOf(current)); }, [current]);
-  useEffect(() => { setSavedTick(0); }, [spaceId]);
+  useEffect(() => { setSavedTick(0); setSaveResult(null); }, [spaceId]);
 
   const spaceName = spaces.find((space) => space.spaceId === spaceId)?.name || "선택한 공간";
   const deviceCount = current?.deviceCount ?? 0;
@@ -544,24 +572,46 @@ function ThresholdContent({ spaces, spaceThresholds, onSave }) {
   function update(metric, field, value) {
     setDraft((prev) => ({ ...prev, [metric]: { ...prev[metric], [field]: value } }));
     setSavedTick(0);
+    setSaveResult(null);
   }
 
-  function submit(event) {
+  async function submit(event) {
     event.preventDefault();
     const missing = THRESHOLD_METRICS.some((metric) => {
       const value = draft[metric.value]?.threshold;
       return value === null || value === undefined || value === "" || Number.isNaN(Number(value));
     });
     if (missing) return;
-    // PATCH /api/v1/threshold-rules/spaces/{spaceId} 의 본문 형태
-    onSave(spaceId, {
-      rules: THRESHOLD_METRICS.map((metric) => ({
-        metric: metric.value,
-        operator: draft[metric.value].operator,
-        threshold: Number(draft[metric.value].threshold)
-      }))
-    });
-    setSavedTick((tick) => tick + 1);
+
+    // 저장 결과를 확인하기 전에 성공 메시지를 띄우면, 서버가 거절해도 초록 메시지가 뜬다.
+    setSaving(true);
+    setSaveResult(null);
+    try {
+      // PATCH /api/v1/threshold-rules/spaces/{spaceId} 의 본문 형태
+      const result = await onSave(spaceId, {
+        rules: THRESHOLD_METRICS.map((metric) => ({
+          metric: metric.value,
+          operator: draft[metric.value].operator,
+          threshold: Number(draft[metric.value].threshold)
+        }))
+      });
+      if (result === false) return;          // 저장 실패 — 말풍선이 이미 알렸다
+      setSaveResult(result || null);
+      setSavedTick((tick) => tick + 1);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  // 서버는 규칙이 없는 (기기 × 항목)을 missing 으로 돌려준다. 0이 아니면 화면이 알려야 한다.
+  function savedMessage() {
+    if (!saveResult) return "저장되었습니다.";
+    const { applied = 0, unchanged = 0, missing: skipped = 0 } = saveResult;
+    const parts = [];
+    if (applied) parts.push(`${applied}건 적용`);
+    if (unchanged) parts.push(`${unchanged}건은 이미 같은 값`);
+    if (skipped) parts.push(`${skipped}건은 규칙이 없어 건너뜀`);
+    return parts.length ? parts.join(" · ") : "변경된 규칙이 없습니다.";
   }
 
   return (
@@ -590,13 +640,14 @@ function ThresholdContent({ spaces, spaceThresholds, onSave }) {
                   {metric.label}
                   {rule.mixed && <em className="sensor-threshold-mixed-tag">혼재</em>}
                 </span>
-                <input type="number" required aria-label={`${metric.label} 임계값`} value={rule.threshold ?? ""} onChange={(event) => update(metric.value, "threshold", Number(event.target.value))} />
+                <input type="number" required aria-label={`${metric.label} 임계값`} value={rule.threshold ?? ""} onChange={(event) => update(metric.value, "threshold", event.target.value === "" ? null : Number(event.target.value))} />
                 <select aria-label={`${metric.label} 조건`} value={rule.operator} onChange={(event) => update(metric.value, "operator", event.target.value)}>
                   {THRESHOLD_OPERATORS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
                 </select>
-                <small>
+                {/* 서버(applyToSpace)는 규칙 없는 기기를 만나면 만들지 않고 건너뛴다. */}
+                <small className={rule.ruleCount === 0 ? "sensor-threshold-hint--none" : undefined}>
                   {rule.ruleCount === 0
-                    ? `기기 ${deviceCount}대에 새로 만듭니다.`
+                    ? `이 항목을 감시하는 기기가 없어 저장되지 않습니다.`
                     : rule.ruleCount < deviceCount
                       ? `기기 ${deviceCount}대 중 ${rule.ruleCount}대만 이 항목을 감시합니다.`
                       : `센서 ${rule.ruleCount}대에 각각 저장됩니다.`}
@@ -606,10 +657,14 @@ function ThresholdContent({ spaces, spaceThresholds, onSave }) {
           })}
         </div>
         <footer>
-          <button type="button" className="sensor-secondary-button" onClick={() => { setDraft(metricsOf(current)); setSavedTick(0); }}>되돌리기</button>
-          <button type="submit" className="sensor-primary-button">저장</button>
+          <button type="button" className="sensor-secondary-button" onClick={() => { setDraft(metricsOf(current)); setSavedTick(0); setSaveResult(null); }}>되돌리기</button>
+          <button type="submit" className="sensor-primary-button" disabled={saving}>{saving ? "저장 중…" : "저장"}</button>
         </footer>
-        {savedTick > 0 && <p className="sensor-threshold-saved" role="status">저장되었습니다.</p>}
+        {savedTick > 0 && (
+          <p className={`sensor-threshold-saved${saveResult?.missing ? " has-skipped" : ""}`} role="status">
+            {savedMessage()}
+          </p>
+        )}
       </form>
     </div>
   );
@@ -682,14 +737,22 @@ function SensorDialog({ mode, sensor, spaces, onClose, onSave }) {
     spaceId: device?.spaceId ?? spaces[0]?.spaceId ?? null,
     installationPoint: device?.installationPoint ?? "",
     expectedIntervalSeconds: device?.expectedIntervalSeconds ?? 60,
+    // 서버 update()는 installedAt을 조건 없이 덮어쓴다. 그대로 돌려보내지 않으면 지워진다.
+    installedAt: device?.installedAt ?? null,
     active: device?.active ?? true
   });
   const [form, setForm] = useState(() => toForm(sensor));
+  const [saving, setSaving] = useState(false);
   useEffect(() => { if (sensor) setForm(toForm(sensor)); }, [sensor]);
   function update(field, value) { setForm((current) => ({ ...current, [field]: value })); }
-  function submit(event) {
+  async function submit(event) {
     event.preventDefault();
-    onSave(form);
+    setSaving(true);
+    try {
+      await onSave(form);
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -717,7 +780,7 @@ function SensorDialog({ mode, sensor, spaces, onClose, onSave }) {
             <div className="sensor-field sensor-field--wide"><span>운영 상태</span><label className="sensor-switch-row"><strong>수집 활성화</strong><input type="checkbox" checked={form.active} onChange={(event) => update("active", event.target.checked)} /><i aria-hidden="true" /></label><small>센서는 삭제할 수 없습니다. 수집을 멈추려면 비활성화하세요.</small></div>
           </fieldset>
           <footer>
-            <div><button type="button" className="sensor-secondary-button" onClick={onClose}>취소</button><button type="submit" className="sensor-primary-button">{isEdit ? "변경 사항 저장" : "등록"}</button></div>
+            <div><button type="button" className="sensor-secondary-button" onClick={onClose}>취소</button><button type="submit" className="sensor-primary-button" disabled={saving}>{saving ? "저장 중…" : (isEdit ? "변경 사항 저장" : "등록")}</button></div>
           </footer>
         </form>
       </section>
@@ -777,9 +840,11 @@ export function SensorWorkspace({
     return byName;
   }, [spaceThresholds, spaces]);
 
-  function saveSensor(next) {
+  async function saveSensor(next) {
     if (onSaveSensor) {
-      onSaveSensor(next, dialog?.mode === "edit" ? "update" : "create");
+      // 서버가 거절하면(예: 중복 EUI 409) 창을 닫지 않는다. 닫으면 입력이 전부 사라진다.
+      const ok = await onSaveSensor(next, dialog?.mode === "edit" ? "update" : "create");
+      if (ok === false) return;
     } else {
       setSensors((current) => current.some((sensor) => sensor.deviceEui === next.deviceEui)
         ? current.map((sensor) => sensor.deviceEui === next.deviceEui ? next : sensor)
@@ -788,10 +853,9 @@ export function SensorWorkspace({
     setDialog(null);
   }
 
-  function saveThresholds(spaceId, body) {
+  async function saveThresholds(spaceId, body) {
     if (onSaveThresholds) {
-      onSaveThresholds(spaceId, body);
-      return;
+      return onSaveThresholds(spaceId, body);
     }
     // 로컬 모드에서는 서버가 돌려줄 모양을 흉내낸다.
     setSpaceThresholds((current) => current.map((item) => item.spaceId !== spaceId ? item : {
@@ -804,6 +868,7 @@ export function SensorWorkspace({
         mixed: false
       }))
     }));
+    return null;
   }
 
   const auditLog = {
