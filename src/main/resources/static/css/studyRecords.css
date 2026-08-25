@@ -1,8 +1,8 @@
-/* 타이머 구간 기록과 개인 학습 통계 */
+/* 타이머 학습 기록과 개인 학습 통계 */
 .study-records {
     min-width: 0;
     display: grid;
-    gap: 16px;
+    gap: 14px;
     color: var(--ui-ink, var(--ink));
     font-family: var(--ui-font-body, inherit);
 }
@@ -11,23 +11,15 @@
     padding: 24px;
 }
 
-.study-record-toolbar,
 .study-period-navigation,
-.study-record-tabs,
 .study-day-detail > header,
-.study-selected-day > header,
-.study-calendar > header,
-.study-year-chart > header {
+.study-calendar > header {
     display: flex;
     align-items: center;
 }
 
-.study-record-toolbar {
-    justify-content: space-between;
-    gap: 14px;
-}
-
-.study-record-load-error {
+.study-record-load-error,
+.study-record-action-error {
     margin: 0;
     padding: 12px 14px;
     border: 1px solid var(--ui-danger, #c73f52);
@@ -38,16 +30,7 @@
     font-weight: 800;
 }
 
-.study-record-tabs {
-    gap: 6px;
-    padding: 4px;
-    border-radius: 14px;
-    background: var(--ui-emerald-50, #f0fcf6);
-}
-
-.study-record-tabs button,
-.study-period-navigation button,
-.study-record-view > button {
+.study-period-navigation button {
     min-height: 40px;
     padding: 0 14px;
     border: 1px solid var(--ui-line, #cfe1d9);
@@ -56,14 +39,8 @@
     color: var(--ui-ink-muted, #587067);
     font: inherit;
     font-size: 12px;
-    font-weight: 900;
+    font-weight: 700;
     cursor: pointer;
-}
-
-.study-record-tabs button.is-active {
-    border-color: var(--ui-emerald-800, #176b4a);
-    background: var(--ui-emerald-800, #176b4a);
-    color: #fff;
 }
 
 .study-period-navigation {
@@ -102,132 +79,257 @@
 }
 
 .study-period-navigation strong {
-    min-width: 150px;
+    min-width: 112px;
     color: var(--ui-ink, var(--ink));
     text-align: center;
-    font-size: 14px;
+    font-size: 13px;
+    font-weight: 750;
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
 }
 
-.study-records-summary {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 180px)) minmax(220px, 1fr);
-    align-items: center;
-    gap: 10px;
-    padding: 0;
-    border: 0;
-    background: transparent;
-}
-
-.study-records-summary span,
-.study-records-summary p {
-    margin: 0;
-    color: var(--ui-ink-muted, #587067);
-    font-size: 13px;
-    font-weight: 800;
-}
-
-.study-records-summary strong {
-    color: var(--ui-ink, var(--ink));
-    font-size: 23px;
-    font-variant-numeric: tabular-nums;
-}
-
-.study-records-summary p {
-    justify-self: end;
-    padding: 14px 16px;
-    border: 1px solid var(--ui-line, #cfe1d9);
-    border-radius: 16px;
-    background: var(--ui-cream, #fff8e7);
-    text-align: right;
-}
-
 .study-day-detail,
-.study-selected-day,
-.study-calendar,
-.study-year-chart {
+.study-calendar {
     min-width: 0;
     display: grid;
-    gap: 14px;
-    padding: 18px;
+    gap: 16px;
+    padding: 20px;
     border: 1px solid var(--ui-line, #cfe1d9);
     border-radius: 18px;
     background: var(--ui-surface, #fff);
 }
 
 .study-day-detail > header,
-.study-selected-day > header,
-.study-calendar > header,
-.study-year-chart > header {
+.study-calendar > header {
     justify-content: space-between;
-    gap: 16px;
+    align-items: flex-end;
+    gap: 20px;
 }
 
-.study-day-detail > header span,
-.study-selected-day > header span,
-.study-calendar > header span,
-.study-year-chart > header span {
+.study-day-detail > header > div:first-child > span,
+.study-calendar > header > div:first-child > span {
     color: var(--ui-ink-muted, #587067);
-    font-size: 11px;
-    font-weight: 900;
-    letter-spacing: 0.04em;
+    font-size: 12px;
+    font-weight: 650;
+    letter-spacing: 0.02em;
 }
 
 .study-day-detail > header h3,
-.study-selected-day > header h3,
-.study-calendar > header h3,
-.study-year-chart > header h3 {
+.study-calendar > header h3 {
     margin: 4px 0 0;
     color: var(--ui-ink, var(--ink));
-    font-size: 19px;
-}
-
-.study-day-detail > header > strong,
-.study-selected-day > header > strong {
-    color: var(--ui-emerald-800, #176b4a);
     font-size: 20px;
-    font-variant-numeric: tabular-nums;
+    font-weight: 750;
+    line-height: 1.35;
 }
 
-.study-calendar > header p,
-.study-year-chart > header p {
+.study-day-detail > header h3 small {
+    display: inline-flex;
+    margin-left: 7px;
+    padding: 4px 8px;
+    border-radius: 999px;
+    background: var(--ui-emerald-100, #ddf8ea);
+    color: var(--ui-emerald-800, #176b4a);
+    vertical-align: 2px;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.study-calendar-guide {
     margin: 0;
     color: var(--ui-ink-muted, #587067);
     font-size: 12px;
+    font-weight: 600;
+}
+
+.study-calendar-overview {
+    min-width: 0;
+    display: flex;
+    align-items: flex-end;
+    justify-content: flex-end;
+    gap: 18px;
+}
+
+.study-section-total {
+    display: grid;
+    justify-items: end;
+    gap: 4px;
+    white-space: nowrap;
+}
+
+.study-section-total > span {
+    color: var(--ui-ink-muted, #587067);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0;
+}
+
+.study-section-total > strong {
+    color: var(--ui-ink, #17342a);
+    font-size: 24px;
     font-weight: 800;
+    line-height: 1.1;
+    font-variant-numeric: tabular-nums;
 }
 
 .study-record-list {
     display: grid;
-    gap: 10px;
-    max-height: 560px;
-    overflow-y: auto;
+    gap: 0;
+    overflow: visible;
     margin: 0;
-    padding: 0 4px 0 0;
+    padding: 0;
     list-style: none;
 }
 
-.study-record {
-    display: grid;
-    grid-template-columns: 54px minmax(0, 1fr);
-    gap: 14px;
-    padding: 14px;
-    border: 1px solid var(--ui-line, #cfe1d9);
-    border-radius: 16px;
-    background: var(--ui-canvas, #f3fbf7);
+.study-record-timeline {
+    position: relative;
 }
 
-.study-record-sequence {
-    width: 54px;
-    height: 54px;
+.study-timeline-entry {
+    position: relative;
+    display: grid;
+    grid-template-columns: 38px minmax(0, 1fr);
+    align-items: stretch;
+}
+
+.study-timeline-entry::before {
+    position: absolute;
+    z-index: 0;
+    top: 0;
+    bottom: 0;
+    left: 18px;
+    width: 1px;
+    background: var(--ui-line, #cfe1d9);
+    content: "";
+}
+
+.study-timeline-slot {
+    padding: 5px 0;
+}
+
+.study-timeline-slot--top::before {
+    top: 50%;
+}
+
+.study-timeline-slot--bottom::before {
+    bottom: 50%;
+}
+
+.study-timeline-slot--only::before {
+    display: none;
+}
+
+.study-timeline-marker {
+    z-index: 1;
+    grid-column: 1;
     display: grid;
     place-items: center;
+    align-self: stretch;
+}
+
+.study-timeline-marker i {
+    display: grid;
+    place-items: center;
+    box-sizing: border-box;
+    border-radius: 50%;
+    font-style: normal;
+}
+
+.study-timeline-marker--record i {
+    width: 13px;
+    height: 13px;
+    border: 3px solid var(--ui-surface, #fff);
+    background: var(--ui-emerald-600, #21a967);
+    box-shadow: 0 0 0 1px var(--ui-emerald-600, #21a967);
+}
+
+.study-record > .study-timeline-marker--record {
+    align-self: start;
+    padding-top: 44px;
+}
+
+.study-timeline-marker--add i {
+    width: 24px;
+    height: 24px;
+    border: 1px solid var(--ui-emerald-300, #80ddb0);
+    background: var(--ui-surface, #fff);
+    color: var(--ui-emerald-800, #176b4a);
+    font-size: 15px;
+    font-weight: 700;
+}
+
+.study-timeline-slot > button {
+    grid-column: 2;
+    width: 100%;
+    min-height: 36px;
+    display: flex;
+    align-items: center;
+    padding: 6px 10px;
+    border: 0;
+    border-radius: 9px;
+    background: transparent;
+    color: var(--ui-ink-muted, #587067);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition: background-color 140ms ease, color 140ms ease;
+}
+
+.study-timeline-slot-copy {
+    min-width: 0;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.study-timeline-slot-copy strong {
+    color: var(--ui-emerald-800, #176b4a);
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.study-timeline-slot-copy small {
+    min-width: 0;
+    overflow: hidden;
+    text-align: right;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 12px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}
+
+.study-timeline-slot > button:hover,
+.study-timeline-slot > button:focus-visible {
+    background: var(--ui-emerald-100, #ddf8ea);
+    color: var(--ui-emerald-800, #176b4a);
+    outline: none;
+}
+
+.study-timeline-slot.is-editing {
+    padding-block: 8px;
+}
+
+.study-record {
+    padding: 4px 0;
+    border: 0;
+    background: transparent;
+}
+
+.study-record-content {
+    grid-column: 2;
+    padding: 18px;
+    border: 1px solid var(--ui-line, #cfe1d9);
     border-radius: 14px;
-    background: var(--ui-emerald-800, #176b4a);
-    color: #fff;
-    font-size: 20px;
-    font-weight: 900;
+    background: var(--ui-surface, #fff);
+    transition: border-color 140ms ease, box-shadow 140ms ease;
+}
+
+.study-record-content:hover {
+    border-color: var(--ui-emerald-300, #80ddb0);
+    box-shadow: 0 5px 16px rgba(23, 107, 74, 0.07);
 }
 
 .study-record-content,
@@ -237,25 +339,9 @@
 
 .study-record-view {
     display: grid;
+    grid-template-columns: minmax(170px, 1fr) minmax(170px, 1fr) auto;
     align-items: center;
-}
-
-.study-record-view header {
-    min-width: 0;
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    align-items: center;
-    gap: 16px;
-    margin: 0;
-}
-
-.study-record-view h3 {
-    overflow: hidden;
-    margin: 0 0 8px;
-    color: var(--ui-ink, var(--ink));
-    font-size: 18px;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    gap: 18px;
 }
 
 .study-record-range {
@@ -265,7 +351,7 @@
     margin: 0;
     color: var(--ui-ink-muted, #587067);
     font-size: 14px;
-    font-weight: 900;
+    font-weight: 600;
     font-variant-numeric: tabular-nums;
 }
 
@@ -273,31 +359,203 @@
     color: var(--ui-ink, var(--ink));
 }
 
-.study-record-time {
-    min-width: 116px;
+.study-record-duration {
     display: grid;
-    justify-items: end;
-    gap: 4px;
+    gap: 7px;
     font-variant-numeric: tabular-nums;
 }
 
-.study-record-time strong {
-    color: var(--ui-emerald-800, #176b4a);
-    font-size: 20px;
+.study-record-duration p {
+    display: flex;
+    align-items: baseline;
+    gap: 7px;
+    margin: 0;
 }
 
-.study-record-time span {
+.study-record-duration strong {
+    color: var(--ui-ink, #17342a);
+    font-size: clamp(31px, 3.4vw, 38px);
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -0.03em;
+    white-space: nowrap;
+}
+
+.study-record-duration small {
+    color: var(--ui-emerald-800, #176b4a);
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.study-record-duration span,
+.study-record-details > span {
     color: var(--ui-ink-muted, #587067);
     font-size: 12px;
+    font-weight: 650;
+}
+
+.study-record-details {
+    min-width: 0;
+    padding-left: 20px;
+    border-left: 1px solid var(--ui-line, #cfe1d9);
+}
+
+.study-record-details .study-record-range {
+    margin-top: 7px;
+}
+
+.study-record-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 6px;
+}
+
+.study-record-actions button,
+.study-record-edit-actions button {
+    min-height: 34px;
+    padding: 0 12px;
+    font-size: 12px;
+}
+
+.study-record-actions .ui-button {
+    border-color: transparent;
+    background: transparent;
+    box-shadow: none;
+    font-weight: 700;
+}
+
+.study-record-actions .ui-button--secondary:hover,
+.study-record-actions .ui-button--secondary:focus-visible {
+    border-color: var(--ui-line, #cfe1d9);
+    background: var(--ui-canvas, #f3fbf7);
+}
+
+.study-record-actions .ui-button--danger {
+    color: var(--ui-ink-muted, #587067);
+}
+
+.study-record-actions .ui-button--danger:hover,
+.study-record-actions .ui-button--danger:focus-visible {
+    background: var(--ui-danger-soft, #fff0f2);
+    color: var(--ui-danger, #c73f52);
+}
+
+.study-time-range-form fieldset {
+    min-width: 0;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: end;
+    gap: 10px;
+    margin: 0;
+    padding: 0;
+    border: 0;
+}
+
+.study-time-range-form label {
+    min-width: 0;
+    display: grid;
+    gap: 5px;
+}
+
+.study-time-range-form label span,
+.study-time-draft-duration > span {
+    color: var(--ui-ink-muted, #587067);
+    font-size: 12px;
+    font-weight: 650;
+}
+
+.study-time-range-form input {
+    width: 100%;
+    min-width: 0;
+    min-height: 44px;
+    box-sizing: border-box;
+    padding: 0 10px;
+    border: 1px solid var(--ui-line, #cfe1d9);
+    border-radius: 10px;
+    background: var(--ui-surface, #fff);
+    color: var(--ui-ink, var(--ink));
+    font: inherit;
+    font-size: 14px;
+    font-weight: 650;
+}
+
+.study-time-window {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 4px;
+    font-size: 13px;
+    font-variant-numeric: tabular-nums;
+}
+
+.study-time-window > span {
+    padding: 4px 8px;
+    border-radius: 999px;
+    background: var(--ui-emerald-100, #ddf8ea);
+    color: var(--ui-emerald-800, #176b4a);
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.study-time-window strong {
+    color: var(--ui-emerald-800, #176b4a);
+}
+
+.study-time-draft-duration {
+    grid-column: 1;
+    grid-row: 3;
+    min-height: 52px;
+    display: grid;
+    align-content: center;
+    gap: 3px;
+    padding: 8px 12px;
+    border-radius: 10px;
+    background: var(--ui-emerald-100, #ddf8ea);
+    font-variant-numeric: tabular-nums;
+}
+
+.study-time-draft-duration output {
+    color: var(--ui-emerald-800, #176b4a);
+    font-size: 22px;
     font-weight: 800;
 }
 
+.study-time-feedback {
+    grid-column: 1 / -1;
+    grid-row: 4;
+    min-height: 16px;
+    margin: 0;
+    color: var(--ui-emerald-800, #176b4a);
+    font-size: 12px;
+    font-weight: 650;
+}
+
+.study-record-edit-actions {
+    grid-column: 2;
+    grid-row: 3;
+    display: flex;
+    justify-content: flex-end;
+    align-self: center;
+    gap: 6px;
+}
+
+.study-record-create {
+    grid-column: 2;
+    padding: 16px;
+    border: 1px solid var(--ui-emerald-300, #80ddb0);
+    border-radius: 14px;
+    background: var(--ui-cream, #fff8e7);
+    box-shadow: 0 4px 14px rgba(23, 107, 74, 0.08);
+}
+
 .study-record-empty {
-    min-height: 190px;
+    min-height: 130px;
     display: grid;
     place-content: center;
     justify-items: center;
-    padding: 28px;
+    margin-left: 38px;
+    padding: 24px;
     border: 1px dashed var(--ui-line, #cfe1d9);
     border-radius: 16px;
     background: var(--ui-canvas, #f3fbf7);
@@ -305,21 +563,14 @@
 }
 
 .study-record-empty strong {
-    font-size: 17px;
-}
-
-.study-record-empty p {
-    margin: 8px 0 0;
-    color: var(--ui-ink-muted, #587067);
-    font-size: 12px;
+    font-size: 15px;
+    font-weight: 700;
 }
 
 /* 월간 학습 시간 달력 */
 .study-month-layout {
     display: grid;
-    grid-template-columns: minmax(0, 1.35fr) minmax(300px, 0.65fr);
     gap: 14px;
-    align-items: start;
 }
 
 .study-calendar-weekdays,
@@ -337,7 +588,7 @@
     color: var(--ui-ink-muted, #587067);
     text-align: center;
     font-size: 11px;
-    font-weight: 900;
+    font-weight: 650;
 }
 
 .study-calendar-weekdays .is-sunday,
@@ -372,11 +623,11 @@
 
 .study-calendar-day span {
     font-size: 12px;
-    font-weight: 900;
+    font-weight: 750;
 }
 
 .study-calendar-day strong {
-    font-size: 10px;
+    font-size: 11px;
     font-variant-numeric: tabular-nums;
 }
 
@@ -423,11 +674,24 @@
 
 .study-calendar-day:hover,
 .study-calendar-day:focus-visible,
-.study-record-tabs button:focus-visible,
 .study-period-navigation button:focus-visible,
-.study-record-view > button:focus-visible {
+.study-record-actions button:focus-visible,
+.study-record-edit button:focus-visible,
+.study-record-edit input:focus-visible,
+.study-record-create button:focus-visible,
+.study-record-create input:focus-visible {
     outline: 3px solid rgba(47, 196, 124, 0.3);
     outline-offset: 2px;
+}
+
+@media (max-width: 980px) {
+    .study-calendar > header {
+        display: grid;
+    }
+
+    .study-calendar-overview {
+        justify-content: space-between;
+    }
 }
 
 .study-heat-legend {
@@ -450,132 +714,22 @@
     border-radius: 5px;
 }
 
-.study-selected-day .study-record {
-    grid-template-columns: 40px minmax(0, 1fr);
-    padding: 10px;
-}
-
-.study-selected-day .study-record-sequence {
-    width: 40px;
-    height: 40px;
-    font-size: 15px;
-}
-
-.study-selected-day .study-record-view,
-.study-selected-day .study-record-view header {
-    grid-template-columns: 1fr;
-}
-
-.study-selected-day .study-record-time {
-    justify-items: start;
-}
-
-/* 연간 개인 학습 대시보드 */
-.study-year-dashboard {
-    display: grid;
-    gap: 14px;
-}
-
-.study-year-stats {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 10px;
-}
-
-.study-year-stats article {
-    min-height: 112px;
-    display: grid;
-    align-content: space-between;
-    gap: 12px;
-    padding: 16px;
-    border: 1px solid var(--ui-line, #cfe1d9);
-    border-radius: 16px;
-    background: var(--ui-canvas, #f3fbf7);
-}
-
-.study-year-stats span {
-    color: var(--ui-ink-muted, #587067);
-    font-size: 11px;
-    font-weight: 900;
-}
-
-.study-year-stats strong {
-    color: var(--ui-ink, #17342a);
-    font-size: 20px;
-    font-variant-numeric: tabular-nums;
-}
-
-.study-year-chart ol {
-    display: grid;
-    gap: 9px;
-    margin: 0;
-    padding: 0;
-    list-style: none;
-}
-
-.study-year-chart li {
-    display: grid;
-    grid-template-columns: 38px minmax(0, 1fr) 86px;
-    align-items: center;
-    gap: 10px;
-    color: var(--ui-ink-muted, #587067);
-    font-size: 11px;
-    font-weight: 900;
-}
-
-.study-year-chart li > div {
-    height: 12px;
-    overflow: hidden;
-    border-radius: 6px;
-    background: var(--ui-emerald-100, #ddf8ea);
-}
-
-.study-year-chart li i {
-    display: block;
-    height: 100%;
-    border-radius: inherit;
-    background: var(--ui-emerald-500, #2fc47c);
-}
-
-.study-year-chart li strong {
-    text-align: right;
-    font-variant-numeric: tabular-nums;
-}
-
-.study-year-chart li.has-record {
-    color: var(--ui-ink, var(--ink));
-}
-
-@media (max-width: 900px) {
-    .study-month-layout {
-        grid-template-columns: 1fr;
-    }
-
-    .study-year-stats {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-}
-
 @media (max-width: 720px) {
     .study-records-page {
         padding: 14px;
     }
 
-    .study-record-toolbar,
     .study-day-detail > header,
-    .study-selected-day > header,
-    .study-calendar > header,
-    .study-year-chart > header {
+    .study-calendar > header {
         display: grid;
     }
 
-    .study-record-toolbar {
-        grid-template-columns: minmax(0, 1fr);
+    .study-calendar-overview {
+        display: grid;
         justify-content: stretch;
-        gap: 10px;
+        gap: 12px;
     }
 
-    .study-record-tabs,
     .study-period-navigation {
         width: 100%;
     }
@@ -595,10 +749,6 @@
         min-width: 44px;
     }
 
-    .study-record-tabs button {
-        flex: 1;
-    }
-
     .study-period-navigation strong {
         min-width: 0;
         align-self: center;
@@ -606,20 +756,60 @@
         text-overflow: ellipsis;
     }
 
-    .study-records-summary { grid-template-columns: 1fr; }
-
-    .study-records-summary p {
-        justify-self: start;
-        text-align: left;
+    .study-section-total {
+        justify-items: start;
     }
 
-    .study-record-view,
-    .study-record-view header {
+    .study-timeline-entry {
+        grid-template-columns: 32px minmax(0, 1fr);
+    }
+
+    .study-timeline-entry::before {
+        left: 15px;
+    }
+
+    .study-record-empty {
+        margin-left: 32px;
+    }
+
+    .study-record-view {
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: start;
+    }
+
+    .study-record-duration {
+        grid-column: 1;
+        grid-row: 1;
+    }
+
+    .study-record-details {
+        grid-column: 1 / -1;
+        grid-row: 2;
+        padding-top: 14px;
+        padding-left: 0;
+        border-top: 1px solid var(--ui-line, #cfe1d9);
+        border-left: 0;
+    }
+
+    .study-record-actions {
+        grid-column: 2;
+        grid-row: 1;
+        justify-content: flex-end;
+    }
+
+    .study-time-range-form fieldset {
         grid-template-columns: 1fr;
     }
 
-    .study-record-time {
-        justify-items: start;
+    .study-time-draft-duration,
+    .study-record-edit-actions,
+    .study-time-feedback {
+        grid-column: 1;
+        grid-row: auto;
+    }
+
+    .study-record-edit-actions {
+        justify-content: flex-start;
     }
 
     .study-calendar-day {
@@ -634,14 +824,6 @@
 
 /* Keep short-viewport adjustments before narrower width overrides. */
 @media (max-width: 900px) and (max-height: 500px) {
-    .study-record-toolbar {
-        display: grid;
-        grid-template-columns: minmax(0, 1fr);
-        justify-content: stretch;
-        gap: 8px;
-    }
-
-    .study-record-tabs,
     .study-period-navigation {
         width: 100%;
     }
@@ -692,25 +874,57 @@
     }
 
     .study-day-detail,
-    .study-selected-day,
-    .study-calendar,
-    .study-year-chart {
+    .study-calendar {
         gap: 12px;
         padding: 12px;
     }
 
-    .study-records-summary {
-        gap: 10px;
+    .study-record {
+        padding: 3px 0;
+    }
+
+    .study-record-content {
+        padding: 14px;
+    }
+
+    .study-record-create {
         padding: 12px;
     }
 
-    .study-records-summary strong {
-        font-size: 20px;
+    .study-time-range-form input {
+        padding-inline: 8px;
+        font-size: 12px;
     }
 
-    .study-records-summary p,
-    .study-calendar > header p,
-    .study-year-chart > header p {
+    .study-record-duration strong {
+        font-size: 31px;
+    }
+
+    .study-record-duration {
+        grid-column: 1 / -1;
+        grid-row: 1;
+    }
+
+    .study-record-details {
+        grid-column: 1;
+        grid-row: 2;
+    }
+
+    .study-record-actions {
+        grid-column: 2;
+        grid-row: 2;
+        align-self: stretch;
+        align-items: flex-start;
+        padding-top: 10px;
+        border-top: 1px solid var(--ui-line, #cfe1d9);
+    }
+
+    .study-record-actions button {
+        min-height: 30px;
+        padding-inline: 6px;
+    }
+
+    .study-calendar-guide {
         overflow-wrap: anywhere;
     }
 
@@ -724,6 +938,33 @@
 
     .study-period-navigation strong {
         font-size: 13px;
+    }
+
+    .study-timeline-entry {
+        grid-template-columns: 28px minmax(0, 1fr);
+    }
+
+    .study-timeline-entry::before {
+        left: 13px;
+    }
+
+    .study-timeline-marker--add i {
+        width: 22px;
+        height: 22px;
+    }
+
+    .study-record-empty {
+        margin-left: 28px;
+    }
+
+    .study-timeline-slot-copy {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 2px;
+    }
+
+    .study-timeline-slot-copy small {
+        text-align: left;
     }
 
     .study-calendar-weekdays,
@@ -744,13 +985,6 @@
         display: none;
     }
 
-    .study-year-stats {
-        grid-template-columns: 1fr;
-    }
-
-    .study-year-chart li {
-        grid-template-columns: 34px minmax(0, 1fr) 76px;
-    }
 }
 
 @media (max-width: 340px) {
