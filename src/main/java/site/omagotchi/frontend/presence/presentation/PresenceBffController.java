@@ -34,7 +34,7 @@ public class PresenceBffController {
     }
 
     /**
-     * 탭 종료·이탈 통지. 화면은 응답을 기다리지 않는다.
+     * 브라우저 Session 전체의 명시적 이탈 통지. 일반 탭 pagehide에서는 호출하지 않는다.
      */
     @PostMapping("/leave")
     public ResponseEntity<Void> leave(HttpServletRequest request) {

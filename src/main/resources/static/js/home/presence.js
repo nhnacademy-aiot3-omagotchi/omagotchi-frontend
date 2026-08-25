@@ -7,8 +7,8 @@ const statusMeta = {
     offline: { label: "퇴실", order: 3 }
 };
 
-// TTL 60초의 1/4. 브라우저의 백그라운드 스로틀링에 맡기지 않고 visibilitychange로 직접 제어한다.
-const HEARTBEAT_INTERVAL_MS = 15_000;
+// 운영 권고 TTL 120초의 1/4. 숨김 탭에서도 유지하되 visible 복귀 시 즉시 한 번 더 갱신한다.
+const HEARTBEAT_INTERVAL_MS = 30_000;
 
 export function createPresence({
     hud,
@@ -222,20 +222,18 @@ export function createPresence({
         });
         document.addEventListener("keydown", handleKeydown);
         if (enabled) {
-            // 숨겨진 탭은 브라우저가 타이머를 약 1분 주기로 스로틀링해 TTL 경계에서 깜빡인다.
-            // 정책상 "화면을 보고 있어야 재실"이므로 스로틀링에 맡기지 않고 명시적으로 멈춘다.
+            // 재실의 의미는 "현재 탭을 보고 있음"이 아니라 "브라우저 세션이 살아 있음"이다.
+            // 숨김 탭에서도 interval을 유지하고, 스로틀링 후 visible로 돌아오면 즉시 복구한다.
             document.addEventListener("visibilitychange", () => {
                 if (document.visibilityState === "visible") {
-                    startHeartbeat();   // 즉시 1회 전송되어 바로 재실로 복귀한다
-                } else {
-                    stopHeartbeat();    // 최대 TTL(60초) 후 자동으로 내려간다
+                    sendHeartbeat();
                 }
             });
 
-            // 탭 종료 시 TTL을 기다리지 않고 즉시 제거한다. 실패해도 TTL이 처리하므로 재시도하지 않는다.
+            // 같은 로그인 Session을 여러 탭이 공유한다. 한 탭의 pagehide에서 leave를 호출하면
+            // 남은 탭까지 OFFLINE이 되므로 즉시 종료하지 않고 Redis TTL 정리에 맡긴다.
             window.addEventListener("pagehide", () => {
                 stopHeartbeat();
-                api?.leave?.().catch(() => {});
             });
 
             // heartbeat는 패널 표시 여부와 무관하게 항상 돈다. "내가 재실 중"을 알리는 신호이기 때문이다.

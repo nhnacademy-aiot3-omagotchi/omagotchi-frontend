@@ -1,6 +1,6 @@
 # Presence 재실 현황 구현 계획 (Learning · Frontend)
 
-> 상태: 착수 전 실행 계획 · 최종 갱신 2026-08-25
+> 상태: 구현 완료 · 로컬 운영형 통합 검증 전 · 최종 갱신 2026-08-25
 > 대상: Home 재실 현황(Presence)
 > 선행 문서: [Gateway Presence 통합 검증 인계서](gateway-presence-handoff-2026-08-24.md)
 > 이 문서는 인계서가 남긴 "인증 방식 3자 합의" 항목의 **결정본**이며, 그 결정에 따른
@@ -15,7 +15,7 @@
 | 2026-08-24 | 인계서 작성. 인증 방식 미정으로 Presence 차단 판정 | Browser가 Access Token을 갖지 않아 STOMP CONNECT 인증 경로가 없음 |
 | 2026-08-25 (오전) | 1차 결정: **View STOMP ↔ Browser SSE** | Learning 변경 0, ticket 불필요 |
 | **2026-08-25 (확정)** | **최종 결정: REST heartbeat + Learning의 기존 Redis TTL 구조 재사용** | 아래 §1 참고. **WebSocket 자체를 Presence 경로에서 제외한다** |
-| 2026-08-25 (확정) | 재실 정책: **"화면을 보고 있어야 재실"**. TTL 60초 유지, heartbeat 15초, 숨겨진 탭은 중단 | §3 L-3 · §4 F-5 |
+| 2026-08-25 (확정) | 재실 정책: **"브라우저 세션이 살아 있으면 재실"**. TTL 120초, heartbeat 30초, 숨겨진 탭도 유지 | §3 L-3 · §4 F-5 |
 
 1차 결정을 뒤집은 이유는 §1의 "왜 STOMP+SSE를 접었는가"에 적는다. 기각한 설계의 상세는
 [부록 A](#부록-a-기각한-stomp--sse-설계)에 남긴다. 나중에 채팅·실시간 알림처럼 **진짜 push가
@@ -322,24 +322,22 @@ public void disconnectSession(String sessionId, UUID requesterId) {
 **fallback 분기는 대조가 필요 없다.** session hash가 만료된 경우 `removeFallbackSession`은
 요청자 본인의 userId로만 정리하므로 남에게 영향을 줄 수 없다.
 
-### L-3. 세션 TTL — **60초 유지 (변경 없음)**
+### L-3. 세션 TTL — **120초**
 
 | 항목 | 값 | 결정 |
 | --- | --- | --- |
-| `REALTIME_PRESENCE_SESSION_TTL` | `60s` | **기존 값 유지. `.env` 변경 없음** |
+| `REALTIME_PRESENCE_SESSION_TTL` | `120s` | 백그라운드 탭 타이머 스로틀링을 흡수한다 |
 
-**정책 확정: "화면을 보고 있어야 재실"이다.** 다른 탭으로 이동한 상태는 재실로 인정하지 않는다.
+**정책 확정: "브라우저 세션이 살아 있으면 재실"이다.** 다른 탭으로 이동한 상태도 재실로 인정한다.
 
 이 선택의 결과를 화면이 흡수해야 한다. Chrome은 백그라운드 탭의 `setInterval`을 약 1분
-주기로 스로틀링하므로, 아무 조치 없이 두면 숨겨진 탭이 **TTL 경계에서 ONLINE↔OFFLINE을
-반복(깜빡임)** 한다. 따라서 §4 F-5에서 `visibilitychange`로 **명시적으로** heartbeat를
-멈추고 재개해, 스로틀링에 맡기는 대신 결정론적으로 동작하게 만든다.
+주기로 스로틀링할 수 있다. TTL을 heartbeat 주기의 4배로 두어 일반적인 스로틀링을 흡수하고,
+`visibilitychange`로 visible 복귀 시 즉시 heartbeat를 보내 상태를 복구한다.
 
-- 탭이 보이는 동안: 15초 주기 heartbeat (TTL 60초의 1/4)
-- 탭이 숨겨지면: heartbeat 중단 → 최대 60초 후 OFFLINE
-- 탭이 다시 보이면: 즉시 1회 heartbeat → 즉시 ONLINE
-
-TTL을 120초로 올리면 "다른 탭을 봐도 재실"이 되지만, 이번에는 채택하지 않는다.
+- 탭 표시 여부와 무관하게: 30초 주기 heartbeat (TTL 120초의 1/4)
+- 탭이 다시 보이면: 즉시 1회 heartbeat
+- 한 탭의 `pagehide`: leave를 호출하지 않는다. 같은 로그인 Session의 다른 탭을 보호한다
+- 전체 브라우저 종료·네트워크 단절: 최대 120초 후 Redis TTL로 OFFLINE
 
 ### L-4. 테스트 추가
 
@@ -380,7 +378,7 @@ include::{snippets}/presence/leave/http-response.adoc[]
 - [ ] `DELETE /api/v1/cohorts/me/presence`가 `204`를 반환한다.
 - [ ] `heartbeat`·`disconnectSession` 모두 소유자 대조가 있고 테스트가 이를 고정한다.
 - [ ] 공백 `X-Presence-Session`이 `400`으로 거부된다.
-- [ ] `REALTIME_PRESENCE_SESSION_TTL`이 `60s`로 유지되어 있다(변경하지 않음).
+- [ ] `REALTIME_PRESENCE_SESSION_TTL`이 `120s`로 설정되어 있다.
 - [ ] 기존 STOMP 경로(`WebSocketConfig`, 두 interceptor, 이벤트 리스너)를 **삭제하지 않았다.**
 - [ ] REST Docs snippet이 `index.adoc`에 포함되어 있다.
 - [ ] Learning 전체 테스트가 통과한다.
@@ -489,34 +487,31 @@ public ResponseEntity<Void> leave(HttpServletRequest request) { ... }
 - `/bff/v1/**`는 `SecurityConfig`가 이미 `.authenticated()`로 잠근다. 인증 코드를 넣지 않는다.
 - 기존 `GET /bff/v1/presence`(snapshot)는 그대로 둔다. 패널의 수동 새로고침이 쓴다.
 
-### F-4. CSRF 함정 — `sendBeacon`을 쓰지 않는다
+### F-4. 이탈 처리 — `pagehide`에서 leave하지 않는다
 
-`/bff/v1/**`의 상태 변경 요청에는 CSRF 헤더가 필요하다. 그런데 **`navigator.sendBeacon`은
-커스텀 헤더를 붙일 수 없어 CSRF 토큰을 실을 수 없다.**
+`/bff/v1/**`의 상태 변경 요청에는 CSRF 헤더가 필요하고 `navigator.sendBeacon`은 커스텀
+헤더를 붙일 수 없다. 더 중요한 문제는 같은 로그인 Session을 여러 탭이 공유한다는 점이다.
+한 탭의 `pagehide`에서 leave하면 남아 있는 다른 탭까지 OFFLINE이 될 수 있다.
 
 ```javascript
-// 하지 않는다: CSRF 헤더를 못 붙여 403이 된다
+// 하지 않는다: CSRF 문제와 멀티탭 오프라인 문제가 함께 생긴다
 window.addEventListener("pagehide", () => navigator.sendBeacon("/bff/v1/presence/leave"));
 
-// 한다: keepalive는 페이지 언로드 중에도 전송되고 헤더를 붙일 수 있다
-window.addEventListener("pagehide", () => {
-    window.OmagotchiApi.presence.leave();   // 내부에서 fetch(..., {keepalive: true})
-});
+// pagehide에서는 heartbeat timer만 자연스럽게 종료되게 두고 Redis TTL 정리에 맡긴다.
+// 명시적 로그아웃에서만 인증 Session 무효화 전에 leave를 호출할 수 있다.
 ```
 
-CSRF를 끄거나 이 경로만 예외로 여는 방식으로 우회하지 않는다.
-`keepalive` 요청 본문은 64KB 제한이 있으나 이 요청은 본문이 없다.
-
-**leave 호출이 실패해도 정확성은 유지된다.** heartbeat가 멈추면 최대 TTL(120초) 후 자동으로
-OFFLINE이 된다. leave는 즉시성을 위한 최적화다.
+CSRF를 끄거나 이 경로만 예외로 열지 않는다. `POST /bff/v1/presence/leave` 계약은 명시적
+로그아웃 연결을 위해 유지하지만 일반 탭 이탈에는 사용하지 않는다. heartbeat가 멈추면 최대
+TTL(120초) 후 자동으로 OFFLINE이 된다.
 
 ### F-5. 화면 — heartbeat 주기 호출
 
 `static/js/home/presence.js`의 `subscribeLabPresence` 호출부를 교체한다.
 
 ```javascript
-// TTL 60초의 1/4. 브라우저 스로틀링에 맡기지 않고 visibilitychange로 직접 제어한다.
-const HEARTBEAT_INTERVAL_MS = 15_000;
+// TTL 120초의 1/4. 숨김 탭에서도 유지하고 visible 복귀 시 즉시 갱신한다.
+const HEARTBEAT_INTERVAL_MS = 30_000;
 let heartbeatTimer = null;
 
 async function sendHeartbeat() {
@@ -539,24 +534,21 @@ function stopHeartbeat() {
     heartbeatTimer = null;
 }
 
-// 숨겨진 탭은 브라우저가 타이머를 약 1분 주기로 스로틀링해 TTL 경계에서 깜빡인다.
-// 정책상 "화면을 보고 있어야 재실"이므로 스로틀링에 맡기지 않고 명시적으로 멈춘다.
+// 숨김 탭도 브라우저 세션으로 인정한다. visible 복귀 시 스로틀링 지연을 즉시 복구한다.
 document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "visible") {
-        startHeartbeat();       // 즉시 1회 전송되어 바로 ONLINE으로 복귀한다
-    } else {
-        stopHeartbeat();        // 최대 60초 후 TTL 만료로 OFFLINE
+        sendHeartbeat();
     }
 });
 ```
 
 | 항목 | 값 | 이유 |
 | --- | --- | --- |
-| heartbeat 주기 | **15초** | TTL 60초의 1/4. 지연이 한두 번 나도 만료되지 않는다 |
-| 숨겨진 탭 | **중단** | 정책상 재실이 아니다. 스로틀링에 맡기면 깜빡이므로 명시적으로 멈춘다 |
+| heartbeat 주기 | **30초** | TTL 120초의 1/4. 일반적인 백그라운드 스로틀링을 흡수한다 |
+| 숨겨진 탭 | **유지** | 다른 탭을 보고 있어도 브라우저 세션이 살아 있으면 재실이다 |
 | 패널 상태와의 관계 | **패널이 닫혀 있어도 계속 보낸다** | heartbeat는 "내가 재실 중"을 알리는 것이므로 패널 표시 여부와 무관하다 |
 | 기존 `refresh()` 버튼 | 유지 | 즉시 갱신용. `GET /bff/v1/presence`를 그대로 쓴다 |
-| 트래픽 | 30명 × 4회/분 = **초당 2회** | WebSocket을 쓸 이유가 트래픽에는 없다 |
+| 트래픽 | 30명 × 2회/분 = **초당 1회** | WebSocket을 쓸 이유가 트래픽에는 없다 |
 
 `applySnapshot`의 상태 매핑(`ONLINE/AWAY/OFFLINE` → `present/away/offline`)은 변경하지 않는다.
 응답 형태가 기존 snapshot과 같기 때문이다.
@@ -583,8 +575,8 @@ Learning 작업 전에 먼저 반영해도 된다.
 | F-1 의존성 | **불필요** — WebSocket 의존성이 필요 없어졌다 |
 | F-2 하류 계약 | 완료 (`PresenceHttpService`) |
 | F-3 BFF 라우트 | 완료 (`GET /presence`, `POST /presence/heartbeat`, `POST /presence/leave`) |
-| F-4 CSRF·keepalive | 완료 (`fetch(keepalive)` 사용, `sendBeacon` 미사용) |
-| F-5 heartbeat 주기 호출 | 완료 (15초, `visibilitychange` 제어) |
+| F-4 이탈 처리 | 완료 (`pagehide` leave 제거, Redis TTL 정리) |
+| F-5 heartbeat 주기 호출 | 완료 (30초, 숨김 탭 유지, visible 즉시 갱신) |
 | F-6 실패 표시 정책 | 완료 (`markRealtimeUnavailable`) |
 | 자동 테스트 | 완료 (3개 파일) |
 
@@ -666,11 +658,11 @@ curl -i -X POST \
 | --- | --- | --- |
 | 1 | 계정 A 로그인 → Home | 30초 이내에 재실 목록에 A가 표시 |
 | 2 | 계정 B를 다른 브라우저에서 로그인 | A 화면의 인원이 2명으로 증가 (최대 30초) |
-| 3 | B가 탭을 닫음 | A 화면에서 B가 사라짐 (leave 성공 시 즉시, 실패해도 60초 이내) |
-| 4 | B가 로그아웃 | Session 소멸로 heartbeat 중단 → 최대 60초 이내 사라짐 |
-| 5 | A가 탭을 2개 열기 | 인원은 1명 유지 |
-| 6 | A가 다른 탭으로 이동 후 3분 대기 | **60초 이내 OFFLINE.** 깜빡이지 않고 한 번만 내려간다 |
-| 6-1 | A가 원래 탭으로 복귀 | **즉시 ONLINE.** 15초를 기다리지 않는다 |
+| 3 | B가 브라우저의 모든 탭을 닫음 | A 화면에서 B가 최대 120초 이내 사라짐 |
+| 4 | B가 로그아웃 | Session 소멸로 heartbeat 중단 → 최대 120초 이내 사라짐 |
+| 5 | A가 탭을 2개 열고 하나만 닫기 | 인원은 1명이고 남은 탭 때문에 ONLINE 유지 |
+| 6 | A가 다른 탭으로 이동 후 3분 대기 | **ONLINE 유지.** 숨김 탭도 브라우저 세션으로 인정한다 |
+| 6-1 | A가 원래 탭으로 복귀 | 즉시 heartbeat를 보내 최신 snapshot으로 갱신 |
 | 7 | Learning 강제 종료 | "실시간 재실 확인 불가" 표시. `0명` 아님 |
 | 8 | Learning 재기동 | 다음 heartbeat에서 자동 복구 |
 | 9 | 개발자 도구 Network·Application 확인 | Access Token과 `presenceSessionId`가 **어디에도** 없음 |
@@ -690,7 +682,7 @@ curl -i -X POST \
 5. 실제 Learning·Redis 환경에서 두 사용자의 등록·갱신·이탈을 확인했다.
 6. Home 재실 목록에서 인원 증감이 실제로 표시된다.
 7. **연결 불가와 재실자 0명이 화면에서 구분된다.**
-8. 숨겨진 탭이 60초 이내에 한 번만 OFFLINE으로 내려가고 깜빡이지 않는다. 복귀 시 즉시 ONLINE이 된다.
+8. 숨겨진 탭도 ONLINE을 유지하고, 한 탭의 `pagehide`가 다른 탭의 Presence를 끊지 않는다.
 9. View에 stateful 커넥션 관리 코드가 없다.
 10. 최종 통합 SHA에서 REST 출결·기수·퀘스트 흐름에 회귀가 없다.
 
@@ -705,7 +697,7 @@ curl -i -X POST \
 | 1 | **`realtime` 패키지 수정 권한** | 착수 전 확인 필요. 불가하면 부록 A로 되돌린다 |
 | 2 | 실시간성이 즉시가 아니다 (최대 30초 지연) | 재실 현황에는 충분하다. 즉시성이 필요한 기능이 생기면 부록 A를 꺼낸다 |
 | 3 | heartbeat 요청당 membership 조회 2회 | 30명 규모에서 무시 가능. 부하 증가 시 Service 메서드 1개로 합친다 |
-| 4 | 백그라운드 탭 스로틀링 | TTL 60초 유지 + heartbeat 15초 + `visibilitychange` 명시 제어. **"화면을 보고 있어야 재실"** 정책으로 확정 |
+| 4 | 백그라운드 탭 스로틀링 | TTL 120초 + heartbeat 30초. 숨김 탭도 유지하고 visible 복귀 시 즉시 갱신 |
 | 5 | 커뮤니티 실시간 알림 | 별건. `WebSocketSubscribeAuthorizationInterceptor`가 허용하는 destination은 presence topic과 `/user/queue/notifications` 둘뿐이다. 후자만 쓰면 Learning 변경이 없고, 전용 topic을 신설하면 구독 인가 규칙과 이벤트 발행이 모두 필요하다. **Presence 완료 후 착수** |
 | 6 | Native App 전환 시 | 앱은 토큰을 안전하게 보관할 수 있으므로 앱 → Gateway 직결이 가능하다. REST heartbeat 방식은 그대로 재사용된다 |
 | 7 | View 다중 인스턴스 | **제약 없음.** 상태를 View가 갖지 않으므로 어느 인스턴스가 받아도 동작이 같다 |
