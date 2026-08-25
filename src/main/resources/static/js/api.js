@@ -245,8 +245,10 @@
             }),
             getRankings: (cohortId, query = {}) => request(withQuery(`/admin/cohorts/${encodeURIComponent(cohortId)}/study-rankings`, query)),
             updatePostPin: (postId, pinned) => request(`/admin/community/posts/${encodeURIComponent(postId)}/pin`, {method: "PATCH", body: {pinned}}),
-            getSensorSpaceSeries: (location, measurement, seriesWindow) => request(withQuery("/admin/sensors/space-series", {location, measurement, window: seriesWindow}
-            )),
+            getSensorSpaceSeries: (location, measurement, seriesWindow, options = {}) => request(
+                withQuery("/admin/sensors/space-series", {location, measurement, window: seriesWindow}),
+                options
+            ),
         }
     };
 })();

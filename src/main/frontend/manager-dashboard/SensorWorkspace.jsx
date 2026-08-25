@@ -59,12 +59,6 @@ function isExceeded(point, threshold) {
   return point.min <= threshold.value;
 }
 
-function sourcesLabel(sources) {
-  if (!sources?.settled || !sources?.hot) return "";
-  const toName = (bucket) => bucket.toLowerCase().replaceAll("_", "-");
-  return ` · ${toName(sources.settled)} + ${toName(sources.hot)}`;
-}
-
 function GearIcon() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -105,9 +99,10 @@ function SensorChart({ space, metric, period, refreshKey, threshold }) {
       setStatus("error");
       return undefined;
     }
+    const controller = new AbortController();
     let cancelled = false;
     setStatus("loading");
-    fetchSpaceSeries(space, metric, WINDOW_BY_PERIOD[period])
+    fetchSpaceSeries(space, metric, WINDOW_BY_PERIOD[period], { signal: controller.signal })
         .then((response) => {
           if (cancelled) return;
           const points = Array.isArray(response?.points) ? response.points : [];
@@ -117,7 +112,10 @@ function SensorChart({ space, metric, period, refreshKey, threshold }) {
         .catch(() => {
           if (!cancelled) setStatus("error");
         });
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
   }, [space, metric, period, reloadKey, refreshKey]);
 
   useEffect(() => {
@@ -212,7 +210,7 @@ function SensorChart({ space, metric, period, refreshKey, threshold }) {
           </div>
           <span>
             {status === "ready"
-                ? `${space} 센서 ${series.sensorCount}대 평균 · ${series.interval === "1d" ? "1일" : "1시간"} 단위${sourcesLabel(series.sources)}`
+                ? `${space} 센서 ${series.sensorCount}대 평균 · ${series.interval === "1d" ? "1일" : "1시간"} 단위`
                 : `${space} 공간 평균 · ${periodLabel}`}
           </span>
         </header>
