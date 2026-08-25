@@ -550,7 +550,7 @@ function ThresholdContent({ spaces, spaceThresholds, onSave }) {
     event.preventDefault();
     const missing = THRESHOLD_METRICS.some((metric) => {
       const value = draft[metric.value]?.threshold;
-      return value === null || value === "" || Number.isNaN(Number(value));
+      return value === null || value === undefined || value === "" || Number.isNaN(Number(value));
     });
     if (missing) return;
     // PATCH /api/v1/threshold-rules/spaces/{spaceId} 의 본문 형태
