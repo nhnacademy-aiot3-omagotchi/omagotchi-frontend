@@ -351,4 +351,53 @@ class LearningHttpServiceContractTest {
             server.verify();
         }
     }
+
+    @Nested
+    @DisplayName("관리자 공부 통계 계약")
+    class AdminStudyStatisticsContract {
+
+        @Test
+        @DisplayName("오늘 요약과 추이 조회를 전달한다")
+        void mapsTodayAndTrendStatisticsPath() {
+            server.expect(once(), requestTo(BASE_URL + "/api/v1/cohorts/7/study-statistics/today"))
+                    .andExpect(method(HttpMethod.GET))
+                    .andExpect(header(HttpHeaders.AUTHORIZATION, BEARER))
+                    .andRespond(withSuccess("{\"totalStudySeconds\": 3600}", MediaType.APPLICATION_JSON));
+
+            server.expect(once(), requestTo(BASE_URL + "/api/v1/cohorts/7/study-statistics/trend?window=7d"))
+                    .andExpect(method(HttpMethod.GET))
+                    .andExpect(header(HttpHeaders.AUTHORIZATION, BEARER))
+                    .andRespond(withSuccess("{\"totalStudySeconds\": 25200}", MediaType.APPLICATION_JSON));
+
+            service.getStudyStatisticsToday(BEARER, 7L);
+            service.getStudyStatisticsTrend(BEARER, 7L, "7d");
+
+            server.verify();
+        }
+
+        @Test
+        @DisplayName("수강생 목록과 세부 통계 조회를 전달한다")
+        void mapsMembersAndDetailStatisticsPath() {
+            server.expect(once(), requestTo(BASE_URL + "/api/v1/cohorts/7/study-statistics/members?window=7d&page=0&size=20&sort=periodStudySeconds%2Cdesc"))
+                    .andExpect(method(HttpMethod.GET))
+                    .andExpect(header(HttpHeaders.AUTHORIZATION, BEARER))
+                    .andRespond(withSuccess("{\"items\": []}", MediaType.APPLICATION_JSON));
+
+            server.expect(once(), requestTo(BASE_URL + "/api/v1/cohorts/7/study-statistics/members/10/overview?window=7d"))
+                    .andExpect(method(HttpMethod.GET))
+                    .andExpect(header(HttpHeaders.AUTHORIZATION, BEARER))
+                    .andRespond(withSuccess("{\"cohortMembershipId\": 10}", MediaType.APPLICATION_JSON));
+
+            server.expect(once(), requestTo(BASE_URL + "/api/v1/cohorts/7/study-statistics/members/10/records?date=2026-08-25"))
+                    .andExpect(method(HttpMethod.GET))
+                    .andExpect(header(HttpHeaders.AUTHORIZATION, BEARER))
+                    .andRespond(withSuccess("{\"records\": []}", MediaType.APPLICATION_JSON));
+
+            service.getStudyStatisticsMembers(BEARER, 7L, "7d", 0, 20, "periodStudySeconds,desc");
+            service.getStudyStatisticsMemberOverview(BEARER, 7L, 10L, "7d");
+            service.getStudyStatisticsMemberDailyRecords(BEARER, 7L, 10L, "2026-08-25");
+
+            server.verify();
+        }
+    }
 }

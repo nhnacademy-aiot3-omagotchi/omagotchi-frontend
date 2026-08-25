@@ -286,15 +286,16 @@ function toStudyDayTimeInstant(time, aggregationDate, windowStart, windowEnd, fi
     const { start: studyDayStart, end: studyDayEnd } = getStudyDayBounds(
         parseStudyDateKey(aggregationDate)
     );
+    function getDistanceToWindow(candidate) {
+        if (candidate < windowStart) return windowStart.getTime() - candidate.getTime();
+        if (candidate > windowEnd) return candidate.getTime() - windowEnd.getTime();
+        return 0;
+    }
+
     const candidates = [sameDate, new Date(sameDate.getTime() + 24 * 60 * MINUTE_MILLISECONDS)]
         .filter((candidate) => candidate >= studyDayStart && candidate <= studyDayEnd)
         .sort((left, right) => {
-            const distance = (candidate) => {
-                if (candidate < windowStart) return windowStart.getTime() - candidate.getTime();
-                if (candidate > windowEnd) return candidate.getTime() - windowEnd.getTime();
-                return 0;
-            };
-            const distanceDifference = distance(left) - distance(right);
+            const distanceDifference = getDistanceToWindow(left) - getDistanceToWindow(right);
 
             if (distanceDifference !== 0) {
                 return distanceDifference;
@@ -332,8 +333,10 @@ function getStudyDayInputLimit(referenceDate, now = new Date()) {
     if (currentMinute <= start) {
         return start;
     }
-
-    return currentMinute < end ? currentMinute : end;
+    if (currentMinute < end) {
+        return currentMinute;
+    }
+    return end;
 }
 
 function formatTimelinePoint(date, referenceDate) {
@@ -599,7 +602,7 @@ export function createStudyRecords({ storageKey, getElapsedSeconds, api }) {
                            data-study-time-input
                            value="${escapeHtml(formatTimeInput(initialRange.start))}"
                            placeholder="HH:mm" maxlength="5"
-                           pattern="(?:[01]\\d|2[0-3]):[0-5]\\d" autocomplete="off" required>
+                           pattern="(?:[01][0-9]|2[0-3]):[0-5][0-9]" autocomplete="off" required>
                 </label>
                 <label>
                     <span>종료 시간 · 24시간</span>
@@ -607,7 +610,7 @@ export function createStudyRecords({ storageKey, getElapsedSeconds, api }) {
                            data-study-time-input
                            value="${escapeHtml(formatTimeInput(initialRange.end))}"
                            placeholder="HH:mm" maxlength="5"
-                           pattern="(?:[01]\\d|2[0-3]):[0-5]\\d" autocomplete="off" required>
+                           pattern="(?:[01][0-9]|2[0-3]):[0-5][0-9]" autocomplete="off" required>
                 </label>
                 <div class="study-time-draft-duration">
                     <span>예상 공부 시간</span>
@@ -1016,8 +1019,8 @@ export function createStudyRecords({ storageKey, getElapsedSeconds, api }) {
                     </header>
                     <p class="study-calendar-guide">공부 시간이 길수록 진한 색으로 표시됩니다.</p>
                     <ol class="study-calendar-weekdays" aria-hidden="true">
-                        ${WEEKDAYS.map((day, index) => `
-                            <li class="${index === 0 ? "is-sunday" : index === 6 ? "is-saturday" : ""}">${day}</li>
+                        ${WEEKDAYS.map((weekday, index) => `
+                            <li class="${index === 0 ? "is-sunday" : index === 6 ? "is-saturday" : ""}">${weekday}</li>
                         `).join("")}
                     </ol>
                     <ol class="study-calendar-grid">${cells.join("")}</ol>
@@ -1229,6 +1232,7 @@ export function createStudyRecords({ storageKey, getElapsedSeconds, api }) {
 
     return {
         addRecord,
+        loadRecords,
         getUnrecordedSeconds,
         mount: (target) => {
             mount(target);

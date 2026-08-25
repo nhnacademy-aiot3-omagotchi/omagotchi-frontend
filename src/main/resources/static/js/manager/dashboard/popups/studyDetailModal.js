@@ -9,13 +9,6 @@
         return date.toISOString().slice(0, 10);
     }
 
-    function datesBetween(from, to) {
-        if (!from || !to) return [];
-        const dates = [];
-        for (let date = from; date <= to; date = addDays(date, 1)) dates.push(date);
-        return dates;
-    }
-
     function currentKstAggregationDate() {
         const shifted = new Date(Date.now() - 4 * 60 * 60 * 1000);
         const parts = new Intl.DateTimeFormat("en-US", {
@@ -78,18 +71,6 @@
         }).format(new Date(value));
     }
 
-    function formatKstDateTime(value) {
-        if (!value) return "-";
-        return new Intl.DateTimeFormat("ko-KR", {
-            timeZone: "Asia/Seoul",
-            month: "2-digit",
-            day: "2-digit",
-            hour: "2-digit",
-            minute: "2-digit",
-            hour12: false
-        }).format(new Date(value));
-    }
-
     function createTimelineBar(template, record, position) {
         const bar = template.content.firstElementChild.cloneNode(true);
         const label = `${formatKstTime(record.startTime)}부터 ${formatKstTime(record.endTime)}, ${formatDuration(record.studySeconds)}`;
@@ -108,7 +89,10 @@
         article.querySelector("[data-detail-record-index]").textContent = String(index + 1);
         article.querySelector("[data-detail-record-range]").textContent = `${formatKstTime(record.startTime)} ~ ${formatKstTime(record.endTime)}`;
         article.querySelector("[data-detail-record-duration]").textContent = formatDuration(record.studySeconds);
-        article.querySelector("[data-detail-record-updated-at]").textContent = formatKstDateTime(record.updatedAt);
+        const updatedAtElement = article.querySelector("[data-detail-record-updated-at]");
+        if (updatedAtElement) {
+            updatedAtElement.textContent = formatDuration(record.studySeconds);
+        }
         return article;
     }
 
@@ -153,9 +137,10 @@
             from: null,
             to: null,
             selectedDate: null,
+            overview: null,
             records: [],
-            totalStudySeconds: 0,
-            loading: false,
+            loadingOverview: false,
+            loadingRecords: false,
             error: null,
             requestSequence: 0,
             previousFocus: null
@@ -163,36 +148,17 @@
 
         let trendChart = null;
 
-        function selectedDateRecords() {
-            return state.records
-                .filter((record) => record.aggregationDate === state.selectedDate)
-                .sort((left, right) => new Date(left.startTime) - new Date(right.startTime));
-        }
-
-        function dailyTotals() {
-            const totals = new Map(datesBetween(state.from, state.to).map((date) => [date, 0]));
-            state.records.forEach((record) => {
-                if (!totals.has(record.aggregationDate)) return;
-                totals.set(
-                    record.aggregationDate,
-                    totals.get(record.aggregationDate) + Math.max(0, Number(record.studySeconds) || 0)
-                );
-            });
-            return [...totals].map(([date, seconds]) => ({ date, seconds }));
-        }
-
         function renderSummary() {
-            const activeDays = new Set(
-                state.records
-                    .filter((record) => Number(record.studySeconds) > 0)
-                    .map((record) => record.aggregationDate)
-            ).size;
-            const total = Math.max(0, Number(state.totalStudySeconds) || 0);
+            const overview = state.overview;
+            const total = Math.max(0, Number(overview?.totalStudySeconds) || 0);
+            const average = Math.max(0, Number(overview?.averageDailyStudySeconds) || 0);
+            const activeDays = Number(overview?.activeStudyDays) || 0;
+            const recordCount = Number(overview?.recordCount) || 0;
 
             elements.total.textContent = formatDuration(total);
-            elements.average.textContent = formatDuration(activeDays ? Math.floor(total / activeDays) : 0);
+            elements.average.textContent = formatDuration(average);
             elements.activeDays.textContent = `${activeDays}일`;
-            elements.recordCount.textContent = `${state.records.length}회`;
+            elements.recordCount.textContent = `${recordCount}회`;
         }
 
         function renderTrendChart() {
@@ -200,9 +166,12 @@
             trendChart = null;
             if (!elements.chart) return;
 
-            const totals = dailyTotals();
+            const totals = (state.overview?.dailyTotals || []).map((item) => ({
+                date: item.aggregationDate,
+                seconds: Number(item.studySeconds) || 0
+            }));
             const hasRecords = totals.some((item) => item.seconds > 0);
-            elements.chartEmpty.hidden = state.loading || Boolean(state.error) || hasRecords;
+            elements.chartEmpty.hidden = state.loadingOverview || Boolean(state.error) || hasRecords;
             elements.chart.hidden = !hasRecords;
             if (!hasRecords || typeof window.Chart !== "function") return;
 
@@ -249,10 +218,10 @@
                         },
                         y: {
                             beginAtZero: true,
-                            grid: { color: "#e5eee8" },
+                            grid: { color: "#edf2ee" },
                             ticks: {
                                 color: "#66736c",
-                                callback: (value) => `${value}h`
+                                callback: (val) => `${val}h`
                             }
                         }
                     }
@@ -260,127 +229,136 @@
             });
         }
 
-        function timelinePosition(record) {
+        function calculatePosition(record) {
             const startOfDay = new Date(`${state.selectedDate}T04:00:00+09:00`).getTime();
             const endOfDay = startOfDay + 24 * 60 * 60 * 1000;
-            const recordStart = new Date(record.startTime).getTime();
-            const recordEnd = new Date(record.endTime).getTime();
-            const clippedStart = Math.max(startOfDay, recordStart);
-            const clippedEnd = Math.min(endOfDay, recordEnd);
-            if (!Number.isFinite(recordStart) || !Number.isFinite(recordEnd) || clippedEnd <= clippedStart) return null;
-
-            return {
-                left: (clippedStart - startOfDay) * 100 / (endOfDay - startOfDay),
-                width: (clippedEnd - clippedStart) * 100 / (endOfDay - startOfDay)
-            };
-        }
-
-        function focusRecord(recordId) {
-            const row = elements.list.querySelector(`[data-detail-record-id="${CSS.escape(String(recordId))}"]`);
-            if (!row) return;
-            elements.list.querySelectorAll(".is-selected").forEach((item) => item.classList.remove("is-selected"));
-            row.classList.add("is-selected");
-            row.scrollIntoView({ behavior: "smooth", block: "nearest" });
+            const start = Math.max(startOfDay, new Date(record.startTime).getTime());
+            const end = Math.min(endOfDay, new Date(record.endTime).getTime());
+            const left = Math.max(0, ((start - startOfDay) / (24 * 60 * 60 * 1000)) * 100);
+            const width = Math.max(0.5, ((end - start) / (24 * 60 * 60 * 1000)) * 100);
+            return { left, width };
         }
 
         function renderSelectedDate() {
-            const records = selectedDateRecords();
             elements.selectedDateLabel.textContent = formatDateLabel(state.selectedDate);
             elements.dateInput.value = state.selectedDate || "";
-            elements.dateInput.min = state.from || "";
-            elements.dateInput.max = state.to || "";
-            elements.previousDate.disabled = !state.selectedDate || state.selectedDate <= state.from;
-            elements.nextDate.disabled = !state.selectedDate || state.selectedDate >= state.to;
-            elements.today.disabled = state.selectedDate === state.currentAggregationDate;
-            elements.selectedCount.textContent = `${records.length}개 세션`;
-            elements.timelineEmpty.hidden = records.length > 0;
+            elements.previousDate.disabled = state.selectedDate <= state.from;
+            elements.nextDate.disabled = state.selectedDate >= state.to;
 
-            const timelineFragment = document.createDocumentFragment();
-            records.forEach((record) => {
-                const position = timelinePosition(record);
-                if (position) timelineFragment.append(createTimelineBar(elements.timelineBarTemplate, record, position));
-            });
-            elements.timelineTrack.replaceChildren(timelineFragment);
+            const records = state.records || [];
+            elements.selectedCount.textContent = `${records.length}건`;
 
             if (!records.length) {
-                elements.list.replaceChildren(elements.recordEmptyTemplate.content.cloneNode(true));
+                elements.timelineTrack.replaceChildren();
+                elements.timelineEmpty.hidden = false;
+                elements.list.replaceChildren(elements.recordEmptyTemplate.content.firstElementChild.cloneNode(true));
                 return;
             }
-            const recordFragment = document.createDocumentFragment();
-            records.forEach((record, index) => {
-                recordFragment.append(createDetailRecord(elements.recordTemplate, record, index));
+
+            elements.timelineEmpty.hidden = true;
+            const trackFragment = document.createDocumentFragment();
+            records.forEach((record) => {
+                trackFragment.append(createTimelineBar(elements.timelineBarTemplate, record, calculatePosition(record)));
             });
-            elements.list.replaceChildren(recordFragment);
+            elements.timelineTrack.replaceChildren(trackFragment);
+
+            const listFragment = document.createDocumentFragment();
+            records.forEach((record, index) => {
+                listFragment.append(createDetailRecord(elements.recordTemplate, record, index));
+            });
+            elements.list.replaceChildren(listFragment);
         }
 
         function render() {
             elements.name.textContent = state.memberName;
             elements.email.textContent = state.memberEmail;
-            elements.email.hidden = !state.memberEmail;
-            elements.period.textContent = state.from && state.to
-                ? `${state.from} ~ ${state.to} · 최근 ${state.periodDays}일`
-                : `최근 ${state.periodDays}일의 학습 기록입니다.`;
+            elements.period.textContent = `${state.periodDays}일간`;
             elements.periodButtons.forEach((button) => {
-                const active = Number(button.dataset.detailPeriodDays) === state.periodDays;
-                button.classList.toggle("is-active", active);
-                button.setAttribute("aria-pressed", String(active));
-                button.disabled = state.loading;
+                button.classList.toggle("is-active", Number(button.dataset.detailPeriodDays) === state.periodDays);
             });
-
-            elements.status.textContent = state.loading
-                ? "개인 공부 기록을 불러오는 중입니다."
+            const isLoading = state.loadingOverview || state.loadingRecords;
+            elements.status.textContent = isLoading
+                ? "개인 공부 통계를 불러오는 중입니다."
                 : state.error || "";
-            elements.status.hidden = !state.loading && !state.error;
+            elements.status.hidden = !isLoading && !state.error;
 
             renderSummary();
             renderTrendChart();
             renderSelectedDate();
         }
 
-        function selectDate(date) {
+        function focusRecord(recordId) {
+            const card = elements.list.querySelector(`[data-detail-record-id="${recordId}"]`);
+            if (!card) return;
+            elements.list.querySelectorAll(".is-active").forEach((el) => el.classList.remove("is-active"));
+            card.classList.add("is-active");
+            card.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        }
+
+        async function selectDate(date) {
             if (!date || date < state.from || date > state.to) return;
             state.selectedDate = date;
             renderTrendChart();
-            renderSelectedDate();
+            await loadDailyRecords();
         }
 
-        async function loadRecords() {
+        async function loadDailyRecords() {
+            state.loadingRecords = true;
+            state.records = [];
+            render();
+
+            try {
+                const response = await window.OmagotchiApi?.manager?.getStudyStatsMemberDailyRecords?.(
+                    state.cohortId,
+                    state.cohortMembershipId,
+                    state.selectedDate
+                );
+                state.records = Array.isArray(response?.records) ? response.records : [];
+            } catch (error) {
+                console.error("Failed to load daily records:", error);
+                state.records = [];
+            } finally {
+                state.loadingRecords = false;
+                render();
+            }
+        }
+
+        async function loadOverview() {
             const sequence = ++state.requestSequence;
             state.to = state.currentAggregationDate;
             state.from = addDays(state.to, -(state.periodDays - 1));
             if (!state.selectedDate || state.selectedDate < state.from || state.selectedDate > state.to) {
                 state.selectedDate = state.to;
             }
-            state.loading = true;
+            state.loadingOverview = true;
             state.error = null;
-            state.records = [];
-            state.totalStudySeconds = 0;
+            state.overview = null;
             render();
 
+            const windowParam = `${state.periodDays}d`;
+
             try {
-                const response = await window.OmagotchiApi?.manager?.getStudyMemberRecords?.(
+                const response = await window.OmagotchiApi?.manager?.getStudyStatsMemberOverview?.(
                     state.cohortId,
                     state.cohortMembershipId,
-                    { from: state.from, to: state.to }
+                    windowParam
                 );
                 if (sequence !== state.requestSequence) return;
-
-                if (!Array.isArray(response?.records)) {
-                    throw new Error("개인 공부 기록 응답을 확인할 수 없습니다.");
-                }
-                state.records = response.records;
-                state.totalStudySeconds = Number(response.totalStudySeconds) || state.records.reduce(
-                    (total, record) => total + (Number(record.studySeconds) || 0),
-                    0
-                );
+                state.overview = response;
+                if (response?.from) state.from = response.from;
+                if (response?.to) state.to = response.to;
             } catch (error) {
                 if (sequence !== state.requestSequence) return;
-                state.error = error?.message || "개인 공부 기록을 불러오지 못했습니다.";
+                state.error = error?.message || "개인 공부 통계를 불러오지 못했습니다.";
             } finally {
                 if (sequence === state.requestSequence) {
-                    state.loading = false;
+                    state.loadingOverview = false;
                     render();
                 }
+            }
+
+            if (!state.error) {
+                await loadDailyRecords();
             }
         }
 
@@ -404,7 +382,7 @@
             state.selectedDate = state.currentAggregationDate;
             dialog.hidden = false;
             elements.closeButtons[0]?.focus();
-            loadRecords();
+            loadOverview();
         };
 
         elements.closeButtons.forEach((button) => button.addEventListener("click", close));
@@ -413,7 +391,7 @@
                 const periodDays = Number(button.dataset.detailPeriodDays);
                 if (![7, 30].includes(periodDays) || periodDays === state.periodDays) return;
                 state.periodDays = periodDays;
-                loadRecords();
+                loadOverview();
             });
         });
         elements.dateInput.addEventListener("change", () => selectDate(elements.dateInput.value));

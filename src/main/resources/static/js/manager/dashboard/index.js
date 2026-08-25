@@ -285,8 +285,20 @@ window.OmagotchiDashboardPanels.start({
         statusLabel,
         openDialog,
         setBubble,
-        fetchStatistics: (cohortId, range) => (
-            window.OmagotchiApi?.manager?.getStudyStatistics?.(cohortId, range)
+        fetchTodayStats: (cohortId) => (
+            window.OmagotchiApi?.manager?.getStudyStatsToday?.(cohortId)
+        ),
+        fetchTrendStats: (cohortId, window) => (
+            window.OmagotchiApi?.manager?.getStudyStatsTrend?.(cohortId, window)
+        ),
+        fetchMemberStats: (cohortId, query) => (
+            window.OmagotchiApi?.manager?.getStudyStatsMembers?.(cohortId, query)
+        ),
+        fetchMemberOverview: (cohortId, membershipId, window) => (
+            window.OmagotchiApi?.manager?.getStudyStatsMemberOverview?.(cohortId, membershipId, window)
+        ),
+        fetchMemberRecords: (cohortId, membershipId, date) => (
+            window.OmagotchiApi?.manager?.getStudyStatsMemberDailyRecords?.(cohortId, membershipId, date)
         ),
         getMemberProfiles: () => store.getState().currentCohort.members,
         refreshDashboard: hydrateDashboard,
