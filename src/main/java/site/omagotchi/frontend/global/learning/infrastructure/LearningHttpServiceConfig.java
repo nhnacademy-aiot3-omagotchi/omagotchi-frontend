@@ -3,6 +3,7 @@ package site.omagotchi.frontend.global.learning.infrastructure;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.service.registry.ImportHttpServices;
 import site.omagotchi.frontend.attendance.infrastructure.AttendanceHttpService;
+import site.omagotchi.frontend.learning.sensor.infrastructure.SensorAdminHttpService;
 import site.omagotchi.frontend.learning.series.infrastructure.SensorHttpService;
 import site.omagotchi.frontend.presence.infrastructure.PresenceHttpService;
 
@@ -13,6 +14,7 @@ import site.omagotchi.frontend.presence.infrastructure.PresenceHttpService;
                 LearningHttpService.class,
                 AttendanceHttpService.class,
                 SensorHttpService.class,
+                SensorAdminHttpService.class,
                 PresenceHttpService.class
         }
 )

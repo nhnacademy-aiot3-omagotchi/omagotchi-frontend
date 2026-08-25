@@ -75,7 +75,7 @@ button, input, select { font: inherit; }
 
 .sensor-icon-button { display: inline-grid; width: 42px; height: 42px; padding: 9px; place-items: center; border: 1px solid #d4dad7; border-radius: 9px; color: #151b18; background: #fff; cursor: pointer; }
 .sensor-icon-button:hover { border-color: #9ba8a1; background: #f2f5f3; }
-.sensor-icon-button svg, .sensor-dialog-close svg, .sensor-empty-icon svg { width: 100%; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.sensor-icon-button svg, .sensor-dialog-close svg, .sensor-empty-icon svg { width: 100%; fill: none; stroke: currentcolor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .sensor-chart-settings { position: absolute; top: 18px; right: 18px; }
 
 .sensor-chart-placeholder { display: grid; grid-template-columns: 43px 1fr; height: 205px; margin-top: 22px; }
@@ -107,7 +107,7 @@ button, input, select { font: inherit; }
 .sensor-audit-branch i { position: absolute; top: -5px; width: 9px; height: 9px; border: 2px solid #fff; border-radius: 50%; background: var(--sensor-green); box-shadow: 0 0 0 1px #94a39b; }
 .sensor-audit-branch i:nth-child(1) { left: 0; }.sensor-audit-branch i:nth-child(2) { left: calc(50% - 4px); }.sensor-audit-branch i:nth-child(3) { right: 0; }
 .sensor-audit > header { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; padding-bottom: 18px; border-bottom: 1px solid var(--sensor-line); }
-.sensor-audit header span { color: var(--sensor-green); font-size: 11px; font-weight: 850; letter-spacing: .12em; }
+.sensor-audit header span { color: var(--sensor-muted); font-size: 11px; font-weight: 850; letter-spacing: .04em; }
 .sensor-audit h3 { margin: 4px 0 0; font-size: 21px; }.sensor-audit header small { color: var(--sensor-muted); }
 .sensor-audit-toolbar { display: grid; grid-template-columns: minmax(220px, 1fr) repeat(4, max-content); gap: 10px; padding: 16px 0; border-bottom: 1px solid var(--sensor-line); }
 .sensor-audit-toolbar > label:not(.sensor-audit-search) { display: grid; gap: 5px; }
@@ -149,6 +149,76 @@ button, input, select { font: inherit; }
 .sensor-switch-row { position: relative; display: flex; align-items: center; justify-content: space-between; min-height: 58px; padding: 0 22px; background: #e1e3e2; cursor: pointer; }.sensor-switch-row input { position: absolute; width: 1px; height: 1px; opacity: 0; }.sensor-switch-row i { position: relative; width: 52px; height: 28px; border: 1px solid #202622; border-radius: 999px; background: #fff; }.sensor-switch-row i::after { position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: #1d231f; content: ""; transition: transform .15s; }.sensor-switch-row input:checked + i { background: #bcecd1; }.sensor-switch-row input:checked + i::after { transform: translateX(24px); background: #087d48; }
 .sensor-dialog footer { display: flex; align-items: center; justify-content: space-between; padding: 12px 24px; border-top: 1px solid #ccd2cf; }.sensor-dialog footer > div { display: flex; gap: 10px; margin-left: auto; }.sensor-dialog footer button { min-height: 42px; padding: 0 17px; border-radius: 3px; font-weight: 800; cursor: pointer; }.sensor-delete-button { border: 0; color: #a72727; background: transparent; }.sensor-secondary-button { border: 1px solid #b7bfbb; background: #fff; }.sensor-primary-button { border: 1px solid #202722; color: #fff; background: #202722; }.sensor-primary-button:disabled { cursor: not-allowed; opacity: .4; }
 
+
+/* --- 알림 로그 (GET /api/v1/sensors/events) --- */
+.sensor-audit-filters { display: flex; align-items: flex-end; gap: 12px; }
+.sensor-audit-filters label { display: grid; gap: 6px; }
+.sensor-audit-filters label > span { color: var(--sensor-muted); font-size: 11px; font-weight: 750; }
+.sensor-audit-filters select { height: 40px; min-width: 108px; padding: 0 30px 0 12px; border: 1px solid #c7ceca; border-radius: 8px; background: #fff; cursor: pointer; }
+.sensor-audit-filters input { height: 40px; min-width: 210px; padding: 0 14px; border: 1px solid #c7ceca; border-radius: 8px; outline: none; }
+.sensor-audit-filters input:focus { outline: 2px solid #7d8afb; outline-offset: -1px; }
+
+.sensor-alert-table-wrap { margin-top: 4px; overflow-x: auto; }
+.sensor-alert-table { width: 100%; min-width: 760px; border-collapse: collapse; }
+.sensor-alert-table th, .sensor-alert-table td { padding: 16px 14px; border-bottom: 1px solid #edf0ee; text-align: left; vertical-align: top; }
+.sensor-alert-table thead th { color: var(--sensor-muted); font-size: 12px; font-weight: 750; }
+.sensor-alert-table tbody tr:last-child th, .sensor-alert-table tbody tr:last-child td { border-bottom: 0; }
+.sensor-alert-table tbody th, .sensor-alert-table tbody td { font-size: 14px; }
+.sensor-alert-table tbody th { font-weight: 700; }
+.sensor-alert-table tbody th strong { display: block; }
+.sensor-alert-table tbody th span { display: block; margin-top: 3px; color: var(--sensor-muted); font-size: 12px; font-weight: 400; }
+.sensor-alert-table time { color: var(--sensor-ink); font-variant-numeric: tabular-nums; }
+
+.sensor-alert-badge { display: inline-flex; padding: 6px 12px; border-radius: 999px; font-size: 12px; font-weight: 800; white-space: nowrap; }
+.sensor-alert-badge--amber { color: #8a5a12; background: #f5e6c3; }
+.sensor-alert-badge--neutral { color: #525a55; background: #eef1ef; }
+
+.sensor-alert-action { display: grid; gap: 3px; }
+.sensor-alert-action strong { display: inline-flex; align-items: center; gap: 5px; font-size: 13px; font-weight: 800; }
+.sensor-alert-action strong svg { width: 14px; height: 14px; fill: none; stroke: currentcolor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.sensor-alert-action small { color: var(--sensor-muted); font-size: 11px; }
+.sensor-alert-action--success strong { color: var(--sensor-green); }
+.sensor-alert-action--danger strong { color: #c23b2c; }
+.sensor-alert-action--neutral strong { color: var(--sensor-ink); }
+.sensor-alert-action-empty { color: var(--sensor-muted); }
+
+/* --- 임계값 설정 탭 --- */
+.sensor-threshold-panel { display: grid; gap: 22px; align-content: start; padding: clamp(18px, 2.6vw, 38px); }
+.sensor-threshold-card { border: 1px solid #e0e4e2; border-radius: 16px; background: #fff; overflow: hidden; }
+.sensor-threshold-card > header { padding: 24px 26px 18px; border-bottom: 1px solid var(--sensor-line); }
+.sensor-threshold-card h3 { margin: 0 0 8px; font-size: 20px; }
+.sensor-threshold-card > header p { margin: 0; color: var(--sensor-muted); font-size: 13px; }
+.sensor-threshold-mixed { display: flex; align-items: flex-start; gap: 8px; margin: 0; padding: 14px 26px; color: #8a5a12; background: #fdf6e6; font-size: 13px; border-bottom: 1px solid #f0e2c4; }
+.sensor-threshold-mixed svg { flex: 0 0 auto; width: 16px; height: 16px; margin-top: 1px; fill: none; stroke: currentcolor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.sensor-threshold-mixed-tag { display: inline-block; margin-left: 6px; padding: 2px 7px; border-radius: 999px; color: #8a5a12; background: #f5e6c3; font-size: 10px; font-style: normal; font-weight: 800; vertical-align: middle; }
+.sensor-threshold-rows { display: grid; grid-template-columns: repeat(auto-fit, minmax(272px, 1fr)); gap: 18px; padding: 22px 26px; }
+.sensor-threshold-row { display: grid; grid-template-columns: minmax(0, 1fr) 132px; gap: 10px 12px; align-content: start; padding: 18px; border: 1px solid var(--sensor-line); border-radius: 12px; background: #fbfcfb; }
+.sensor-threshold-label { grid-column: 1 / -1; font-size: 15px; font-weight: 850; }
+.sensor-threshold-row input, .sensor-threshold-row select { width: 100%; min-width: 0; height: 48px; border: 1px solid var(--sensor-line); border-radius: 9px; color: var(--sensor-ink); background: #fff; }
+.sensor-threshold-row input { padding: 0 15px; }
+.sensor-threshold-row select { padding: 0 34px 0 12px; cursor: pointer; }
+.sensor-threshold-row small { grid-column: 1 / -1; color: var(--sensor-muted); font-size: 12px; }
+.sensor-threshold-card footer { display: flex; align-items: center; justify-content: flex-end; gap: 10px; padding: 18px 26px; border-top: 1px solid var(--sensor-line); }
+.sensor-threshold-card footer button { min-height: 46px; padding: 0 20px; border-radius: 5px; font-weight: 800; cursor: pointer; }
+.sensor-threshold-saved { margin: 0 26px 20px; color: var(--sensor-green); font-size: 12px; font-weight: 750; text-align: right; }
+
+/* --- 로딩 · 빈 상태 · 오류 --- */
+.sensor-status-panel { display: grid; min-height: 420px; padding: 40px; place-items: center; align-content: center; gap: 4px; text-align: center; }
+.sensor-status-panel strong { margin-top: 16px; font-size: 20px; }
+.sensor-status-panel p { max-width: 470px; margin: 6px 0 0; color: var(--sensor-muted); line-height: 1.6; }
+.sensor-status-panel button { min-height: 42px; margin-top: 18px; padding: 0 20px; border-radius: 5px; font-weight: 800; cursor: pointer; }
+.sensor-status-icon { display: grid; width: 52px; height: 52px; padding: 13px; place-items: center; border-radius: 50%; }
+.sensor-status-panel--empty .sensor-status-icon, .sensor-status-panel--loading .sensor-status-icon { color: var(--sensor-green); background: #e5f7ed; }
+.sensor-status-panel--error .sensor-status-icon { color: #c23b2c; background: #fbe9e7; }
+.sensor-status-icon svg { width: 100%; fill: none; stroke: currentcolor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.sensor-spinner { width: 22px; height: 22px; border: 2px solid #bfe3cf; border-top-color: var(--sensor-green); border-radius: 50%; animation: sensor-spin .7s linear infinite; }
+@keyframes sensor-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .sensor-spinner { animation-duration: 2.4s; } }
+
+.sensor-pagination-gap { padding: 0 4px; color: var(--sensor-muted); }
+.sensor-threshold-hint--none { color: #8a5a12; font-weight: 700; }
+.sensor-threshold-saved.has-skipped { color: #8a5a12; }
+
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
 
 @media (max-width: 880px) {
@@ -165,7 +235,11 @@ button, input, select { font: inherit; }
   .sensor-dashboard-toolbar { display: grid; grid-template-columns: 1fr; gap: 12px; }.sensor-dashboard-toolbar select { width: 100%; min-width: 0; }.sensor-month-picker { width: 100%; }
   .sensor-chart-card { min-height: 275px; padding: 18px 14px 14px; }.sensor-chart-card > header { display: grid; gap: 8px; padding-right: 42px; }.sensor-chart-card > header > span { text-align: left; }.sensor-chart-card p { flex-wrap: wrap; gap: 6px 12px; }
   .sensor-chart-placeholder { grid-template-columns: 34px 1fr; height: 170px; }.sensor-chart-mount { font-size: 10px; }.sensor-chart-settings { top: 12px; right: 12px; width: 36px; height: 36px; }
-  .sensor-audit { margin-top: 58px; padding: 18px 14px; }.sensor-audit-branch { width: 70%; }.sensor-audit > header { align-items: flex-start; flex-direction: column; }.sensor-audit-toolbar { grid-template-columns: 1fr 1fr; }.sensor-audit-search { grid-column: 1 / -1; }.sensor-audit-toolbar .sensor-audit-page-size { grid-column: 1 / -1; }.sensor-audit li { grid-template-columns: 1fr; gap: 6px; }.sensor-pagination { align-items: flex-start; flex-direction: column; }.sensor-pagination > div { width: 100%; justify-content: flex-end; }
+  .sensor-audit { margin-top: 58px; padding: 18px 14px; }.sensor-audit-branch { width: 70%; }.sensor-audit > header { align-items: flex-start; flex-direction: column; }
+  .sensor-audit-filters { flex-wrap: wrap; width: 100%; }.sensor-audit-filters label { flex: 1 1 140px; }.sensor-audit-filters select, .sensor-audit-filters input { width: 100%; min-width: 0; }
+  .sensor-alert-table-wrap { overflow-x: visible; }.sensor-alert-table { min-width: 0; }.sensor-alert-table, .sensor-alert-table tbody { display: block; }.sensor-alert-table thead { display: none; }.sensor-alert-table tr { display: grid; gap: 10px; margin-bottom: 12px; padding: 14px; border: 1px solid var(--sensor-line); border-radius: 12px; }.sensor-alert-table th, .sensor-alert-table td { display: grid; grid-template-columns: 64px 1fr; grid-column: 1 / -1; gap: 10px; padding: 0; border: 0; }.sensor-alert-table th::before, .sensor-alert-table td::before { color: var(--sensor-muted); font-size: 11px; font-weight: 700; content: attr(data-label); }
+  .sensor-threshold-panel { padding: 16px 12px 28px; }.sensor-threshold-card > header { padding: 18px 16px 14px; }.sensor-threshold-rows { padding: 16px; gap: 12px; }.sensor-threshold-card footer { padding: 14px 16px; }.sensor-threshold-card footer button { flex: 1; }.sensor-threshold-saved { margin: 0 16px 16px; }
+  .sensor-pagination { align-items: flex-start; flex-direction: column; }.sensor-pagination > div { width: 100%; justify-content: flex-end; }
   .sensor-empty-state { min-height: 330px; padding: 25px 18px; }
   .sensor-list-toolbar { display: grid; grid-template-columns: 1fr auto; gap: 10px; }.sensor-filter-group { display: grid; grid-template-columns: repeat(3, 1fr); width: 100%; }.sensor-filter-group button { padding: 0 8px; font-size: 13px; }.sensor-search { grid-column: 1 / -1; grid-row: 2; }.sensor-add-button { grid-column: 2; grid-row: 1; padding: 0 14px; }
   .sensor-table-wrap { border-top: 0; }.sensor-table, .sensor-table tbody { display: block; }.sensor-table thead { display: none; }.sensor-table tr { position: relative; display: grid; grid-template-columns: 1fr auto; gap: 14px; margin-bottom: 12px; padding: 16px 62px 16px 16px; border: 1px solid var(--sensor-line); border-radius: 12px; }.sensor-table th, .sensor-table td { display: grid; grid-template-columns: 86px 1fr; grid-column: 1 / -1; gap: 10px; padding: 0; border: 0; }.sensor-table th::before, .sensor-table td::before { color: var(--sensor-muted); font-size: 11px; font-weight: 700; content: attr(data-label); }.sensor-table-action { position: static; width: auto; }.sensor-table-action::before { display: none; }.sensor-table-action .sensor-icon-button { position: absolute; top: 12px; right: 12px; }

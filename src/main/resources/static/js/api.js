@@ -148,6 +148,30 @@
             checkIn: () => request("/attendance/check-in", { method: "POST" }),
             checkOut: () => request("/attendance/check-out", { method: "POST" })
         },
+        study: {
+            getRecord: (id) => request(`/study-records/${encodeURIComponent(id)}`),
+            getDailyRecords: (date) => request(withQuery("/study-records", {date})),
+            getMonthlySummary: (month) => request(withQuery("/study-time-summaries", {month})),
+            createRecord: (payload) => request("/study-records", {
+                method: "POST",
+                body: payload
+            }),
+            updateRecord: (id, payload) => request(`/study-records/${encodeURIComponent(id)}`, {
+                method: "PUT",
+                body: payload
+            }),
+            deleteRecord: (id, resourceVersion) => request(`/study-records/${encodeURIComponent(id)}`, {
+                method: "DELETE",
+                headers: {"X-RESOURCE-VERSION": resourceVersion}
+            }),
+            getCurrentTimer: () => request("/timer"),
+            startTimer: () => request("/timer/start", {method: "POST"}),
+            stopTimer: (timerRunId) => request(`/timer/${encodeURIComponent(timerRunId)}/stop`, {
+                method: "POST"
+            }),
+            discardTimer: (timerRunId) => request(`/timer/${encodeURIComponent(timerRunId)}/discard`, {
+                method: "POST"
+            })
         studyRecords: {
             list: () => optional("/study-records"),
             create: (payload) => optional("/study-records", { method: "POST", body: payload }),
@@ -182,17 +206,22 @@
         },
         ranking: {
             // cohortId는 서버가 Session 승인 기수에서 확보한다.
-            // maxRank는 선택 값이며, 미지정 시 서버 기본값을 따른다.
-            getStudyRankings: ({period = "WEEKLY", maxRank} = {}) => {
-                const query = new URLSearchParams({period});
-                if (maxRank !== undefined && maxRank !== null) {
-                    query.set("maxRank", maxRank);
-                }
-                return request(`/study-rankings?${query}`);
-            },
-            getMine: (period = "WEEKLY") => request(
-                `/study-rankings/me?period=${encodeURIComponent(period)}`
-            )
+            getToday: ({maxRank} = {}) => request(withQuery(
+                "/study-rankings/today",
+                {maxRank}
+            )),
+            getDaily: (date, {maxRank} = {}) => request(withQuery(
+                `/study-rankings/daily/${encodeURIComponent(date)}`,
+                {maxRank}
+            )),
+            getWeekly: (weekStartDate, {maxRank} = {}) => request(withQuery(
+                `/study-rankings/weekly/${encodeURIComponent(weekStartDate)}`,
+                {maxRank}
+            )),
+            getMonthly: (month, {maxRank} = {}) => request(withQuery(
+                `/study-rankings/monthly/${encodeURIComponent(month)}`,
+                {maxRank}
+            ))
         },
         community: {
             listPosts: (query = {}) => request(withQuery("/community/posts", query)),
@@ -246,6 +275,28 @@
                 withQuery("/admin/sensors/space-series", {location, measurement, window: seriesWindow}),
                 options
             ),
+        },
+        // 응답 필드는 Learning Service 계약 그대로다. 화면이 그 이름으로 읽으므로 여기서 바꾸지 않는다.
+        sensor: {
+            listSpaces: () => request("/admin/sensors/spaces"),
+            listDevices: () => request("/admin/sensors/devices"),
+            createDevice: (payload) => request("/admin/sensors/devices", {method: "POST", body: payload}),
+            updateDevice: (deviceEui, payload) => request(`/admin/sensors/devices/${encodeURIComponent(deviceEui)}`, {
+                method: "PUT",
+                body: payload
+            }),
+            updateDeviceActive: (deviceEui, active) => request(`/admin/sensors/devices/${encodeURIComponent(deviceEui)}/active`, {
+                method: "PATCH",
+                body: {active}
+            }),
+            // query: {type, deviceEui, from, to, page, size} — 비운 값은 withQuery가 떨어뜨린다.
+            listEvents: (query = {}) => request(withQuery("/admin/sensors/events", query)),
+            listSpaceThresholds: () => request("/admin/sensors/thresholds"),
+            applySpaceThreshold: (spaceId, rules) => request(`/admin/sensors/thresholds/${encodeURIComponent(spaceId)}`, {
+                method: "PATCH",
+                headers: {"X-Request-ID": crypto.randomUUID?.() || `threshold-${Date.now()}`},
+                body: {rules}
+            })
         }
     };
 })();

@@ -3,12 +3,16 @@ package site.omagotchi.frontend.ranking.presentation;
 import tools.jackson.databind.JsonNode;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import site.omagotchi.frontend.global.learning.application.LearningProxyBffService;
-import site.omagotchi.frontend.ranking.domain.StudyRankingPeriod;
+
+import java.time.LocalDate;
+import java.time.YearMonth;
 
 /**
  * 학습 랭킹 Browser 계약.
@@ -24,24 +28,49 @@ public class RankingBffController {
 
     private final LearningProxyBffService proxy;
 
-    // period는 Enum이므로 잘못된 값은 하류 호출 전에 View가 400으로 거부한다.
-    // maxRank는 Learning에서 선택 값이며, 미지정 시 하류 기본값을 따른다.
-    @GetMapping
-    public JsonNode getRankings(
+    @GetMapping("/today")
+    public JsonNode getTodayRanking(
             HttpServletRequest request,
-            @RequestParam(defaultValue = "WEEKLY") StudyRankingPeriod period,
             @RequestParam(required = false) Integer maxRank
     ) {
         return proxy.executeWithCohort(request, (context, cohortId) -> context.service()
-                .getStudyRankings(context.bearerToken(), cohortId, period, maxRank));
+                .getTodayStudyRankings(context.bearerToken(), cohortId, maxRank));
     }
 
-    @GetMapping("/me")
-    public JsonNode getMyRanking(
+    @GetMapping("/daily/{date}")
+    public JsonNode getDailyRanking(
             HttpServletRequest request,
-            @RequestParam(defaultValue = "WEEKLY") StudyRankingPeriod period
+            @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
+            @RequestParam(required = false) Integer maxRank
     ) {
         return proxy.executeWithCohort(request, (context, cohortId) -> context.service()
-                .getMyStudyRanking(context.bearerToken(), cohortId, period));
+                .getDailyStudyRankings(
+                        context.bearerToken(), cohortId, date.toString(), maxRank
+                ));
+    }
+
+    @GetMapping("/weekly/{weekStartDate}")
+    public JsonNode getWeeklyRanking(
+            HttpServletRequest request,
+            @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            LocalDate weekStartDate,
+            @RequestParam(required = false) Integer maxRank
+    ) {
+        return proxy.executeWithCohort(request, (context, cohortId) -> context.service()
+                .getWeeklyStudyRankings(
+                        context.bearerToken(), cohortId, weekStartDate.toString(), maxRank
+                ));
+    }
+
+    @GetMapping("/monthly/{month}")
+    public JsonNode getMonthlyRanking(
+            HttpServletRequest request,
+            @PathVariable @DateTimeFormat(pattern = "yyyy-MM") YearMonth month,
+            @RequestParam(required = false) Integer maxRank
+    ) {
+        return proxy.executeWithCohort(request, (context, cohortId) -> context.service()
+                .getMonthlyStudyRankings(
+                        context.bearerToken(), cohortId, month.toString(), maxRank
+                ));
     }
 }
