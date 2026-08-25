@@ -1,12 +1,10 @@
 (() => {
     const CONTEXT_EVENT = "omagotchi:manager-sensors:context";
     const SPACE_MAP = Object.freeze({
-        LAB: Object.freeze({ value: "lab", label: "실습실" }),
-        MEETING: Object.freeze({ value: "meeting", label: "회의실" }),
-        MEETING_ROOM: Object.freeze({ value: "meeting", label: "회의실" }),
-        LIBRARY: Object.freeze({ value: "library", label: "도서관" }),
-        // 기존 Prototype의 OFFICE 데이터는 새 공간 분류가 확정될 때까지 도서관 표시로 호환한다.
-        OFFICE: Object.freeze({ value: "library", label: "도서관" })
+        LAB: Object.freeze({ value: "실습실", label: "실습실" }),
+        MEETING: Object.freeze({ value: "회의실", label: "회의실" }),
+        MEETING_ROOM: Object.freeze({ value: "회의실", label: "회의실" }),
+        OFFICE: Object.freeze({ value: "사무실", label: "사무실" })
     });
 
     function sensorSource(cohort) {
@@ -71,7 +69,7 @@
         const action = String(item.action || "");
         const space = target.includes("회의실")
             ? SPACE_MAP.MEETING_ROOM
-            : target.includes("도서관") ? SPACE_MAP.LIBRARY : SPACE_MAP.LAB;
+            : target.includes("사무실") ? SPACE_MAP.OFFICE : SPACE_MAP.LAB;
         const inactive = action.includes("비활성") || action.includes("삭제");
         return {
             id: String(item.id || `sensor-audit-${index + 1}`),
