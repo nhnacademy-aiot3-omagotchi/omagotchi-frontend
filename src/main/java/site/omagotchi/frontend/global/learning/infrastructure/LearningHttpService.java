@@ -17,12 +17,12 @@ import org.springframework.web.service.annotation.PatchExchange;
 import org.springframework.web.service.annotation.PostExchange;
 import org.springframework.web.service.annotation.PutExchange;
 import org.springframework.web.bind.annotation.RequestPart;
-import site.omagotchi.frontend.ranking.domain.StudyRankingPeriod;
 import site.omagotchi.frontend.profile.infrastructure.request.UpdateNicknameRequest;
 import site.omagotchi.frontend.profile.infrastructure.response.UserNicknameResponse;
 import site.omagotchi.frontend.profile.infrastructure.response.UserProfileResponse;
 
 import java.util.List;
+import java.util.UUID;
 
 @HttpExchange("/api/v1")
 public interface LearningHttpService {
@@ -90,20 +90,105 @@ public interface LearningHttpService {
             @RequestParam(required = false) String aggregationDate
     );
 
-    // period는 Learning에서 Enum이므로 View도 Enum으로 고정한다. maxRank는 선택 값이다.
-    @GetExchange("/cohorts/{cohortId}/study-rankings")
-    JsonNode getStudyRankings(
+    @GetExchange("/cohorts/{cohortId}/study-rankings/today")
+    JsonNode getTodayStudyRankings(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
             @PathVariable Long cohortId,
-            @RequestParam StudyRankingPeriod period,
             @RequestParam(required = false) Integer maxRank
     );
 
-    @GetExchange("/cohorts/{cohortId}/study-rankings/me")
-    JsonNode getMyStudyRanking(
+    @GetExchange("/cohorts/{cohortId}/study-rankings/daily/{date}")
+    JsonNode getDailyStudyRankings(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
             @PathVariable Long cohortId,
-            @RequestParam StudyRankingPeriod period
+            @PathVariable String date,
+            @RequestParam(required = false) Integer maxRank
+    );
+
+    @GetExchange("/cohorts/{cohortId}/study-rankings/weekly/{weekStartDate}")
+    JsonNode getWeeklyStudyRankings(
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
+            @PathVariable Long cohortId,
+            @PathVariable String weekStartDate,
+            @RequestParam(required = false) Integer maxRank
+    );
+
+    @GetExchange("/cohorts/{cohortId}/study-rankings/monthly/{month}")
+    JsonNode getMonthlyStudyRankings(
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
+            @PathVariable Long cohortId,
+            @PathVariable String month,
+            @RequestParam(required = false) Integer maxRank
+    );
+
+    @GetExchange("/cohorts/{cohortId}/study-records/{studyRecordId}")
+    JsonNode getStudyRecord(
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
+            @PathVariable Long cohortId,
+            @PathVariable UUID studyRecordId
+    );
+
+    @GetExchange("/cohorts/{cohortId}/study-records")
+    JsonNode getDailyStudyRecords(
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
+            @PathVariable Long cohortId,
+            @RequestParam String date
+    );
+
+    @GetExchange("/cohorts/{cohortId}/study-time-summaries")
+    JsonNode getMonthlyStudyTimeSummary(
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
+            @PathVariable Long cohortId,
+            @RequestParam String month
+    );
+
+    @PostExchange("/cohorts/{cohortId}/study-records")
+    ResponseEntity<JsonNode> createStudyRecord(
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
+            @PathVariable Long cohortId,
+            @RequestBody JsonNode request
+    );
+
+    @PutExchange("/cohorts/{cohortId}/study-records/{studyRecordId}")
+    JsonNode updateStudyRecord(
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
+            @PathVariable Long cohortId,
+            @PathVariable UUID studyRecordId,
+            @RequestBody JsonNode request
+    );
+
+    @DeleteExchange("/cohorts/{cohortId}/study-records/{studyRecordId}")
+    ResponseEntity<Void> deleteStudyRecord(
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
+            @PathVariable Long cohortId,
+            @PathVariable UUID studyRecordId,
+            @RequestHeader("X-RESOURCE-VERSION") Long resourceVersion
+    );
+
+    @GetExchange("/cohorts/{cohortId}/timer")
+    JsonNode getCurrentTimer(
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
+            @PathVariable Long cohortId
+    );
+
+    @PostExchange("/cohorts/{cohortId}/timer/start")
+    ResponseEntity<JsonNode> startTimer(
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
+            @PathVariable Long cohortId
+    );
+
+    @PostExchange("/cohorts/{cohortId}/timer/{timerRunId}/stop")
+    ResponseEntity<Void> stopTimer(
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
+            @PathVariable Long cohortId,
+            @PathVariable UUID timerRunId
+    );
+
+    @PostExchange("/cohorts/{cohortId}/timer/{timerRunId}/discard")
+    ResponseEntity<Void> discardTimer(
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
+            @PathVariable Long cohortId,
+            @PathVariable UUID timerRunId
     );
 
     @GetExchange("/cohorts/me/presence")
@@ -284,14 +369,6 @@ public interface LearningHttpService {
             @PathVariable Long cohortId,
             @PathVariable Long attendanceRecordId,
             @RequestBody JsonNode request
-    );
-
-    @GetExchange("/cohorts/{cohortId}/study-rankings/management")
-    JsonNode getManagedStudyRankings(
-            @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
-            @PathVariable Long cohortId,
-            @RequestParam String period,
-            @RequestParam Integer maxRank
     );
 
     @PatchExchange("/community/posts/{postId}/pin")
