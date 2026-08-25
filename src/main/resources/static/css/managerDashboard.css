@@ -114,7 +114,6 @@ button {
 .manager-account button,
 .panel-heading button,
 .cohort-edit-form button,
-.sensor-threshold-form button,
 .notice-form button,
 .manager-dialog button {
     min-height: 38px;
@@ -487,7 +486,6 @@ button {
 }
 
 .cohort-edit-form[hidden],
-.sensor-threshold-form[hidden],
 .notice-form[hidden] {
     display: none;
 }
@@ -503,7 +501,6 @@ button {
 }
 
 .cohort-edit-form label span,
-.sensor-threshold-form label span,
 .search-field span,
 .date-field span {
     color: var(--muted);
@@ -712,54 +709,6 @@ td small {
 .sensor-grid article.is-warning {
     border-color: #e7b35e;
     background: #fff8e9;
-}
-
-.sensor-threshold-form {
-    display: grid;
-    gap: 14px;
-    margin-top: 14px;
-    padding: 16px;
-    border: 1px solid var(--line);
-    border-radius: 7px;
-    background: #f8fbf9;
-}
-
-.sensor-threshold-location {
-    width: min(240px, 100%);
-    display: grid;
-    gap: 5px;
-}
-
-.sensor-threshold-fields {
-    display: grid;
-    gap: 8px;
-}
-
-.sensor-threshold-row {
-    min-width: 0;
-    display: grid;
-    grid-template-columns: minmax(80px, 0.5fr) repeat(2, minmax(140px, 1fr));
-    align-items: center;
-    gap: 10px;
-}
-
-.sensor-threshold-name {
-    color: var(--ink);
-    font-size: 14px;
-    font-weight: 900;
-}
-
-.sensor-threshold-row label {
-    display: grid;
-    grid-template-columns: 44px minmax(0, 1fr);
-    align-items: center;
-    gap: 8px;
-}
-
-.sensor-threshold-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 8px;
 }
 
 .updated-at {
@@ -1072,11 +1021,6 @@ td small {
 
     .sensor-grid {
         grid-template-columns: 1fr 1fr;
-    }
-
-    .sensor-threshold-row {
-        grid-template-columns: 1fr;
-        align-items: stretch;
     }
 
     .community-item {
