@@ -1,17 +1,23 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Tabs } from "radix-ui";
 
 const SPACE_OPTIONS = [
-  { value: "lab", label: "실습실" },
-  { value: "meeting", label: "회의실" },
-  { value: "library", label: "도서관" }
+  { value: "실습실", label: "실습실" },
+  { value: "사무실", label: "사무실" },
+  { value: "회의실", label: "회의실" }
 ];
 
 const PERIOD_OPTIONS = [
   { value: "day", label: "일 (최근 24시간)" },
   { value: "week", label: "주 (최근 1주)" },
-  { value: "month", label: "월" }
+  { value: "month", label: "월 (최근 30일)" }
 ];
+
+const WINDOW_BY_PERIOD = {
+  day: "DAY",
+  week: "WEEK",
+  month: "MONTH"
+};
 
 const METRIC_LABELS = {
   temperature: { label: "온도", unit: "°C" },
@@ -34,6 +40,30 @@ const INITIAL_AUDIT_ENTRIES = Array.from({ length: 23 }, (_, index) => {
     status: active ? "active" : "inactive"
   };
 });
+
+function formatPointLabel(isoTime, period) {
+  const date = new Date(isoTime);
+  if (period === "month") return `${date.getMonth() + 1}/${date.getDate()}`;
+  if (period === "week") return `${date.getDate()}일 ${date.getHours()}시`;
+  return `${date.getHours()}시`;
+}
+
+const THRESHOLD_OPERATOR_LABELS = { GT: "초과", GTE: "이상", LT: "미만", LTE: "이하" };
+
+// 구간 안에서 센서 하나라도 기준을 벗어났는지 본다. 상한 규칙은 최고값, 하한 규칙은 최저값 기준.
+function isExceeded(point, threshold) {
+  if (!threshold || point.count === 0) return false;
+  if (threshold.operator === "GT") return point.max > threshold.value;
+  if (threshold.operator === "GTE") return point.max >= threshold.value;
+  if (threshold.operator === "LT") return point.min < threshold.value;
+  return point.min <= threshold.value;
+}
+
+function sourcesLabel(sources) {
+  if (!sources?.settled || !sources?.hot) return "";
+  const toName = (bucket) => bucket.toLowerCase().replaceAll("_", "-");
+  return ` · ${toName(sources.settled)} + ${toName(sources.hot)}`;
+}
 
 function GearIcon() {
   return (
@@ -61,36 +91,161 @@ function CloseIcon() {
   );
 }
 
-function ChartPlaceholder({ sensor, metric, period, month }) {
+function SensorChart({ space, metric, period, refreshKey, threshold }) {
   const metricInfo = METRIC_LABELS[metric];
-  const periodLabel = period === "month"
-    ? `월 (${month}월)`
-    : PERIOD_OPTIONS.find((item) => item.value === period)?.label || "";
+  const periodLabel = PERIOD_OPTIONS.find((item) => item.value === period)?.label || "";
+  const [series, setSeries] = useState(null);
+  const [status, setStatus] = useState("loading");
+  const [reloadKey, setReloadKey] = useState(0);
+  const canvasRef = useRef(null);
+
+  useEffect(() => {
+    const fetchSpaceSeries = window.OmagotchiApi?.manager?.getSensorSpaceSeries;
+    if (!fetchSpaceSeries) {
+      setStatus("error");
+      return undefined;
+    }
+    let cancelled = false;
+    setStatus("loading");
+    fetchSpaceSeries(space, metric, WINDOW_BY_PERIOD[period])
+        .then((response) => {
+          if (cancelled) return;
+          const points = Array.isArray(response?.points) ? response.points : [];
+          setSeries(response);
+          setStatus(points.some((point) => point.count > 0) ? "ready" : "empty");
+        })
+        .catch(() => {
+          if (!cancelled) setStatus("error");
+        });
+    return () => { cancelled = true; };
+  }, [space, metric, period, reloadKey, refreshKey]);
+
+  useEffect(() => {
+    if (status !== "ready" || !canvasRef.current || !window.Chart) {
+      return undefined;
+    }
+    const points = series.points;
+    const nameByEui = new Map((Array.isArray(series.sensors) ? series.sensors : [])
+        .map((sensor) => [sensor.deviceEui, sensor.displayName || sensor.deviceEui]));
+    const unit = metricInfo.unit;
+    const chart = new window.Chart(canvasRef.current, {
+      type: "line",
+      data: {
+        labels: points.map((point) => formatPointLabel(point.time, period)),
+        datasets: [
+          { label: "최저", data: points.map((point) => point.min), borderWidth: 0, pointRadius: 0, fill: false },
+          { label: "최고", data: points.map((point) => point.max), borderWidth: 0, pointRadius: 0, fill: "-1", backgroundColor: "rgba(47, 111, 237, 0.12)" },
+          {
+            label: "평균",
+            data: points.map((point) => point.avg),
+            borderColor: "#2f6fed",
+            borderWidth: 2,
+            pointRadius: points.map((point) => (isExceeded(point, threshold) ? 3.5 : 0)),
+            pointHoverRadius: points.map((point) => (isExceeded(point, threshold) ? 5 : 3)),
+            pointBackgroundColor: "#a63d2f",
+            pointBorderColor: "#a63d2f",
+            tension: 0.35,
+            segment: { borderDash: (context) => (points[context.p1DataIndex]?.partial ? [6, 6] : undefined) }
+          },
+          ...(threshold ? [{
+            label: "임계값",
+            data: points.map(() => threshold.value),
+            borderColor: "#b0413e",
+            borderWidth: 1.5,
+            borderDash: [6, 5],
+            pointRadius: 0,
+            fill: false
+          }] : [])
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: "index", intersect: false },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            displayColors: false,
+            filter: (item) => item.datasetIndex === 2,
+            callbacks: {
+              label: (item) => {
+                const point = points[item.dataIndex];
+                if (!point || point.count === 0) return "측정값 없음";
+                const lines = [`평균 ${point.avg.toFixed(1)}${unit}`];
+                if (point.max != null) {
+                  lines.push(`최고 ${point.max.toFixed(1)}${unit} · ${nameByEui.get(point.maxDeviceEui) || point.maxDeviceEui || "-"}`);
+                }
+                if (point.min != null) {
+                  lines.push(`최저 ${point.min.toFixed(1)}${unit} · ${nameByEui.get(point.minDeviceEui) || point.minDeviceEui || "-"}`);
+                }
+                if (point.partial) lines.push("집계 진행 중");
+                return lines;
+              }
+            }
+          }
+        },
+        scales: { x: { ticks: { maxTicksLimit: 8 } } }
+      }
+    });
+    return () => chart.destroy();
+  }, [status, series, period, threshold]);
+
+  const lastPoint = status === "ready"
+      ? series.points.findLast((point) => point.count > 0)
+      : null;
+  const exceededCount = status === "ready" && threshold
+      ? series.points.filter((point) => isExceeded(point, threshold)).length
+      : 0;
 
   return (
-    <article className="sensor-chart-card" data-sensor-id={sensor.id} data-metric={metric}>
-      <header>
-        <div>
-          <h3>{metricInfo.label} <small>{metricInfo.unit}</small></h3>
-          <p><strong>현재 평균 --</strong> <span>기준값 설정 전</span></p>
+      <article className="sensor-chart-card" data-space={space} data-metric={metric}>
+        <header>
+          <div>
+            <h3>{metricInfo.label} <small>{metricInfo.unit}</small></h3>
+            <p>
+              <strong>현재 평균 {lastPoint ? `${lastPoint.avg.toFixed(1)} ${metricInfo.unit}` : "--"}</strong>
+              {threshold
+                  ? <span className="sensor-threshold-note">기준 {threshold.value}{metricInfo.unit} {THRESHOLD_OPERATOR_LABELS[threshold.operator] || ""}</span>
+                  : <span>기준값 설정 전</span>}
+              {exceededCount > 0 && <em className="sensor-threshold-badge">⚠ {exceededCount}개 구간에서 센서 초과</em>}
+            </p>
+          </div>
+          <span>
+            {status === "ready"
+                ? `${space} 센서 ${series.sensorCount}대 평균 · ${series.interval === "1d" ? "1일" : "1시간"} 단위${sourcesLabel(series.sources)}`
+                : `${space} 공간 평균 · ${periodLabel}`}
+          </span>
+        </header>
+        <div className={`sensor-chart-placeholder${status === "ready" ? " is-ready" : ""}`} role="img" aria-label={`${space} ${metricInfo.label} 차트 영역`}>
+          {status !== "ready" && <div className="sensor-chart-y-axis"><span>높음</span><span>평균</span><span>낮음</span></div>}
+          <div className="sensor-chart-grid">
+            <canvas
+                ref={canvasRef}
+                className="sensor-chart-canvas"
+                data-sensor-chart-canvas
+                data-metric={metric}
+                aria-label={`${space} ${metricInfo.label} Chart.js canvas`}
+            />
+            {status === "loading" && <span className="sensor-chart-mount">불러오는 중…</span>}
+            {status === "empty" && <span className="sensor-chart-mount">선택한 기간에 측정값이 없습니다.</span>}
+            {status === "error" && (
+                <span className="sensor-chart-mount">
+              조회에 실패했습니다.{" "}
+                  <button type="button" onClick={() => setReloadKey((current) => current + 1)}>재시도</button>
+            </span>
+            )}
+            {status !== "ready" && <div className="sensor-chart-x-axis"><span>시작</span><span>중간</span><span>현재</span></div>}
+          </div>
         </div>
-        <span>{sensor.spaceLabel} 센서 1대 · {periodLabel}</span>
-      </header>
-      <div className="sensor-chart-placeholder" role="img" aria-label={`${sensor.name} ${metricInfo.label} 차트 삽입 영역`}>
-        <div className="sensor-chart-y-axis"><span>높음</span><span>평균</span><span>낮음</span></div>
-        <div className="sensor-chart-grid">
-          <canvas
-            className="sensor-chart-canvas"
-            data-sensor-chart-canvas
-            data-sensor-id={sensor.id}
-            data-metric={metric}
-            aria-label={`${sensor.name} ${metricInfo.label} Chart.js canvas`}
-          />
-          <span className="sensor-chart-mount">Chart.js canvas mount</span>
-          <div className="sensor-chart-x-axis"><span>시작</span><span>중간</span><span>현재</span></div>
-        </div>
-      </div>
-    </article>
+        {status === "ready" && (
+            <footer className="sensor-chart-legend" aria-hidden="true">
+              <span className="legend-avg">공간 평균</span>
+              <span className="legend-band">센서 최소–최대</span>
+              {threshold && <span className="legend-threshold">임계값</span>}
+              {exceededCount > 0 && <span className="legend-exceeded">센서 초과 발생</span>}
+            </footer>
+        )}
+      </article>
   );
 }
 
@@ -155,46 +310,36 @@ function AuditLog({ entries }) {
   );
 }
 
-function DashboardContent({ sensors, auditEntries, onEdit }) {
-  const [space, setSpace] = useState("lab");
+function DashboardContent({ auditEntries, thresholds }) {
+  const [space, setSpace] = useState("실습실");
   const [period, setPeriod] = useState("day");
-  const [month, setMonth] = useState(1);
-  const charts = useMemo(() => sensors
-    .filter((sensor) => sensor.active && sensor.space === space)
-    .flatMap((sensor) => sensor.metrics.map((metric) => ({ sensor, metric }))), [sensors, space]);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  // 확정 데이터는 다운샘플 태스크(offset 5m)가 채우므로 정각이 아니라 매시 6분에 갱신한다.
+  useEffect(() => {
+    const now = new Date();
+    const nextRefresh = new Date(now);
+    nextRefresh.setHours(now.getHours() + 1, 6, 0, 0);
+    const timer = setTimeout(() => setRefreshKey((current) => current + 1), nextRefresh - now);
+    return () => clearTimeout(timer);
+  }, [refreshKey]);
 
   return (
-    <div className="sensor-dashboard">
-      <section className="sensor-dashboard-toolbar" aria-label="대시보드 조회 조건">
-        <label><span>공간</span><select value={space} onChange={(event) => setSpace(event.target.value)}>{SPACE_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
-        <label><span>기간</span><select value={period} onChange={(event) => setPeriod(event.target.value)}>{PERIOD_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
-        {period === "month" && (
-          <div className="sensor-month-picker" aria-label="조회 월 이동">
-            <button type="button" aria-label="이전 월" disabled={month === 1} onClick={() => setMonth((current) => Math.max(1, current - 1))}>◀</button>
-            <strong aria-live="polite">{month}월</strong>
-            <button type="button" aria-label="다음 월" disabled={month === 12} onClick={() => setMonth((current) => Math.min(12, current + 1))}>▶</button>
-          </div>
-        )}
-      </section>
-
-      {charts.length === 0 ? (
-        <section className="sensor-empty-state" role="status">
-          <div className="sensor-empty-icon"><GearIcon /></div>
-          <strong>표시할 센서 데이터가 없습니다.</strong>
-          <p>선택한 공간에 활성화된 센서를 추가하면 차트가 자동으로 생성됩니다.</p>
+      <div className="sensor-dashboard">
+        <section className="sensor-dashboard-toolbar" aria-label="대시보드 조회 조건">
+          <label><span>공간</span><select value={space} onChange={(event) => setSpace(event.target.value)}>{SPACE_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
+          <label><span>기간</span><select value={period} onChange={(event) => setPeriod(event.target.value)}>{PERIOD_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
         </section>
-      ) : (
+
         <div className="sensor-chart-list">
-          {charts.map(({ sensor, metric }) => (
-            <div className="sensor-chart-row" key={`${sensor.id}-${metric}`}>
-              <ChartPlaceholder sensor={sensor} metric={metric} period={period} month={month} />
-              <button type="button" className="sensor-icon-button sensor-chart-settings" aria-label={`${sensor.name} 설정`} onClick={() => onEdit(sensor)}><GearIcon /></button>
-            </div>
+          {Object.keys(METRIC_LABELS).map((metric) => (
+              <div className="sensor-chart-row" key={`${space}-${metric}`}>
+                <SensorChart space={space} metric={metric} period={period} refreshKey={refreshKey} threshold={thresholds?.[space]?.[metric] || null} />
+              </div>
           ))}
         </div>
-      )}
-      <AuditLog entries={auditEntries} />
-    </div>
+        <AuditLog entries={auditEntries} />
+      </div>
   );
 }
 
@@ -249,7 +394,7 @@ function SensorListContent({ sensors, onAdd, onEdit }) {
 
 function SensorDialog({ mode, sensor, onClose, onSave, onDelete }) {
   const isEdit = mode === "edit";
-  const [form, setForm] = useState(() => sensor || { name: "", eui: "", space: "lab", spaceLabel: "실습실", location: "", interval: 60, metrics: ["temperature"], active: true });
+  const [form, setForm] = useState(() => sensor || { name: "", eui: "", space: "실습실", spaceLabel: "실습실", location: "", interval: 60, metrics: ["temperature"], active: true });
   useEffect(() => { if (sensor) setForm(sensor); }, [sensor]);
   function update(field, value) { setForm((current) => ({ ...current, [field]: value })); }
   function toggleMetric(metric) {
@@ -295,7 +440,9 @@ export function SensorWorkspace({
   initialSensors = [],
   initialAuditEntries = INITIAL_AUDIT_ENTRIES,
   defaultTab = "dashboard",
-  embedded = false
+  embedded = false,
+  // 화면 내부 모델: { [공간]: { [측정항목]: { operator, value } } }. 임계값 조회 API가 연결되면 여기로 주입한다.
+  thresholds = null
 }) {
   const [sensors, setSensors] = useState(initialSensors);
   const [activeTab, setActiveTab] = useState(defaultTab);
@@ -311,7 +458,7 @@ export function SensorWorkspace({
   function deleteSensor(id) {
     const target = sensors.find((sensor) => sensor.id === id);
     setSensors((current) => current.filter((sensor) => sensor.id !== id));
-    setAuditEntries((current) => [{ id: Date.now(), time: "방금 전", ageDays: 0, title: "센서 삭제", detail: `${target?.name || "센서"}가 삭제되었습니다.`, space: target?.space || "lab", spaceLabel: target?.spaceLabel || "실습실", status: target?.active ? "active" : "inactive" }, ...current]);
+    setAuditEntries((current) => [{ id: Date.now(), time: "방금 전", ageDays: 0, title: "센서 삭제", detail: `${target?.name || "센서"}가 삭제되었습니다.`, space: target?.space || "실습실", spaceLabel: target?.spaceLabel || "실습실", status: target?.active ? "active" : "inactive" }, ...current]);
     setDialog(null);
   }
 
@@ -324,7 +471,7 @@ export function SensorWorkspace({
             <Tabs.Trigger value="sensors">센서 목록</Tabs.Trigger>
           </Tabs.List>
           <div className="sensor-content-shell">
-            <Tabs.Content value="dashboard"><DashboardContent sensors={sensors} auditEntries={auditEntries} onEdit={(item) => setDialog({ mode: "edit", sensor: item })} /></Tabs.Content>
+            <Tabs.Content value="dashboard"><DashboardContent auditEntries={auditEntries} thresholds={thresholds} /></Tabs.Content>
             <Tabs.Content value="sensors"><SensorListContent sensors={sensors} onAdd={() => setDialog({ mode: "add" })} onEdit={(item) => setDialog({ mode: "edit", sensor: item })} /></Tabs.Content>
           </div>
         </Tabs.Root>

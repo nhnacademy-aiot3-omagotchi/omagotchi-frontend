@@ -242,7 +242,9 @@
                 body: {nextStatus, reason, requestId: crypto.randomUUID?.() || `manual-${Date.now()}`}
             }),
             getRankings: (cohortId, query = {}) => request(withQuery(`/admin/cohorts/${encodeURIComponent(cohortId)}/study-rankings`, query)),
-            updatePostPin: (postId, pinned) => request(`/admin/community/posts/${encodeURIComponent(postId)}/pin`, {method: "PATCH", body: {pinned}})
+            updatePostPin: (postId, pinned) => request(`/admin/community/posts/${encodeURIComponent(postId)}/pin`, {method: "PATCH", body: {pinned}}),
+            getSensorSpaceSeries: (location, measurement, seriesWindow) => request(withQuery("/admin/sensors/space-series", {location, measurement, window: seriesWindow}
+            )),
         }
     };
 })();

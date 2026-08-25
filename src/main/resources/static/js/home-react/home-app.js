@@ -23,23 +23,23 @@ import{r as m,j as f,R as ba,c as cr}from"./chunks/client-Ccz8zIL1.js";import{u 
     margin-right: `).concat(a,"px ").concat(s,`;
     `),n==="padding"&&"padding-right: ".concat(a,"px ").concat(s,";")].filter(Boolean).join(""),`
   }
-
+  
   .`).concat(Pt,` {
     right: `).concat(a,"px ").concat(s,`;
   }
-
+  
   .`).concat(Ct,` {
     margin-right: `).concat(a,"px ").concat(s,`;
   }
-
+  
   .`).concat(Pt," .").concat(Pt,` {
     right: 0 `).concat(s,`;
   }
-
+  
   .`).concat(Ct," .").concat(Ct,` {
     margin-right: 0 `).concat(s,`;
   }
-
+  
   body[`).concat(Ve,`] {
     `).concat(_h,": ").concat(a,`px;
   }
