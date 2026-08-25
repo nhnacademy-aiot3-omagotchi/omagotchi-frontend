@@ -11,6 +11,10 @@ server:
 spring:
   application:
     name: frontend
+  cloud:
+    loadbalancer:
+      cache:
+        enabled: false
   http:
     clients:
       connect-timeout: ${HTTP_CLIENT_CONNECT_TIMEOUT}
