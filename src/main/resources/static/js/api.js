@@ -148,14 +148,6 @@
             checkIn: () => request("/attendance/check-in", { method: "POST" }),
             checkOut: () => request("/attendance/check-out", { method: "POST" })
         },
-        presence: {
-            getLabPresence: () => request("/presence"),
-            // 응답 본문이 곧 최신 snapshot이므로 조회를 위한 추가 왕복이 없다.
-            sendHeartbeat: () => request("/presence/heartbeat", { method: "POST" }),
-            // 일반 pagehide에서는 호출하지 않는다. 같은 로그인 Session의 다른 탭을 보호하기 위해
-            // 명시적 로그아웃처럼 브라우저 Session 전체를 종료할 때만 사용할 계약이다.
-            leave: () => request("/presence/leave", { method: "POST", keepalive: true })
-        },
         studyRecords: {
             list: () => optional("/study-records"),
             create: (payload) => optional("/study-records", { method: "POST", body: payload }),

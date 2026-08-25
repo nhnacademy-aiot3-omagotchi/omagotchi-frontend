@@ -1,10 +1,59 @@
 # Presence 재실 현황 구현 계획 (Learning · Frontend)
 
-> 상태: 구현 완료 · 로컬 운영형 통합 검증 전 · 최종 갱신 2026-08-25
+> 상태: **보류 (2026-08-25)** · MVP 운영 범위에서 제외
+>
+> **Presence는 노출하지 않는다.** 화면·BFF 어댑터를 제거했고 재실 현황 UI를 내렸다.
+> 이 문서는 폐기하지 않는다. 인증 방식 결정 근거와 두 설계(REST heartbeat / STOMP+SSE)를
+> 남겨 두어 재개할 때 같은 논의를 반복하지 않기 위함이다. 상세는 아래 §0.1 참고.
+>
+> 이전 상태: 구현 완료 · 로컬 운영형 통합 검증 전
 > 대상: Home 재실 현황(Presence)
 > 선행 문서: [Gateway Presence 통합 검증 인계서](gateway-presence-handoff-2026-08-24.md)
 > 이 문서는 인계서가 남긴 "인증 방식 3자 합의" 항목의 **결정본**이며, 그 결정에 따른
 > Learning·Frontend 작업을 단계별로 정의한다.
+
+---
+
+## 0.1 보류 결정 (2026-08-25)
+
+### 왜 멈췄나
+
+| 이유 | 내용 |
+| --- | --- |
+| Gateway 의존 | STOMP 안은 `/ws` Route가 선행 조건이라 남의 일정에 물린다 |
+| REST 안도 미완 | Learning heartbeat·leave는 로컬에만 있고 운영에 배포되지 않았다 |
+| MVP 우선순위 | 재실 현황이 없어도 출결·퀘스트·랭킹·커뮤니티는 완결된다 |
+| 정직한 화면 | 동작하지 않는 기능을 "0명"으로 노출하는 것보다 내리는 편이 낫다 |
+
+### 제거한 것
+
+```text
+view: static/js/home.js                         presence Controller 초기화·DOM 조회 전부
+view: static/js/api.js                          presence 어댑터 3개
+view: frontend/home-react/ActionDock.jsx        <PresenceHud /> 및 presenceProps 배선
+view: frontend/home-react/HomeStage.stories.jsx presenceProps
+```
+
+React 재빌드가 필요하다.
+
+### 남긴 것 (되살릴 때 0비용)
+
+```text
+view:     presence/ 패키지 (BFF Route 3개 + Service + 세션 식별자) — 테스트 통과 상태
+view:     presence 테스트 3개 파일
+learning: realtime/ 패키지 전체 (STOMP·Redis·heartbeat REST·PresenceErrorCode)
+learning: compose.yaml 의 Redis, REALTIME_PRESENCE_SESSION_TTL
+css:      presence-* 클래스 (렌더되지 않음)
+```
+
+호출하는 쪽이 없어 동작에 영향이 없고, 테스트가 계속 통과하므로 부채로 남지 않는다.
+
+### 재개할 때
+
+1. 이 문서 §1의 결정(REST heartbeat)부터 읽는다. **인증 방식 논의는 끝나 있다.**
+2. Learning heartbeat·leave가 배포되어 있는지 확인한다.
+3. `api.js`에 어댑터를 되살리고 `ActionDock.jsx`에 `PresenceHud`를 다시 붙인 뒤 재빌드한다.
+4. 실시간 push가 필요해지면 부록 A의 STOMP + SSE 안으로 전환한다.
 
 ---
 
