@@ -88,7 +88,7 @@
 - [관리자 공간·센서 Chart.js 연동 가이드](prompt/센서-차트.md)
 - [System Admin BFF 연동 가이드](prompt/시스템-관리자-BFF-연동.md)
 - [Home AI 도우미 구현 Prompt](prompt/AI-도우미.md)
-- [MCP 기반 AI 도우미 연동 Prompt](prompt/MCP-연동.md)
+- [AI 도우미 연동 Prompt](prompt/AI-연동.md)
 
 ## 라이선스
 

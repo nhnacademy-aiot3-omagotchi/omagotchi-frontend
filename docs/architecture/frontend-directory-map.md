@@ -28,6 +28,7 @@ view/
 │   │   └── main.jsx                    Island 진입점
 │   └── ui/                             재사용 UI·Pattern과 Story
 ├── src/main/java/site/omagotchi/frontend/
+│   ├── ai/                             AI 도우미 BFF (learning-service ChatClient 스트리밍 프록시)
 │   ├── attendance/                     사용자·관리자 출결 BFF·Gateway 계약·응답 모델
 │   ├── auth/                           Identity 연동과 인증 use case
 │   ├── cohort/                         사용자·관리자 기수 BFF
@@ -90,6 +91,7 @@ Spring Controller
 | 인증·Session | `auth/**`, `global/security/**`, 인증 Template | Identity 계약·회귀 테스트 |
 | Learning 기능 BFF | `attendance/**`, `cohort/**`, `community/**`, `gamification/**`, `presence/**`, `profile/**`, `ranking/**` | `global/learning/**`, Gateway·Learning 계약 |
 | Learning 공통 경계 | `global/learning/**` | 모든 기능 패키지의 import와 계약 테스트 |
+| AI 도우미 BFF | `ai/**` | `docs/prompt/AI-도우미.md`, `docs/prompt/AI-연동.md` — `global/learning/**`을 쓰지 않고 자체 `WebClient` 스트리밍 클라이언트를 둔다 |
 | Backend 연동 문서 | `docs/integration/**` | `docs/prompt/**` 보호 규칙 |
 
 ## Java 기능 패키지 기준
@@ -99,6 +101,7 @@ Spring Controller
 
 ```text
 site.omagotchi.frontend
+├── ai
 ├── attendance
 ├── cohort
 ├── community
