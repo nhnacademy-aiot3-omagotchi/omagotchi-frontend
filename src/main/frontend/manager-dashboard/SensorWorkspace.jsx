@@ -800,6 +800,193 @@ function SensorDialog({ mode, sensor, spaces, onClose, onSave }) {
  * 이 컴포넌트는 표본 데이터를 갖지 않는다. 데모 데이터는 스토리에만 둔다 —
  * 기본값으로 두면 조회 실패 시 지어낸 값이 실제 데이터처럼 표시된다.
  */
+const SPACE_TYPE_LABELS = Object.freeze({
+  MEETING: "회의실",
+  LAB: "실습실",
+  STUDY: "도서관",
+  OFFICE: "사무실"
+});
+
+const SPACE_USAGE_LABELS = Object.freeze({
+  AVAILABLE: "사용 가능",
+  OCCUPIED: "사용 중",
+  UNAVAILABLE: "이용 불가",
+  NOT_APPLICABLE: "해당 없음"
+});
+
+function SpaceDialog({ space, selectedCohortId, onClose, onSave }) {
+  const [form, setForm] = useState({
+    name: space?.name || "",
+    type: space?.type || "MEETING",
+    capacity: space?.capacity || 1
+  });
+  const [saving, setSaving] = useState(false);
+  const [policyValidationAttempted, setPolicyValidationAttempted] = useState(false);
+  const update = (key, value) => setForm((current) => ({ ...current, [key]: value }));
+  const isActiveEdit = Boolean(space && space.operationalStatus === "ACTIVE");
+  const isActiveCapacityReduction = isActiveEdit && Number(form.capacity) < Number(space.capacity);
+  const isActiveTypeChange = isActiveEdit && form.type !== space.type;
+  const hasPolicyError = isActiveCapacityReduction || isActiveTypeChange;
+  const capacity = Number(form.capacity);
+  const hasRequiredInputError = !form.name.trim()
+    || form.capacity === ""
+    || !Number.isInteger(capacity)
+    || capacity < 1;
+  const policyErrorMessage = isActiveCapacityReduction && isActiveTypeChange
+    ? "활성 공간에서는 유형 변경 및 정원 축소를 할 수 없습니다. 비활성화 후 수정해 주세요."
+    : isActiveCapacityReduction
+      ? "활성 공간의 정원은 축소할 수 없습니다. 비활성화 후 수정해 주세요."
+      : "활성 공간의 유형은 변경할 수 없습니다. 비활성화 후 수정해 주세요.";
+
+  async function submit(event) {
+    event.preventDefault();
+    if (saving || hasRequiredInputError) return;
+    setPolicyValidationAttempted(true);
+    if (hasPolicyError) return;
+    setSaving(true);
+    try {
+      const payload = { ...form, capacity: Number(form.capacity) };
+      if (!space) payload.cohortId = Number(selectedCohortId);
+      if (await onSave(payload, space ? "update" : "create", space?.spaceId)) onClose();
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="sensor-dialog-backdrop">
+      <div className="sensor-dialog" role="dialog" aria-modal="true" aria-labelledby="space-dialog-title">
+        <form onSubmit={submit}>
+          <header><div><span>SPACE MANAGEMENT</span><h2 id="space-dialog-title">{space ? "공간 수정" : "공간 추가"}</h2><p>신규 공간은 비활성 상태로 생성됩니다.</p></div><button type="button" className="sensor-dialog-close" onClick={onClose} aria-label="닫기">×</button></header>
+          <fieldset>
+            <label className="sensor-field"><span>공간명</span><input required maxLength={50} value={form.name} onChange={(event) => update("name", event.target.value)} /></label>
+            <div className="sensor-field-row">
+              <label className="sensor-field"><span>유형</span><select value={form.type} onChange={(event) => update("type", event.target.value)}>{Object.entries(SPACE_TYPE_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
+              <label className="sensor-field"><span>정원</span><input required min="1" step="1" type="number" value={form.capacity} onChange={(event) => update("capacity", event.target.value)} /></label>
+            </div>
+            {policyValidationAttempted && hasPolicyError && <p className="space-form-error" role="alert">{policyErrorMessage}</p>}
+          </fieldset>
+          <footer><div><button type="button" className="sensor-secondary-button" onClick={onClose}>취소</button><button type="submit" className="sensor-primary-button" disabled={saving || hasRequiredInputError}>{saving ? "저장 중…" : "저장"}</button></div></footer>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+function DeactivateSpaceDialog({ space, onClose, onConfirm }) {
+  const [inactiveReason, setInactiveReason] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  async function submit(event) {
+    event.preventDefault();
+    const reason = inactiveReason.trim();
+    if (!reason || saving) return;
+    setSaving(true);
+    try {
+      if (await onConfirm(space, reason)) onClose();
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="sensor-dialog-backdrop">
+      <div className="sensor-dialog" role="dialog" aria-modal="true" aria-labelledby="space-deactivate-dialog-title">
+        <form onSubmit={submit}>
+          <header>
+            <div><span>SPACE MANAGEMENT</span><h2 id="space-deactivate-dialog-title">공간 비활성화</h2><p><strong>{space.name}</strong> 공간을 비활성화합니다.</p></div>
+            <button type="button" className="sensor-dialog-close" onClick={onClose} aria-label="닫기" disabled={saving}>×</button>
+          </header>
+          <fieldset>
+            <label className="sensor-field"><span>비활성 사유</span><textarea required maxLength={200} value={inactiveReason} onChange={(event) => setInactiveReason(event.target.value)} /></label>
+          </fieldset>
+          <footer><div><button type="button" className="sensor-secondary-button" onClick={onClose} disabled={saving}>취소</button><button type="submit" className="sensor-primary-button is-danger" disabled={saving || !inactiveReason.trim()}>{saving ? "처리 중…" : "비활성화"}</button></div></footer>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+function DeleteSpaceDialog({ space, onClose, onConfirm }) {
+  const [deleting, setDeleting] = useState(false);
+  const [policyError, setPolicyError] = useState(false);
+
+  async function submit(event) {
+    event.preventDefault();
+    if (deleting) return;
+    if (space.operationalStatus === "ACTIVE") {
+      setPolicyError(true);
+      return;
+    }
+    setDeleting(true);
+    try {
+      if (await onConfirm(space.spaceId)) onClose();
+    } finally {
+      setDeleting(false);
+    }
+  }
+
+  return (
+    <div className="sensor-dialog-backdrop">
+      <div className="sensor-dialog" role="dialog" aria-modal="true" aria-labelledby="space-delete-dialog-title">
+        <form onSubmit={submit}>
+          <header>
+            <div><span>SPACE MANAGEMENT</span><h2 id="space-delete-dialog-title">공간 삭제</h2><p>&apos;{space.name}&apos; 공간을 삭제하시겠습니까?</p></div>
+            <button type="button" className="sensor-dialog-close" onClick={onClose} aria-label="닫기" disabled={deleting}>×</button>
+          </header>
+          {policyError && <div className="space-dialog-validation"><p className="space-form-error" role="alert">활성 공간은 삭제할 수 없습니다. 먼저 공간을 비활성화해 주세요.</p></div>}
+          <footer><div><button type="button" className="sensor-secondary-button" onClick={onClose} disabled={deleting}>취소</button><button type="submit" className="sensor-primary-button is-danger" disabled={deleting}>{deleting ? "삭제 중…" : "삭제"}</button></div></footer>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+function SpaceManagement({ spaces, selectedCohortId, onSave, onChangeStatus, onDelete, onChangeCohort }) {
+  const [dialogSpace, setDialogSpace] = useState(undefined);
+  const [actionDialog, setActionDialog] = useState(null);
+  const visibleSpaces = spaces.filter((space) => space.cohortId == null
+    || Number(space.cohortId) === Number(selectedCohortId));
+
+  async function toggleStatus(space) {
+    if (space.operationalStatus === "ACTIVE") {
+      setActionDialog({ type: "deactivate", space });
+      return;
+    }
+    await onChangeStatus?.(space);
+  }
+
+  return (
+    <div className="space-management-panel">
+      <header className="space-management-header"><div><span>SPACE MANAGEMENT</span><h2>공간 관리</h2><p>현재 기수의 공간을 생성하고 운영 상태와 관리 기수를 관리합니다.</p></div><button type="button" className="sensor-add-button" onClick={() => setDialogSpace(null)}>＋ 공간 추가</button></header>
+      <p className="space-lifecycle-note"><strong>모든 공간은 생성 직후 비활성 상태입니다.</strong> 활성화 후 목적에 맞게 운영할 수 있습니다.</p>
+      <div className="space-table-wrap">
+        <table className="sensor-table space-table">
+          <thead><tr><th>공간명</th><th>유형</th><th>정원</th><th>운영 상태</th><th>사용 상태</th><th>비활성 사유</th><th>기수</th><th>관리</th></tr></thead>
+          <tbody>{visibleSpaces.map((space) => <tr key={space.spaceId}>
+            <th scope="row" data-label="공간명">{space.name}</th>
+            <td data-label="유형">{SPACE_TYPE_LABELS[space.type] || space.type}</td>
+            <td data-label="정원">{space.capacity}명</td>
+            <td data-label="운영 상태"><span className={`sensor-status ${space.operationalStatus === "ACTIVE" ? "is-active" : "is-inactive"}`}>{space.operationalStatus === "ACTIVE" ? "활성" : "비활성"}</span></td>
+            <td data-label="사용 상태">{SPACE_USAGE_LABELS[space.status] || space.status}</td>
+            <td data-label="비활성 사유">{space.inactiveReason || "-"}</td>
+            <td data-label="기수" className="space-cohort-cell"><span>{space.cohortId == null ? "미배정" : Number(space.cohortId) === Number(selectedCohortId) ? "현재 기수" : space.cohortId}</span><button type="button" onClick={() => onChangeCohort?.(space, space.cohortId == null)}>{space.cohortId == null ? "배정" : "해제"}</button></td>
+            <td data-label="관리" className="space-table-actions">
+              <button type="button" onClick={() => setDialogSpace(space)}>수정</button>
+              <button type="button" onClick={() => toggleStatus(space)}>{space.operationalStatus === "ACTIVE" ? "비활성화" : "활성화"}</button>
+              <button type="button" className="is-danger" onClick={() => setActionDialog({ type: "delete", space })}>삭제</button>
+            </td>
+          </tr>)}</tbody>
+        </table>
+        {visibleSpaces.length === 0 && <p className="sensor-list-empty">현재 기수에서 관리할 공간이 없습니다.</p>}
+      </div>
+      {dialogSpace !== undefined && <SpaceDialog space={dialogSpace} selectedCohortId={selectedCohortId} onClose={() => setDialogSpace(undefined)} onSave={onSave} />}
+      {actionDialog?.type === "deactivate" && <DeactivateSpaceDialog space={actionDialog.space} onClose={() => setActionDialog(null)} onConfirm={onChangeStatus} />}
+      {actionDialog?.type === "delete" && <DeleteSpaceDialog space={actionDialog.space} onClose={() => setActionDialog(null)} onConfirm={onDelete} />}
+    </div>
+  );
+}
+
 export function SensorWorkspace({
   spaces = [],
   initialSensors = [],
@@ -808,6 +995,11 @@ export function SensorWorkspace({
   loading = false,
   error = null,
   forbidden = false,
+  selectedCohortId = null,
+  onSaveSpace,
+  onChangeSpaceStatus,
+  onDeleteSpace,
+  onChangeSpaceCohort,
   onSaveSensor,
   onSaveThresholds,
   onAlertQueryChange,
@@ -888,8 +1080,9 @@ export function SensorWorkspace({
       <section className="sensor-workspace" aria-label="관리자 센서 워크스페이스">
         <Tabs.Root value={activeTab} onValueChange={setActiveTab}>
           <Tabs.List className="sensor-tabs" aria-label="센서 관리 메뉴">
-            <Tabs.Trigger value="dashboard">대시보드</Tabs.Trigger>
-            <Tabs.Trigger value="sensors">센서 목록</Tabs.Trigger>
+            <Tabs.Trigger value="spaces">공간 관리</Tabs.Trigger>
+            <Tabs.Trigger value="dashboard">센서 대시보드</Tabs.Trigger>
+            <Tabs.Trigger value="sensors">센서 관리</Tabs.Trigger>
             <Tabs.Trigger value="thresholds">임계값 설정</Tabs.Trigger>
           </Tabs.List>
           <div className="sensor-content-shell">
@@ -907,6 +1100,7 @@ export function SensorWorkspace({
               <StatusPanel tone="empty" title="등록된 공간이 없습니다." detail="공간을 먼저 등록하면 센서와 임계값을 설정할 수 있습니다." />
             ) : (
               <>
+                <Tabs.Content value="spaces"><SpaceManagement spaces={spaces} selectedCohortId={selectedCohortId} onSave={onSaveSpace} onChangeStatus={onChangeSpaceStatus} onDelete={onDeleteSpace} onChangeCohort={onChangeSpaceCohort} /></Tabs.Content>
                 <Tabs.Content value="dashboard"><DashboardContent spaces={spaces} thresholds={chartThresholds} auditLog={auditLog} /></Tabs.Content>
                 <Tabs.Content value="sensors"><SensorListContent sensors={sensors} spaces={spaces} onAdd={() => setDialog({ mode: "add" })} onEdit={(item) => setDialog({ mode: "edit", sensor: item })} /></Tabs.Content>
                 <Tabs.Content value="thresholds"><ThresholdContent spaces={spaces} spaceThresholds={spaceThresholds} onSave={saveThresholds} /></Tabs.Content>

@@ -33,6 +33,11 @@ function normalizeContext(context = {}) {
     loading: Boolean(context.loading),
     error: context.error ? String(context.error) : null,
     forbidden: Boolean(context.forbidden),
+    selectedCohortId: context.selectedCohortId ?? null,
+    onSaveSpace: fn(context.onSaveSpace),
+    onChangeSpaceStatus: fn(context.onChangeSpaceStatus),
+    onDeleteSpace: fn(context.onDeleteSpace),
+    onChangeSpaceCohort: fn(context.onChangeSpaceCohort),
     onSaveSensor: fn(context.onSaveSensor),
     onSaveThresholds: fn(context.onSaveThresholds),
     onAlertQueryChange: fn(context.onAlertQueryChange),
@@ -55,11 +60,16 @@ if (rootElement) {
         loading={normalized.loading}
         error={normalized.error}
         forbidden={normalized.forbidden}
+        selectedCohortId={normalized.selectedCohortId}
+        onSaveSpace={normalized.onSaveSpace}
+        onChangeSpaceStatus={normalized.onChangeSpaceStatus}
+        onDeleteSpace={normalized.onDeleteSpace}
+        onChangeSpaceCohort={normalized.onChangeSpaceCohort}
         onSaveSensor={normalized.onSaveSensor}
         onSaveThresholds={normalized.onSaveThresholds}
         onAlertQueryChange={normalized.onAlertQueryChange}
         onRetry={normalized.onRetry}
-        defaultTab="dashboard"
+        defaultTab="spaces"
         embedded
       />
     );

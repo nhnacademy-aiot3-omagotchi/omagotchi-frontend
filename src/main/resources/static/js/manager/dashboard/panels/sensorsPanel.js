@@ -16,7 +16,7 @@
         return window.OmagotchiApi?.sensor || null;
     }
 
-    function create({ root, setBubble }) {
+    function create({ root, store, setBubble }) {
         if (!root) throw new Error("Sensors panel root is required.");
         if (!root.querySelector("[data-manager-sensor-react-root]")) {
             throw new Error("Sensors React island root is missing.");
@@ -45,6 +45,11 @@
                 loading,
                 error,
                 forbidden,
+                selectedCohortId: store.getState().selectedCohortId,
+                onSaveSpace: saveSpace,
+                onChangeSpaceStatus: changeSpaceStatus,
+                onDeleteSpace: deleteSpace,
+                onChangeSpaceCohort: changeSpaceCohort,
                 onSaveSensor: saveSensor,
                 onSaveThresholds: saveThresholds,
                 onAlertQueryChange: changeAlertQuery,
@@ -213,6 +218,61 @@
             }
         }
 
+        async function saveSpace(payload, mode, spaceId) {
+            const api = window.OmagotchiApi?.adminSpaces;
+            if (!api) return false;
+            try {
+                if (mode === "create") await api.create(payload);
+                else await api.update(spaceId, payload);
+                await loadAll();
+                return true;
+            } catch (cause) {
+                warn("공간을 저장하지 못했습니다.", cause);
+                return false;
+            }
+        }
+
+        async function changeSpaceStatus(space, inactiveReason) {
+            const api = window.OmagotchiApi?.adminSpaces;
+            if (!api) return false;
+            try {
+                if (space.operationalStatus === "ACTIVE") await api.deactivate(space.spaceId, inactiveReason);
+                else await api.activate(space.spaceId);
+                await loadAll();
+                return true;
+            } catch (cause) {
+                warn("공간 운영 상태를 변경하지 못했습니다.", cause);
+                return false;
+            }
+        }
+
+        async function deleteSpace(spaceId) {
+            const api = window.OmagotchiApi?.adminSpaces;
+            if (!api) return false;
+            try {
+                await api.remove(spaceId);
+                await loadAll();
+                return true;
+            } catch (cause) {
+                warn("공간을 삭제하지 못했습니다.", cause);
+                return false;
+            }
+        }
+
+        async function changeSpaceCohort(space, assign) {
+            const api = window.OmagotchiApi?.adminSpaces;
+            if (!api) return false;
+            try {
+                if (assign) await api.assignCohort(space.spaceId, store.getState().selectedCohortId);
+                else await api.unassignCohort(space.spaceId);
+                await loadAll();
+                return true;
+            } catch (cause) {
+                warn("공간 기수 배정을 변경하지 못했습니다.", cause);
+                return false;
+            }
+        }
+
         function activate() {
             publish();
             if (!loaded) loadAll();
@@ -227,7 +287,7 @@
         label: "공간·센서",
         order: 60,
         // 센서·공간·임계값은 설비 자원이라 기수에 매이지 않는다. 기수 변경으로 다시 부르지 않는다.
-        topics: [],
+        topics: ["selection"],
         create
     });
 })();
