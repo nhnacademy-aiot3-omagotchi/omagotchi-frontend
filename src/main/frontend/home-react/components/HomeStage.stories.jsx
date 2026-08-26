@@ -16,7 +16,11 @@ const meta = {
 
 export default meta;
 
-export const Desktop = {};
+export const Desktop = {
+  args: {
+    statusProps: {}
+  }
+};
 export const Mobile = { parameters: { viewport: { defaultViewport: "mobile1" } } };
 export const MobileLandscape = { parameters: { viewport: { defaultViewport: "mobile2", defaultOrientation: "landscape" } } };
 export const ActiveSession = {
