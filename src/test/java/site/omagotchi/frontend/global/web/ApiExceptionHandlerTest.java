@@ -104,6 +104,20 @@ class ApiExceptionHandlerTest {
     }
 
     @Test
+    @DisplayName("승인된 공간 점유 4xx 오류는 공개 계약을 유지")
+    void forwardsApprovedOccupancyDownstreamClientError() throws Exception {
+        mockMvc.perform(post("/bff/v1/test/errors/occupancy-approved-4xx"))
+                .andExpectAll(
+                        status().isConflict(),
+                        content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON),
+                        header().string(HttpHeaders.CACHE_CONTROL, "no-store"),
+                        jsonPath("$.code").value("OCCUPANCY_ROOM_ALREADY_OCCUPIED"),
+                        jsonPath("$.message").value("현재 상태에서는 요청을 처리할 수 없습니다."),
+                        jsonPath("$.requestId").value("occupancy-request-4xx")
+                );
+    }
+
+    @Test
     @DisplayName("Learning 하류 5xx 오류는 상세 정보를 기록하고 공통 500으로 은닉")
     void hidesLearningDownstreamServerError(CapturedOutput output) throws Exception {
         // Given: REST Controller에서 내부 저장소 정보를 포함한 Learning 5xx가 발생
@@ -400,6 +414,20 @@ class ApiExceptionHandlerTest {
                             "learning-manager-conflict"
                     ),
                     new IllegalStateException("manager period conflict")
+            );
+        }
+
+        @PostMapping("/bff/v1/test/errors/occupancy-approved-4xx")
+        void approvedOccupancyClientError() {
+            throw new LearningDownstreamException(
+                    HttpStatus.CONFLICT,
+                    new ApiErrorResponse(
+                            "OCCUPANCY_ROOM_ALREADY_OCCUPIED",
+                            "이미 점유 중인 회의실입니다.",
+                            "/api/v1/spaces/3/occupancies",
+                            "occupancy-request-4xx"
+                    ),
+                    new IllegalStateException("approved occupancy rejection")
             );
         }
 

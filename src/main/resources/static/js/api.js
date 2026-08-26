@@ -152,6 +152,13 @@
             checkIn: () => request("/attendance/check-in", { method: "POST" }),
             checkOut: () => request("/attendance/check-out", { method: "POST" })
         },
+        spaces: {
+            list: () => request("/spaces"),
+            startOccupancy: (spaceId) => request(`/spaces/${encodeURIComponent(spaceId)}/occupancies`, {method: "POST"}),
+            extendOccupancy: (spaceId) => request(`/spaces/${encodeURIComponent(spaceId)}/occupancies/extend`, {method: "POST"}),
+            releaseOccupancy: (spaceId) => request(`/spaces/${encodeURIComponent(spaceId)}/occupancies/release`, {method: "POST"}),
+            leaveOccupancy: (spaceId) => request(`/spaces/${encodeURIComponent(spaceId)}/occupancies/participants/me`, {method: "DELETE"})
+        },
         study: {
             getRecord: (id) => request(`/study-records/${encodeURIComponent(id)}`),
             getDailyRecords: (date) => request(withQuery("/study-records", {date})),
@@ -260,6 +267,15 @@
                 body: communityFormData(post, attachments)
             }),
             deletePost: (postId) => request(`/community/posts/${encodeURIComponent(postId)}`, {method: "DELETE"})
+        },
+        adminSpaces: {
+            create: (payload) => request("/admin/spaces", {method: "POST", body: payload}),
+            update: (spaceId, payload) => request(`/admin/spaces/${encodeURIComponent(spaceId)}`, {method: "PUT", body: payload}),
+            activate: (spaceId) => request(`/admin/spaces/${encodeURIComponent(spaceId)}/activate`, {method: "POST"}),
+            deactivate: (spaceId, inactiveReason) => request(`/admin/spaces/${encodeURIComponent(spaceId)}/deactivate`, {method: "POST", body: {inactiveReason}}),
+            remove: (spaceId) => request(`/admin/spaces/${encodeURIComponent(spaceId)}`, {method: "DELETE"}),
+            assignCohort: (spaceId, cohortId) => request(`/admin/spaces/${encodeURIComponent(spaceId)}/cohort`, {method: "PUT", body: {cohortId}}),
+            unassignCohort: (spaceId) => request(`/admin/spaces/${encodeURIComponent(spaceId)}/cohort`, {method: "DELETE"})
         },
         manager: {
             getCohorts: () => request("/admin/cohorts"),
