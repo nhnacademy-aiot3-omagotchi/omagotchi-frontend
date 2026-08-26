@@ -15,7 +15,7 @@ public class AiChatGatewayClient {
 
     public AiChatGatewayClient(
             WebClient.Builder webClientBuilder,
-            @Value("${spring.http.clients.serviceclient.gateway-service.base-url}") String baseUrl
+            @Value("${spring.http.serviceclient.gateway-service.base-url}") String baseUrl
     ) {
         this.webClient = webClientBuilder.baseUrl(baseUrl).build();
     }
