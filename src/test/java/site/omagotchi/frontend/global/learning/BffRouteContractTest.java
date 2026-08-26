@@ -9,6 +9,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import site.omagotchi.frontend.global.learning.application.LearningProxyBffService;
 import site.omagotchi.frontend.ranking.presentation.RankingBffController;
+import site.omagotchi.frontend.statistics.presentation.AdminStudyStatisticsBffController;
 import site.omagotchi.frontend.study.presentation.StudyRecordBffController;
 import site.omagotchi.frontend.study.presentation.StudyTimerBffController;
 import tools.jackson.databind.JsonNode;
@@ -33,7 +34,8 @@ class BffRouteContractTest {
         mockMvc = MockMvcBuilders.standaloneSetup(
                 new RankingBffController(proxy),
                 new StudyRecordBffController(proxy),
-                new StudyTimerBffController(proxy)
+                new StudyTimerBffController(proxy),
+                new AdminStudyStatisticsBffController(proxy)
         ).build();
     }
 
@@ -90,6 +92,35 @@ class BffRouteContractTest {
         }
     }
 
+    @Nested
+    @DisplayName("관리자 공부 통계 BFF 경로")
+    class AdminStudyStatisticsRoutes {
+
+        @Test
+        @DisplayName("통계 조회 엔드포인트를 제공한다")
+        void exposesStudyStatisticsRoutes() throws Exception {
+            mockMvc.perform(get("/bff/v1/admin/cohorts/1/study-statistics/today"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.contract").value("matched"));
+
+            mockMvc.perform(get("/bff/v1/admin/cohorts/1/study-statistics/trend")
+                            .param("window", "7d"))
+                    .andExpect(status().isOk());
+
+            mockMvc.perform(get("/bff/v1/admin/cohorts/1/study-statistics/members")
+                            .param("window", "7d"))
+                    .andExpect(status().isOk());
+
+            mockMvc.perform(get("/bff/v1/admin/cohorts/1/study-statistics/members/10/overview")
+                            .param("window", "7d"))
+                    .andExpect(status().isOk());
+
+            mockMvc.perform(get("/bff/v1/admin/cohorts/1/study-statistics/members/10/records")
+                            .param("date", "2026-08-25"))
+                    .andExpect(status().isOk());
+        }
+    }
+
     private static final class StubLearningProxyBffService extends LearningProxyBffService {
 
         private final JsonNode response;
@@ -104,6 +135,15 @@ class BffRouteContractTest {
         public <T> T executeWithCohort(
                 HttpServletRequest request,
                 BiFunction<AuthorizedLearningRequest, Long, T> operation
+        ) {
+            return (T) response;
+        }
+
+        @Override
+        @SuppressWarnings("unchecked")
+        public <T> T execute(
+                HttpServletRequest request,
+                java.util.function.Function<AuthorizedLearningRequest, T> operation
         ) {
             return (T) response;
         }

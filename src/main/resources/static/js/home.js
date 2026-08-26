@@ -4,7 +4,7 @@ import { createCharacter } from "./home/character.js";
 import { createLevel } from "./home/level.js";
 import { createStudyRecords } from "./home/studyRecords.js?v=20260825-5";
 import { createTimer } from "./home/timer.js";
-import { escapeHtml, formatDuration, getLocalDateKey } from "./home/utils.js";
+import { escapeHtml, formatDuration } from "./home/utils.js";
 
 const timerDisplay = document.querySelector("[data-timer-display]");
 const timerToggle = document.querySelector("[data-timer-toggle]");
@@ -75,7 +75,6 @@ const selectedCharacterName = currentCharacter.name || "오마고치";
 const displayCharacterName = currentCharacter.nickname || currentUserName;
 
 const studyRecordsKey = `omagotchiStudyRecords:${currentUserId}`;
-const timerKey = `omagotchiStudyTimer:${currentUserId}`;
 const sessionOnlyKeys = [
     "omagotchiEmail",
     "omagotchiUsername",
@@ -207,27 +206,30 @@ const timerController = createTimer({
     display: timerDisplay,
     toggle: timerToggle,
     statusMessage: document.querySelector("[data-timer-status]"),
-    storageKey: timerKey,
+    api: api?.study,
     onStart: ({ restored }) => {
         characterController.setStudyState(true);
         characterController.showMessage(
             restored ? "이어서 공부해볼까요?" : "집중 모드 시작!"
         );
     },
-    onPause: ({ reason }) => {
+    onPause: ({ reason, elapsedSeconds }) => {
         characterController.setStudyState(false);
+        studyRecordsController?.loadRecords?.();
 
-        if (reason === "user" && studyRecordsController) {
-            const result = studyRecordsController.addRecord();
+        if (reason === "user") {
             characterController.showMessage(
-                result.ok
+                elapsedSeconds && elapsedSeconds > 0
                     ? "학습 기록을 저장했어요."
-                    : result.message
+                    : "오늘 학습 시간이 저장됐어요."
             );
             return;
         }
 
         characterController.showMessage("오늘 학습 시간이 저장됐어요.");
+    },
+    onError: (error) => {
+        showHomeToast(error?.message || "타이머 처리에 실패했습니다.");
     }
 });
 
@@ -760,7 +762,7 @@ async function loadProgressOverlay() {
 
     const entries = Array.isArray(rankings?.entries) ? rankings.entries : [];
     rankingList.innerHTML = entries.length ? entries.map((entry) => `
-        <li><strong>${entry.rank}</strong><span>${escapeHtml(entry.displayName)}</span><em>${formatDuration(entry.studySeconds)}</em></li>
+        <li><strong>${entry.rank}</strong><span>${escapeHtml(entry.displayName || `수강생 (${entry.rank}위)`)}</span><em>${formatDuration(entry.studySeconds)}</em></li>
     `).join("") : `<li data-empty-ranking><strong>-</strong><span>랭킹 데이터가 없습니다.</span><em>기록 없음</em></li>`;
 
     const growth = home?.growth || currentCharacter;
@@ -800,8 +802,17 @@ function renderCommunity() {
     const pagePosts = communityPosts;
 
     const hasSearchCondition = communityFilter !== "all" || communityKeyword.trim();
-    list.innerHTML = pagePosts.length
-        ? pagePosts.map((post) => `
+    if (pagePosts.length === 0) {
+        const emptyTitle = hasSearchCondition ? "검색 결과가 없습니다." : "아직 게시글이 없습니다.";
+        const emptyDesc = hasSearchCondition ? "검색어나 게시판 구분을 다시 확인해 주세요." : "첫 번째 이야기를 남겨 보세요.";
+        list.innerHTML = `
+            <li class="overlay-community-empty">
+                <strong>${emptyTitle}</strong>
+                <p>${emptyDesc}</p>
+            </li>
+        `;
+    } else {
+        list.innerHTML = pagePosts.map((post) => `
             <li>
                 <button class="overlay-community-open" type="button" data-community-post="${post.postId}" aria-label="${escapeHtml(post.title)} 상세 보기">
                 <span class="overlay-community-type${post.type === "NOTICE" ? " is-notice" : ""}">
@@ -817,13 +828,8 @@ function renderCommunity() {
                 </footer>
                 </button>
             </li>
-        `).join("")
-        : `
-            <li class="overlay-community-empty">
-                <strong>${hasSearchCondition ? "검색 결과가 없습니다." : "아직 게시글이 없습니다."}</strong>
-                <p>${hasSearchCondition ? "검색어나 게시판 구분을 다시 확인해 주세요." : "첫 번째 이야기를 남겨 보세요."}</p>
-            </li>
-        `;
+        `).join("");
+    }
 
     pageLabel.textContent = `${communityPage} / ${pageCount}`;
     if (pagination) pagination.hidden = pageCount <= 1;
@@ -880,8 +886,10 @@ function openCommunityComposer(post = null) {
 
 async function submitCommunityPost(form) {
     const formData = new FormData(form);
-    const title = String(formData.get("title") || "").trim();
-    const content = String(formData.get("content") || "").trim();
+    const rawTitle = formData.get("title");
+    const title = (typeof rawTitle === "string" ? rawTitle : "").trim();
+    const rawContent = formData.get("content");
+    const content = (typeof rawContent === "string" ? rawContent : "").trim();
 
     if (!title || !content) {
         return;

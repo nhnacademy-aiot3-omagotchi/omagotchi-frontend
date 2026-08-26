@@ -374,4 +374,43 @@ public interface LearningHttpService {
             @PathVariable Long postId,
             @RequestBody JsonNode request
     );
+
+    @GetExchange("/cohorts/{cohortId}/study-statistics/today")
+    JsonNode getStudyStatisticsToday(
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
+            @PathVariable Long cohortId
+    );
+
+    @GetExchange("/cohorts/{cohortId}/study-statistics/trend")
+    JsonNode getStudyStatisticsTrend(
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
+            @PathVariable Long cohortId,
+            @RequestParam String window
+    );
+
+    @GetExchange("/cohorts/{cohortId}/study-statistics/members")
+    JsonNode getStudyStatisticsMembers(
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
+            @PathVariable Long cohortId,
+            @RequestParam String window,
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size,
+            @RequestParam(required = false) String sort
+    );
+
+    @GetExchange("/cohorts/{cohortId}/study-statistics/members/{cohortMembershipId}/overview")
+    JsonNode getStudyStatisticsMemberOverview(
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
+            @PathVariable Long cohortId,
+            @PathVariable Long cohortMembershipId,
+            @RequestParam String window
+    );
+
+    @GetExchange("/cohorts/{cohortId}/study-statistics/members/{cohortMembershipId}/records")
+    JsonNode getStudyStatisticsMemberDailyRecords(
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
+            @PathVariable Long cohortId,
+            @PathVariable Long cohortMembershipId,
+            @RequestParam String date
+    );
 }
