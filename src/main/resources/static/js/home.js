@@ -494,7 +494,7 @@ const overlayContent = {
                     <li>사용자 목록에서 파티원을 초대할 수 있습니다.</li>
                     <li>파티를 만든 후 이용 가능한 회의실에 입장합니다.</li>
                     <li>현재 파티 인원과 각 사용자의 상태를 확인합니다.</li>
-                    <li>실시간 채팅 기능은 사용하지 않습니다. 홈 하단의 같은 자리는 MCP 기반 AI 도우미 영역으로 전환 중입니다.</li>
+                    <li>실시간 채팅 기능은 사용하지 않습니다. 홈 하단의 같은 자리는 AI 도우미 영역입니다.</li>
                 </ul>
             </div>
         </details>
@@ -539,7 +539,7 @@ const overlayContent = {
                     <li>
                         <span class="help-dock-ai-icon" aria-hidden="true">AI</span>
                         <strong>AI 도우미</strong>
-                        <span>현재는 준비 상태만 표시하며, MCP 연동 후 질문과 답변 기능을 제공합니다.</span>
+                        <span>질문을 입력하면 답변을 받아볼 수 있습니다. (현재는 날씨 조회 등 제한된 기능만 제공)</span>
                     </li>
                     <li>
                         <img src="/images/app/music.png" alt="BGM 버튼" />
