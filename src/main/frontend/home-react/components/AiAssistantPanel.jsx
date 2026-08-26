@@ -141,19 +141,21 @@ export function AiAssistantPanel({
                                 <span className="home-ai-character-placeholder">AI</span>
                             )}
                         </span>
-                        <div
-                            className="home-ai-thinking-bubble"
-                            role="status"
-                            aria-live="polite"
-                            aria-label={`${currentCharacter.name}가 답변을 준비하고 있습니다.`}
-                        >
-                            <span className="home-ai-thinking-label">답변 준비 중</span>
-                            <span className="home-ai-thinking-dots" aria-hidden="true">
+                        {isBusy && (
+                            <div
+                                className="home-ai-thinking-bubble"
+                                role="status"
+                                aria-live="polite"
+                                aria-label={`${currentCharacter.name}가 답변을 준비하고 있습니다.`}
+                            >
+                                <span className="home-ai-thinking-label">답변 준비 중</span>
+                                <span className="home-ai-thinking-dots" aria-hidden="true">
                 <span className="home-ai-thinking-dot"></span>
                 <span className="home-ai-thinking-dot"></span>
                 <span className="home-ai-thinking-dot"></span>
               </span>
-                        </div>
+                            </div>
+                        )}
                     </div>
                     {messages.length === 0 && (
                         <div className="home-ai-message is-assistant">
