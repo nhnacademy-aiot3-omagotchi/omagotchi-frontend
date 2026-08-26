@@ -152,9 +152,8 @@
     border: 2px solid rgba(226, 255, 243, 0.58);
     border-radius: 12px;
     background: rgba(14, 107, 75, 0.44);
-    box-shadow:
-        0 4px 0 rgba(0, 0, 0, 0.12),
-        inset 0 0 0 1px rgba(9, 9, 9, 0.24);
+    box-shadow: 0 4px 0 rgba(0, 0, 0, 0.12),
+    inset 0 0 0 1px rgba(9, 9, 9, 0.24);
     backdrop-filter: blur(2px);
 }
 
@@ -698,4 +697,12 @@
 
 .home-character-stage {
     min-height: clamp(240px, 28vw, 320px);
+}
+
+.home-ai-message + .home-ai-message {
+    margin-top: 10px;
+}
+
+.home-ai-message.is-user {
+    margin-left: auto;
 }
