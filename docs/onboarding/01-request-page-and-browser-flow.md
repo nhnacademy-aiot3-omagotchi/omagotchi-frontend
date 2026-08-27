@@ -135,32 +135,34 @@ home.html
 - 하위 Module
   - UI 상태·Event 분리
   - 일부 `/bff/v1/**` 요청 시도
-  - 미구현 Endpoint의 404만 Browser Prototype fallback
+  - API 성공·실패에 따른 화면 상태 갱신
 
-## 7. Prototype `/bff/v1/**` Adapter
+## 7. Browser `/bff/v1/**` Adapter
 
 ```text
 Browser JavaScript
-→ api.js optional(...)
+→ api.js request(...)·optional(...)
 → 같은 Origin /bff/v1/**
 → Frontend BFF JSON 경계
-→ 기능 Endpoint 미등록으로 404 응답
-→ optional(...)의 null 반환
-→ Browser Prototype 계속 사용
+→ 기능별 BFF Endpoint
+→ 성공 응답 또는 ApiRequestError
+→ 호출한 Module의 화면 상태 갱신
 ```
 
 - 현재 성격
-  - 향후 기능별 Frontend BFF 호출 Adapter
-  - 실제 기능 Endpoint 미구현
-  - 연동 완료 근거 아님
+  - 기능별 Frontend BFF 호출 Adapter
+  - URL·Method·요청 Body 구성의 공통화
+  - `optional(...)`도 현재 `request(...)`와 동일하게 실패를 호출부로 전달
+  - 실제 Endpoint와 보호 조건은 Controller·Security Test 기준 확인
 - 인증 정보
   - Session Cookie 자동 포함
   - Bearer Access JWT 미포함
   - Frontend가 Session 인증 처리
-- Fallback 기준
-  - 404: Browser Prototype용 `null` 반환
-  - 401·403·5xx·Network 오류: 호출부 전달
-  - `window.OMAGOTCHI_API_STRICT=true`: 404 포함 전체 오류 전달
+- 응답 기준
+  - 204: `null` 반환
+  - JSON 오류: `code`·`path`·`requestId`를 포함한 `ApiRequestError` 변환
+  - 4xx·5xx·Network 오류: 호출부 전달
+  - CSRF 오류: 새 CSRF Token 조회 후 한 번만 재시도
 - 실제 BFF 전환 기준
   - 호출 경로: Browser → `/bff/v1/**` → Frontend BFF → Domain Service
   - JWT Relay: Browser 비노출·Frontend Session의 Access JWT 사용

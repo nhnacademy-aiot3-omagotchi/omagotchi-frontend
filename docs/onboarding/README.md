@@ -141,6 +141,11 @@ src/main/java/site/omagotchi/frontend
   - `SessionStoreErrorFilter`
 - 기능별 BFF 추가
   - 외부 URL·Ingress 계약
-  - Session Access JWT relay·Refresh
+  - Session Access JWT relay
   - 기능별 JSON 업무 오류 정책
   - Domain Service 권한 확인
+- Access Token Refresh 추가
+  - `02-session-authentication-flow.md`
+  - Identity Refresh Client 계약
+  - Redis Session Token 묶음 교체
+  - Session 단위 동시 갱신 회귀 검증
