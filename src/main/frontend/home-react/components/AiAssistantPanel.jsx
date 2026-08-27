@@ -18,6 +18,18 @@ export function AiAssistantPanel({
     const [messages, setMessages] = useState([]);
     const [status, setStatus] = useState("ready");
     const abortControllerRef = useRef(null);
+    const conversationRef = useRef(null);
+    const stickToBottomRef = useRef(true);
+    const [model, setModel] = useState("GEMINI");
+
+    const handleConversationScroll = () => {
+        const conversation = conversationRef.current;
+        if (!conversation) return;
+
+        const distanceFromBottom =
+            conversation.scrollHeight - conversation.scrollTop - conversation.clientHeight;
+        stickToBottomRef.current = distanceFromBottom < 80;
+    };
 
     useEffect(() => {
         const character = document.querySelector("[data-home-character]");
@@ -53,6 +65,16 @@ export function AiAssistantPanel({
 
     useEffect(() => () => abortControllerRef.current?.abort(), []);
 
+    useEffect(() => {
+        const conversation = conversationRef.current;
+        // 콘텐츠가 바뀌기 전(직전 scroll 이벤트) 시점에 맨 아래 근처였을 때만 따라 내려간다.
+        // scrollHeight는 이 시점에 이미 새 내용을 반영한 값이라, scrollTop과 비교하면
+        // "예전 위치가 새로 커진 바닥에서 얼마나 먼가"가 되어 매번 멀어진 것처럼 계산된다.
+        if (conversation && stickToBottomRef.current) {
+            conversation.scrollTop = conversation.scrollHeight;
+        }
+    }, [messages, status]);
+
     const handleTouchEnd = (event) => {
         if (touchStartX == null) return;
         const deltaX = event.changedTouches[0].clientX - touchStartX;
@@ -74,7 +96,7 @@ export function AiAssistantPanel({
 
         try {
             let assistantIndex = -1;
-            for await (const chunk of streamAiChat(question, {signal: controller.signal})) {
+            for await (const chunk of streamAiChat(question, {signal: controller.signal, model})) {
                 setStatus("streaming");
                 setMessages((current) => {
                     if (assistantIndex === -1) {
@@ -101,6 +123,10 @@ export function AiAssistantPanel({
     };
 
     const isBusy = status === "submitting" || status === "streaming";
+    const lastAssistantIndex = messages.reduce(
+        (acc, message, idx) => (message.role === "assistant" ? idx : acc),
+        -1
+    );
 
     return (
         <section
@@ -132,16 +158,66 @@ export function AiAssistantPanel({
                         ×
                     </button>
                 </header>
-                <div className="home-ai-conversation">
-                    <div className="home-ai-character-reply">
-                        <span className="home-ai-character-avatar" aria-hidden="true">
-                            {currentCharacter.image ? (
-                                <img src={currentCharacter.image} alt=""/>
-                            ) : (
-                                <span className="home-ai-character-placeholder">AI</span>
-                            )}
-                        </span>
-                        {isBusy && (
+                <div className="home-ai-conversation" ref={conversationRef} onScroll={handleConversationScroll}>
+                    {messages.length === 0 && (
+                        <div className="home-ai-message-row is-assistant">
+                            <span className="home-ai-message-avatar is-active" aria-hidden="true">
+                                {currentCharacter.image ? (
+                                    <img src={currentCharacter.image} alt=""/>
+                                ) : (
+                                    <span className="home-ai-character-placeholder">AI</span>
+                                )}
+                            </span>
+                            <div className="home-ai-message is-assistant">
+                                <span className="home-ai-message-author">{currentCharacter.name}</span>
+                                <p>궁금한 걸 물어보세요. 예: &quot;오늘 날씨 어때?&quot;</p>
+                            </div>
+                        </div>
+                    )}
+                    {messages.map((message, index) => {
+                        const isAssistant = message.role === "assistant";
+                        const isLatestAssistantReply = isAssistant && index === lastAssistantIndex;
+
+                        return (
+                            <div
+                                key={index}
+                                className={isAssistant ? "home-ai-message-row is-assistant" : "home-ai-message-row is-user"}
+                            >
+                                {isAssistant && (
+                                    <span
+                                        className={
+                                            isLatestAssistantReply
+                                                ? "home-ai-message-avatar is-active"
+                                                : "home-ai-message-avatar"
+                                        }
+                                        aria-hidden="true"
+                                    >
+                                        {currentCharacter.image ? (
+                                            <img src={currentCharacter.image} alt=""/>
+                                        ) : (
+                                            <span className="home-ai-character-placeholder">AI</span>
+                                        )}
+                                    </span>
+                                )}
+                                <div
+                                    className={isAssistant ? "home-ai-message is-assistant" : "home-ai-message is-user"}>
+                                    <span className="home-ai-message-author">
+                                        {isAssistant ? currentCharacter.name : "나"}
+                                    </span>
+                                    <p>{message.text}</p>
+                                </div>
+                            </div>
+                        );
+                    })}
+                    {status === "submitting" && (
+                        <div className="home-ai-message-row is-assistant">
+                            <span className="home-ai-message-avatar is-active" aria-hidden="true">
+                                {currentCharacter.image ? (
+                                    <img src={currentCharacter.image} alt=""/>
+                                ) : (
+                                    <span className="home-ai-character-placeholder">AI</span>
+                                )}
+                            </span>
                             <div
                                 className="home-ai-thinking-bubble"
                                 role="status"
@@ -150,30 +226,13 @@ export function AiAssistantPanel({
                             >
                                 <span className="home-ai-thinking-label">답변 준비 중</span>
                                 <span className="home-ai-thinking-dots" aria-hidden="true">
-                <span className="home-ai-thinking-dot"></span>
-                <span className="home-ai-thinking-dot"></span>
-                <span className="home-ai-thinking-dot"></span>
-              </span>
+                                    <span className="home-ai-thinking-dot"></span>
+                                    <span className="home-ai-thinking-dot"></span>
+                                    <span className="home-ai-thinking-dot"></span>
+                                </span>
                             </div>
-                        )}
-                    </div>
-                    {messages.length === 0 && (
-                        <div className="home-ai-message is-assistant">
-                            <span className="home-ai-message-author">{currentCharacter.name}</span>
-                            <p>궁금한 걸 물어보세요. 예: &quot;오늘 날씨 어때?&quot;</p>
                         </div>
                     )}
-                    {messages.map((message, index) => (
-                        <div
-                            key={index}
-                            className={message.role === "user" ? "home-ai-message is-user" : "home-ai-message is-assistant"}
-                        >
-              <span className="home-ai-message-author">
-                {message.role === "user" ? "나" : currentCharacter.name}
-              </span>
-                            <p>{message.text}</p>
-                        </div>
-                    ))}
                 </div>
                 <form className="home-ai-composer" onSubmit={handleSubmit}>
                     <label className="home-ai-composer-label" htmlFor="home-ai-prompt">
@@ -185,14 +244,28 @@ export function AiAssistantPanel({
                         placeholder="메시지를 입력하세요."
                         value={draft}
                         onChange={(event) => setDraft(event.target.value)}
+                        onKeyDown={(event) => {
+                            if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) {
+                                event.preventDefault();
+                                handleSubmit(event);
+                            }
+                        }}
                         disabled={isBusy}
                     ></textarea>
                     <div className="home-ai-composer-actions">
-                        <button className="home-ai-model-select" type="button" disabled>
+                        <div className="home-ai-model-select">
                             <span>모델</span>
-                            <strong>연결 후 선택</strong>
+                            <select
+                                value={model}
+                                onChange={(event) => setModel(event.target.value)}
+                                disabled={isBusy}
+                                aria-label="AI 모델 선택"
+                            >
+                                <option value="GEMINI">Gemini</option>
+                                <option value="OLLAMA">Ollama</option>
+                            </select>
                             <span aria-hidden="true">⌄</span>
-                        </button>
+                        </div>
                         <span className="home-ai-panel-status">
               {status === "error" ? "오류가 발생했습니다" : isBusy ? "답변 중..." : "준비됨"}
             </span>
