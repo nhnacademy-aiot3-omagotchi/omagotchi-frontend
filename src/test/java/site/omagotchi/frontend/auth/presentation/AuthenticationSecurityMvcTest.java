@@ -144,6 +144,45 @@ class AuthenticationSecurityMvcTest {
     }
 
     @Test
+    @DisplayName("허용된 비밀번호 변경 안내 Code의 Login Page 표시")
+    void rendersPasswordChangedNotice() throws Exception {
+        // When: 허용된 비밀번호 변경 안내 Code의 Login Page 요청
+        // Then: 고정된 성공 안내 표시
+        mockMvc.perform(get("/login?notice=password-changed"))
+                .andExpectAll(
+                        status().isOk(),
+                        model().attribute("authFeedbackType", "success"),
+                        content().string(containsString("새 비밀번호로 다시 로그인해 주세요."))
+                );
+    }
+
+    @Test
+    @DisplayName("허용된 Session 만료 안내 Code의 Login Page 표시")
+    void rendersSessionExpiredNotice() throws Exception {
+        // When: 허용된 Session 만료 안내 Code의 Login Page 요청
+        // Then: 고정된 오류 안내 표시
+        mockMvc.perform(get("/login?notice=session-expired"))
+                .andExpectAll(
+                        status().isOk(),
+                        model().attribute("authFeedbackType", "error"),
+                        content().string(containsString("로그인 시간이 만료되었습니다."))
+                );
+    }
+
+    @Test
+    @DisplayName("허용 목록 밖 Login 안내 Code 무시")
+    void ignoresUnknownLoginNotice() throws Exception {
+        // When: 허용 목록 밖 안내 Code의 Login Page 요청
+        // Then: 안내 표시 없음
+        mockMvc.perform(get("/login?notice=forged"))
+                .andExpectAll(
+                        status().isOk(),
+                        model().attributeDoesNotExist("authFeedbackType"),
+                        content().string(not(containsString("비밀번호를 변경했습니다.")))
+                );
+    }
+
+    @Test
     @DisplayName("Spring Security Form Login의 Session 수립과 Home Redirect")
     void establishesSessionAndRedirectsAfterLogin() throws Exception {
         // Given: Identity Token Bundle과 익명 Session

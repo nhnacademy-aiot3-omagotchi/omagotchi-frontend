@@ -32,8 +32,8 @@ public class WebConfig implements WebMvcConfigurer {
                 .setViewName("pages/app/cohort");
         registry.addViewController("/write")
                 .setViewName("pages/app/write");
-        registry.addViewController("/settings")
-                .setViewName("pages/app/settings");
+        registry.addViewController("/settings/account")
+                .setViewName("pages/auth/accountSettings");
         registry.addViewController("/help")
                 .setViewName("pages/app/help");
         registry.addViewController("/home")
