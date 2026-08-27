@@ -497,16 +497,12 @@ flowchart TB
 6. 500 확인
    - Error Code·원본 Stack Trace·누락된 Framework 매핑
 
-## 14. 주요 Code·Test
+## 14. 검증 기준
 
-- Code
-  - [`ApiExceptionHandler.java`](../../src/main/java/site/omagotchi/frontend/global/web/ApiExceptionHandler.java)
-  - [`PageBusinessExceptionHandler.java`](../../src/main/java/site/omagotchi/frontend/global/web/PageBusinessExceptionHandler.java)
-  - [`SessionStoreErrorFilter.java`](../../src/main/java/site/omagotchi/frontend/global/session/SessionStoreErrorFilter.java)
-  - [`IdentityAuthErrorResolver.java`](../../src/main/java/site/omagotchi/frontend/auth/infrastructure/IdentityAuthErrorResolver.java)
-- Test
-  - [`ApiExceptionHandlerTest.java`](../../src/test/java/site/omagotchi/frontend/global/web/ApiExceptionHandlerTest.java)
-  - [`BffApiExceptionResolverTest.java`](../../src/test/java/site/omagotchi/frontend/global/web/BffApiExceptionResolverTest.java)
-  - [`PageBusinessExceptionHandlerTest.java`](../../src/test/java/site/omagotchi/frontend/global/web/PageBusinessExceptionHandlerTest.java)
-  - [`SessionStoreErrorFilterTest.java`](../../src/test/java/site/omagotchi/frontend/global/session/SessionStoreErrorFilterTest.java)
-  - [`SessionStoreFailureIntegrationTest.java`](../../src/test/java/site/omagotchi/frontend/global/session/SessionStoreFailureIntegrationTest.java)
+- Controller 내부 예외: HTML·JSON 응답 경계별 MVC Test
+- Handler Mapping·표현 협상 오류: Method·Content-Type·Accept를 포함한 BFF Test
+- Security 오류: 미인증·권한·CSRF가 Filter Chain에서 돌아오는지 검증
+- Redis Session 오류: MVC 진입 전·응답 반환 후 실패를 포함한 Integration Test
+- 하류 오류: 공개 Code·HTTP Status·계약 위반·일시 장애의 구분 검증
+- 실제 처리기와 Test 파일은 `global/web`, `global/security`, `global/session`,
+  기능별 Infrastructure의 현재 코드에서 확인한다.

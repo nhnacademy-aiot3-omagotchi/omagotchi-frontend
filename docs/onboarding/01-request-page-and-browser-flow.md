@@ -1,6 +1,6 @@
 # 요청·Page·JavaScript 흐름
 
-> 상태: 현재 Route·Template·JavaScript 설명 · 업무 기능 대부분 Browser Prototype
+> 상태: Page·Template·Browser JavaScript 요청 흐름 설명
 
 ## 1. Page 요청
 
@@ -32,53 +32,18 @@ Browser URL 요청
   - Token 원문 보관
   - 업무 데이터의 정본 관리
 
-## 2. 지원 Route
+## 2. Route 확인 방법
 
-### 공개 Route
+Route는 빠르게 변하므로 온보딩 문서에 전체 목록을 복제하지 않는다.
 
-| Route | 처리 | 결과 |
-|---|---|---|
-| `/`, `/index` | `WebConfig` | `index.html` |
-| `GET /login` | `LoginPageController` | Login Form |
-| `POST /login` | Spring Security | 인증·`/home` Redirect |
-| `GET /register` | `SignupPageController` | Signup Form |
-| `POST /register` | `SignupPageController` | 가입·Form 재표시·Redirect |
-| `/password-change` | `WebConfig` | 미구현 안내 Page |
-| `/preview/error/403`, `/500`, `/503` | Local `ErrorPreviewController` | 실제 ERROR Dispatch 화면 |
-| `/actuator/health`, `/actuator/info` | Actuator | 상태 정보 |
-| 정적 Resource | MVC Resource Handler | CSS·JS·Image |
+- 단순 Page·정적 Resource: `WebConfig`의 View Controller·Resource Handler
+- 요청별 View·Model 분기: `@Controller`와 `@GetMapping`·`@PostMapping`
+- Login·Logout·인증 필요 Page: `SecurityConfig`의 Request Matcher·Filter Chain
+- Browser JSON API: `@RestController`의 `/bff/v1/**` Mapping
+- 실제 경로·보호 조건의 회귀 검증: MVC·Security Test
 
-### 인증 필요 Route
-
-- 사용자 Page
-  - `/home`
-  - `/character-selector`
-  - `/check-in`
-  - `/progress`
-  - `/personal`
-  - `/cohort`
-  - `/write`
-  - `/settings`
-  - `/help`
-  - `/space`
-- 관리자 Prototype
-  - `/manager-dashboard`
-  - 현재 조건: `authenticated()`
-  - 실제 관리자 권한 검증: 미구현
-### 미등록 레거시 파일
-
-- 대상
-  - `managerLogin.html`·`managerLogin.js`·관련 CSS
-  - `managerRegister.html`·`managerRegister.js`·관련 CSS
-- Runtime 상태
-  - `/manager-login` Route 없음
-  - `/manager-register` Route 없음
-  - `OmagotchiApi.auth.managerLogin` 없음
-  - `OmagotchiApi.auth.managerRegister` 없음
-- 유지 사유
-  - 사용자 요청에 따른 임시 보존
-- 후속
-  - 단일 Login·Signup 전환 완료 후 파일 삭제
+공개 여부와 권한은 화면에 노출된 Link나 Template 파일 유무가 아니라
+`SecurityConfig`의 규칙과 Domain Service의 최종 인가를 기준으로 판단한다.
 
 ## 3. View Controller와 Page Controller
 
@@ -240,7 +205,7 @@ Browser JavaScript
   - Access·Refresh Token 원문
   - Browser 표시값의 권한 근거 사용
 
-## 9. 추적 시작점
+## 9. 문제별 추적 시작점
 
 - `/home`의 `/login` Redirect
   - `SecurityConfig`
@@ -255,16 +220,8 @@ Browser JavaScript
   - Browser Storage Key
   - `api.js` fallback 여부
   - Server 연동 여부
-- 관리자 화면 오류
-  - 공통 `/login` 사용 여부
-  - `/manager-dashboard` Route
-  - 레거시 `/manager-login`·`/manager-register` 미등록 상태
-
-## 10. 주요 Code
-
-- [`WebConfig.java`](../../src/main/java/site/omagotchi/frontend/global/config/WebConfig.java)
-- [`SecurityConfig.java`](../../src/main/java/site/omagotchi/frontend/global/security/SecurityConfig.java)
-- [`LoginPageController.java`](../../src/main/java/site/omagotchi/frontend/auth/presentation/page/LoginPageController.java)
-- [`SignupPageController.java`](../../src/main/java/site/omagotchi/frontend/auth/presentation/page/SignupPageController.java)
-- [`api.js`](../../src/main/resources/static/js/api.js)
-- [`home.js`](../../src/main/resources/static/js/home.js)
+- 특정 Page·BFF Route 오류
+  - `WebConfig`·관련 Controller Mapping
+  - `SecurityConfig`의 Request Matcher
+  - Browser `api.js`의 경로·Method
+  - 관련 MVC·Security Test

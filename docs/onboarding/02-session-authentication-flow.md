@@ -1,6 +1,6 @@
 # Session 인증 흐름
 
-> 상태: Signup·Login·Logout·BFF 공통 JSON 경계 구현 · 기능별 BFF·Refresh·관리자 권한 미구현
+> 상태: Browser Session·Identity·BFF 인증 흐름 설명
 
 ## 1. 인증 경계
 
