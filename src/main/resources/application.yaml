@@ -22,6 +22,8 @@ spring:
     serviceclient:
       identity-service:
         base-url: ${IDENTITY_SERVICE_BASE_URL}
+      identity-account-service:
+        base-url: ${IDENTITY_SERVICE_BASE_URL}
       gateway-service:
         base-url: ${GATEWAY_SERVICE_BASE_URL}
   data:

@@ -9,7 +9,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
-import site.omagotchi.frontend.auth.application.AuthErrorCode;
+import site.omagotchi.frontend.account.application.AccountErrorCode;
 import site.omagotchi.frontend.auth.application.AuthenticationService;
 import site.omagotchi.frontend.auth.application.result.SignupResult;
 import site.omagotchi.frontend.auth.presentation.page.SignupForm;
@@ -126,7 +126,7 @@ class SignupPageMvcTest {
     void rendersIdentityValidationFailureOnSignupForm() throws Exception {
         // Given: Signup Use Case의 입력 정책 거절
         given(authenticationService.signUp("user@example.com", "short", "오마고치"))
-                .willReturn(new SignupResult.Rejected(AuthErrorCode.INVALID_PASSWORD));
+                .willReturn(new SignupResult.Rejected(AccountErrorCode.INVALID_PASSWORD));
 
         // When: Frontend 기본 형식 검증 통과 Form 제출
         mockMvc.perform(post("/register")
@@ -138,7 +138,7 @@ class SignupPageMvcTest {
                         view().name("pages/auth/register"),
                         model().attribute(
                                 "authFeedback",
-                                AuthErrorCode.INVALID_PASSWORD.message()
+                                AccountErrorCode.INVALID_PASSWORD.message()
                         ),
                         content().string(not(containsString("short")))
                 );
@@ -189,7 +189,7 @@ class SignupPageMvcTest {
                 "user@example.com",
                 "password-passphrase",
                 "오마고치"
-        )).willReturn(new SignupResult.Rejected(AuthErrorCode.DUPLICATE_EMAIL));
+        )).willReturn(new SignupResult.Rejected(AccountErrorCode.DUPLICATE_EMAIL));
 
         // When: Signup Form 제출
         MvcResult result = mockMvc.perform(post("/register")
@@ -199,7 +199,7 @@ class SignupPageMvcTest {
                 .andExpectAll(
                         status().isConflict(),
                         view().name("pages/auth/register"),
-                        model().attribute("authFeedback", AuthErrorCode.DUPLICATE_EMAIL.message()),
+                        model().attribute("authFeedback", AccountErrorCode.DUPLICATE_EMAIL.message()),
                         content().string(not(containsString("password-passphrase")))
                 )
                 .andReturn();

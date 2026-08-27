@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
+import site.omagotchi.frontend.account.application.AccountErrorCode;
 import site.omagotchi.frontend.auth.application.AuthErrorCode;
 import site.omagotchi.frontend.auth.application.port.IdentityAuthClient;
 import site.omagotchi.frontend.auth.application.result.BrowserSessionTokenBundle;
@@ -42,10 +43,10 @@ public class IdentityRestAuthClient implements IdentityAuthClient {
                     ErrorCode errorCode = errorResolver.resolve(
                             exception,
                             CommonErrorCode.INVALID_REQUEST,
-                            AuthErrorCode.INVALID_EMAIL,
-                            AuthErrorCode.INVALID_PASSWORD,
-                            AuthErrorCode.INVALID_NAME,
-                            AuthErrorCode.DUPLICATE_EMAIL
+                            AccountErrorCode.INVALID_EMAIL,
+                            AccountErrorCode.INVALID_PASSWORD,
+                            AccountErrorCode.INVALID_NAME,
+                            AccountErrorCode.DUPLICATE_EMAIL
                     );
                     return new SignupResult.Rejected(errorCode);
                 }
