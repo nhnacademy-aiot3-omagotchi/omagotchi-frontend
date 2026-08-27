@@ -1,5 +1,5 @@
 async function bootstrapHome() {
-    await import("./home-react/home-app.js?v=20260824-1");
+    await import("./home-react/home-app.js?v=20260827-1");
 
     let profile = null;
 
