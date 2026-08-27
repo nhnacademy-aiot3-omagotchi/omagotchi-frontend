@@ -22,6 +22,7 @@ import site.omagotchi.frontend.auth.domain.GlobalRole;
 import site.omagotchi.frontend.global.exception.BusinessException;
 import site.omagotchi.frontend.global.exception.CommonErrorCode;
 import site.omagotchi.frontend.global.exception.ErrorCode;
+import site.omagotchi.frontend.global.http.ApiErrorContractResolver;
 import site.omagotchi.frontend.global.http.ApiErrorResponseDecoder;
 import site.omagotchi.frontend.global.http.RestClientCallExecutor;
 
@@ -59,7 +60,9 @@ class IdentityRestAuthClientTest {
         client = new IdentityRestAuthClient(
                 httpService,
                 new RestClientCallExecutor(),
-                new IdentityAuthErrorResolver(new ApiErrorResponseDecoder())
+                new IdentityAuthErrorResolver(
+                        new ApiErrorContractResolver(new ApiErrorResponseDecoder())
+                )
         );
     }
 
