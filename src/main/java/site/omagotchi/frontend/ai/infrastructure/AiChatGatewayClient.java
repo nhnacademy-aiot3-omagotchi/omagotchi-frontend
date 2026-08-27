@@ -20,11 +20,12 @@ public class AiChatGatewayClient {
         this.webClient = webClientBuilder.baseUrl(baseUrl).build();
     }
 
-    public Flux<String> streamChat(String bearerToken, String question) {
+    public Flux<String> streamChat(String bearerToken, String question, String model) {
         return this.webClient.get()
                 .uri(uriBuilder -> uriBuilder
                         .path("/api/v1/chat")
                         .queryParam("question", question)
+                        .queryParam("model", model)
                         .build())
                 .header(HttpHeaders.AUTHORIZATION, bearerToken)
                 .retrieve()
