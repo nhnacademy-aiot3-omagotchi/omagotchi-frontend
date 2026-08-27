@@ -64,6 +64,7 @@ home-ui/
 | [Home 하단 HUD 반응형 리팩토링 기록](04-work-records/home-bottom-hud-refactor.md) | 하단 HUD와 빠른 실행 영역 변경 이력 |
 | [Storybook 공통 UI·화면 Pattern 리팩토링 기록](04-work-records/storybook-ui-pattern-refactor.md) | 디자인 토큰, 출석·인증·메뉴 Story와 반응형 검증 작업 기록 |
 | [백엔드 연동 전 UI 통합 리팩토링 기록](04-work-records/pre-backend-ui-integration-2026-08-14.md) | 실제 View 연결, 상태 처리, 반응형·테스트 결과와 남은 통합 검증 |
+| [AI 도우미 메신저 레이아웃·모델 선택 리팩토링 기록](04-work-records/home-ai-assistant-messenger-refactor.md) | 캐릭터 아바타를 메신저 형식으로 전환, 모델 선택(Gemini/Ollama) 활성화, Enter 전송·자동 스크롤 변경 이력 |
 
 신규 문서는 특정 기기 이름보다 `home`, `responsive`, `component`, `storybook`처럼 실제
 책임을 나타내는 이름을 사용한다.
