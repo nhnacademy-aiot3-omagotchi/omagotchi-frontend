@@ -104,15 +104,20 @@ Spring Boot의 기본 인코딩 필터(`HttpEncodingAutoConfiguration`)를 안 �
   세션에서는 이 저장소에 Node.js가 새로 설치된 상태라 `npm run storybook` 실행
   자체도 처음 확인한 것이었다).
 
+## 완료한 것
+
+- `npx vite build`로 `home-app.js` 번들을 다시 만들어 실제 `/home` 페이지에 반영했다.
+- `homeBootstrap.js`의 `home-app.js` 임포트 캐시 무효화 쿼리스트링과, `home.html`이
+  `homeBootstrap.js` 자체를 가리키는 쿼리스트링을 둘 다 빌드 날짜(`?v=20260827-1`)로
+  갱신했다. `homeBootstrap.js` 내용이 바뀌면 그걸 가리키는 참조도 같이 올리는 게 이
+  저장소의 기존 관행이다.
+- `omagotchi-gateway-service`의 `/api/v1/chat` 라우팅 PR이 머지됐다.
+
 ## 다음 작업
 
-- `npx vite build`로 `home-app.js` 번들을 다시 만들어야 실제 `/home` 페이지에 이번
-  변경이 반영된다 (Storybook은 소스를 직접 컴파일해서 보여주므로 이미 반영돼 있지만,
-  운영 페이지는 아직 예전 번들을 그대로 쓰고 있다).
-- `homeBootstrap.js`의 캐시 무효화 쿼리스트링(`?v=20260824-1`)을 빌드 시점 날짜로
-  갱신하는 게 안전하다.
-- `omagotchi-gateway-service`의 `/api/v1/chat` 라우팅 PR이 머지돼야 실제
-  프론트→게이트웨이→`learning-service` 왕복을 검증할 수 있다. 그 전까지는 이
-  브랜치의 변경이 실제 배포 환경에서 끝까지 동작하는지 확인 못 한 상태다.
+- 게이트웨이 라우팅이 머지됐으니, 실제 `/home` 페이지에서 브라우저 → Frontend BFF →
+  게이트웨이 → `learning-service`까지 전 구간이 끝까지 동작하는지 아직 확인 못 했다.
+  이번 세션에서 검증한 건 각 구간을 개별적으로(Storybook, 스탠드얼론 하니스, MockMvc)
+  본 것뿐이라, 실제 왕복 자체는 처음 확인하는 것이다.
 - Ollama 모델 선택은 배선은 됐지만 실제 응답을 받아본 적이 없다 (응답이 느려서 이
   세션에서도 검증하지 못함).
