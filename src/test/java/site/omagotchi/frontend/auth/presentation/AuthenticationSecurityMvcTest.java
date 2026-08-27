@@ -28,6 +28,7 @@ import site.omagotchi.frontend.global.exception.BusinessException;
 import site.omagotchi.frontend.global.web.BffApiExceptionResolver;
 import site.omagotchi.frontend.global.exception.CommonErrorCode;
 import site.omagotchi.frontend.global.web.ServletApiErrorResponseWriter;
+import site.omagotchi.frontend.global.security.BrowserSessionInvalidator;
 import site.omagotchi.frontend.global.security.SecurityConfig;
 import site.omagotchi.frontend.global.security.BffApiSecurityErrorHandler;
 
@@ -64,6 +65,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         BffApiSecurityErrorHandler.class,
         IdentityLogoutHandler.class,
         LoginAuthenticationFailureHandler.class,
+        BrowserSessionInvalidator.class,
         SecurityConfig.class
 })
 class AuthenticationSecurityMvcTest {

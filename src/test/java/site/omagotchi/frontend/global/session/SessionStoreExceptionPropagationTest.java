@@ -4,13 +4,16 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.data.redis.RedisConnectionFailureException;
 import org.springframework.mock.web.MockHttpServletRequest;
+import site.omagotchi.frontend.global.security.BrowserSessionInvalidator;
 import site.omagotchi.frontend.global.web.ApiExceptionHandler;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class SessionStoreExceptionPropagationTest {
 
-    private final ApiExceptionHandler handler = new ApiExceptionHandler();
+    private final ApiExceptionHandler handler = new ApiExceptionHandler(
+            new BrowserSessionInvalidator()
+    );
 
     @Test
     @DisplayName("REST Controller의 Redis Session 장애는 바깥 Filter까지 원본 예외 재전파")

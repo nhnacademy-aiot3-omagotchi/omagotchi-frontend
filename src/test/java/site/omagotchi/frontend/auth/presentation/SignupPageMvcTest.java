@@ -16,6 +16,7 @@ import site.omagotchi.frontend.auth.presentation.page.SignupForm;
 import site.omagotchi.frontend.auth.presentation.page.SignupPageController;
 import site.omagotchi.frontend.global.exception.BusinessException;
 import site.omagotchi.frontend.global.exception.CommonErrorCode;
+import site.omagotchi.frontend.global.security.BrowserSessionInvalidator;
 import site.omagotchi.frontend.global.web.PageBusinessExceptionHandler;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -40,6 +41,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(SignupPageController.class)
 @AutoConfigureMockMvc(addFilters = false)
 @Import({
+        BrowserSessionInvalidator.class,
         PageBusinessExceptionHandler.class
 })
 class SignupPageMvcTest {
