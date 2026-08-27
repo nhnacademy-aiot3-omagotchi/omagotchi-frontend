@@ -125,10 +125,10 @@ AiAssistantPanel (React)
 
 - 다른 사용자 검색이 필요하면 서버가 권한에 맞게 검색한 표시용 결과만 사용한다.
 - Prompt와 Tool 인자를 서버 로그에 남길 때에도 민감 Field는 마스킹한다.
-- 사용자의 질문 원문(`question`)을 `learning-service`가 `INFO` 레벨로 그대로 로깅하고
-  있다 — 자유 텍스트라 민감 정보가 섞일 수 있다는 문제가 알려져 있고, 아직 해결하지
-  않았다 (`ChatController`의 `TODO` 참고). 이 문서 갱신 시점 기준 의도적으로 보류된
-  상태이며, 새 기능을 얹을 때 이 문제를 키우지 않도록 주의한다.
+- 사용자의 질문 원문(`question`)은 자유 텍스트라 민감 정보가 섞일 수 있어
+  `learning-service`가 `INFO`에 남기지 않는다. `DEBUG`로만 남기며, 로컬(`application-local.yaml`)
+  에서만 켜서 확인한다. 이 스택에는 별도 액세스 로그나 프록시가 없어 질문이 기록되는
+  지점은 이 `DEBUG` 한 줄뿐이다 (`ChatController` 참고).
 - 대화는 서버 메모리(Caffeine)에 최대 1시간, 마지막 대화 후 자동 만료로만 보관한다.
   DB나 외부 저장소에 영구 저장하지 않는다.
 - 대화 내용을 `localStorage`나 `sessionStorage`에 Source of Truth로 저장하지 않는다.
@@ -149,7 +149,10 @@ AiAssistantPanel (React)
 
 전송 방식은 **GET + SSE(`text/event-stream`)로 확정**되어 있다 (`learning-service`의
 `ChatController`가 `Flux<String>`을 `produces = text/event-stream`으로 반환). 질문은
-쿼리파라미터(`question`)로 전달한다.
+쿼리파라미터 `question`, 사용할 모델은 `model`(`GEMINI` 또는 `OLLAMA`, 생략 시 기본값
+`GEMINI`)로 전달한다. `model` 값은 대소문자를 구분한다 — `learning-service`의
+`ChatModelType` enum이 소문자를 받으면 400을 반환한다. View BFF는 `model` 값을
+검증하지 않고 그대로 통과시킨다 (검증은 `learning-service`가 이미 한다).
 
 Stream은 구조화된 Event(예: `answer.delta`, `tool.started`)를 쓰지 않는다.
 `data:` 프레임 하나하나가 그대로 답변 텍스트 조각이며, 완료를 알리는 별도 Event도
