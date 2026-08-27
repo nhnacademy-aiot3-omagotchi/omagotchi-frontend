@@ -59,6 +59,7 @@ flowchart LR
   - 계정 생성
   - 사용자 Credential 검증
   - Access·Refresh Token 발급·폐기
+  - 인증 사용자 계정 조회·이름·비밀번호 변경
 - Browser JavaScript
   - 입력 반응·제출 상태·동적 UI
   - 대부분의 미연동 업무 기능 Prototype

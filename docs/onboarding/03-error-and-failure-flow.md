@@ -1,6 +1,6 @@
 # 오류·장애 흐름
 
-> 상태: Server Form·Page HTML·BFF 공통 JSON 경계 적용 · 기능별 BFF Endpoint 미구현
+> 상태: Server Form·Page HTML·기능별 BFF 공통 JSON 경계 적용
 
 ## 1. 처리 기준
 
@@ -14,7 +14,7 @@
   - 같은 Form 재표시
 - JSON 요청
   - `ApiErrorResponse`
-  - 현재 Production 대상 Endpoint 없음
+  - `/bff/v1/**` 기능별 Endpoint
 - 단일 `ControllerAdvice` 불가 사유
   - Spring Security: `DispatcherServlet` 이전
   - Spring Session Redis: MVC 이전·반환 이후
@@ -89,6 +89,7 @@ flowchart LR
 | 예상하지 못한 Page 오류 | Boot `/error` | HTML 오류 |
 | Page Redis Session 장애 | `SessionStoreErrorFilter` → `SessionStoreFailureResponseWriter` | HTML 503 |
 | REST `BusinessException` | `ApiExceptionHandler` | JSON 4xx·5xx |
+| 하류 Access JWT 인증 실패 | `ApiExceptionHandler` | 인증 Session 폐기 + JSON 401 |
 | 예상하지 못한 REST 오류 | `ApiExceptionHandler` | JSON 500 |
 | 미인증 BFF | `BffApiSecurityErrorHandler` | JSON 401 |
 | BFF 권한·CSRF 실패 | `BffApiSecurityErrorHandler` | JSON 403 |
@@ -99,8 +100,7 @@ flowchart LR
   - Frontend BFF: `/bff/v1/**`
   - Gateway 외부 API: `/api/**`
 - 미구현
-  - 기능별 BFF `@RestController`
-  - Session Access JWT Relay·Refresh
+  - Access Token Refresh·안전한 요청 재실행
 
 ## 4. Form 복구
 
@@ -223,6 +223,7 @@ flowchart TD
   - Bean Validation
   - 읽을 수 없는 JSON
   - Spring MVC 예외의 공통 JSON 변환
+  - 승인된 하류 `401`의 기존 인증 Session 폐기와 JSON 오류 반환
   - 예상하지 못한 오류의 상세 정보 은닉
 - 선택자
   - `@RestControllerAdvice(annotations = RestController.class)`
@@ -230,8 +231,8 @@ flowchart TD
   - REST JSON 예외 처리 우선
   - HTML 예외 처리기의 후순위 fallback
 - 현재 제한
-  - Production `@RestController` 없음
-  - Security·Session Filter 직접 처리 불가
+  - DispatcherServlet 이전의 Security·Session Filter 오류 직접 처리 불가
+  - Access Token Refresh 없이 하류 `401`을 재로그인으로 종료
 
 ### `BffApiExceptionResolver`
 
