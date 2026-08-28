@@ -76,14 +76,12 @@ async function hydrateDashboard(
                 }))
                 : [];
             const joinCode = joinCodeResult.status === "fulfilled" ? joinCodeResult.value : null;
-            const restoredCode = globalThis.OmagotchiManagerJoinCodeStorage
-                ?.restore(cohort.id, joinCode);
             return {
                 ...cohort,
                 members,
                 attendance,
-                joinCode: joinCode && restoredCode
-                    ? { ...joinCode, value: restoredCode }
+                joinCode: joinCode?.code
+                    ? { ...joinCode, value: joinCode.code }
                     : joinCode
             };
         }));
@@ -278,7 +276,6 @@ elements.dialog.addEventListener("click", (event) => {
 
 document.querySelector("[data-manager-logout-form]").addEventListener("submit", () => {
     try {
-        globalThis.OmagotchiManagerJoinCodeStorage?.clear();
         store.dispatch({ type: "CLEAR_SESSION" });
     } catch (error) {
         // Browser 저장소 정리에 실패해도 Spring Security Logout Form은 제출한다.
