@@ -39,8 +39,11 @@ async function hydrateDashboard(
                 api.manager.getAttendanceRecords(cohort.id, attendanceDate),
                 api.manager.getJoinCode(cohort.id)
             ]);
-            partialFailure ||= [membersResult, applicationsResult, attendanceResult, joinCodeResult]
+            const joinCodeMissing = joinCodeResult.status === "rejected"
+                && joinCodeResult.reason?.code === "JOIN_CODE_NOT_FOUND";
+            partialFailure ||= [membersResult, applicationsResult, attendanceResult]
                 .some((result) => result.status === "rejected");
+            partialFailure ||= joinCodeResult.status === "rejected" && !joinCodeMissing;
             if (attendanceResult.status === "rejected") {
                 attendanceFailure ??= attendanceResult.reason;
             }
@@ -72,11 +75,16 @@ async function hydrateDashboard(
                     checkOut: timeLabel(record.checkedOutAt)
                 }))
                 : [];
+            const joinCode = joinCodeResult.status === "fulfilled" ? joinCodeResult.value : null;
+            const restoredCode = globalThis.OmagotchiManagerJoinCodeStorage
+                ?.restore(cohort.id, joinCode);
             return {
                 ...cohort,
                 members,
                 attendance,
-                joinCode: joinCodeResult.status === "fulfilled" ? joinCodeResult.value : null
+                joinCode: joinCode && restoredCode
+                    ? { ...joinCode, value: restoredCode }
+                    : joinCode
             };
         }));
         if (rejectAttendanceFailure && attendanceFailure) {
@@ -121,6 +129,7 @@ function statusLabel(status) {
         MENTOR: "멘토",
         STUDENT: "수강생",
         ACTIVE: "활성",
+        EXPIRED: "만료",
         INACTIVE: "비활성",
         ENDED: "종료",
         PREPARING: "준비 중",
@@ -269,6 +278,7 @@ elements.dialog.addEventListener("click", (event) => {
 
 document.querySelector("[data-manager-logout-form]").addEventListener("submit", () => {
     try {
+        globalThis.OmagotchiManagerJoinCodeStorage?.clear();
         store.dispatch({ type: "CLEAR_SESSION" });
     } catch (error) {
         // Browser 저장소 정리에 실패해도 Spring Security Logout Form은 제출한다.
