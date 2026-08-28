@@ -717,8 +717,8 @@ const overlayContent = {
             <section class="overlay-settings-section" aria-labelledby="settings-account-title">
                 <h3 id="settings-account-title">계정</h3>
                 <div class="overlay-settings-row">
-                    <span><strong>비밀번호 변경</strong><em>현재 준비 중인 기능입니다.</em></span>
-                    <span class="overlay-settings-status">준비 중</span>
+                    <span><strong>계정 설정</strong><em>이름과 비밀번호를 관리합니다.</em></span>
+                    <a class="overlay-settings-open" href="/settings/account">열기</a>
                 </div>
                 <button class="overlay-settings-logout" type="button" data-logout>로그아웃</button>
             </section>
@@ -1215,6 +1215,16 @@ levelController.render();
 attendanceController.init();
 bgmPlayer.init();
 
-if (window.OmagotchiInitialOverlay) {
+const requestedOverlay = new URLSearchParams(window.location.search).get("overlay");
+if (requestedOverlay === "settings") {
+    openHomeOverlay("settings");
+    const homeUrl = new URL(window.location.href);
+    homeUrl.searchParams.delete("overlay");
+    window.history.replaceState(
+        window.history.state,
+        "",
+        `${homeUrl.pathname}${homeUrl.search}${homeUrl.hash}`
+    );
+} else if (window.OmagotchiInitialOverlay) {
     openHomeOverlay(window.OmagotchiInitialOverlay);
 }

@@ -7,7 +7,7 @@ async function bootstrapHome() {
         profile = await globalThis.OmagotchiApi.profile.get();
     } catch (error) {
         if (error?.status === 401) {
-            globalThis.location.replace("/login");
+            globalThis.location.replace("/login?notice=session-expired");
             return;
         }
 

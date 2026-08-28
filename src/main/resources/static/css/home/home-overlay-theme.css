@@ -592,7 +592,8 @@
     font-style: normal;
 }
 
-.overlay-settings-status {
+.overlay-settings-status,
+.overlay-settings-open {
     flex: 0 0 auto;
     min-height: 30px;
     display: inline-flex;
@@ -603,6 +604,11 @@
     color: var(--overlay-accent-strong);
     font-size: 12px;
     font-weight: 900;
+}
+
+.overlay-settings-open {
+    justify-content: center;
+    text-decoration: none;
 }
 
 .overlay-settings-logout {
@@ -2002,6 +2008,7 @@
 }
 
 .home-overlay--settings .overlay-settings-row,
+.home-overlay--settings .overlay-settings-open,
 .home-overlay--settings .overlay-settings-logout {
     border: 1px solid var(--overlay-list-line);
     background: var(--overlay-list-row);
@@ -2016,7 +2023,8 @@
     color: var(--overlay-list-muted);
 }
 
-.home-overlay--settings .overlay-settings-status {
+.home-overlay--settings .overlay-settings-status,
+.home-overlay--settings .overlay-settings-open {
     background: var(--overlay-list-soft);
     color: #176b46;
 }
