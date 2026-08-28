@@ -21,8 +21,13 @@ import site.omagotchi.frontend.learning.infrastructure.request.LearningDeactivat
 import site.omagotchi.frontend.learning.infrastructure.request.LearningAssignSpaceCohortRequest;
 import site.omagotchi.frontend.learning.infrastructure.request.LearningSpaceMutationRequest;
 import site.omagotchi.frontend.learning.infrastructure.request.LearningUpdateSpaceRequest;
+import site.omagotchi.frontend.learning.infrastructure.request.LearningVacancyAlertRequest;
+import site.omagotchi.frontend.learning.infrastructure.request.LearningAddParticipantRequest;
 import site.omagotchi.frontend.learning.infrastructure.response.LearningOccupancyResponse;
 import site.omagotchi.frontend.learning.infrastructure.response.LearningSpaceResponse;
+import site.omagotchi.frontend.learning.infrastructure.response.LearningVacancyAlertResponse;
+import site.omagotchi.frontend.learning.infrastructure.response.LearningParticipantCandidateResponse;
+import site.omagotchi.frontend.learning.infrastructure.response.LearningOccupancyParticipantResponse;
 import site.omagotchi.frontend.profile.infrastructure.request.UpdateNicknameRequest;
 import site.omagotchi.frontend.profile.infrastructure.response.UserNicknameResponse;
 import site.omagotchi.frontend.profile.infrastructure.response.UserProfileResponse;
@@ -446,6 +451,43 @@ public interface LearningHttpService {
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
             @PathVariable Long spaceId,
             @PathVariable UUID userId
+    );
+
+    @GetExchange("/spaces/{spaceId}/occupancies/participants")
+    ResponseEntity<List<LearningOccupancyParticipantResponse>> getSpaceOccupancyParticipants(
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
+            @PathVariable Long spaceId
+    );
+
+    @GetExchange("/spaces/{spaceId}/occupancies/participants/candidates")
+    ResponseEntity<List<LearningParticipantCandidateResponse>> searchSpaceOccupancyParticipantCandidates(
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
+            @PathVariable Long spaceId,
+            @RequestParam String query
+    );
+
+    @PostExchange("/spaces/{spaceId}/occupancies/participants")
+    ResponseEntity<Void> addSpaceOccupancyParticipant(
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
+            @PathVariable Long spaceId,
+            @RequestBody LearningAddParticipantRequest request
+    );
+
+    @PostExchange("/spaces/{spaceId}/vacancy-alerts")
+    ResponseEntity<Void> requestVacancyAlert(
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
+            @PathVariable Long spaceId,
+            @RequestBody LearningVacancyAlertRequest request
+    );
+
+    @GetExchange("/vacancy-alerts/me")
+    ResponseEntity<List<LearningVacancyAlertResponse>>
+    getMyVacancyAlerts(@RequestHeader(HttpHeaders.AUTHORIZATION) String authorization);
+
+    @DeleteExchange("/vacancy-alerts/{alertId}")
+    ResponseEntity<Void> cancelVacancyAlert(
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
+            @PathVariable Long alertId
     );
 
     @PostExchange("/admin/spaces")

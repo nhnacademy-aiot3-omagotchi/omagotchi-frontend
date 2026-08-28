@@ -6,7 +6,9 @@
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
     "test:system-admin": "node --test src/test/js/systemAdminApiRepository.test.mjs",
-    "test:storybook-css": "node --test src/test/js/storybookPreviewCss.test.mjs"
+    "test:storybook-css": "node --test src/test/js/storybookPreviewCss.test.mjs",
+    "test:vacancy-alerts": "node --test src/test/js/vacancyAlerts.test.mjs",
+    "test:participants": "node --test src/test/js/participants.test.mjs src/test/js/participantActions.test.mjs"
   },
   "dependencies": {
     "@vitejs/plugin-react": "^5.0.0",

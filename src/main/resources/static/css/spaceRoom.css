@@ -351,7 +351,7 @@
     background: var(--room-accent);
     color: #ffffff;
     font-size: 12px;
-    font-weight: 800;
+    font-weight:800;
 }
 
 .space-room-party button.is-danger {
@@ -717,6 +717,13 @@
     list-style: none;
 }
 
+.space-room-participant-label {
+    margin: 12px 0 0;
+    color: var(--room-muted);
+    font-size: 11px;
+    font-weight: 800;
+}
+
 .space-room-participants li {
     min-height: 32px;
     display: flex;
@@ -741,6 +748,212 @@
     color: var(--room-muted);
     font-size: 10px;
     font-style: normal;
+}
+
+.space-room-participant-role {
+    margin-left: auto;
+    color: var(--room-muted);
+    font-size: 10px;
+    font-weight: 800;
+}
+
+.space-room-participant-add-row {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 10px;
+}
+
+.space-room-participant-add-row button {
+    min-height: 34px;
+    padding: 0 12px;
+    border: 1px solid var(--room-accent-deep);
+    border-radius: 6px;
+    background: #ffffff;
+    color: var(--room-accent-deep);
+    font-size: 12px;
+    font-weight: 800;
+}
+
+.space-room-dialog-backdrop {
+    position: fixed;
+    z-index: 1000;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    padding: 18px;
+    background: rgba(8, 29, 20, 0.58);
+}
+
+.space-room-dialog {
+    width: min(480px, 100%);
+    max-height: calc(100dvh - 36px);
+    overflow-y: auto;
+    border: 1px solid var(--room-line);
+    border-radius: 10px;
+    background: #ffffff;
+    box-shadow: 0 24px 70px rgba(8, 29, 20, 0.25);
+}
+
+.space-room-dialog > header {
+    display: flex;
+    justify-content: space-between;
+    gap: 18px;
+    padding: 20px 22px 16px;
+    border-bottom: 1px solid var(--room-line);
+}
+
+.space-room-dialog > header span {
+    color: var(--room-accent-deep);
+    font-size: 9px;
+    font-weight: 900;
+    letter-spacing: 0.12em;
+}
+
+.space-room-dialog > header h4 {
+    margin-top: 5px;
+    font-size: 19px;
+}
+
+.space-room-dialog > header p {
+    margin: 6px 0 0;
+    color: var(--room-muted);
+    font-size: 12px;
+}
+
+.space-room-dialog-close {
+    flex: 0 0 auto;
+    width: 32px;
+    height: 32px;
+    border: 1px solid var(--room-line);
+    border-radius: 6px;
+    background: #ffffff;
+    color: var(--room-ink);
+    font-size: 20px;
+}
+
+.space-room-participant-dialog-body {
+    display: grid;
+    gap: 16px;
+    padding: 18px 22px 20px;
+}
+
+.space-room-participant-search-form {
+    margin: 0;
+}
+
+.space-room-participant-search {
+    display: grid;
+    gap: 6px;
+    color: var(--room-muted);
+    font-size: 11px;
+    font-weight: 800;
+}
+
+.space-room-participant-search input {
+    min-height: 40px;
+    padding: 0 12px;
+    border: 1px solid var(--room-line);
+    border-radius: 6px;
+    color: var(--room-ink);
+    background: #ffffff;
+}
+
+.space-room-participant-search-controls {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px;
+}
+
+.space-room-participant-search-controls button {
+    min-height: 40px;
+    padding: 0 14px;
+    border: 1px solid var(--room-accent-deep);
+    border-radius: 6px;
+    background: #ffffff;
+    color: var(--room-accent-deep);
+    font-size: 12px;
+    font-weight: 800;
+}
+
+.space-room-participant-validation {
+    margin: -6px 0 0;
+    color: #a32929;
+    font-size: 11px;
+}
+
+.space-room-dialog fieldset {
+    display: grid;
+    gap: 7px;
+    margin: 0;
+    padding: 0;
+    border: 0;
+}
+
+.space-room-dialog legend {
+    margin-bottom: 7px;
+    color: var(--room-muted);
+    font-size: 11px;
+    font-weight: 800;
+}
+
+.space-room-participant-candidate {
+    min-height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    border: 1px solid var(--room-line);
+    border-radius: 7px;
+    background: #ffffff;
+    color: var(--room-ink);
+    text-align: left;
+}
+
+.space-room-participant-candidate.is-selected {
+    border-color: var(--room-accent-deep);
+    box-shadow: 0 0 0 1px var(--room-accent-deep);
+}
+
+.space-room-participant-candidate:disabled {
+    cursor: not-allowed;
+    background: #f6f8f7;
+    color: var(--room-muted);
+}
+
+.space-room-participant-candidate span,
+.space-room-participant-candidate strong,
+.space-room-participant-candidate small {
+    display: block;
+}
+
+.space-room-participant-candidate strong { font-size: 13px; }
+.space-room-participant-candidate small { margin-top: 3px; color: var(--room-muted); font-size: 10px; }
+.space-room-participant-candidate i { width: 14px; height: 14px; border: 1px solid #8aa89a; border-radius: 50%; }
+.space-room-participant-candidate.is-selected i { border: 4px solid var(--room-accent); }
+.space-room-dialog .space-room-participant-empty { margin: 0; padding: 18px; color: var(--room-ink); font-size: 12px; text-align: center; }
+.space-room-participant-empty[hidden] { display: none; }
+
+.space-room-dialog footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+.space-room-dialog footer button {
+    min-height: 38px;
+    padding: 0 15px;
+    border: 1px solid var(--room-accent-deep);
+    border-radius: 6px;
+    background: var(--room-accent);
+    color: #ffffff;
+    font-size: 12px;
+    font-weight: 800;
+}
+
+.space-room-dialog footer button.is-secondary {
+    border-color: var(--room-line);
+    background: #ffffff;
+    color: var(--room-ink);
 }
 
 .space-room-invite {
