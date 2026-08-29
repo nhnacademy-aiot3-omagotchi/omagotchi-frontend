@@ -1,7 +1,7 @@
 # Frontend ↔ Backend 기능별 연결 지도
 
 - 상태: Frontend 연결 준비 완료, Backend BFF·Domain 계약 연결 대기
-- 기준일: 2026-08-14
+- 기준일: 2026-08-29
 - Browser API 경계: 같은 Origin의 `/bff/v1/**`
 
 ## 연결 원칙
@@ -36,7 +36,9 @@ React·Thymeleaf DOM
 | 랭킹 | 추가 adapter 필요 | `home.js` 랭킹 목록 mapping | `data-empty-ranking`, 목록 구조 | Study ranking 응답과 개인정보 표시 범위 |
 | 내 정보 | 추가 adapter 필요 | `renderPersonalOverlay()` | 프로필 DL·실제 사용자 값 | Profile DTO와 approvedCohort |
 | 업적 | 연결하지 않음 | 준비 중 빈 상태 | `data-overlay-panel="achievements"` | 기능·API가 확정된 뒤 별도 연결 |
-| 설정 | 기존 Form·정적 상태 | `home.js` | `data-logout-form`, `data-logout` | 비밀번호 변경·Telegram 기능 확정 시 연결 |
+| 설정 | 기존 Form·정적 상태 | `home.js` | `data-logout-form`, `data-logout` | Home Overlay는 로그아웃만 담당하며 계정·알림은 `/settings/account`로 이동 |
+| 계정 설정 | `OmagotchiApi.account` | `accountSettings.js` | `data-account-*`, `data-settings-*` | 연결 완료 |
+| 텔레그램 알림 | `OmagotchiApi.telegram` | `accountSettings.js` | `data-telegram-*` | 연결 완료. 봇 사용자명과 Webhook 등록은 배포 환경에서 확인 |
 | BGM | Backend 대상 아님 | `home/bgm.js` | 재생·목록·음량 상태 | 정적 `bgm.json`과 브라우저 재생 설정 유지 |
 
 ## 기능별 UI 상태 계약
@@ -54,6 +56,12 @@ React·Thymeleaf DOM
 최소 정보만 제공한다. 이메일은 재실 목록의 표시·필터 데이터로 사용하지 않는다. 메시지나
 파티 초대를 위한 이메일·사용자 이름 검색은 인증된 별도 BFF API와 별도 검색 UI로 구현하고,
 검색 결과 또한 권한에 맞는 사용자 ID와 표시용 이름만 후속 동작에 전달한다.
+
+텔레그램 연동 조회는 미연동을 `empty`로 다룬다. Learning이 미연동에
+`TELEGRAM_USER_LINK_NOT_FOUND`로 404를 반환하지만 이는 오류가 아니라 초기 상태이므로,
+View BFF가 그 코드만 흡수해 `204 No Content`로 바꾸고 Browser는 본문 유무로 판정한다.
+다른 404는 그대로 전달한다. 연동 여부를 화면에서 숨기지 않고 상태 문구와 `disabled`로
+표시하는 것도 같은 이유다 — `hidden`은 공통 CSS가 `display`를 지정하면 무력해진다.
 
 출석 로컬 이력처럼 현재 남아 있는 Prototype은 `data-ui-source="local-prototype"` 또는
 `[API-REPLACE]`로 추적한다. BFF가 정상 응답하고 회귀 검증을 통과하기 전에는 제거하지
