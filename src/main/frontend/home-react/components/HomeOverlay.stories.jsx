@@ -155,6 +155,100 @@ const meta = {
 
 export default meta;
 
+const runtimeCohortContent = `
+  <section class="ui-cohort-shell" data-cohort-state="approved">
+    <span class="ui-menu-eyebrow">나의 기수</span>
+    <header class="ui-cohort-summary">
+      <div class="ui-cohort-summary__copy">
+        <h3>NHN 아카데미 11기</h3>
+        <p>2026-03-02 — 2026-09-18</p>
+        <span class="ui-menu-chip">운영 중</span>
+      </div>
+    </header>
+    <section class="ui-cohort-party-zone" aria-labelledby="storybook-runtime-party-title">
+      <header><div><h3 id="storybook-runtime-party-title">11기 내 파티</h3><p>같은 기수 멤버와 최대 8명까지 함께할 수 있어요.</p></div></header>
+      <div data-home-party-app></div>
+    </section>
+    <section class="ui-cohort-affiliation-note" aria-label="기수 소속 안내">
+      <strong>과정 소속 안내</strong>
+      <p>과정 중에는 다른 기수로 변경할 수 없습니다. 중도 참여 포기가 필요하면 관리자에게 문의해 주세요.</p>
+    </section>
+  </section>
+`;
+
+const runtimeCohortMembers = [
+  { id: "current-user", name: "m00n", email: "m00n@example.com", status: "present", characterImage: "/images/characters/study/study.png" },
+  { id: "lucky", name: "LUCKY", email: "lucky@example.com", status: "present", characterImage: "/images/characters/caffeine/pistachio.png" },
+  { id: "nabi", name: "NABI", email: "nabi@example.com", status: "offline", characterImage: "/images/characters/sprout/cream_can.png" }
+];
+
+function RuntimeCohortOverlayStory() {
+  const hostRef = useRef(null);
+
+  useEffect(() => {
+    let disposed = false;
+    const previousProfile = globalThis.OmagotchiProfile;
+    const previousApi = globalThis.OmagotchiApi;
+
+    globalThis.sessionStorage.removeItem("omagotchiSpaceState");
+    globalThis.OmagotchiProfile = {
+      userId: "current-user",
+      nickname: "m00n",
+      approvedCohort: { cohortId: 11, name: "NHN 아카데미 11기", members: runtimeCohortMembers },
+      currentCharacter: { nickname: "m00n", type: "study", colorId: "original", assetKey: "study/study" }
+    };
+    globalThis.OmagotchiApi = { attendance: { getToday: async () => ({ checkedInAt: new Date().toISOString() }) } };
+
+    import("../../../resources/static/js/spaceRoom.js?storybook-runtime-overlay")
+      .then(() => {
+        if (disposed) return;
+        globalThis.OmagotchiSpaceRoom.updateData({
+          cohortMembers: runtimeCohortMembers,
+          party: {
+            id: "runtime-party",
+            name: "집에 가고 싶은 사람들",
+            masterId: "current-user",
+            members: runtimeCohortMembers.slice(0, 2)
+          }
+        });
+        const target = hostRef.current?.querySelector("[data-home-party-app]");
+        globalThis.OmagotchiSpaceRoom.mountParty(target);
+        target?.querySelector("[data-party-open-detail]")?.click();
+      });
+
+    return () => {
+      disposed = true;
+      globalThis.sessionStorage.removeItem("omagotchiSpaceState");
+      globalThis.OmagotchiProfile = previousProfile;
+      globalThis.OmagotchiApi = previousApi;
+    };
+  }, []);
+
+  return (
+    <div ref={hostRef}>
+      <HomeOverlay
+        type="cohort"
+        meta={{ icon: "/images/app/cohort.png", title: "기수 · 팀", description: "기수 안에서 팀을 만들고 함께 성장하세요." }}
+        content={runtimeCohortContent}
+        onClose={() => {}}
+      />
+    </div>
+  );
+}
+
+export const CohortRuntimeOverlay = {
+  name: "기수 · 팀 실제 Home 오버레이",
+  render: () => <RuntimeCohortOverlayStory />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await waitFor(() => expect(canvas.getByRole("button", { name: "파티 나가기" })).toBeInTheDocument());
+    expect(canvas.getByRole("dialog", { name: "기수 · 팀" })).toBeInTheDocument();
+    expect(canvas.getByText("집에 가고 싶은 사람들")).toBeInTheDocument();
+    expect(canvas.getByRole("button", { name: "파티 해체" })).toBeInTheDocument();
+    expect(canvas.queryByText("마스터 전용")).not.toBeInTheDocument();
+  }
+};
+
 export const Help = {};
 export const Progress = {
   args: {

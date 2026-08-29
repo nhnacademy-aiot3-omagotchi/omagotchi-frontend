@@ -94,31 +94,64 @@ let communityKeyword = "";
 let communityPage = 1;
 const communityPageSize = 3;
 
-function getHomeManagedCohorts() {
-    return currentProfile.approvedCohort ? [currentProfile.approvedCohort] : [];
-}
+function renderHomeCohortOverlay() {
+    const cohort = currentProfile.approvedCohort;
 
-function renderHomeCohortCards() {
-    const managed = getHomeManagedCohorts();
-
-    if (!managed.length) {
+    if (!cohort) {
         return `
-            <article>
-                <h3>참여 기수 없음</h3>
-                <p>승인된 기수 정보가 없습니다.</p>
-                <span class="overlay-pill">대기</span>
-            </article>`;
+            <div class="ui-cohort-empty-layout" data-cohort-state="unassigned">
+                <section class="ui-cohort-empty" aria-labelledby="home-cohort-empty-title">
+                    <div>
+                        <span class="ui-menu-eyebrow">나의 기수</span>
+                        <h3 id="home-cohort-empty-title">참여 기수 없음</h3>
+                        <p>승인된 기수 정보가 없습니다. 관리자에게 받은 가입 코드로 참가를 신청해 주세요.</p>
+                    </div>
+                    <span class="ui-menu-chip">대기</span>
+                </section>
+                <form class="overlay-cohort-join ui-menu-inline-form" data-home-cohort-form>
+                    <label class="ui-field">
+                        <span class="ui-field__label">가입 코드</span>
+                        <input name="cohortCode" type="text" placeholder="관리자에게 받은 가입 코드" autocomplete="off" required />
+                    </label>
+                    <button class="ui-button ui-button--primary" type="submit">참가 신청</button>
+                    <p class="home-cohort-join-message" data-home-cohort-message>유효한 코드를 입력하면 관리자 승인 대기 상태로 등록됩니다.</p>
+                </form>
+                <section class="ui-cohort-party-locked" aria-label="기수 내 파티 비활성 상태">
+                    <div>
+                        <strong>기수 참여 후 파티를 만들 수 있어요.</strong>
+                        <p>승인이 완료되면 같은 기수 멤버와 최대 8명까지 파티를 구성할 수 있습니다.</p>
+                    </div>
+                </section>
+            </div>`;
     }
 
-    return managed.map((cohort) => {
-        return `
-            <article>
-                <h3>${escapeHtml(cohort.name)}</h3>
-                <p>${escapeHtml(`${cohort.startDate} ~ ${cohort.endDate}`)}</p>
-                <span class="overlay-pill">${escapeHtml(cohort.role || "STUDENT")}</span>
-                <span class="overlay-pill">${cohort.cohortStatus === "ACTIVE" ? "운영 중" : "대기"}</span>
-            </article>`;
-    }).join("");
+    const cohortLabel = cohort.name?.match(/\d+기/)?.[0] || "기수";
+    const statusLabel = cohort.cohortStatus === "ACTIVE" ? "운영 중" : "대기";
+
+    return `
+        <section class="ui-cohort-shell" data-cohort-state="approved">
+            <span class="ui-menu-eyebrow">나의 기수</span>
+            <header class="ui-cohort-summary">
+                <div class="ui-cohort-summary__copy">
+                    <h3>${escapeHtml(cohort.name)}</h3>
+                    <p>${escapeHtml(`${cohort.startDate} — ${cohort.endDate}`)}</p>
+                    <span class="ui-menu-chip">${statusLabel}</span>
+                </div>
+            </header>
+            <section class="ui-cohort-party-zone" aria-labelledby="home-cohort-party-title">
+                <header>
+                    <div>
+                        <h3 id="home-cohort-party-title">${escapeHtml(cohortLabel)} 내 파티</h3>
+                        <p>같은 기수 멤버와 최대 8명까지 함께할 수 있어요.</p>
+                    </div>
+                </header>
+                <div data-home-party-app></div>
+            </section>
+            <section class="ui-cohort-affiliation-note" aria-label="기수 소속 안내">
+                <strong>과정 소속 안내</strong>
+                <p>과정 중에는 다른 기수로 변경할 수 없습니다. 중도 참여 포기가 필요하면 관리자에게 문의해 주세요.</p>
+            </section>
+        </section>`;
 }
 
 function getPersonalSnapshot() {
@@ -399,7 +432,7 @@ const overlayMeta = {
     help: { title: "도움말", description: "오마고치 이용 방법을 확인하세요.", icon: "/images/app/help.png" },
     progress: { title: "진행", description: "퀘스트와 성장 기록을 한눈에 확인하세요.", icon: "/images/app/quest.png" },
     personal: { title: "내 정보", description: "나의 학습과 캐릭터 성장 현황입니다.", icon: "/images/app/userList.png" },
-    cohort: { title: "기수", description: "참여 중인 기수와 가입 상태를 관리하세요.", icon: "/images/app/cohort.png" },
+    cohort: { title: "기수 · 팀", description: "기수 안에서 팀을 만들고 함께 성장하세요.", icon: "/images/app/cohort.png" },
     write: { title: "학습 기록", description: "집중한 시간을 돌아보고 학습 흐름을 정리하세요.", icon: "/images/app/studyrecord.png" },
     space: { title: "공간", description: "함께 공부할 공간을 선택하고 입장하세요.", icon: "/images/app/door.png" },
     community: { title: "커뮤", description: "공지와 이야기를 확인하고 동료들과 소통하세요.", icon: "/images/app/commu.png" },
@@ -476,11 +509,11 @@ const overlayContent = {
             <summary>4. 공간 이용</summary>
             <div class="help-detail">
                 <ul>
-                    <li><strong>실습실</strong>: 입실하면 담당 기수 실습실에 자동 연결</li>
                     <li><strong>회의실</strong>: 파티를 구성해 제한된 인원으로 이용</li>
                     <li><strong>도서관</strong>: 개인 또는 조용한 학습 공간</li>
                     <li>사용 중인 회의실은 이용 시간을 연장하거나 반납할 수 있습니다.</li>
                     <li>만실인 회의실은 공실 알림을 신청할 수 있습니다.</li>
+                    <li>Telegram을 연결하면 신청한 회의실의 공실 알림을 받을 수 있습니다.</li>
                 </ul>
             </div>
         </details>
@@ -489,11 +522,10 @@ const overlayContent = {
             <summary>5. 파티와 사용자 목록</summary>
             <div class="help-detail">
                 <ul>
-                    <li>같은 기수의 실습실 재실 인원을 확인합니다.</li>
-                    <li>이름 또는 이메일로 사용자를 검색합니다.</li>
-                    <li>사용자 목록에서 파티원을 초대할 수 있습니다.</li>
+                    <li>기수 · 팀 메뉴에서 파티를 만들고 관리합니다.</li>
+                    <li>이름 또는 이메일로 같은 기수 사용자를 검색해 파티원으로 초대합니다.</li>
                     <li>파티를 만든 후 이용 가능한 회의실에 입장합니다.</li>
-                    <li>현재 파티 인원과 각 사용자의 상태를 확인합니다.</li>
+                    <li>공간 메뉴에서는 현재 파티의 캐릭터와 닉네임을 확인합니다.</li>
                     <li>실시간 채팅 기능은 사용하지 않습니다. 홈 하단의 같은 자리는 AI 도우미 영역입니다.</li>
                 </ul>
             </div>
@@ -505,9 +537,9 @@ const overlayContent = {
                 <ul>
                     <li><strong>진행</strong>: 퀘스트, 업적, 랭킹, 타임라인, 통계 확인</li>
                     <li><strong>내 정보</strong>: 학습 시간, 출석, 캐릭터 정보 확인</li>
-                    <li><strong>기수</strong>: 참여 중이거나 가입 가능한 기수 확인</li>
+                    <li><strong>기수 · 팀</strong>: 소속 기수와 파티 생성·관리</li>
                     <li><strong>학습 기록</strong>: 월간 달력에서 저장한 기록을 확인·수정·삭제</li>
-                    <li><strong>공간</strong>: 실습실, 회의실, 도서관 이용</li>
+                    <li><strong>공간</strong>: 회의실과 도서관 이용</li>
                     <li><strong>커뮤</strong>: 공지 및 자유 게시판 이용</li>
                     <li><strong>설정</strong>: 비밀번호 변경, 로그아웃</li>
                 </ul>
@@ -668,16 +700,7 @@ const overlayContent = {
         </section>
     `,
     personal: renderPersonalOverlay,
-    cohort: `
-        <div class="overlay-card-grid">
-            ${renderHomeCohortCards()}
-        </div>
-        <form class="overlay-cohort-join" data-home-cohort-form>
-            <label><span>가입 코드</span><input name="cohortCode" type="text" placeholder="관리자에게 받은 코드를 입력하세요" autocomplete="off" /></label>
-            <button type="submit">참가 신청</button>
-            <p data-home-cohort-message>유효한 코드를 입력하면 관리자 승인 대기 상태로 등록됩니다.</p>
-        </form>
-    `,
+    cohort: renderHomeCohortOverlay,
     write: `<div data-study-records></div>`,
     space: `<div class="space-room-app" data-space-room-app></div>`,
     community: `
@@ -999,7 +1022,13 @@ function openHomeOverlay(type) {
     if (type === "space") {
         window.OmagotchiSpaceRoom?.mount(
             homeOverlayRoot.querySelector("[data-space-room-app]"),
-            { initialTab: location.hash.slice(1) || "lab" }
+            { initialTab: location.hash.slice(1) || "meeting" }
+        );
+    }
+
+    if (type === "cohort") {
+        window.OmagotchiSpaceRoom?.mountParty(
+            homeOverlayRoot.querySelector("[data-home-party-app]")
         );
     }
 }
