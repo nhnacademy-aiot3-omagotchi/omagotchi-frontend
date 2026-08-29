@@ -143,6 +143,16 @@
                 body: {currentPassword, newPassword}
             })
         },
+        telegram: {
+            // 미연동이면 BFF가 204를 주므로 본문이 빈 문자열이다. 호출부는 falsy로 판정한다.
+            getLink: () => request("/telegram/link"),
+            issueLinkToken: () => request("/telegram/link-token", {method: "POST"}),
+            setNotification: (enabled) => request("/telegram/link/notification", {
+                method: "PATCH",
+                body: {enabled}
+            }),
+            disconnect: () => request("/telegram/link", {method: "DELETE"})
+        },
         profile: {
             get: () => request("/me/profile"),
             updateNickname: (nickname) => request("/me/nickname", {
