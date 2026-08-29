@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 
 /**
  * 텔레그램 연동 화면.
@@ -52,9 +52,23 @@ export function TelegramLink({
   embedded = false
 }) {
   const [copied, setCopied] = useState(false);
+  const [clockNow, setClockNow] = useState(now);
+
+  useEffect(() => {
+    setClockNow(now);
+
+    const expiresAt = Date.parse(token?.expiresAt);
+    if (!Number.isFinite(expiresAt) || expiresAt <= now) return undefined;
+
+    const timerId = window.setTimeout(
+      () => setClockNow(Date.now()),
+      expiresAt - now + 50
+    );
+    return () => window.clearTimeout(timerId);
+  }, [token?.expiresAt, now]);
 
   const linked = Boolean(link);
-  const expired = Boolean(token) && isExpired(token.expiresAt, now);
+  const expired = Boolean(token) && isExpired(token.expiresAt, clockNow);
 
   async function copyLink() {
     try {
