@@ -1,6 +1,6 @@
 # 오류·장애 흐름
 
-> 상태: Server Form·Page HTML·BFF 공통 JSON 경계 적용 · 기능별 BFF Endpoint 미구현
+> 상태: Server Form·Page HTML·기능별 BFF 공통 JSON 경계 적용
 
 ## 1. 처리 기준
 
@@ -14,7 +14,7 @@
   - 같은 Form 재표시
 - JSON 요청
   - `ApiErrorResponse`
-  - 현재 Production 대상 Endpoint 없음
+  - `/bff/v1/**` 기능별 Endpoint
 - 단일 `ControllerAdvice` 불가 사유
   - Spring Security: `DispatcherServlet` 이전
   - Spring Session Redis: MVC 이전·반환 이후
@@ -89,6 +89,7 @@ flowchart LR
 | 예상하지 못한 Page 오류 | Boot `/error` | HTML 오류 |
 | Page Redis Session 장애 | `SessionStoreErrorFilter` → `SessionStoreFailureResponseWriter` | HTML 503 |
 | REST `BusinessException` | `ApiExceptionHandler` | JSON 4xx·5xx |
+| 하류 Access JWT 인증 실패 | `ApiExceptionHandler` | 인증 Session 폐기 + JSON 401 |
 | 예상하지 못한 REST 오류 | `ApiExceptionHandler` | JSON 500 |
 | 미인증 BFF | `BffApiSecurityErrorHandler` | JSON 401 |
 | BFF 권한·CSRF 실패 | `BffApiSecurityErrorHandler` | JSON 403 |
@@ -99,8 +100,7 @@ flowchart LR
   - Frontend BFF: `/bff/v1/**`
   - Gateway 외부 API: `/api/**`
 - 미구현
-  - 기능별 BFF `@RestController`
-  - Session Access JWT Relay·Refresh
+  - Access Token Refresh·안전한 요청 재실행
 
 ## 4. Form 복구
 
@@ -223,6 +223,7 @@ flowchart TD
   - Bean Validation
   - 읽을 수 없는 JSON
   - Spring MVC 예외의 공통 JSON 변환
+  - 승인된 하류 `401`의 기존 인증 Session 폐기와 JSON 오류 반환
   - 예상하지 못한 오류의 상세 정보 은닉
 - 선택자
   - `@RestControllerAdvice(annotations = RestController.class)`
@@ -230,8 +231,8 @@ flowchart TD
   - REST JSON 예외 처리 우선
   - HTML 예외 처리기의 후순위 fallback
 - 현재 제한
-  - Production `@RestController` 없음
-  - Security·Session Filter 직접 처리 불가
+  - DispatcherServlet 이전의 Security·Session Filter 오류 직접 처리 불가
+  - Access Token Refresh 없이 하류 `401`을 재로그인으로 종료
 
 ### `BffApiExceptionResolver`
 
@@ -496,16 +497,12 @@ flowchart TB
 6. 500 확인
    - Error Code·원본 Stack Trace·누락된 Framework 매핑
 
-## 14. 주요 Code·Test
+## 14. 검증 기준
 
-- Code
-  - [`ApiExceptionHandler.java`](../../src/main/java/site/omagotchi/frontend/global/web/ApiExceptionHandler.java)
-  - [`PageBusinessExceptionHandler.java`](../../src/main/java/site/omagotchi/frontend/global/web/PageBusinessExceptionHandler.java)
-  - [`SessionStoreErrorFilter.java`](../../src/main/java/site/omagotchi/frontend/global/session/SessionStoreErrorFilter.java)
-  - [`IdentityAuthErrorResolver.java`](../../src/main/java/site/omagotchi/frontend/auth/infrastructure/IdentityAuthErrorResolver.java)
-- Test
-  - [`ApiExceptionHandlerTest.java`](../../src/test/java/site/omagotchi/frontend/global/web/ApiExceptionHandlerTest.java)
-  - [`BffApiExceptionResolverTest.java`](../../src/test/java/site/omagotchi/frontend/global/web/BffApiExceptionResolverTest.java)
-  - [`PageBusinessExceptionHandlerTest.java`](../../src/test/java/site/omagotchi/frontend/global/web/PageBusinessExceptionHandlerTest.java)
-  - [`SessionStoreErrorFilterTest.java`](../../src/test/java/site/omagotchi/frontend/global/session/SessionStoreErrorFilterTest.java)
-  - [`SessionStoreFailureIntegrationTest.java`](../../src/test/java/site/omagotchi/frontend/global/session/SessionStoreFailureIntegrationTest.java)
+- Controller 내부 예외: HTML·JSON 응답 경계별 MVC Test
+- Handler Mapping·표현 협상 오류: Method·Content-Type·Accept를 포함한 BFF Test
+- Security 오류: 미인증·권한·CSRF가 Filter Chain에서 돌아오는지 검증
+- Redis Session 오류: MVC 진입 전·응답 반환 후 실패를 포함한 Integration Test
+- 하류 오류: 공개 Code·HTTP Status·계약 위반·일시 장애의 구분 검증
+- 실제 처리기와 Test 파일은 `global/web`, `global/security`, `global/session`,
+  기능별 Infrastructure의 현재 코드에서 확인한다.

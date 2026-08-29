@@ -17,7 +17,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.mock.web.MockHttpServletResponse;
+import org.springframework.mock.web.MockHttpSession;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.web.ErrorResponseException;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -28,6 +31,7 @@ import site.omagotchi.frontend.global.exception.ApiErrorResponse;
 import site.omagotchi.frontend.global.exception.BusinessException;
 import site.omagotchi.frontend.global.exception.CommonErrorCode;
 import site.omagotchi.frontend.global.learning.infrastructure.LearningDownstreamException;
+import site.omagotchi.frontend.global.security.SecurityErrorCode;
 
 import java.util.Set;
 
@@ -89,6 +93,22 @@ class ApiExceptionHandlerTest {
                         ),
                         jsonPath("$.requestId").value("learning-request-4xx")
                 );
+    }
+
+    @Test
+    @DisplayName("Learning Access JWT 401의 기존 인증 세션 폐기")
+    void invalidatesStaleSessionForLearningAuthenticationFailure() throws Exception {
+        assertAuthenticationFailureExpiresSession(
+                "/bff/v1/test/errors/learning-authentication-required"
+        );
+    }
+
+    @Test
+    @DisplayName("BFF Business 401의 기존 인증 세션 폐기")
+    void invalidatesStaleSessionForBusinessAuthenticationFailure() throws Exception {
+        assertAuthenticationFailureExpiresSession(
+                "/bff/v1/test/errors/authentication-required"
+        );
     }
 
     @Test
@@ -370,6 +390,21 @@ class ApiExceptionHandlerTest {
         assertThat(output).contains("unexpected controller failure");
     }
 
+    private void assertAuthenticationFailureExpiresSession(String path) throws Exception {
+        MockHttpSession authenticatedSession = new MockHttpSession();
+
+        MvcResult result = mockMvc.perform(get(path).session(authenticatedSession))
+                .andExpectAll(
+                        status().isUnauthorized(),
+                        header().string(HttpHeaders.CACHE_CONTROL, "no-store"),
+                        jsonPath("$.code").value("AUTH_AUTHENTICATION_REQUIRED")
+                )
+                .andReturn();
+
+        assertThat(authenticatedSession.isInvalid()).isTrue();
+        assertThat(result.getRequest().getSession(false)).isNull();
+    }
+
     @RestController
     public static class TestRestController {
 
@@ -393,6 +428,25 @@ class ApiExceptionHandlerTest {
         @GetMapping("/bff/v1/test/errors/unexpected")
         void unexpected() {
             throw new IllegalStateException("unexpected controller failure");
+        }
+
+        @GetMapping("/bff/v1/test/errors/authentication-required")
+        void authenticationRequired() {
+            throw new BusinessException(SecurityErrorCode.AUTHENTICATION_REQUIRED);
+        }
+
+        @GetMapping("/bff/v1/test/errors/learning-authentication-required")
+        void learningAuthenticationRequired() {
+            throw new LearningDownstreamException(
+                    HttpStatus.UNAUTHORIZED,
+                    new ApiErrorResponse(
+                            "AUTH_AUTHENTICATION_REQUIRED",
+                            "expired bearer token",
+                            "/api/v1/me/profile",
+                            "learning-authentication-request"
+                    ),
+                    new IllegalStateException("expired access token")
+            );
         }
 
         @PostMapping("/bff/v1/test/errors/learning-approved-4xx")

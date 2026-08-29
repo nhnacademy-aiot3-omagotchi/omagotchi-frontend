@@ -132,6 +132,17 @@
     window.OmagotchiApi = {
         request,
         optional,
+        account: {
+            get: () => request("/users/me"),
+            changeName: (name) => request("/users/me", {
+                method: "PATCH",
+                body: {name}
+            }),
+            changePassword: (currentPassword, newPassword) => request("/users/me/password", {
+                method: "PATCH",
+                body: {currentPassword, newPassword}
+            })
+        },
         profile: {
             get: () => request("/me/profile"),
             updateNickname: (nickname) => request("/me/nickname", {

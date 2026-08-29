@@ -94,6 +94,46 @@ class FrontendApplicationTests {
 	}
 
 	@Test
+	@DisplayName("계정 설정 Page의 인증 보호와 전용 View")
+	void accountSettingsPageIsProtectedAndRendered() throws Exception {
+		// When: 제거된 공용 설정 Page 요청
+		// Then: 미등록 경로 응답
+		unfilteredMockMvc.perform(get("/settings"))
+				.andExpect(status().isNotFound());
+
+		// When: 인증 없는 계정 설정 Page 요청
+		// Then: Login Page 이동
+		securityMockMvc.perform(get("/settings/account"))
+				.andExpect(status().is3xxRedirection())
+				.andExpect(redirectedUrl("/login"));
+
+		// When: 인증된 계정 설정 Page 요청
+		// Then: 전용 View와 읽기 전용 이메일 표시
+		unfilteredMockMvc.perform(get("/settings/account"))
+				.andExpect(status().isOk())
+				.andExpect(view().name("pages/auth/accountSettings"))
+				.andExpect(content().string(org.hamcrest.Matchers.containsString(
+						"data-account-settings"
+				)))
+				.andExpect(content().string(org.hamcrest.Matchers.containsString(
+						"/js/accountSettings.js"
+				)))
+				.andExpect(content().string(org.hamcrest.Matchers.containsString(
+						"data-settings-email"
+				)))
+				.andExpect(content().string(org.hamcrest.Matchers.containsString(
+						"href=\"/home?overlay=settings\""
+				)))
+				.andExpect(content().string(org.hamcrest.Matchers.not(
+						org.hamcrest.Matchers.containsString("type=\"email\"")
+				)));
+
+		// Then: 계정 설정 JavaScript 정적 Resource 제공
+		mockMvc.perform(get("/js/accountSettings.js"))
+				.andExpect(status().isOk());
+	}
+
+	@Test
 	@DisplayName("시스템 관리자 Dashboard는 SYSTEM_ADMIN에게만 전용 View를 반환")
 	void systemAdminDashboardRequiresSystemAdminRole() throws Exception {
 		securityMockMvc.perform(get("/system-admin-dashboard"))
