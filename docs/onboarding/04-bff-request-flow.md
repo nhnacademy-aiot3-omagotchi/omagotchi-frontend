@@ -187,10 +187,12 @@ sequenceDiagram
     R-->>S: Access Token
     S->>H: 내 Profile 조회
     H->>L: GET /api/v1/user-profiles/me/profile + Bearer Token
-    L-->>S: approvedCohort.cohortId
+    L-->>H: approvedCohort.cohortId
+    H-->>S: approvedCohort.cohortId
     S->>H: 기수 ID + 날짜 + Pagination으로 출결 조회
     H->>L: GET /api/v1/cohorts/{cohortId}/attendance-records/me
-    L-->>S: items + page
+    L-->>H: items + page
+    H-->>S: items + page
     S-->>C: AttendanceRecordPageResponse
     C-->>JS: 200 JSON
 ```
