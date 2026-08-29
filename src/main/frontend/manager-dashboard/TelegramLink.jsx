@@ -48,24 +48,24 @@ export function TelegramLink({
   error = null,
   onIssue,
   onRetry,
-  now = Date.now(),
   embedded = false
 }) {
   const [copied, setCopied] = useState(false);
-  const [clockNow, setClockNow] = useState(now);
+  const [clockNow, setClockNow] = useState(() => Date.now());
 
   useEffect(() => {
-    setClockNow(now);
-
     const expiresAt = Date.parse(token?.expiresAt);
-    if (!Number.isFinite(expiresAt) || expiresAt <= now) return undefined;
+    const currentTime = Date.now();
+    setClockNow(currentTime);
+
+    if (!Number.isFinite(expiresAt) || expiresAt <= currentTime) return undefined;
 
     const timerId = window.setTimeout(
       () => setClockNow(Date.now()),
-      expiresAt - now + 50
+      expiresAt - currentTime + 50
     );
     return () => window.clearTimeout(timerId);
-  }, [token?.expiresAt, now]);
+  }, [token?.expiresAt]);
 
   const linked = Boolean(link);
   const expired = Boolean(token) && isExpired(token.expiresAt, clockNow);
