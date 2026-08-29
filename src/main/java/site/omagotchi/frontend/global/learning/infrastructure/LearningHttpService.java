@@ -38,6 +38,27 @@ public interface LearningHttpService {
             @RequestBody UpdateNicknameRequest request
     );
 
+    @GetExchange("/telegram/link")
+    JsonNode getMyTelegramLink(
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization
+    );
+
+    @PostExchange("/telegram/link-token")
+    JsonNode issueTelegramLinkToken(
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization
+    );
+
+    @PatchExchange("/telegram/link/notification")
+    JsonNode updateTelegramNotification(
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
+            @RequestBody JsonNode request
+    );
+
+    @DeleteExchange("/telegram/link")
+    JsonNode disconnectTelegram(
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization
+    );
+
     @GetExchange("/cohorts")
     JsonNode getCohorts(@RequestHeader(HttpHeaders.AUTHORIZATION) String authorization);
 

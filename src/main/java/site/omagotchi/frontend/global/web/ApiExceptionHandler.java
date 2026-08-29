@@ -87,7 +87,8 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
             Map.entry("DAILY_QUEST_ALREADY_CLAIMED", 409),
             Map.entry("DAILY_QUEST_EXPIRED", 409),
             Map.entry("USER_PROFILE_INVALID_NICKNAME", 400),
-            Map.entry("USER_PROFILE_DUPLICATE_NICKNAME", 409)
+            Map.entry("USER_PROFILE_DUPLICATE_NICKNAME", 409),
+            Map.entry("TELEGRAM_USER_LINK_NOT_FOUND", 404)
     );
 
     // 클라이언트 공개 ErrorCode와 응답 방식이 확정된 실패 처리
