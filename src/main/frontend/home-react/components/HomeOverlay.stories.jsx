@@ -122,7 +122,18 @@ const meta = {
   title: "Home/HomeOverlay",
   component: HomeOverlay,
   decorators: [
-    (Story) => <div className="home-page" style={{ minHeight: "100vh", background: "#087046" }}><Story /></div>
+    (Story) => (
+      <div className="home-page" style={{ minHeight: "100vh", background: "#087046" }}>
+        {/* pages/app/home.html 의 <div class="home-overlay-root" data-home-overlay-root> 를 재현한다.
+            --overlay-ink / --overlay-muted / --overlay-paper / --overlay-paper-soft 가
+            home-overlay-theme.css 에서 이 래퍼에만 정의돼 있어, 빠뜨리면 변수가 미정의가 되어
+            스토리북에서만 글자색이 달라지고 일부 배경·테두리가 통째로 사라진다.
+            .home-overlay-root 는 기본이 display:none 이므로 is-open 이 반드시 필요하다. */}
+        <div className="home-overlay-root is-open" data-home-overlay-root aria-live="polite">
+          <Story />
+        </div>
+      </div>
+    )
   ],
   args: {
     type: "help",
