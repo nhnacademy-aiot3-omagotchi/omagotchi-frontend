@@ -8,10 +8,9 @@ import org.springframework.web.service.annotation.GetExchange;
 import org.springframework.web.service.annotation.HttpExchange;
 import org.springframework.web.service.annotation.PatchExchange;
 import org.springframework.web.service.annotation.PostExchange;
+import site.omagotchi.frontend.telegram.infrastructure.request.TelegramNotificationRequest;
 import site.omagotchi.frontend.telegram.infrastructure.response.TelegramLinkTokenResponse;
 import site.omagotchi.frontend.telegram.infrastructure.response.TelegramUserLinkResponse;
-
-import java.util.Map;
 
 /**
  * Learning의 Telegram 연동 계약.
@@ -44,7 +43,7 @@ public interface TelegramHttpService {
     @PatchExchange("/telegram/link/notification")
     TelegramUserLinkResponse updateNotification(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
-            @RequestBody Map<String, Boolean> body
+            @RequestBody TelegramNotificationRequest body
     );
 
     @DeleteExchange("/telegram/link")

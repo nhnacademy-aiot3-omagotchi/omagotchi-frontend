@@ -8,10 +8,10 @@ import site.omagotchi.frontend.global.learning.application.LearningSessionAuthor
 import site.omagotchi.frontend.global.learning.infrastructure.LearningDownstreamException;
 import site.omagotchi.frontend.global.learning.infrastructure.LearningGatewayCallExecutor;
 import site.omagotchi.frontend.telegram.infrastructure.TelegramHttpService;
+import site.omagotchi.frontend.telegram.infrastructure.request.TelegramNotificationRequest;
 import site.omagotchi.frontend.telegram.infrastructure.response.TelegramLinkTokenResponse;
 import site.omagotchi.frontend.telegram.infrastructure.response.TelegramUserLinkResponse;
 
-import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -56,7 +56,7 @@ public class TelegramBffService {
     public TelegramUserLinkResponse updateNotification(HttpServletRequest request, boolean enabled) {
         return callExecutor.execute(() -> telegramHttpService.updateNotification(
                 bearer(request),
-                Map.of("enabled", enabled)
+                new TelegramNotificationRequest(enabled)
         ));
     }
 
