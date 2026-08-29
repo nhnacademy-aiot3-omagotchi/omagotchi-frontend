@@ -3,8 +3,11 @@ package site.omagotchi.frontend.auth.infrastructure;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
+import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClientResponseException;
+import site.omagotchi.frontend.auth.application.AuthErrorCode;
+import site.omagotchi.frontend.auth.application.EmailVerificationCooldownException;
 import site.omagotchi.frontend.global.exception.ApiErrorResponse;
 import site.omagotchi.frontend.global.exception.BusinessException;
 import site.omagotchi.frontend.global.exception.CommonErrorCode;
@@ -38,6 +41,82 @@ class IdentityAuthErrorResolver {
             throw new BusinessException(CommonErrorCode.DOWNSTREAM_INVALID_RESPONSE, exception);
         }
 
+        return resolveAccepted(exception, response, actualStatus, acceptedErrorCodes);
+    }
+
+    ErrorCode resolveBearer(
+            RestClientResponseException exception,
+            ErrorCode... acceptedErrorCodes
+    ) {
+        ApiErrorResponse response = errorDecoder.decode(exception);
+        return resolveAccepted(
+                exception,
+                response,
+                exception.getStatusCode(),
+                acceptedErrorCodes
+        );
+    }
+
+    BusinessException resolveFailure(
+            RestClientResponseException exception,
+            ErrorCode... acceptedErrorCodes
+    ) {
+        return toBusinessException(
+                exception,
+                resolve(exception, acceptedErrorCodes)
+        );
+    }
+
+    BusinessException resolveBearerFailure(
+            RestClientResponseException exception,
+            ErrorCode... acceptedErrorCodes
+    ) {
+        return toBusinessException(
+                exception,
+                resolveBearer(exception, acceptedErrorCodes)
+        );
+    }
+
+    long retryAfterSeconds(RestClientResponseException exception) {
+        HttpHeaders headers = exception.getResponseHeaders();
+        String value = headers == null ? null : headers.getFirst(HttpHeaders.RETRY_AFTER);
+        if (value == null) {
+            throw new BusinessException(CommonErrorCode.DOWNSTREAM_INVALID_RESPONSE, exception);
+        }
+        try {
+            long seconds = Long.parseLong(value);
+            if (seconds < 0) {
+                throw new NumberFormatException("negative Retry-After");
+            }
+            return seconds;
+        } catch (NumberFormatException invalidHeader) {
+            throw new BusinessException(
+                    CommonErrorCode.DOWNSTREAM_INVALID_RESPONSE,
+                    "Identity Retry-After Header 형식 오류",
+                    exception
+            );
+        }
+    }
+
+    private BusinessException toBusinessException(
+            RestClientResponseException exception,
+            ErrorCode errorCode
+    ) {
+        if (errorCode == AuthErrorCode.EMAIL_VERIFICATION_COOLDOWN_ACTIVE) {
+            return new EmailVerificationCooldownException(
+                    retryAfterSeconds(exception),
+                    exception
+            );
+        }
+        return new BusinessException(errorCode, exception);
+    }
+
+    private ErrorCode resolveAccepted(
+            RestClientResponseException exception,
+            ApiErrorResponse response,
+            HttpStatusCode actualStatus,
+            ErrorCode... acceptedErrorCodes
+    ) {
         // 호출별 공개 Error Code 확인
         ErrorCode matchedErrorCode = null;
         for (ErrorCode acceptedErrorCode : acceptedErrorCodes) {

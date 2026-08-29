@@ -35,6 +35,31 @@ public enum AuthErrorCode implements ErrorCode {
             ErrorType.CONFLICT,
             "ACCOUNT_DUPLICATE_EMAIL",
             "이미 사용 중인 이메일입니다."
+    ),
+    CURRENT_PASSWORD_MISMATCH(
+            ErrorType.INVALID_INPUT,
+            "ACCOUNT_CURRENT_PASSWORD_MISMATCH",
+            "현재 비밀번호가 올바르지 않습니다."
+    ),
+    PASSWORD_UNCHANGED(
+            ErrorType.INVALID_INPUT,
+            "ACCOUNT_PASSWORD_UNCHANGED",
+            "새 비밀번호는 현재 비밀번호와 달라야 합니다."
+    ),
+    PASSWORD_CHANGE_NOT_ALLOWED(
+            ErrorType.AUTHORIZATION,
+            "ACCOUNT_PASSWORD_CHANGE_NOT_ALLOWED",
+            "현재 계정 상태에서는 비밀번호를 변경할 수 없습니다."
+    ),
+    EMAIL_VERIFICATION_INVALID(
+            ErrorType.INVALID_INPUT,
+            "EMAIL_VERIFICATION_INVALID",
+            "인증 코드가 올바르지 않거나 만료되었습니다."
+    ),
+    EMAIL_VERIFICATION_COOLDOWN_ACTIVE(
+            ErrorType.RATE_LIMIT,
+            "EMAIL_VERIFICATION_COOLDOWN_ACTIVE",
+            "잠시 후 인증 코드를 다시 요청해 주세요."
     );
 
     private final ErrorType type;

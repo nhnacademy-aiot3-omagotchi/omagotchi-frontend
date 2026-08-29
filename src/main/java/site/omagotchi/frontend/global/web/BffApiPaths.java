@@ -6,10 +6,10 @@ import org.springframework.web.util.ServletRequestPathUtils;
 import org.springframework.web.util.pattern.PathPattern;
 import org.springframework.web.util.pattern.PathPatternParser;
 
-// Browser와 Frontend 사이의 버전별 BFF API 경로 계약
+// Browser와 Frontend 사이의 모든 버전 BFF API 경로 계약
 public final class BffApiPaths {
 
-    public static final String PREFIX = "/bff/v1";
+    public static final String PREFIX = "/bff";
     public static final String PATTERN = PREFIX + "/**";
 
     private static final PathPattern PATH_PATTERN =

@@ -9,6 +9,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 class ErrorHttpMapperTest {
 
     @Test
+    @DisplayName("Rate Limit 오류를 429 상태로 변환")
+    void mapsRateLimitErrorType() {
+        assertThat(ErrorHttpMapper.toHttpStatus(ErrorType.RATE_LIMIT))
+                .isEqualTo(HttpStatus.TOO_MANY_REQUESTS);
+    }
+
+    @Test
     @DisplayName("지원하는 Spring MVC 상태를 공통 오류로 변환")
     void mapsSupportedFrameworkStatusToCommonErrorCode() {
         assertThat(ErrorHttpMapper.findErrorCode(HttpStatus.BAD_REQUEST))

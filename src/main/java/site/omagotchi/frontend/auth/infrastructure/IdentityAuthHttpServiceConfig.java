@@ -11,7 +11,11 @@ import java.nio.charset.StandardCharsets;
 @Configuration(proxyBeanMethods = false)
 @ImportHttpServices(
         group = IdentityAuthHttpServiceConfig.GROUP_NAME,
-        types = IdentityAuthHttpService.class
+        types = {
+                IdentityAuthHttpService.class,
+                IdentitySignupV2HttpService.class,
+                IdentityAccountHttpService.class
+        }
 )
 class IdentityAuthHttpServiceConfig {
 

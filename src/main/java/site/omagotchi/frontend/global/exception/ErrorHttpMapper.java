@@ -20,6 +20,7 @@ public final class ErrorHttpMapper {
             case NOT_ACCEPTABLE -> HttpStatus.NOT_ACCEPTABLE;
             case UNSUPPORTED_MEDIA_TYPE -> HttpStatus.UNSUPPORTED_MEDIA_TYPE;
             case CONFLICT -> HttpStatus.CONFLICT;
+            case RATE_LIMIT -> HttpStatus.TOO_MANY_REQUESTS;
             case AUTHENTICATION -> HttpStatus.UNAUTHORIZED;
             case AUTHORIZATION -> HttpStatus.FORBIDDEN;
             case BAD_GATEWAY -> HttpStatus.BAD_GATEWAY;
