@@ -31,6 +31,7 @@ import site.omagotchi.frontend.global.exception.ApiErrorResponse;
 import site.omagotchi.frontend.global.exception.BusinessException;
 import site.omagotchi.frontend.global.exception.CommonErrorCode;
 import site.omagotchi.frontend.global.learning.infrastructure.LearningDownstreamException;
+import site.omagotchi.frontend.global.security.BrowserSessionInvalidator;
 import site.omagotchi.frontend.global.security.SecurityErrorCode;
 
 import java.util.Set;
@@ -49,6 +50,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc(addFilters = false)
 @Import({
         ApiExceptionHandler.class,
+        BrowserSessionInvalidator.class,
         ApiExceptionHandlerTest.TestRestController.class
 })
 class ApiExceptionHandlerTest {
@@ -253,7 +255,8 @@ class ApiExceptionHandlerTest {
         // When: 공개 ErrorCode가 확정된 5xx 오류의 공통 응답 변환
         ResponseEntity<ApiErrorResponse> response = handler.handleBusinessException(
                 new BusinessException(CommonErrorCode.SERVICE_UNAVAILABLE, cause),
-                request
+                request,
+                new MockHttpServletResponse()
         );
 
         // Then: 공개 상태와 원본 예외 기록
