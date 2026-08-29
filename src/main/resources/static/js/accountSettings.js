@@ -48,6 +48,124 @@ function handleAuthenticationFailure(error) {
     return true;
 }
 
+function formatLinkedAt(value) {
+    if (!value) return "";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "";
+    return `${date.getFullYear()}년 ${date.getMonth() + 1}월 ${date.getDate()}일 연결`;
+}
+
+export function initializeTelegramSettings(root = document.querySelector("[data-telegram-section]")) {
+    if (!root || !window.OmagotchiApi?.telegram) return;
+
+    const api = window.OmagotchiApi.telegram;
+    const status = root.querySelector("[data-telegram-status]");
+    const toggle = root.querySelector("[data-telegram-toggle]");
+    const toggleLabel = root.querySelector("[data-telegram-toggle-label]");
+    const help = root.querySelector("[data-telegram-help]");
+    const connectButton = root.querySelector("[data-telegram-connect]");
+    const disconnectButton = root.querySelector("[data-telegram-disconnect]");
+    const feedback = root.querySelector("[data-telegram-feedback]");
+
+    // 숨기지 않고 상태로 보여준다. hidden은 CSS가 display를 지정하면 무력해지므로
+    // 실행 가능 여부는 disabled로만 표현한다.
+    function renderLinked(link) {
+        status.textContent = formatLinkedAt(link.linkedAt) || "연동됨";
+        toggle.disabled = false;
+        toggle.checked = link.notificationEnabled !== false;
+        toggleLabel.textContent = toggle.checked ? "받는 중" : "받지 않음";
+        help.hidden = true;
+        connectButton.hidden = true;
+        disconnectButton.hidden = false;
+        disconnectButton.disabled = false;
+    }
+
+    function renderUnlinked() {
+        status.textContent = "연동되지 않음";
+        toggle.disabled = true;
+        toggle.checked = false;
+        toggleLabel.textContent = "연동 후 사용할 수 있습니다";
+        help.hidden = false;
+        connectButton.hidden = false;
+        connectButton.disabled = false;
+        disconnectButton.hidden = true;
+    }
+
+    async function loadLink() {
+        toggle.disabled = true;
+        connectButton.disabled = true;
+        setFeedback(feedback, "");
+        try {
+            // 미연동은 204라 본문이 비어 온다. 오류가 아니므로 catch로 다루지 않는다.
+            const link = await api.getLink();
+            if (link) renderLinked(link);
+            else renderUnlinked();
+        } catch (error) {
+            if (handleAuthenticationFailure(error)) return;
+            renderUnlinked();
+            setFeedback(feedback, error?.message || "연동 상태를 불러오지 못했습니다.", "error");
+        }
+    }
+
+    connectButton.addEventListener("click", async () => {
+        connectButton.disabled = true;
+        connectButton.textContent = "처리 중…";
+        setFeedback(feedback, "");
+        try {
+            const issued = await api.issueLinkToken();
+            // 새 탭으로 연다. 같은 탭을 쓰면 돌아올 때 이 화면 상태가 사라진다.
+            window.open(issued.linkUrl, "_blank", "noopener");
+            setFeedback(
+                feedback,
+                "텔레그램에서 [시작]을 누른 뒤 이 페이지를 새로고침하세요.",
+                "success"
+            );
+        } catch (error) {
+            if (handleAuthenticationFailure(error)) return;
+            setFeedback(feedback, error?.message || "연동 링크를 발급하지 못했습니다.", "error");
+        } finally {
+            connectButton.disabled = false;
+            connectButton.textContent = "텔레그램 연동하기";
+        }
+    });
+
+    toggle.addEventListener("change", async () => {
+        const next = toggle.checked;
+        toggle.disabled = true;
+        setFeedback(feedback, "");
+        try {
+            await api.setNotification(next);
+            toggleLabel.textContent = next ? "받는 중" : "받지 않음";
+            setFeedback(feedback, next ? "알림을 켰습니다." : "알림을 껐습니다.", "success");
+        } catch (error) {
+            if (handleAuthenticationFailure(error)) return;
+            toggle.checked = !next;
+            setFeedback(feedback, error?.message || "알림 설정을 변경하지 못했습니다.", "error");
+        } finally {
+            toggle.disabled = false;
+        }
+    });
+
+    disconnectButton.addEventListener("click", async () => {
+        disconnectButton.disabled = true;
+        disconnectButton.textContent = "처리 중…";
+        setFeedback(feedback, "");
+        try {
+            await api.disconnect();
+            renderUnlinked();
+            setFeedback(feedback, "연동을 해제했습니다.", "success");
+        } catch (error) {
+            if (handleAuthenticationFailure(error)) return;
+            disconnectButton.disabled = false;
+            setFeedback(feedback, error?.message || "연동을 해제하지 못했습니다.", "error");
+        } finally {
+            disconnectButton.textContent = "연동 해제";
+        }
+    });
+
+    loadLink();
+}
+
 export function initializeAccountSettings(root = document.querySelector("[data-account-settings]")) {
     if (!root || !window.OmagotchiApi?.account) return;
 
@@ -164,4 +282,5 @@ export function initializeAccountSettings(root = document.querySelector("[data-a
 
 if (typeof document !== "undefined") {
     initializeAccountSettings();
+    initializeTelegramSettings();
 }
