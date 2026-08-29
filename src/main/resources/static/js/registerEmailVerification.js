@@ -45,6 +45,10 @@ export function parseRetryAfter(value) {
     return Number.isSafeInteger(seconds) && seconds >= 0 ? seconds : null;
 }
 
+export function formatRetryAfterMessage(seconds) {
+    return `인증번호 요청은 ${seconds}초 뒤 다시 시도해 주세요.`;
+}
+
 export function maskEmail(email) {
     const separatorIndex = email.indexOf("@");
     if (separatorIndex <= 0) {

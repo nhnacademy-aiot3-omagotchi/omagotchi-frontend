@@ -1,5 +1,6 @@
 package site.omagotchi.frontend.auth.infrastructure;
 
+import com.sun.net.httpserver.HttpServer;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -12,6 +13,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.test.context.ActiveProfiles;
@@ -19,6 +21,8 @@ import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.RestClient;
 import org.springframework.web.client.support.RestClientHttpServiceGroupConfigurer;
 import org.springframework.web.context.WebApplicationContext;
 import site.omagotchi.frontend.auth.application.result.BrowserSessionTokenBundle;
@@ -26,12 +30,16 @@ import site.omagotchi.frontend.auth.domain.GlobalRole;
 import site.omagotchi.frontend.auth.infrastructure.request.IdentitySignupRequest;
 import site.omagotchi.frontend.auth.presentation.security.BrowserSessionTokens;
 
+import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
@@ -90,6 +98,9 @@ class IdentityAuthHttpServiceConfigTest {
 
     @Autowired
     private IdentityAccountHttpService accountHttpService;
+
+    @Autowired
+    private HttpComponentsClientHttpRequestFactory identityClientHttpRequestFactory;
 
     @Autowired
     private MockHttpServiceConfiguration mockHttpServiceConfiguration;
@@ -253,6 +264,44 @@ class IdentityAuthHttpServiceConfigTest {
                 );
 
         server.verify();
+    }
+
+    @Test
+    @DisplayName("Identity 429 응답을 HTTP Client에서 자동 재시도하지 않는다")
+    void doesNotAutomaticallyRetryIdentityRateLimit() throws IOException {
+        AtomicInteger requestCount = new AtomicInteger();
+        HttpServer identityServer = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+        identityServer.createContext("/email-otp", exchange -> {
+            requestCount.incrementAndGet();
+            byte[] responseBody = """
+                    {
+                      "code": "EMAIL_VERIFICATION_COOLDOWN_ACTIVE",
+                      "message": "잠시 후 인증 코드를 다시 요청해 주세요."
+                    }
+                    """.getBytes(StandardCharsets.UTF_8);
+            exchange.getResponseHeaders().add(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);
+            exchange.getResponseHeaders().add(HttpHeaders.RETRY_AFTER, "1");
+            exchange.sendResponseHeaders(HttpStatus.TOO_MANY_REQUESTS.value(), responseBody.length);
+            exchange.getResponseBody().write(responseBody);
+            exchange.close();
+        });
+        identityServer.start();
+
+        try {
+            RestClient client = RestClient.builder()
+                    .requestFactory(identityClientHttpRequestFactory)
+                    .baseUrl("http://127.0.0.1:" + identityServer.getAddress().getPort())
+                    .build();
+
+            assertThatThrownBy(() -> client.post()
+                    .uri("/email-otp")
+                    .retrieve()
+                    .toBodilessEntity()
+            ).isInstanceOf(HttpClientErrorException.TooManyRequests.class);
+            assertThat(requestCount).hasValue(1);
+        } finally {
+            identityServer.stop(0);
+        }
     }
 
     @Test

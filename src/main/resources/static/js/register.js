@@ -2,6 +2,7 @@ import {
     EMAIL_OTP_LENGTH,
     buildVerifiedSignupPayload,
     formatCountdown,
+    formatRetryAfterMessage,
     isEmailChallengeResponse,
     maskEmail,
     normalizeSignupDetails,
@@ -181,7 +182,7 @@ if (form) {
             if (error instanceof ApiRequestError && error.retryAfterSeconds !== null) {
                 applyCooldown(error.retryAfterSeconds);
                 setFeedback(
-                    `${error.message} ${error.retryAfterSeconds}초 후 다시 시도할 수 있습니다.`,
+                    formatRetryAfterMessage(error.retryAfterSeconds),
                     "error"
                 );
             } else {

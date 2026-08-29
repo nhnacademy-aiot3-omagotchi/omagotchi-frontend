@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import {
     buildVerifiedSignupPayload,
     formatCountdown,
+    formatRetryAfterMessage,
     isEmailChallengeResponse,
     maskEmail,
     normalizeSignupDetails,
@@ -62,6 +63,13 @@ test("Retry-After 초 단위 값만 수용한다", () => {
     assert.equal(parseRetryAfter("37"), 37);
     assert.equal(parseRetryAfter("-1"), null);
     assert.equal(parseRetryAfter("tomorrow"), null);
+});
+
+test("Retry-After 남은 시간을 재시도 안내 문구로 표시한다", () => {
+    assert.equal(
+        formatRetryAfterMessage(37),
+        "인증번호 요청은 37초 뒤 다시 시도해 주세요."
+    );
 });
 
 test("이메일 로컬 파트만 가려서 표시한다", () => {
