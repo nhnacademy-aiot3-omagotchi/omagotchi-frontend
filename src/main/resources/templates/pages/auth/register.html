@@ -3,12 +3,14 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta th:if="${_csrf != null}" name="_csrf" th:content="${_csrf.token}" />
+    <meta th:if="${_csrf != null}" name="_csrf_header" th:content="${_csrf.headerName}" />
     <title>Omagotchi 회원가입</title>
 
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon_11.gif" th:href="@{/favicon_11.gif}" />
     <link rel="stylesheet" href="/css/gameFont.css" th:href="@{/css/gameFont.css}" />
-    <link rel="stylesheet" href="/css/ui/design-system.css?v=20260814-2" th:href="@{/css/ui/design-system.css(v='20260814-2')}" />
-    <link rel="stylesheet" href="/css/auth.css?v=20260814-1" th:href="@{/css/auth.css(v='20260814-1')}" />
+    <link rel="stylesheet" href="/css/ui/design-system.css?v=20260829-1" th:href="@{/css/ui/design-system.css(v='20260829-1')}" />
+    <link rel="stylesheet" href="/css/auth.css?v=20260829-1" th:href="@{/css/auth.css(v='20260829-1')}" />
     <link rel="stylesheet" href="/css/passwordToggle.css" th:href="@{/css/passwordToggle.css}" />
     <link rel="stylesheet" href="/css/cursor.css" th:href="@{/css/cursor.css}" />
 </head>
@@ -28,9 +30,14 @@
         </aside>
 
         <form class="auth-form register-form auth-panel ui-auth-card ui-auth-form" method="post"
-              th:action="@{/register}" th:object="${signupForm}">
+              action="/register" th:action="@{/register}" th:object="${signupForm}"
+              data-email-otp-path="/bff/v2/auth/signup/email-otp"
+              th:data-email-otp-path="@{/bff/v2/auth/signup/email-otp}"
+              data-signup-path="/bff/v2/auth/signup"
+              th:data-signup-path="@{/bff/v2/auth/signup}"
+              data-login-path="/login" th:data-login-path="@{/login}">
             <h1 id="register-title">계정을 생성하세요</h1>
-            <p class="auth-subtitle" data-auth-feedback
+            <p class="auth-subtitle" data-auth-feedback role="status" aria-live="polite"
                th:classappend="${authFeedback != null} ? ' auth-error'"
                th:text="${authFeedback ?: '오마고치와 함께하는 학습'}">오마고치와 함께하는 학습</p>
 
@@ -39,41 +46,81 @@
                 <span class="is-active ui-auth-tab">회원가입</span>
             </div>
 
-            <div class="input-group auth-input-group ui-field">
-                <label class="sr-only" for="email">이메일</label>
-                <input id="email" type="email" placeholder="이메일" autocomplete="username"
-                       required th:field="*{email}" />
-                <p class="auth-field-error" th:errors="*{email}">이메일 입력 오류</p>
-            </div>
-
-            <div class="input-group auth-input-group ui-field">
-                <label class="sr-only" for="name">사용자 이름</label>
-                <input id="name" type="text" placeholder="사용자 이름" autocomplete="name"
-                       required th:field="*{name}" />
-                <p class="auth-field-error" th:errors="*{name}">이름 입력 오류</p>
-            </div>
-
-            <div class="input-group auth-input-group ui-field">
-                <label class="sr-only" for="register-password">비밀번호</label>
-                <div class="password-input-wrap">
-                    <input id="register-password" type="password" name="password" placeholder="비밀번호"
-                           autocomplete="new-password" required />
-                    <button class="password-visibility-toggle" type="button" data-password-toggle
-                            aria-label="비밀번호 표시" aria-pressed="false">
-                        <span class="password-eye" aria-hidden="true"></span>
-                    </button>
+            <div class="ui-email-verification" data-signup-details-step>
+                <div class="input-group auth-input-group ui-field">
+                    <label class="sr-only" for="email">이메일</label>
+                    <input id="email" type="email" placeholder="이메일" autocomplete="username"
+                           required th:field="*{email}" />
+                    <p class="auth-field-error" th:errors="*{email}">이메일 입력 오류</p>
                 </div>
-                <p class="auth-field-error" th:errors="*{password}">비밀번호 입력 오류</p>
+
+                <div class="input-group auth-input-group ui-field">
+                    <label class="sr-only" for="name">사용자 이름</label>
+                    <input id="name" type="text" placeholder="사용자 이름" autocomplete="name"
+                           required th:field="*{name}" />
+                    <p class="auth-field-error" th:errors="*{name}">이름 입력 오류</p>
+                </div>
+
+                <div class="input-group auth-input-group ui-field">
+                    <label class="sr-only" for="register-password">비밀번호</label>
+                    <div class="password-input-wrap">
+                        <input id="register-password" type="password" name="password" placeholder="비밀번호"
+                               autocomplete="new-password" required />
+                        <button class="password-visibility-toggle" type="button" data-password-toggle
+                                aria-label="비밀번호 표시" aria-pressed="false">
+                            <span class="password-eye" aria-hidden="true"></span>
+                        </button>
+                    </div>
+                    <p class="auth-field-error" th:errors="*{password}">비밀번호 입력 오류</p>
+                </div>
+
+                <button class="auth-button register-button auth-submit-button ui-button ui-button--primary"
+                        type="button" data-email-otp-request>
+                    인증번호 받기
+                </button>
             </div>
 
-            <button class="auth-button register-button auth-submit-button ui-button ui-button--primary" type="submit">
-                계정 생성하기
-            </button>
+            <section class="ui-email-verification" data-signup-otp-step hidden
+                     aria-labelledby="email-verification-title">
+                <div class="ui-email-verification__summary">
+                    <p id="email-verification-title">이메일로 인증번호를 보냈습니다.</p>
+                    <strong data-email-otp-address></strong>
+                </div>
+
+                <div class="input-group auth-input-group ui-field">
+                    <label class="sr-only" for="email-otp-code">인증번호</label>
+                    <input id="email-otp-code" type="text" name="code" placeholder="6자리 인증번호"
+                           inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}"
+                           minlength="6" maxlength="6" aria-describedby="email-otp-timer" required disabled />
+                </div>
+
+                <p id="email-otp-timer" class="ui-email-verification__timer">
+                    남은 시간 <strong data-email-otp-countdown>--:--</strong>
+                </p>
+
+                <button class="auth-button register-button auth-submit-button ui-button ui-button--primary"
+                        type="submit" data-verified-signup disabled>
+                    인증하고 계정 만들기
+                </button>
+
+                <div class="ui-email-verification__resend">
+                    <span>메일이 오지 않았나요?</span>
+                    <button type="button" data-email-otp-resend>인증번호 재전송</button>
+                </div>
+
+                <button class="ui-email-verification__edit" type="button" data-signup-edit-details>
+                    이메일 및 가입 정보 수정
+                </button>
+            </section>
+
+            <noscript class="auth-field-error">
+                이메일 인증 회원가입을 진행하려면 JavaScript를 활성화해 주세요.
+            </noscript>
         </form>
     </section>
 </main>
 
-<script src="/js/register.js" th:src="@{/js/register.js}"></script>
+<script type="module" src="/js/register.js?v=20260829-1" th:src="@{/js/register.js(v='20260829-1')}"></script>
 <script src="/js/passwordToggle.js" th:src="@{/js/passwordToggle.js}"></script>
 </body>
 </html>
