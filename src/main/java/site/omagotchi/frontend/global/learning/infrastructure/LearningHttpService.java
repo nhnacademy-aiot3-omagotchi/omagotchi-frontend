@@ -20,12 +20,18 @@ import org.springframework.web.bind.annotation.RequestPart;
 import site.omagotchi.frontend.profile.infrastructure.request.UpdateNicknameRequest;
 import site.omagotchi.frontend.profile.infrastructure.response.UserNicknameResponse;
 import site.omagotchi.frontend.profile.infrastructure.response.UserProfileResponse;
+import site.omagotchi.frontend.cohort.infrastructure.response.UserAccessContextResponse;
 
 import java.util.List;
 import java.util.UUID;
 
 @HttpExchange("/api/v1")
 public interface LearningHttpService {
+
+    @GetExchange("/cohorts/me/access-context")
+    UserAccessContextResponse getMyAccessContext(
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization
+    );
 
     @GetExchange("/user-profiles/me/profile")
     UserProfileResponse getMyProfile(

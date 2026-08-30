@@ -105,7 +105,7 @@ class BrowserSessionRedisIntegrationTest {
         // Then: Session ID 교체와 Browser 응답의 Token 비노출
         assertThat(loginResponse.getStatus().value()).isEqualTo(302);
         assertThat(loginResponse.getResponseHeaders().getLocation())
-                .hasPath("/home");
+                .hasPath("/authenticated-landing");
         assertThat(authenticatedSessionCookie.getValue())
                 .isNotEqualTo(anonymousSessionCookie.getValue());
         assertThat(authenticatedSessionCookie.isHttpOnly()).isTrue();

@@ -150,6 +150,9 @@
                 body: {nickname}
             })
         },
+        access: {
+            getContext: () => request("/cohorts/me/access-context")
+        },
         character: {
             list: () => request("/gamification/characters"),
             saveSelection: (payload) => request("/gamification/characters/representative", {

@@ -10,6 +10,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import site.omagotchi.frontend.global.learning.application.LearningProxyBffService;
+import site.omagotchi.frontend.cohort.application.UserAccessContextBffService;
+import site.omagotchi.frontend.cohort.infrastructure.response.UserAccessContextResponse;
 
 @RestController
 @RequiredArgsConstructor
@@ -17,6 +19,12 @@ import site.omagotchi.frontend.global.learning.application.LearningProxyBffServi
 public class CohortBffController {
 
     private final LearningProxyBffService proxy;
+    private final UserAccessContextBffService accessContextService;
+
+    @GetMapping("/me/access-context")
+    public UserAccessContextResponse getMyAccessContext(HttpServletRequest request) {
+        return accessContextService.getContext(request);
+    }
 
     @GetMapping
     public JsonNode getCohorts(HttpServletRequest request) {

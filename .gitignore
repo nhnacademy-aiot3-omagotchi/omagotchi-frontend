@@ -64,3 +64,6 @@ mise.local.toml
 
 *storybook.log
 storybook-static
+
+# Local portfolio review artifacts
+.portfolio-review.*/

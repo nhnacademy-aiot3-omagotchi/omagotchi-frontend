@@ -16,6 +16,7 @@ import org.springframework.web.client.support.RestClientAdapter;
 import org.springframework.web.service.invoker.HttpServiceProxyFactory;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
+import site.omagotchi.frontend.cohort.infrastructure.response.UserAccessContextResponse;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -55,6 +56,34 @@ class LearningHttpServiceContractTest {
                 .builderFor(RestClientAdapter.create(builder.build()))
                 .build()
                 .createClient(LearningHttpService.class);
+    }
+
+    @Test
+    @DisplayName("내 접근 컨텍스트 경로와 응답 계약을 사용한다")
+    void getsMyAccessContext() {
+        server.expect(once(), requestTo(BASE_URL + "/api/v1/cohorts/me/access-context"))
+                .andExpect(header(HttpHeaders.AUTHORIZATION, BEARER))
+                .andRespond(withSuccess("""
+                        {
+                          "globalRole": "USER",
+                          "accessType": "COHORT_MANAGER",
+                          "managedCohorts": [{
+                            "cohortId": 7,
+                            "name": "AIoT 3기",
+                            "startDate": "2026-09-01",
+                            "endDate": "2026-12-31",
+                            "status": "PREPARING"
+                          }],
+                          "studentCohorts": []
+                        }
+                        """, MediaType.APPLICATION_JSON));
+
+        UserAccessContextResponse response = service.getMyAccessContext(BEARER);
+
+        assertThat(response.isCohortManager()).isTrue();
+        assertThat(response.managedCohorts()).extracting("cohortId").containsExactly(7L);
+        assertThat(response.managedCohorts().getFirst().status()).isEqualTo("PREPARING");
+        server.verify();
     }
 
     @Nested
