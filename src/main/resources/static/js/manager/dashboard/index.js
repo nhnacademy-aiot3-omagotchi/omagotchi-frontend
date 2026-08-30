@@ -19,8 +19,13 @@ async function hydrateDashboard(
 ) {
     try {
         const api = globalThis.OmagotchiApi;
-        const cohorts = await api.cohort.list();
-        const source = Array.isArray(cohorts) ? cohorts : [];
+        const accessContext = await api.access.getContext();
+        const source = Array.isArray(accessContext?.managedCohorts)
+            ? accessContext.managedCohorts.map((cohort) => ({
+                ...cohort,
+                id: cohort.cohortId
+            }))
+            : [];
         const applications = [];
         let partialFailure = false;
         let attendanceFailure = null;

@@ -36,13 +36,7 @@ public class WebConfig implements WebMvcConfigurer {
                 .setViewName("pages/auth/accountSettings");
         registry.addViewController("/help")
                 .setViewName("pages/app/help");
-        registry.addViewController("/home")
-                .setViewName("pages/app/home");
         registry.addViewController("/space")
                 .setViewName("pages/app/space");
-
-        // 관리자 Prototype Page
-        registry.addViewController("/manager-dashboard")
-                .setViewName("manager/dashboard/index");
     }
 }

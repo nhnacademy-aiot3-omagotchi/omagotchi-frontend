@@ -74,7 +74,7 @@ class SignupPageMvcTest {
                 // Then: Home Redirect
                 .andExpectAll(
                         status().isFound(),
-                        redirectedUrl("/home")
+                        redirectedUrl("/authenticated-landing")
                 );
     }
 
@@ -116,7 +116,7 @@ class SignupPageMvcTest {
                         .param("password", ""))
                 .andExpectAll(
                         status().isFound(),
-                        redirectedUrl("/home")
+                        redirectedUrl("/authenticated-landing")
                 );
 
         // Then: Signup Use Case 미호출
