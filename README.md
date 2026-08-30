@@ -32,8 +32,11 @@ SPRING_PROFILES_ACTIVE=local ./mvnw spring-boot:run
 - Git 추적 제외: `.env.local`
 - Redis 논리 DB: `SESSION_REDIS_DATABASE`, 로컬 기본값 `0`
 - Identity 주소: `IDENTITY_SERVICE_BASE_URL=http://localhost:8083`
+- Learning 주소: `LEARNING_SERVICE_BASE_URL=http://localhost:8084`
+- AI Chat Gateway 주소: `GATEWAY_SERVICE_BASE_URL=http://localhost:8080`
 - 서비스 인증 정보: Identity와 동일한 `FRONTEND_USERNAME`·`FRONTEND_PASSWORD`
 - 운영 Identity 주소: `lb://identity-service`
+- 운영 Learning 주소: `lb://learning-service`
 - 운영 Service Discovery: `EUREKA_ENABLED=true`, `EUREKA_URL` 필수
 
 ## 디렉터리 구조
@@ -53,7 +56,8 @@ SPRING_PROFILES_ACTIVE=local ./mvnw spring-boot:run
 - 로그아웃 처리: CSRF Token을 포함한 `POST /logout`
 - 인증 사용자 화면: Spring Security의 서버 측 보호
 - Browser 전용 API: `/bff/v1/**`
-- 내부 서비스 호출: Discovery·Client-side Load Balancing 사용
+- 내부 서비스 호출: 담당 Domain Service 직접 호출, Discovery·Client-side Load Balancing 사용
+- AI Chat 호출: 후속 직접 전환 전까지 Gateway 경유
 - Gateway 역할: 외부 `/api/**`·Webhook 경계
 - 금지 사항: Browser JWT 저장, In-memory Session 자동 전환, Secret 하드코딩
 

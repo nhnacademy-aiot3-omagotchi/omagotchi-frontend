@@ -8,6 +8,8 @@ spring:
         base-url: http://localhost:8083
       identity-account-service:
         base-url: http://localhost:8083
+      learning-service:
+        base-url: http://localhost:8084
       gateway-service:
         base-url: http://localhost:8080
   data:
