@@ -1,6 +1,8 @@
 package site.omagotchi.frontend.global.web;
 
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
@@ -27,6 +29,7 @@ import site.omagotchi.frontend.global.exception.ErrorCode;
 import site.omagotchi.frontend.global.exception.ErrorHttpMapper;
 import site.omagotchi.frontend.global.session.SessionStoreFailures;
 import site.omagotchi.frontend.global.learning.infrastructure.LearningDownstreamException;
+import site.omagotchi.frontend.global.security.BrowserSessionInvalidator;
 
 import java.util.Map;
 import java.util.Optional;
@@ -36,6 +39,7 @@ import java.util.Optional;
 @Order(Ordered.HIGHEST_PRECEDENCE) // HTML 예외 처리기보다 REST JSON 예외 처리 우선
 @RestControllerAdvice(annotations = RestController.class)
 @NullMarked
+@RequiredArgsConstructor
 public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
 
     private static final Map<String, Integer> PUBLIC_LEARNING_DOWNSTREAM_ERRORS = Map.ofEntries(
@@ -87,16 +91,23 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
             Map.entry("DAILY_QUEST_ALREADY_CLAIMED", 409),
             Map.entry("DAILY_QUEST_EXPIRED", 409),
             Map.entry("USER_PROFILE_INVALID_NICKNAME", 400),
-            Map.entry("USER_PROFILE_DUPLICATE_NICKNAME", 409)
+            Map.entry("USER_PROFILE_DUPLICATE_NICKNAME", 409),
+            Map.entry("TELEGRAM_USER_LINK_NOT_FOUND", 404)
     );
+
+    private final BrowserSessionInvalidator sessionInvalidator;
 
     // 클라이언트 공개 ErrorCode와 응답 방식이 확정된 실패 처리
     @ExceptionHandler(BusinessException.class)
     public ResponseEntity<ApiErrorResponse> handleBusinessException(
             BusinessException exception,
-            HttpServletRequest request
+            HttpServletRequest request,
+            HttpServletResponse response
     ) {
-        if (ErrorHttpMapper.toHttpStatus(exception.getErrorCode().type()).is5xxServerError()) {
+        HttpStatus status = ErrorHttpMapper.toHttpStatus(exception.getErrorCode().type());
+        if (status == HttpStatus.UNAUTHORIZED) {
+            expireAuthenticationSession(request, response);
+        } else if (status.is5xxServerError()) {
             logServerFailure(exception, exception.getErrorCode(), request);
         }
         return response(exception.getErrorCode(), request);
@@ -105,12 +116,16 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(LearningDownstreamException.class)
     public ResponseEntity<ApiErrorResponse> handleLearningDownstreamException(
             LearningDownstreamException exception,
-            HttpServletRequest request
+            HttpServletRequest request,
+            HttpServletResponse response
     ) {
         ApiErrorResponse downstream = exception.getErrorResponse();
 
         if (isPublicLearningDownstreamError(exception)) {
-            ApiErrorResponse response = new ApiErrorResponse(
+            if (exception.getStatusCode().value() == HttpStatus.UNAUTHORIZED.value()) {
+                expireAuthenticationSession(request, response);
+            }
+            ApiErrorResponse publicResponse = new ApiErrorResponse(
                     downstream.code(),
                     publicLearningDownstreamMessage(exception.getStatusCode().value()),
                     request.getRequestURI(),
@@ -118,7 +133,7 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
             );
             return ResponseEntity.status(exception.getStatusCode())
                     .cacheControl(CacheControl.noStore())
-                    .body(response);
+                    .body(publicResponse);
         }
 
         logLearningDownstreamFailure(exception, request);
@@ -127,6 +142,20 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
         }
 
         return response(CommonErrorCode.DOWNSTREAM_INVALID_RESPONSE, request);
+    }
+
+    private void expireAuthenticationSession(
+            HttpServletRequest request,
+            HttpServletResponse response
+    ) {
+        if (!BffApiPaths.matches(request)) {
+            return;
+        }
+        // TODO: Access JWT 만료 처리
+        // - Refresh Token을 사용한 Access·Refresh Token 재발급
+        // - 재발급된 토큰 묶음으로 세션 저장값 교체
+        // - 재발급 실패 시 기존 브라우저 세션 폐기 정책 유지
+        sessionInvalidator.invalidate(request, response);
     }
 
     private boolean isPublicLearningDownstreamError(

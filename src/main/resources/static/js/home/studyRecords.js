@@ -286,15 +286,16 @@ function toStudyDayTimeInstant(time, aggregationDate, windowStart, windowEnd, fi
     const { start: studyDayStart, end: studyDayEnd } = getStudyDayBounds(
         parseStudyDateKey(aggregationDate)
     );
+    function getDistanceToWindow(candidate) {
+        if (candidate < windowStart) return windowStart.getTime() - candidate.getTime();
+        if (candidate > windowEnd) return candidate.getTime() - windowEnd.getTime();
+        return 0;
+    }
+
     const candidates = [sameDate, new Date(sameDate.getTime() + 24 * 60 * MINUTE_MILLISECONDS)]
         .filter((candidate) => candidate >= studyDayStart && candidate <= studyDayEnd)
         .sort((left, right) => {
-            const distance = (candidate) => {
-                if (candidate < windowStart) return windowStart.getTime() - candidate.getTime();
-                if (candidate > windowEnd) return candidate.getTime() - windowEnd.getTime();
-                return 0;
-            };
-            const distanceDifference = distance(left) - distance(right);
+            const distanceDifference = getDistanceToWindow(left) - getDistanceToWindow(right);
 
             if (distanceDifference !== 0) {
                 return distanceDifference;
@@ -332,8 +333,10 @@ function getStudyDayInputLimit(referenceDate, now = new Date()) {
     if (currentMinute <= start) {
         return start;
     }
-
-    return currentMinute < end ? currentMinute : end;
+    if (currentMinute < end) {
+        return currentMinute;
+    }
+    return end;
 }
 
 function formatTimelinePoint(date, referenceDate) {
@@ -372,9 +375,8 @@ function createSlot(start, end, position) {
 }
 
 // 학습 기록의 계산, 저장, 편집 화면을 한 곳에서 관리한다.
-export function createStudyRecords({ storageKey, getElapsedSeconds, api }) {
-    const sessionId = createId("timer");
-    let lastRecordedElapsed = null;
+export function createStudyRecords({ api }) {
+    let records = [];
     let container = null;
     let referenceDate = getCurrentStudyDate();
     let monthlySummary = null;
@@ -387,16 +389,11 @@ export function createStudyRecords({ storageKey, getElapsedSeconds, api }) {
     let loadRequestId = 0;
 
     function readRecords() {
-        try {
-            const records = JSON.parse(localStorage.getItem(storageKey) || "[]");
-            return Array.isArray(records) ? records : [];
-        } catch {
-            return [];
-        }
+        return [...records];
     }
 
-    function writeRecords(records) {
-        localStorage.setItem(storageKey, JSON.stringify(records));
+    function writeRecords(nextRecords) {
+        records = Array.isArray(nextRecords) ? [...nextRecords] : [];
     }
 
     function replaceRecordsForDate(dateKey, records) {
@@ -423,28 +420,6 @@ export function createStudyRecords({ storageKey, getElapsedSeconds, api }) {
         }
 
         return sumDuration(records);
-    }
-
-    function getRecordedElapsedBaseline() {
-        const currentStudyDate = toStudyDateKey(new Date());
-        return readRecords().reduce((latest, record) => {
-            const recordedAt = parseRecordedAt(record);
-            const recordStudyDate = record.studyDate
-                || (recordedAt ? toStudyDateKey(recordedAt) : null);
-            const elapsedSeconds = Number(record.elapsedSeconds) || 0;
-            return recordStudyDate === currentStudyDate
-                ? Math.max(latest, elapsedSeconds)
-                : latest;
-        }, 0);
-    }
-
-    function getUnrecordedSeconds() {
-        const elapsedSeconds = getElapsedSeconds();
-        const recordedElapsed = Math.max(
-            lastRecordedElapsed || 0,
-            getRecordedElapsedBaseline()
-        );
-        return Math.max(0, elapsedSeconds - recordedElapsed);
     }
 
     async function loadRecords({ includeMonthly = true } = {}) {
@@ -476,7 +451,6 @@ export function createStudyRecords({ storageKey, getElapsedSeconds, api }) {
             const records = Array.isArray(payload) ? payload : payload.records;
             if (Array.isArray(records)) {
                 replaceRecordsForDate(dateKey, records);
-                lastRecordedElapsed = null;
             }
         }
 
@@ -484,66 +458,6 @@ export function createStudyRecords({ storageKey, getElapsedSeconds, api }) {
             ? "학습 기록을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요."
             : "";
         render();
-    }
-
-    function addRecord() {
-        const elapsedSeconds = getElapsedSeconds();
-        const recordedElapsed = Math.max(
-            lastRecordedElapsed || 0,
-            getRecordedElapsedBaseline()
-        );
-        const durationSeconds = elapsedSeconds - recordedElapsed;
-
-        if (elapsedSeconds <= 0) {
-            return { ok: false, message: "타이머를 먼저 시작해 주세요." };
-        }
-
-        if (durationSeconds <= 0) {
-            return { ok: false, message: "같은 시간은 다시 기록할 수 없어요." };
-        }
-
-        const records = readRecords();
-        const endTime = new Date();
-        const startTime = new Date(endTime.getTime() - durationSeconds * 1000);
-        const record = {
-            id: createId("segment"),
-            sessionId,
-            aggregationDate: toStudyDateKey(startTime),
-            startTime: startTime.toISOString(),
-            endTime: endTime.toISOString(),
-            studySeconds: durationSeconds,
-            version: 0,
-            elapsedSeconds,
-            createdAt: endTime.toISOString(),
-            updatedAt: endTime.toISOString()
-        };
-
-        records.push(record);
-        writeRecords(records);
-        if (typeof api?.createRecord === "function") {
-            api.createRecord({
-                startDateTime: formatDateTimeInput(startTime),
-                endDateTime: formatDateTimeInput(endTime)
-            }).then((saved) => {
-                if (!saved?.id) return;
-                const latest = readRecords().map((item) => (
-                    item.id === record.id ? { ...item, ...saved } : item
-                ));
-                writeRecords(latest);
-                monthlySummary = null;
-                loadRecords();
-            }).catch(() => {
-                actionErrorMessage = "학습 기록을 저장하지 못했습니다. 잠시 후 다시 시도해 주세요.";
-                render();
-            });
-        }
-        lastRecordedElapsed = elapsedSeconds;
-        referenceDate = parseRecordStudyDate(record) || getCurrentStudyDate();
-        monthlySummary = null;
-        activeInsertSlot = null;
-        render();
-
-        return { ok: true, record };
     }
 
     function getRecordEditWindow(records, index) {
@@ -599,7 +513,7 @@ export function createStudyRecords({ storageKey, getElapsedSeconds, api }) {
                            data-study-time-input
                            value="${escapeHtml(formatTimeInput(initialRange.start))}"
                            placeholder="HH:mm" maxlength="5"
-                           pattern="(?:[01]\\d|2[0-3]):[0-5]\\d" autocomplete="off" required>
+                           pattern="(?:[01][0-9]|2[0-3]):[0-5][0-9]" autocomplete="off" required>
                 </label>
                 <label>
                     <span>종료 시간 · 24시간</span>
@@ -607,7 +521,7 @@ export function createStudyRecords({ storageKey, getElapsedSeconds, api }) {
                            data-study-time-input
                            value="${escapeHtml(formatTimeInput(initialRange.end))}"
                            placeholder="HH:mm" maxlength="5"
-                           pattern="(?:[01]\\d|2[0-3]):[0-5]\\d" autocomplete="off" required>
+                           pattern="(?:[01][0-9]|2[0-3]):[0-5][0-9]" autocomplete="off" required>
                 </label>
                 <div class="study-time-draft-duration">
                     <span>예상 공부 시간</span>
@@ -893,9 +807,7 @@ export function createStudyRecords({ storageKey, getElapsedSeconds, api }) {
                 startDateTime: timeRange.startDateTime,
                 endDateTime: timeRange.endDateTime
             };
-            const saved = typeof api?.createRecord === "function"
-                ? await api.createRecord(payload)
-                : null;
+            const saved = await api.createRecord(payload);
             const now = new Date();
             const record = {
                 id: createId("record"),
@@ -1016,8 +928,8 @@ export function createStudyRecords({ storageKey, getElapsedSeconds, api }) {
                     </header>
                     <p class="study-calendar-guide">공부 시간이 길수록 진한 색으로 표시됩니다.</p>
                     <ol class="study-calendar-weekdays" aria-hidden="true">
-                        ${WEEKDAYS.map((day, index) => `
-                            <li class="${index === 0 ? "is-sunday" : index === 6 ? "is-saturday" : ""}">${day}</li>
+                        ${WEEKDAYS.map((weekday, index) => `
+                            <li class="${index === 0 ? "is-sunday" : index === 6 ? "is-saturday" : ""}">${weekday}</li>
                         `).join("")}
                     </ol>
                     <ol class="study-calendar-grid">${cells.join("")}</ol>
@@ -1055,9 +967,7 @@ export function createStudyRecords({ storageKey, getElapsedSeconds, api }) {
                 endDateTime: timeRange.endDateTime,
                 expectedVersion: Math.max(0, Number(record.version) || 0)
             };
-            const saved = typeof api?.updateRecord === "function"
-                ? await api.updateRecord(record.id, payload)
-                : null;
+            const saved = await api.updateRecord(record.id, payload);
             const updated = {
                 ...record,
                 aggregationDate: toStudyDateKey(timeRange.start),
@@ -1093,9 +1003,7 @@ export function createStudyRecords({ storageKey, getElapsedSeconds, api }) {
         render();
 
         try {
-            if (typeof api?.deleteRecord === "function") {
-                await api.deleteRecord(record.id, Math.max(0, Number(record.version) || 0));
-            }
+            await api.deleteRecord(record.id, Math.max(0, Number(record.version) || 0));
             writeRecords(readRecords().filter((item) => String(item.id) !== recordId));
             monthlySummary = null;
             editingRecordId = null;
@@ -1228,8 +1136,7 @@ export function createStudyRecords({ storageKey, getElapsedSeconds, api }) {
     }
 
     return {
-        addRecord,
-        getUnrecordedSeconds,
+        loadRecords,
         mount: (target) => {
             mount(target);
             loadRecords();

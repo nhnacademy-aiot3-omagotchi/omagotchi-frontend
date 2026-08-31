@@ -2,6 +2,7 @@
     const API_BASE = window.OMAGOTCHI_API_BASE || document.documentElement.dataset.apiBase || "/bff/v1";
     const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS", "TRACE"]);
     let csrfTokenPromise = null;
+    let cachedCsrfToken = null;
 
     class ApiRequestError extends Error {
         constructor(status, message, details = {}) {
@@ -23,9 +24,12 @@
                 if (!response.ok) {
                     throw new ApiRequestError(response.status, "CSRF 토큰을 가져오지 못했습니다.");
                 }
-                return response.json();
+                const data = await response.json();
+                cachedCsrfToken = data;
+                return data;
             }).catch((error) => {
                 csrfTokenPromise = null;
+                cachedCsrfToken = null;
                 throw error;
             });
         }
@@ -63,8 +67,14 @@
         return errorDetails(payload).message || `API request failed: ${status}`;
     }
 
-    async function request(path, options = {}) {
-        const { body, headers = {}, method = "GET", ...rest } = options;
+    function redirectToLogin(status) {
+        if (status === 401 && window.location.pathname !== "/login") {
+            window.location.replace("/login?notice=session-expired");
+        }
+    }
+
+    async function requestResponse(path, options = {}) {
+        const { body, headers = {}, method = "GET", __csrfRetried = false, ...rest } = options;
         const hasBody = body !== undefined;
         const isFormData = isFormDataBody(body);
         const normalizedMethod = method.toUpperCase();
@@ -82,27 +92,32 @@
             method: normalizedMethod,
             ...rest
         });
+        if (response.ok) return response;
+
+        const payload = await parseResponsePayload(response).catch(() => ({}));
+        const isCsrfFailure = response.status === 403
+            && errorDetails(payload).code === "AUTH_CSRF_INVALID";
+        if (isCsrfFailure && needsCsrf && !__csrfRetried) {
+            csrfTokenPromise = null;
+            return requestResponse(path, {...options, __csrfRetried: true});
+        }
+
+        const error = new ApiRequestError(
+            response.status,
+            errorMessage(payload, response.status),
+            errorDetails(payload)
+        );
+        redirectToLogin(response.status);
+        throw error;
+    }
+
+    async function request(path, options = {}) {
+        const response = await requestResponse(path, options);
         if (response.status === 204) {
             return null;
         }
 
-        const payload = await parseResponsePayload(response);
-        const isCsrfFailure = response.status === 403
-            && errorDetails(payload).code === "AUTH_CSRF_INVALID";
-        if (isCsrfFailure && needsCsrf && !options.__csrfRetried) {
-            csrfTokenPromise = null;
-            return request(path, {...options, __csrfRetried: true});
-        }
-
-        if (!response.ok) {
-            throw new ApiRequestError(
-                response.status,
-                errorMessage(payload, response.status),
-                errorDetails(payload)
-            );
-        }
-
-        return payload;
+        return parseResponsePayload(response);
     }
 
     async function optional(path, options) {
@@ -128,12 +143,26 @@
     window.OmagotchiApi = {
         request,
         optional,
+        account: {
+            get: () => request("/users/me"),
+            changeName: (name) => request("/users/me", {
+                method: "PATCH",
+                body: {name}
+            }),
+            changePassword: (currentPassword, newPassword) => request("/users/me/password", {
+                method: "PATCH",
+                body: {currentPassword, newPassword}
+            })
+        },
         profile: {
             get: () => request("/me/profile"),
             updateNickname: (nickname) => request("/me/nickname", {
                 method: "PATCH",
                 body: {nickname}
             })
+        },
+        access: {
+            getContext: () => request("/cohorts/me/access-context")
         },
         character: {
             list: () => request("/gamification/characters"),
@@ -147,6 +176,15 @@
             getToday: () => optional("/attendance/today"),
             checkIn: () => request("/attendance/check-in", { method: "POST" }),
             checkOut: () => request("/attendance/check-out", { method: "POST" })
+        },
+        ai: {
+            streamChat: (question, {signal, model = "GEMINI"} = {}) => requestResponse(
+                withQuery("/ai/chat", {question, model}),
+                {
+                    headers: {Accept: "text/event-stream"},
+                    signal
+                }
+            )
         },
         study: {
             getRecord: (id) => request(`/study-records/${encodeURIComponent(id)}`),
@@ -171,7 +209,24 @@
             }),
             discardTimer: (timerRunId) => request(`/timer/${encodeURIComponent(timerRunId)}/discard`, {
                 method: "POST"
-            })
+            }),
+            stopTimerKeepalive: (timerRunId) => {
+                if (!timerRunId) return false;
+                const url = toUrl(`/timer/${encodeURIComponent(timerRunId)}/stop`);
+                const headers = {
+                    "Content-Type": "application/json",
+                    Accept: "application/json"
+                };
+                if (cachedCsrfToken) {
+                    headers[cachedCsrfToken.headerName] = cachedCsrfToken.token;
+                }
+                return fetch(url, {
+                    method: "POST",
+                    keepalive: true,
+                    credentials: "same-origin",
+                    headers
+                });
+            }
         },
         cohort: {
             list: () => request("/cohorts"),
@@ -265,7 +320,25 @@
                 method: "PATCH",
                 body: {nextStatus, reason, requestId: crypto.randomUUID?.() || `manual-${Date.now()}`}
             }),
-            getRankings: (cohortId, query = {}) => request(withQuery(`/admin/cohorts/${encodeURIComponent(cohortId)}/study-rankings`, query)),
+            getStudyStatsToday: (cohortId) => request(
+                `/admin/cohorts/${encodeURIComponent(cohortId)}/study-statistics/today`
+            ),
+            getStudyStatsTrend: (cohortId, window = "7d") => request(withQuery(
+                `/admin/cohorts/${encodeURIComponent(cohortId)}/study-statistics/trend`,
+                { window }
+            )),
+            getStudyStatsMembers: (cohortId, query = {}) => request(withQuery(
+                `/admin/cohorts/${encodeURIComponent(cohortId)}/study-statistics/members`,
+                query
+            )),
+            getStudyStatsMemberOverview: (cohortId, cohortMembershipId, window = "7d") => request(withQuery(
+                `/admin/cohorts/${encodeURIComponent(cohortId)}/study-statistics/members/${encodeURIComponent(cohortMembershipId)}/overview`,
+                { window }
+            )),
+            getStudyStatsMemberDailyRecords: (cohortId, cohortMembershipId, date) => request(withQuery(
+                `/admin/cohorts/${encodeURIComponent(cohortId)}/study-statistics/members/${encodeURIComponent(cohortMembershipId)}/records`,
+                { date }
+            )),
             updatePostPin: (postId, pinned) => request(`/admin/community/posts/${encodeURIComponent(postId)}/pin`, {method: "PATCH", body: {pinned}}),
             getSensorSpaceSeries: (location, measurement, seriesWindow, options = {}) => request(
                 withQuery("/admin/sensors/space-series", {location, measurement, window: seriesWindow}),
@@ -273,6 +346,16 @@
             ),
         },
         // 응답 필드는 Learning Service 계약 그대로다. 화면이 그 이름으로 읽으므로 여기서 바꾸지 않는다.
+        telegram: {
+            // 미연동이면 404다. 호출부가 그것을 정상 상태로 다룬다.
+            getMyLink: () => request("/me/telegram/link"),
+            issueLinkToken: () => request("/me/telegram/link-token", {method: "POST"}),
+            updateNotification: (enabled) => request("/me/telegram/link/notification", {
+                method: "PATCH",
+                body: {enabled}
+            }),
+            disconnect: () => request("/me/telegram/link", {method: "DELETE"})
+        },
         sensor: {
             listSpaces: () => request("/admin/sensors/spaces"),
             listDevices: () => request("/admin/sensors/devices"),

@@ -2,7 +2,7 @@
 
 > 상태: 현재 구현 가이드
 > 대상: Learning API를 Home·관리자 화면에 처음 연결하는 개발자
-> 목표: `Browser → View BFF → Gateway → Learning Service` 연결을 같은 방식으로 구현한다.
+> 목표: `Browser → View BFF → Learning Service` 직접 연결을 같은 방식으로 구현한다.
 > 소요: 계약이 확정되어 있으면 기능 1개당 30~60분.
 
 이 문서는 "무엇을 하라"가 아니라 "어느 파일의 어느 줄에 무엇을 쓰고, 안 쓰면 무슨 증상이 나오는지"까지
@@ -15,7 +15,7 @@
 | # | 파일 | 하는 일 | 빠뜨리면 나오는 증상 |
 | --- | --- | --- | --- |
 | 1 | `src/main/java/site/omagotchi/frontend/{feature}/infrastructure/response/*.java` | 하류 응답 타입 | 응답이 `JsonNode`로 떠서 화면에서 필드 오타를 못 잡는다 |
-| 2 | `src/main/java/site/omagotchi/frontend/global/learning/infrastructure/LearningHttpService.java` | Gateway로 나가는 `/api/v1` 계약 | 컴파일은 되는데 하류가 `400`을 준다 |
+| 2 | `src/main/java/site/omagotchi/frontend/global/learning/infrastructure/LearningHttpService.java` | Learning으로 나가는 `/api/v1` 계약 | 컴파일은 되는데 하류가 `400`을 준다 |
 | 3 | `src/main/java/site/omagotchi/frontend/{feature}/application/*BffService.java` | Session Token·승인 기수 결합 | `cohortId`를 Browser에서 받게 되어 다른 기수 조회가 뚫린다 |
 | 4 | `src/main/java/site/omagotchi/frontend/{feature}/presentation/*BffController.java` | Browser용 `/bff/v1` 경로 | 화면에서 `404` |
 | 5 | `src/main/resources/static/js/api.js` | Browser Adapter | 화면 파일마다 `fetch`가 복제된다 |
@@ -33,8 +33,7 @@
        └─ View의 *BffController
             └─ BFF Service
                  └─ LearningHttpService
-                      └─ Gateway의 /api/v1/**
-                           └─ Learning Service
+                      └─ Learning Service의 /api/v1/**
 ```
 
 - Browser는 Gateway·Learning 주소를 직접 호출하지 않는다.
@@ -48,7 +47,7 @@
 ```text
 화면:             /home
 Browser → BFF:    GET /bff/v1/attendance/history
-BFF → Gateway:    GET /api/v1/cohorts/{cohortId}/attendance-records/me
+BFF → Learning:   GET /api/v1/cohorts/{cohort-id}/attendance-records/me
 ```
 
 ### 이 경로들이 어디에 설정되어 있는지
@@ -60,7 +59,7 @@ BFF → Gateway:    GET /api/v1/cohorts/{cohortId}/attendance-records/me
 | Browser Prefix `/bff/v1` | `src/main/java/site/omagotchi/frontend/global/web/BffApiPaths.java`의 `PREFIX` | `/bff/v1` |
 | Browser Prefix (JS) | `src/main/resources/static/js/api.js`의 `API_BASE` | `/bff/v1` |
 | 하류 Prefix `/api/v1` | `LearningHttpService`의 Type 레벨 `@HttpExchange` | `/api/v1` |
-| Gateway 주소 | `application.yaml` → `spring.http.clients.serviceclient.gateway-service.base-url` | `${GATEWAY_SERVICE_BASE_URL}` (`.env.local`) |
+| Learning 주소 | `application.yaml` → `spring.http.serviceclient.learning-service.base-url` | `${LEARNING_SERVICE_BASE_URL}` (`.env.local`) |
 | HTTP Client Timeout | `spring.http.clients.connect-timeout` / `read-timeout` | `${HTTP_CLIENT_CONNECT_TIMEOUT}` / `${HTTP_CLIENT_READ_TIMEOUT}` |
 
 ### `/bff/v1/**`의 인증은 이미 걸려 있다
@@ -92,7 +91,7 @@ Path·Query·Request Body:
 
 ```text
 기능명: 내 출석 이력 조회
-HTTP Method와 /api/v1 경로: GET /api/v1/cohorts/{cohortId}/attendance-records/me
+HTTP Method와 /api/v1 경로: GET /api/v1/cohorts/{cohort-id}/attendance-records/me
 Path·Query·Request Body:
   path  cohortId : Long, 필수
   query from     : String(yyyy-MM-dd), 선택
@@ -206,7 +205,7 @@ src/main/java/site/omagotchi/frontend/global/learning/infrastructure/LearningHtt
 경로를 선언한다.
 
 ```java
-@GetExchange("/cohorts/{cohortId}/attendance-records/me")
+@GetExchange("/cohorts/{cohort-id}/attendance-records/me")
 AttendanceRecordPageResponse getMyAttendanceRecords(
         @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
         @PathVariable Long cohortId,
@@ -231,7 +230,7 @@ Learning의 Controller Signature를 열어 놓고 한 줄씩 비교한다. 실�
 | --- | --- | --- |
 | **경로 변수의 의미** | 존재하는 ID인데 `404`가 난다 | Quest 수령 경로가 Quest 정의 ID가 아니라 사용자별 일일 Quest 인스턴스 ID(`userDailyQuestId`)였다 |
 | **`required` 여부** | View가 더 엄격해서 정상 요청을 View가 먼저 막는다 | `aggregationDate`는 Learning에서 선택인데 View가 필수로 선언했었다 |
-| **Parameter 타입** | 잘못된 날짜가 Gateway까지 갔다가 하류 `400`으로 돌아온다 | 기간별 Ranking 경로의 날짜를 `LocalDate`·`YearMonth`로 먼저 검증한다 |
+| **Parameter 타입** | 잘못된 날짜가 Learning까지 갔다가 하류 `400`으로 돌아온다 | 기간별 Ranking 경로의 날짜를 `LocalDate`·`YearMonth`로 먼저 검증한다 |
 | **선택 값의 기본값** | 화면이 기대한 개수와 다른 결과가 온다 | `maxRank`는 선택 값이므로 `required = false`로 두고 기본값은 하류에 맡긴다 |
 
 원칙: **View는 하류가 허용하는 정상 요청을 막지 않으면서 경로 타입은 먼저 검증한다.**
@@ -332,13 +331,13 @@ public class ExampleBffController {
 
 ```java
 // 하지 않는다: Browser가 cohortId를 고를 수 있게 된다
-@RequestMapping("/bff/v1/cohorts/{cohortId}/study-rankings")
+@RequestMapping("/bff/v1/cohorts/{cohort-id}/study-rankings")
 
 // 한다: cohortId는 Session에서 나온다
 @RequestMapping("/bff/v1/study-rankings")
 ```
 
-`RankingBffController`가 이 형태로 바뀐 이유다. BFF 경로에 `{cohortId}`가 보이면 설계가 틀린 것이다.
+`RankingBffController`가 이 형태로 바뀐 이유다. BFF 경로에 `{cohort-id}`가 보이면 설계가 틀린 것이다.
 
 #### 빈 결과를 `204`로 줄 때만 `ResponseEntity`를 쓴다
 
@@ -575,13 +574,14 @@ HTML에 고정하여 우회하지 않는다. `request()`는 `403` 응답 중 오
 포트와 실행 순서:
 
 ```text
-Redis(6379) → Identity(8083) → Learning(8084) → Gateway(8080) → View(8082)
+Redis(6379) → Identity(8083) → Learning(8084) → View(8082)
 ```
 
 각 저장소에 `.env.local`이 있어야 한다(`.env.local.example` 복사). View에서 확인할 값:
 
 ```text
-GATEWAY_SERVICE_BASE_URL    Gateway 주소. 여기가 틀리면 모든 BFF가 SERVICE_UNAVAILABLE이 된다.
+LEARNING_SERVICE_BASE_URL   Learning 주소. 여기가 틀리면 Learning BFF가 COMMON_SERVICE_UNAVAILABLE이 된다.
+GATEWAY_SERVICE_BASE_URL    AI Chat이 후속 전환 전까지 사용하는 Gateway 주소다.
 IDENTITY_SERVICE_BASE_URL   로그인 자체가 실패한다.
 SESSION_REDIS_HOST/PORT     Session이 저장되지 않아 매 요청이 401이 된다.
 HTTP_CLIENT_CONNECT_TIMEOUT / HTTP_CLIENT_READ_TIMEOUT
@@ -604,7 +604,7 @@ Browser 개발자 도구의 Network에서 확인한다.
 2. 응답 Content-Type이 JSON인가?
 3. 상태 변경 요청에 CSRF Header가 있는가?
 4. Frontend 로그에 BFF Controller 도달 기록이 있는가?
-5. Gateway와 Learning 로그에 같은 요청이 도달했는가?
+5. Learning 로그에 같은 요청이 도달했는가?
 6. 오류 응답에 하류 Stack Trace·내부 주소·기술 메시지가 노출되지 않는가?
 
 ---
@@ -620,7 +620,7 @@ Browser 개발자 도구의 Network에서 확인한다.
 | 상태 변경만 `403` | CSRF Header 누락. `fetch`를 직접 씀 | `api.js`의 `request()`를 쓰는지 |
 | 정상 상황인데 "연결된 서비스의 응답이 올바르지 않습니다" | **`PUBLIC_LEARNING_DOWNSTREAM_ERRORS` 미등록** | 서버 로그의 `Learning 하류 오류 은닉` |
 | 업무 오류가 전부 `500` | `LearningGatewayCallExecutor`를 안 거침 | BFF Service의 하류 호출부 |
-| `COMMON_SERVICE_UNAVAILABLE` | Gateway 미기동 또는 `GATEWAY_SERVICE_BASE_URL` 오타 | `.env.local` |
+| `COMMON_SERVICE_UNAVAILABLE` | Learning 미기동 또는 `LEARNING_SERVICE_BASE_URL` 오타 | `.env.local` |
 | `LEARNING_APPROVED_COHORT_REQUIRED` | 계정에 승인된 기수가 없음. 코드 문제가 아님 | 기수 가입 승인 |
 | 하류가 `400`인데 값은 맞아 보임 | `required`·타입 불일치 | §4.2 계약 대조표 |
 | 존재하는 ID인데 `404` | 경로 변수의 의미가 다름(정의 ID vs 인스턴스 ID) | 하류 Controller Signature |
@@ -637,7 +637,7 @@ Browser 개발자 도구의 Network에서 확인한다.
 - [ ] 단순 전달과 화면용 조합 중 알맞은 Service 방식을 선택했다.
 - [ ] 모든 하류 호출을 `LearningGatewayCallExecutor` 경계로 통과시켰다.
 - [ ] Token·userId·승인 cohortId를 Browser 입력으로 받지 않는다.
-- [ ] BFF 경로에 `{cohortId}`가 없다.
+- [ ] BFF 경로에 `{cohort-id}`가 없다.
 - [ ] 새 공개 4xx code를 `PUBLIC_LEARNING_DOWNSTREAM_ERRORS`에 등록했다(필요한 경우).
 - [ ] `api.js` 공통 `request()`를 사용한다.
 - [ ] Loading·Empty·Ready·Error 화면을 구분했다.
@@ -657,7 +657,7 @@ Browser 개발자 도구의 Network에서 확인한다.
 | Browser BFF Route | `src/main/java/site/omagotchi/frontend/attendance/presentation/AttendanceBffController.java` |
 | 승인 기수를 경로에서 제거한 Route | `src/main/java/site/omagotchi/frontend/ranking/presentation/RankingBffController.java` |
 | Study Record·Timer Route | `src/main/java/site/omagotchi/frontend/study/presentation/` |
-| 내부 Gateway HTTP 계약 | `src/main/java/site/omagotchi/frontend/global/learning/infrastructure/LearningHttpService.java` |
+| 내부 Learning HTTP 계약 | `src/main/java/site/omagotchi/frontend/global/learning/infrastructure/LearningHttpService.java` |
 | HTTP Interface 등록 | `src/main/java/site/omagotchi/frontend/global/learning/infrastructure/LearningHttpServiceConfig.java` |
 | 하류 호출 오류 변환 | `src/main/java/site/omagotchi/frontend/global/learning/infrastructure/LearningGatewayCallExecutor.java` |
 | 하류 오류 보존 타입 | `src/main/java/site/omagotchi/frontend/global/learning/infrastructure/LearningDownstreamException.java` |

@@ -80,7 +80,7 @@ Learning에는 실시간 Presence가 구현되어 있다.
 ```text
 WebSocket endpoint         /ws
 heartbeat destination      /app/presence/heartbeat
-cohort subscription topic  /topic/cohorts/{cohortId}/presence
+cohort subscription topic  /topic/cohorts/{cohort-id}/presence
 snapshot API               /api/v1/cohorts/me/presence
 ```
 

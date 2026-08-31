@@ -2,15 +2,6 @@
     const PAGE_SIZE = 5;
     const DEFAULT_BOUNDARY_NOTE = "Asia/Seoul 오전 4시를 하루의 시작으로 집계합니다.";
 
-    function isoDateInZone(date, timeZone = "Asia/Seoul") {
-        return new Intl.DateTimeFormat("en-CA", {
-            timeZone,
-            year: "numeric",
-            month: "2-digit",
-            day: "2-digit"
-        }).format(date);
-    }
-
     function formatDuration(seconds) {
         const value = Math.max(0, Number(seconds) || 0);
         if (value === 0) return "0분";
@@ -68,12 +59,16 @@
         return row;
     }
 
-    function create({ root, fetchStatistics, getMemberProfiles, openMemberDetail }) {
+    function create({
+        root,
+        fetchTodayStats = (cid) => window.OmagotchiApi?.manager?.getStudyStatsToday?.(cid),
+        fetchTrendStats = (cid, win) => window.OmagotchiApi?.manager?.getStudyStatsTrend?.(cid, win),
+        fetchMemberStats = (cid, q) => window.OmagotchiApi?.manager?.getStudyStatsMembers?.(cid, q),
+        getMemberProfiles,
+        openMemberDetail
+    }) {
         if (!root) {
             throw new Error("Study statistics panel root is required.");
-        }
-        if (typeof fetchStatistics !== "function") {
-            throw new Error("Study statistics fetch function is required.");
         }
 
         const elements = {
@@ -99,8 +94,10 @@
         let active = false;
         let cohortId;
         let page = 0;
-        let sort = { key: "name", dir: "asc" };
-        let statistics = null;
+        let sort = { key: "period", dir: "desc" };
+        let todayData = null;
+        let trendData = null;
+        let membersData = null;
         let loading = false;
         let requestSequence = 0;
         let trendChartInstance = null;
@@ -111,17 +108,8 @@
             return Number(elements.period?.value) || 7;
         }
 
-        function dateRange() {
-            const aggregationNow = new Date(Date.now() - (4 * 60 * 60 * 1000));
-            const to = new Date(`${isoDateInZone(aggregationNow)}T12:00:00+09:00`);
-            const from = new Date(
-                to.getTime() - ((selectedPeriodDays() - 1) * 24 * 60 * 60 * 1000)
-            );
-            return { from: isoDateInZone(from), to: isoDateInZone(to) };
-        }
-
         function memberRows() {
-            if (!statistics?.members) return [];
+            if (!membersData?.items) return [];
             const profiles = getMemberProfiles?.() || [];
             const profileByUserId = new Map(
                 profiles.map((member) => [String(member.userId ?? member.id), member])
@@ -132,15 +120,14 @@
                     .map((member) => [String(member.cohortMembershipId ?? member.membershipId), member])
             );
 
-            return statistics.members.map((memberStatistics) => {
+            return membersData.items.map((memberStatistics) => {
                 const profile = profileByUserId.get(String(memberStatistics.userId))
                     || profileByMembershipId.get(String(memberStatistics.cohortMembershipId));
                 return {
                     ...memberStatistics,
                     name: profile?.name
-                        || memberStatistics.name
-                        || `사용자-${String(memberStatistics.userId).slice(0, 8)}`,
-                    email: profile?.email || memberStatistics.email || "-"
+                        || `수강생-${String(memberStatistics.userId).slice(0, 8)}`,
+                    email: profile?.email || "-"
                 };
             });
         }
@@ -150,12 +137,12 @@
             const direction = sort.dir === "desc" ? -1 : 1;
             const selectors = {
                 name: (member) => member.name.toLocaleLowerCase("ko-KR"),
-                today: (member) => member.todayStudySeconds,
-                period: (member) => member.periodStudySeconds,
-                days: (member) => member.activeStudyDays,
+                today: (member) => Number(member.todayStudySeconds) || 0,
+                period: (member) => Number(member.periodStudySeconds) || 0,
+                days: (member) => Number(member.activeStudyDays) || 0,
                 last: (member) => member.lastStudiedAt || ""
             };
-            const selector = selectors[sort.key] || selectors.name;
+            const selector = selectors[sort.key] || selectors.period;
 
             return memberRows()
                 .filter((member) => member.name.toLowerCase().includes(query)
@@ -194,7 +181,7 @@
                 renderPagination(0);
                 return;
             }
-            if (!statistics) {
+            if (!membersData) {
                 elements.list.replaceChildren(createEmptyRow(
                     elements.emptyTemplate,
                     "공부 통계를 불러오지 못했습니다."
@@ -236,30 +223,27 @@
         }
 
         function renderCharts() {
-            const summary = statistics?.summary;
-            const activeStudentCount = Number(summary?.activeStudentCount) || 0;
-            const participantCount = Number(summary?.todayParticipantCount) || 0;
+            const activeStudentCount = Number(todayData?.activeStudentCount) || 0;
+            const participantCount = Number(todayData?.participantCount) || 0;
             const participationRate = activeStudentCount
                 ? Math.round(participantCount * 100 / activeStudentCount)
                 : 0;
 
-            elements.totalTime.textContent = formatDuration(summary?.todayTotalStudySeconds);
+            elements.totalTime.textContent = formatDuration(todayData?.totalStudySeconds);
             elements.participation.textContent = `${participantCount} / ${activeStudentCount}명 (${participationRate}%)`;
-            elements.averageTime.textContent = formatDuration(summary?.averageTodayParticipantStudySeconds);
-            elements.noRecord.textContent = `${Number(summary?.todayNoRecordStudentCount) || 0}명`;
+            elements.averageTime.textContent = formatDuration(todayData?.averageParticipantStudySeconds);
+            elements.noRecord.textContent = `${Number(todayData?.noRecordStudentCount) || 0}명`;
 
             const periodDays = selectedPeriodDays();
             elements.trendTitle.textContent = `최근 ${periodDays}일 기수 학습량 추이`;
             elements.topTitle.textContent = `최근 ${periodDays}일 학습량 Top 5`;
-            elements.boundaryNote.textContent = statistics?.zoneId && statistics?.dayStartsAt
-                ? `${statistics.zoneId} ${String(statistics.dayStartsAt).slice(0, 5)}를 하루의 시작으로 집계합니다.`
-                : DEFAULT_BOUNDARY_NOTE;
+            elements.boundaryNote.textContent = DEFAULT_BOUNDARY_NOTE;
 
             destroyCharts();
             const ChartConstructor = window.Chart;
-            if (!ChartConstructor || !statistics) return;
+            if (!ChartConstructor) return;
 
-            const dailyTotals = statistics.dailyTotals || [];
+            const dailyTotals = trendData?.dailyTotals || [];
             const topMembers = memberRows()
                 .filter((member) => member.periodStudySeconds > 0)
                 .sort((a, b) => b.periodStudySeconds - a.periodStudySeconds)
@@ -272,89 +256,94 @@
                 FOUR_HOURS_OR_MORE: "4시간 이상"
             };
 
-            trendChartInstance = new ChartConstructor(elements.trendChart, {
-                type: "line",
-                data: {
-                    labels: dailyTotals.map((item) => item.aggregationDate.slice(5).replace("-", "/")),
-                    datasets: [{
-                        label: "학습량 (시간)",
-                        data: dailyTotals.map((item) => Number((item.studySeconds / 3600).toFixed(2))),
-                        borderColor: "#2b5c43",
-                        backgroundColor: "rgba(43, 92, 67, 0.1)",
-                        borderWidth: 2,
-                        fill: true,
-                        tension: 0.3
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    resizeDelay: 100,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        x: {
-                            ticks: {
-                                autoSkip: true,
-                                maxRotation: 0,
-                                maxTicksLimit: periodDays === 30 ? 8 : 7
-                            }
-                        },
-                        y: { beginAtZero: true }
+            if (elements.trendChart && dailyTotals.length) {
+                trendChartInstance = new ChartConstructor(elements.trendChart, {
+                    type: "line",
+                    data: {
+                        labels: dailyTotals.map((item) => String(item.aggregationDate).slice(5).replace("-", "/")),
+                        datasets: [{
+                            label: "학습량 (시간)",
+                            data: dailyTotals.map((item) => Number(((Number(item.studySeconds) || 0) / 3600).toFixed(2))),
+                            borderColor: "#2b5c43",
+                            backgroundColor: "rgba(43, 92, 67, 0.1)",
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.3
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        resizeDelay: 100,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            x: {
+                                ticks: {
+                                    autoSkip: true,
+                                    maxRotation: 0,
+                                    maxTicksLimit: periodDays === 30 ? 8 : 7
+                                }
+                            },
+                            y: { beginAtZero: true }
+                        }
                     }
-                }
-            });
+                });
+            }
 
-            topStudentsChartInstance = new ChartConstructor(elements.topStudentsChart, {
-                type: "bar",
-                data: {
-                    labels: topMembers.map((member) => member.name),
-                    datasets: [{
-                        label: "조회 기간 학습 (시간)",
-                        data: topMembers.map((member) => Number((member.periodStudySeconds / 3600).toFixed(2))),
-                        backgroundColor: "#529b74",
-                        borderRadius: 4
-                    }]
-                },
-                options: {
-                    indexAxis: "y",
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    resizeDelay: 100,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        x: { beginAtZero: true },
-                        y: { ticks: { autoSkip: false } }
+            if (elements.topStudentsChart) {
+                topStudentsChartInstance = new ChartConstructor(elements.topStudentsChart, {
+                    type: "bar",
+                    data: {
+                        labels: topMembers.length ? topMembers.map((member) => member.name) : ["기록 없음"],
+                        datasets: [{
+                            label: "조회 기간 학습 (시간)",
+                            data: topMembers.length ? topMembers.map((member) => Number(((Number(member.periodStudySeconds) || 0) / 3600).toFixed(2))) : [0],
+                            backgroundColor: "#529b74",
+                            borderRadius: 4
+                        }]
+                    },
+                    options: {
+                        indexAxis: "y",
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        resizeDelay: 100,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            x: { beginAtZero: true },
+                            y: { ticks: { autoSkip: false } }
+                        }
                     }
-                }
-            });
+                });
+            }
 
-            durationDistributionChartInstance = new ChartConstructor(elements.durationDistributionChart, {
-                type: "doughnut",
-                data: {
-                    labels: (statistics.durationBuckets || [])
-                        .map((bucket) => bucketLabels[bucket.code] || bucket.code),
-                    datasets: [{
-                        data: (statistics.durationBuckets || []).map((bucket) => bucket.memberCount),
-                        backgroundColor: ["#d7e4dc", "#c2e3d3", "#8ecbb0", "#529b74", "#2b5c43"],
-                        borderWidth: 0
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    resizeDelay: 100,
-                    plugins: {
-                        legend: {
-                            position: "bottom",
-                            labels: {
-                                boxWidth: 10,
-                                padding: 12,
-                                usePointStyle: true
+            if (elements.durationDistributionChart && todayData?.durationBuckets) {
+                durationDistributionChartInstance = new ChartConstructor(elements.durationDistributionChart, {
+                    type: "doughnut",
+                    data: {
+                        labels: todayData.durationBuckets.map((bucket) => bucketLabels[bucket.code] || bucket.code),
+                        datasets: [{
+                            data: todayData.durationBuckets.map((bucket) => Number(bucket.memberCount) || 0),
+                            backgroundColor: ["#d7e4dc", "#c2e3d3", "#8ecbb0", "#529b74", "#2b5c43"],
+                            borderWidth: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        resizeDelay: 100,
+                        plugins: {
+                            legend: {
+                                position: "bottom",
+                                labels: {
+                                    boxWidth: 10,
+                                    padding: 12,
+                                    usePointStyle: true
+                                }
                             }
                         }
                     }
-                }
-            });
+                });
+            }
         }
 
         function render() {
@@ -365,7 +354,9 @@
 
         function reset() {
             requestSequence += 1;
-            statistics = null;
+            todayData = null;
+            trendData = null;
+            membersData = null;
             loading = false;
             page = 0;
             destroyCharts();
@@ -374,21 +365,40 @@
         async function loadStatistics() {
             const sequence = ++requestSequence;
             loading = true;
-            statistics = null;
+            todayData = null;
+            trendData = null;
+            membersData = null;
             page = 0;
             render();
 
+            const periodDays = selectedPeriodDays();
+            const windowParam = `${periodDays}d`;
+
             try {
-                const response = await fetchStatistics(cohortId, dateRange());
+                const [todayRes, trendRes, membersRes] = await Promise.all([
+                    fetchTodayStats(cohortId),
+                    fetchTrendStats(cohortId, windowParam),
+                    fetchMemberStats(cohortId, {
+                        window: windowParam,
+                        page: 0,
+                        size: 100,
+                        sort: "periodStudySeconds,desc"
+                    })
+                ]);
+
                 if (sequence !== requestSequence) return;
                 loading = false;
-                statistics = response;
+                todayData = todayRes;
+                trendData = trendRes;
+                membersData = membersRes;
                 page = 0;
                 render();
             } catch (error) {
                 if (sequence !== requestSequence) return;
                 loading = false;
-                statistics = null;
+                todayData = null;
+                trendData = null;
+                membersData = null;
                 render();
                 console.error("Failed to load study statistics:", error);
             }
@@ -403,7 +413,7 @@
             cohortId = context.cohortId;
             active = true;
             if (cohortChanged) reset();
-            if (!statistics && !loading) {
+            if (!todayData && !loading) {
                 void loadStatistics();
                 return;
             }
@@ -435,7 +445,7 @@
                 if (sort.key === key) {
                     sort.dir = sort.dir === "asc" ? "desc" : "asc";
                 } else {
-                    sort = { key, dir: "asc" };
+                    sort = { key, dir: "desc" };
                 }
                 page = 0;
                 renderTable();
@@ -451,13 +461,13 @@
 
         elements.list?.addEventListener("click", (event) => {
             const button = event.target.closest("[data-view-detail]");
-            if (!button || !statistics) return;
+            if (!button || !membersData) return;
             openMemberDetail?.({
                 cohortId,
                 cohortMembershipId: button.dataset.viewDetail,
                 memberName: button.dataset.viewName || "수강생",
                 memberEmail: button.dataset.viewEmail || "",
-                currentAggregationDate: statistics.currentAggregationDate || statistics.to
+                currentAggregationDate: todayData?.aggregationDate || trendData?.to
             });
         });
 

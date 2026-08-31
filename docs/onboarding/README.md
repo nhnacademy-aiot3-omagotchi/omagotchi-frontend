@@ -1,6 +1,6 @@
 # Frontend 동작 흐름
 
-> 상태: 현재 구현 설명 · 요구사항 정본 아님 · `feature/auth-boundary` 작업 트리 기준
+> 상태: 현재 동작 흐름 설명 · 요구사항 정본 아님
 
 ## 1. 범위와 정본
 
@@ -59,55 +59,30 @@ flowchart LR
   - 계정 생성
   - 사용자 Credential 검증
   - Access·Refresh Token 발급·폐기
+  - 인증 사용자 계정 조회·이름·비밀번호 변경
 - Browser JavaScript
   - 입력 반응·제출 상태·동적 UI
   - 대부분의 미연동 업무 기능 Prototype
   - 인증·인가 근거로 사용 불가
 
-## 3. 현재 구현 상태
+## 3. 구현 상태 확인 방법
 
-| 영역 | 상태 | 저장·판단 위치 |
-|---|---|---|
-| Page Routing | 구현 | `WebConfig`, 인증 Page Controller |
-| Signup·Login·Logout | Identity 연동 | Identity DB, Spring Session Redis |
-| CSRF | 구현 | Spring Security, HTTP Session |
-| Page 인증 | 구현 | Redis Session의 SecurityContext |
-| BFF JSON 공통 경계 | 구현 | `/bff/v1/**`, MVC·Security·Redis |
-| 기능별 BFF Endpoint | 구현 | Controller 8개 · Route 45개 |
-| 캐릭터 선택·표시 | Learning 연동 | `GamificationBffController`, Learning DB |
-| 출석 입퇴실·이력 | Learning 연동 | `AttendanceBffController`, Learning DB |
-| XP·레벨·퀘스트 | Learning 연동 | `GamificationBffController`, Learning DB |
-| 재실 현황 | Learning 연동 | `PresenceBffController` |
-| 커뮤니티 | Learning 연동 | `CommunityBffController` |
-| 기수 조회·신청 | Learning 연동 | `CohortBffController` |
-| 학습 랭킹 | Learning 연동 | `RankingBffController` |
-| 관리자 Dashboard | Learning 연동 | `AdminLearningBffController` Route 18개 |
-| 관리자 기수 권한 | 구현 | 승인·거절·역할 변경·참여 코드 |
-| 학습 기록 | Browser Prototype | `home/studyRecords.js` `[API-REPLACE]` 4곳 |
-| 학습 타이머 | Browser | `home/timer.js` `[API-REPLACE 또는 LOCAL-KEEP]` |
-| 학습 통계 Panel | 미구현 | Adapter 미정의 |
-| Access Token Refresh | 미구현 | Logout만 Refresh Token 사용 |
-| 비밀번호 변경·재설정 | 미구현 | 안내 Page만 유지 |
+이 문서는 Route 개수나 기능별 Controller 목록을 별도로 유지하지 않는다. 변경이 잦은
+구현 현황은 아래 위치에서 확인한다.
 
-- 지원 인증 Route
-  - Signup: `GET·POST /register`
-  - Login: `GET·POST /login`
-  - Logout: `POST /logout`
-- 관리자 Route
-  - 지원: `/manager-dashboard`
-  - 현재 보호: 인증 여부만 확인
-  - 미등록 레거시 파일: `managerLogin.*`, `managerRegister.*`
-  - 레거시 파일의 상태: 동작하는 Route·API 없는 제거 대상
-- 캐릭터 표시명 Route
-  - 경로: `/username`
-  - 상태: Learning 게임 프로필 연동 전 Browser Prototype
-  - Identity 이름·권한 근거: 아님
-- 업무 API Adapter
-  - 파일: `static/js/api.js`
-  - 경로: Frontend `/bff/v1/**`
-  - 실패 정책: Prototype fallback 없음. `data-ui-state="error"`로 표시
-  - 남은 Prototype: 학습 기록(`home/studyRecords.js`), 학습 타이머(`home/timer.js`)
-  - Prototype 추적 표시: `[API-REPLACE]` 주석, `data-ui-source="local-prototype"`
+- Page Route: `WebConfig`, `@Controller`, `SecurityConfig`
+- Browser BFF Route: `@RestController`의 `/bff/v1/**` Mapping과 `static/js/api.js`
+- 내부 호출: 기능별 Application Port·Client와 대상 Service의 REST Docs
+- 인증·Session 회귀: Security MVC Test와 Redis Integration Test
+- 기능 완료·미구현 현황: 관련 Issue·Roadmap
+
+온보딩 문서에서는 다음 경계만 지속적으로 유지한다.
+
+- Browser는 Opaque Session Cookie만 보관하고 Token 원문을 취급하지 않는다.
+- Browser 전용 JSON 계약은 `/bff/v1/**`을 사용한다.
+- Frontend BFF는 Session의 Access JWT를 하류 호출 인증으로 변환하고 화면용 계약을 소유한다.
+- Frontend BFF는 담당 Domain Service를 직접 호출한다. AI Chat은 후속 전환 전까지 Gateway를 사용한다.
+- Page·JSON·Security·Session 오류 경계를 서로 구분한다.
 
 ## 4. 문서 순서
 
@@ -120,7 +95,7 @@ flowchart LR
 4. [오류·장애 흐름](03-error-and-failure-flow.md)
    - HTML·JSON 오류 경계, Identity·Redis 실패
 5. [BFF 실제 요청 흐름](04-bff-request-flow.md)
-   - Browser·BFF·Gateway·Learning 역할과 출결·Presence·첨부파일 처리 순서
+   - Browser·BFF·Learning 역할과 출결·Presence·첨부파일 처리 순서
 6. [기능 연동 개발 가이드](05-feature-integration-guide.md)
    - Prototype 전환, SSR·JSON BFF 선택, Session·CSRF·내부 HTTP·검증 기준
 7. [BFF와 Learning HTTP Interface 경계](06-bff-http-interface-boundary.md)
@@ -166,6 +141,11 @@ src/main/java/site/omagotchi/frontend
   - `SessionStoreErrorFilter`
 - 기능별 BFF 추가
   - 외부 URL·Ingress 계약
-  - Session Access JWT relay·Refresh
+  - Session Access JWT relay
   - 기능별 JSON 업무 오류 정책
   - Domain Service 권한 확인
+- Access Token Refresh 추가
+  - `02-session-authentication-flow.md`
+  - Identity Refresh Client 계약
+  - Redis Session Token 묶음 교체
+  - Session 단위 동시 갱신 회귀 검증

@@ -204,7 +204,7 @@ body:has(.home-page)::after {
 .home-bottom-hud {
     width: 100%;
     display: grid;
-    grid-template-columns: minmax(190px, 300px) minmax(280px, 1fr) auto;
+    grid-template-columns: minmax(190px, 1fr) minmax(280px, 640px) minmax(190px, 1fr);
     grid-template-areas: "chat status dock";
     align-items: end;
     gap: clamp(14px, 2vw, 28px);

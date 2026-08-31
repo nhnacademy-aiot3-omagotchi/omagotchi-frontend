@@ -32,19 +32,19 @@ public class StudyTimerBffController {
                 .startTimer(context.bearerToken(), cohortId));
     }
 
-    @PostMapping("/{timerRunId}/stop")
+    @PostMapping("/{timer-run-id}/stop")
     public ResponseEntity<Void> stopTimer(
             HttpServletRequest request,
-            @PathVariable UUID timerRunId
+            @PathVariable("timer-run-id") UUID timerRunId
     ) {
         return proxy.executeWithCohort(request, (context, cohortId) -> context.service()
                 .stopTimer(context.bearerToken(), cohortId, timerRunId));
     }
 
-    @PostMapping("/{timerRunId}/discard")
+    @PostMapping("/{timer-run-id}/discard")
     public ResponseEntity<Void> discardTimer(
             HttpServletRequest request,
-            @PathVariable UUID timerRunId
+            @PathVariable("timer-run-id") UUID timerRunId
     ) {
         return proxy.executeWithCohort(request, (context, cohortId) -> context.service()
                 .discardTimer(context.bearerToken(), cohortId, timerRunId));

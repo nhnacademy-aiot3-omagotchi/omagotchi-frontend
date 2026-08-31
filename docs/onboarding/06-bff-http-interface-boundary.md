@@ -42,29 +42,32 @@ flowchart LR
     Controller["View BFF Controller<br/>/bff/v1/**"]
     Application["BFF Application Service"]
     HttpInterface["LearningHttpService<br/>Spring HTTP Interface"]
-    Gateway["Gateway<br/>/api/v1/**"]
     Learning["Learning Service"]
 
-    Browser --> Controller --> Application --> HttpInterface --> Gateway --> Learning
-    Learning --> Gateway --> HttpInterface --> Application --> Controller --> Browser
+    Browser --> Controller --> Application --> HttpInterface --> Learning
+    Learning --> HttpInterface --> Application --> Controller --> Browser
 ```
+
+이 흐름은 `LearningHttpService`, `AttendanceHttpService`, `SensorHttpService`,
+`SensorAdminHttpService`, `PresenceHttpService`에 적용된다. 별도 Reactive `WebClient`를 쓰는
+AI Chat은 후속 전환 전까지 Gateway 경로를 유지한다.
 
 세 종류의 경로를 섞지 않는다.
 
 ```text
 Page:                  /home
 Browser → View BFF:    /bff/v1/attendance/history
-View → Gateway:        /api/v1/cohorts/{cohortId}/attendance-records/me
+View → Learning:       /api/v1/cohorts/{cohort-id}/attendance-records/me
 ```
 
 - `/bff/v1/**`는 화면이 의존하는 View 계약이다.
-- `/api/v1/**`는 View 서버가 의존하는 Gateway·Learning 계약이다.
+- `/api/v1/**`는 View 서버가 의존하는 Learning 계약이다.
 - View BFF는 두 계약 사이에서 인증을 변환하고, 필요한 값을 보완하고, 오류를 정제한다.
 
 ## 3. `LearningHttpService`는 무엇인가
 
-`LearningHttpService`는 Controller나 업무 Service가 아니다. View 서버가 Gateway의
-Learning API를 호출하기 위해 선언한 **HTTP Client Interface**다.
+`LearningHttpService`는 Controller나 업무 Service가 아니다. View 서버가 Learning API를
+직접 호출하기 위해 선언한 **HTTP Client Interface**다.
 
 ```java
 @HttpExchange("/api/v1")
@@ -83,7 +86,7 @@ public interface LearningHttpService {
 ```text
 learningHttpService.getMyProfile("Bearer ...")
                     ↓
-GET {gateway-base-url}/api/v1/user-profiles/me/profile
+GET {learning-base-url}/api/v1/user-profiles/me/profile
 Authorization: Bearer ...
                     ↓
 응답 JSON을 UserProfileResponse로 역직렬화
@@ -106,7 +109,7 @@ public interface LearningHttpService {
 ```
 
 현재는 모든 Learning 호출 앞에 `/api/v1`이 붙는다. Host는 이 애노테이션이 아니라
-`gateway-service` 설정에서 정한다.
+`learning-service` 설정에서 정한다.
 
 ### `@GetExchange`
 
@@ -115,7 +118,7 @@ HTTP `GET` 요청을 선언한다. 조회 전용이며 서버 상태를 변경�
 ```java
 import org.springframework.web.bind.annotation.RequestParam;
 
-@GetExchange("/cohorts/{cohortId}/attendance-records/me")
+@GetExchange("/cohorts/{cohort-id}/attendance-records/me")
 AttendanceRecordPageResponse getMyAttendanceRecords(
         @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
         @PathVariable Long cohortId,
@@ -138,7 +141,7 @@ Authorization: Bearer <AccessToken>
 생성, 명령 실행 또는 상태 전이를 요청한다.
 
 ```java
-@PostExchange("/cohorts/{cohortId}/attendance-records/check-in")
+@PostExchange("/cohorts/{cohort-id}/attendance-records/check-in")
 AttendanceRecordResponse checkIn(
         @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
         @PathVariable Long cohortId
@@ -162,7 +165,7 @@ AttendanceRecordResponse checkIn(
 | 애노테이션 | HTTP에서 변환되는 위치 | 예 |
 | --- | --- | --- |
 | `@RequestHeader` | Header | `Authorization: Bearer ...` |
-| `@PathVariable` | URL Path | `/cohorts/{cohortId}` |
+| `@PathVariable` | URL Path | `/cohorts/{cohort-id}` |
 | `@RequestParam` | Query String | `?page=0&size=20` |
 | `@RequestBody` | JSON Body | 닉네임 변경 요청 |
 | `@RequestPart` | Multipart Part | 게시글 JSON과 첨부파일 |
@@ -177,36 +180,42 @@ AttendanceRecordResponse checkIn(
 ```java
 @Configuration(proxyBeanMethods = false)
 @ImportHttpServices(
-        group = "gateway-service",
-        types = LearningHttpService.class
+        group = "learning-service",
+        types = {
+                LearningHttpService.class,
+                AttendanceHttpService.class,
+                SensorHttpService.class,
+                SensorAdminHttpService.class,
+                PresenceHttpService.class
+        }
 )
 public class LearningHttpServiceConfig {
 }
 ```
 
-`@ImportHttpServices`가 `LearningHttpService`의 Proxy 구현을 생성해 Spring Bean으로
-등록한다. `group = "gateway-service"`는 다음 설정과 연결된다.
+`@ImportHttpServices`가 등록된 5개 Interface의 Proxy 구현을 생성해 Spring Bean으로
+등록한다. 이 선언형 Client들은 `group = "learning-service"`로 다음 설정과 연결된다.
 
 ```yaml
 spring:
   http:
     serviceclient:
-      gateway-service:
-        base-url: ${GATEWAY_SERVICE_BASE_URL}
+      learning-service:
+        base-url: ${LEARNING_SERVICE_BASE_URL}
 ```
 
 최종 URL은 다음처럼 결합된다.
 
 ```text
-${GATEWAY_SERVICE_BASE_URL}
+${LEARNING_SERVICE_BASE_URL}
 + @HttpExchange의 /api/v1
 + @GetExchange 등의 Method Path
 ```
 
-예를 들어 Base URL이 `http://localhost:8080`이라면 최종 요청은 다음과 같다.
+예를 들어 Base URL이 `http://localhost:8084`라면 최종 요청은 다음과 같다.
 
 ```text
-http://localhost:8080/api/v1/user-profiles/me/profile
+http://localhost:8084/api/v1/user-profiles/me/profile
 ```
 
 연결·응답 Timeout은 `spring.http.clients`의 공통 설정을 사용한다. 로컬과 운영 환경에서
@@ -219,7 +228,7 @@ Base URL은 달라질 수 있지만 Browser 코드와 `/bff/v1/**` 계약은 바
 
 - Browser의 HttpOnly Session Cookie를 View 서버에서 검증한다.
 - Redis Session의 Access Token을 내부 Bearer Header로 변환한다.
-- Browser에 Gateway 주소와 Access Token을 노출하지 않는다.
+- Browser에 Learning 주소와 Access Token을 노출하지 않는다.
 - 연결 실패, 잘못된 응답, 하류 4xx·5xx를 View의 공개 오류로 변환한다.
 - Browser 계약을 `/bff/v1/**`로 고정해 내부 API 변경의 영향을 제한한다.
 

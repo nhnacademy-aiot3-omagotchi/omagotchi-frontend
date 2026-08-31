@@ -4,7 +4,7 @@
 >
 > 대상: Frontend·Backend·기획을 포함해 BFF를 처음 접하는 팀원
 >
-> 목적: 화면의 버튼 한 번이 BFF, Gateway, Learning Service를 거쳐 돌아오는 과정을 쉬운 말과 실제 코드 위치로 설명한다.
+> 목적: 화면의 버튼 한 번이 BFF에서 Learning Service로 직접 전달되어 돌아오는 과정을 쉬운 말과 실제 코드 위치로 설명한다.
 
 ## 먼저 보는 30초 요약
 
@@ -13,7 +13,7 @@
 ```text
 ① 화면이 Frontend 서버에 “출석해 줘”라고 요청한다.
 ② Frontend 서버의 BFF가 로그인 정보와 사용자의 기수 ID를 붙인다.
-③ Gateway가 요청을 Learning Service로 전달한다.
+③ Frontend BFF가 요청을 Learning Service로 직접 전달한다.
 ④ Learning Service가 출석 가능 여부를 판단하고 DB에 저장한다.
 ⑤ 결과가 반대 순서로 돌아와 화면에 표시된다.
 ```
@@ -25,7 +25,7 @@
 | 화면 또는 Browser | 사용자의 Chrome·Safari에서 실행되는 HTML·JavaScript |
 | Frontend 서버 | 8082에서 실행되는 `view` Spring Boot 애플리케이션 |
 | BFF | Frontend 서버 안에서 `/bff/v1/**` 요청을 처리하는 Java 코드 |
-| Gateway | 요청받은 `/api/v1/**`를 담당 서비스로 보내는 서버 |
+| Gateway | 외부 `/api/**`·Webhook 요청을 담당 서비스로 보내는 서버 |
 | Learning | 출결·기수·커뮤니티·캐릭터의 실제 규칙과 데이터를 가진 서버 |
 
 **BFF는 화면 JavaScript도 아니고 Gateway도 아니다. Frontend Spring 서버 안에 있는
@@ -56,7 +56,7 @@ BFF는 새로운 독립 서비스가 아니다. `view` 저장소의 Spring Boot 
 - `BFF`: Frontend 서버 내부의 `/bff/v1/**` 처리 코드
 
 예를 들어 “프론트가 Learning을 호출한다”는 말은 정확히는 **Browser가 BFF를 호출하고,
-BFF가 Gateway를 통해 Learning을 호출한다**는 뜻이다.
+BFF가 Learning을 직접 호출한다**는 뜻이다.
 
 ## 2. 왜 브라우저가 Learning Service를 직접 호출하지 않는가
 
@@ -83,20 +83,18 @@ Access Token은 Frontend 서버의 Redis Session에만 보관된다. 브라우�
 | --- | --- | --- |
 | Browser JavaScript | 손님 | 화면에 필요한 기능을 요청한다. |
 | Frontend BFF | 주문받는 직원 | 브라우저 요청을 받고 Token·기수 정보를 보완한다. |
-| Gateway | 주방 입구 | 요청을 올바른 내부 서비스로 전달하고 공통 보안을 적용한다. |
 | Learning Service | 담당 요리사 | 출결·기수·커뮤니티 등 실제 업무 규칙과 DB 작업을 수행한다. |
 | Identity Service | 회원 담당 직원 | 로그인하고 Access·Refresh Token을 발급한다. |
 | Redis | 직원용 보관함 | Browser Session과 발급받은 Token을 서버 측에 보관한다. |
 
 손님인 Browser가 주방인 Learning Service에 직접 들어가지 않는다. Frontend BFF에
-요청하면 BFF가 로그인 정보를 꺼내 Gateway를 통해 Learning Service에 전달한다.
+요청하면 BFF가 로그인 정보를 꺼내 Learning Service에 직접 전달한다.
 
 ### 비유를 실제 출석 버튼에 대입하면
 
 ```text
 손님: “출석 처리해 주세요.”
 주문 직원(BFF): “로그인한 사람은 A이고 승인 기수는 1기입니다.”
-주방 입구(Gateway): “출결 담당 주방으로 보내겠습니다.”
 담당 요리사(Learning): “중복 출석인지 확인하고 저장했습니다.”
 주문 직원(BFF): “화면에서 쓰는 응답으로 돌려드리겠습니다.”
 손님: 출석 완료 화면을 본다.
@@ -109,15 +107,13 @@ flowchart LR
     Browser["Browser<br/>HTML · JavaScript"]
     BFF["Frontend Spring Boot :8082<br/>/bff/v1/**"]
     Redis["Redis<br/>Session · Token"]
-    Gateway["Gateway :8080<br/>/api/v1/**"]
     Learning["Learning Service :8084<br/>업무 규칙 · DB"]
     Identity["Identity Service :8083<br/>로그인 · Token 발급"]
 
     Browser -->|"Session Cookie + BFF 요청"| BFF
     BFF <-->|"Session 조회"| Redis
-    BFF -->|"Authorization: Bearer AccessToken"| Gateway
-    Gateway -->|"Learning route"| Learning
-    Learning --> Gateway --> BFF -->|"화면용 JSON"| Browser
+    BFF -->|"Authorization: Bearer AccessToken"| Learning
+    Learning --> BFF -->|"화면용 JSON"| Browser
     BFF -->|"로그인 요청"| Identity
     Identity -->|"Access · Refresh Token"| BFF
 ```
@@ -125,8 +121,10 @@ flowchart LR
 환경변수 기준 주소는 다음과 같다.
 
 - Browser가 호출하는 주소: 현재 페이지와 같은 Origin의 `/bff/v1/**`
-- BFF가 호출하는 Gateway 주소: `GATEWAY_SERVICE_BASE_URL`
+- BFF의 Learning 선언형 Client 주소: `LEARNING_SERVICE_BASE_URL`
 - BFF가 로그인할 때 호출하는 Identity 주소: `IDENTITY_SERVICE_BASE_URL`
+
+AI Chat은 후속 전환 전까지 `GATEWAY_SERVICE_BASE_URL`을 사용한다.
 
 Browser JavaScript에는 `localhost:8080`, `localhost:8084` 같은 주소를 직접 작성하지 않는다.
 
@@ -181,7 +179,6 @@ sequenceDiagram
     participant S as AttendanceBffService
     participant R as Redis Session
     participant H as LearningHttpService
-    participant G as Gateway
     participant L as Learning Service
 
     JS->>C: GET /bff/v1/attendance/history?from=...&page=0&size=20
@@ -189,13 +186,13 @@ sequenceDiagram
     S->>R: Session의 Access Token 조회
     R-->>S: Access Token
     S->>H: 내 Profile 조회
-    H->>G: GET /api/v1/user-profiles/me/profile + Bearer Token
-    G->>L: Learning route 전달
-    L-->>S: approvedCohort.cohortId
+    H->>L: GET /api/v1/user-profiles/me/profile + Bearer Token
+    L-->>H: approvedCohort.cohortId
+    H-->>S: approvedCohort.cohortId
     S->>H: 기수 ID + 날짜 + Pagination으로 출결 조회
-    H->>G: GET /api/v1/cohorts/{cohortId}/attendance-records/me
-    G->>L: Learning route 전달
-    L-->>S: items + page
+    H->>L: GET /api/v1/cohorts/{cohort-id}/attendance-records/me
+    L-->>H: items + page
+    H-->>S: items + page
     S-->>C: AttendanceRecordPageResponse
     C-->>JS: 200 JSON
 ```
@@ -227,9 +224,7 @@ LearningProxyBffService
     ↓
 LearningHttpService.getPresence(...)
     ↓
-Gateway GET /api/v1/cohorts/me/presence
-    ↓
-Learning Service
+Learning Service GET /api/v1/cohorts/me/presence
 ```
 
 이 형태에서는 BFF 응답이 Learning 응답과 거의 같다. 그래도 Browser가 Token과 내부
@@ -262,10 +257,10 @@ Cookie: OMAGOTCHI_SESSION=...
 X-CSRF-TOKEN: ...
 ```
 
-BFF는 Session의 Access Token과 승인된 기수 ID를 찾아 Gateway 요청으로 바꾼다.
+BFF는 Session의 Access Token과 승인된 기수 ID를 찾아 Learning 요청으로 바꾼다.
 
 ```http
-POST /api/v1/cohorts/{cohortId}/attendance-records/check-in
+POST /api/v1/cohorts/{cohort-id}/attendance-records/check-in
 Authorization: Bearer <Access Token>
 ```
 
@@ -274,7 +269,7 @@ Authorization: Bearer <Access Token>
 | 구간 | 인증 정보 |
 | --- | --- |
 | Browser → BFF | Session Cookie + 변경 요청의 CSRF Token |
-| BFF → Gateway → Learning | `Authorization: Bearer AccessToken` |
+| BFF → Learning | `Authorization: Bearer AccessToken` |
 
 ## 9. 첨부파일은 어떻게 전달되는가
 
@@ -296,15 +291,14 @@ Browser FormData
 → POST /bff/v1/community/posts
 → CommunityBffController
 → LearningHttpService multipart 요청
-→ Gateway
 → Learning Service 저장
 ```
 
 다운로드는 상태를 변경하지 않는 GET 요청이다.
 
 ```text
-GET /bff/v1/community/posts/{postId}/attachments/{attachmentId}
-→ BFF가 Bearer Token을 붙여 Gateway로 전달
+GET /bff/v1/community/posts/{post-id}/attachments/{attachment-id}
+→ BFF가 Bearer Token을 붙여 Learning Service로 직접 전달
 → Learning Service가 권한과 게시글-첨부파일 소속을 검증
 → 파일 Resource와 Content-Disposition을 Browser에 반환
 ```
@@ -315,7 +309,6 @@ GET /bff/v1/community/posts/{postId}/attachments/{attachmentId}
 
 ```text
 Learning Service JSON
-→ Gateway
 → BFF의 DTO 또는 JsonNode
 → Browser JSON
 → 화면 Rendering
@@ -357,7 +350,7 @@ Learning Service가 예상된 업무 오류를 반환하면 BFF가 공통 형태
 | 화면용 처리 | `AttendanceBffService`, `ProfileBffService` | 여러 호출 조합과 DTO 보완 |
 | 공통 대행 처리 | `LearningProxyBffService` | Session Token 조회와 공통 실행 경계 |
 | Session 인증 변환 | `LearningSessionAuthorization` | Session Token을 Bearer Header로 변환 |
-| Gateway HTTP 계약 | `LearningHttpService` | 실제 `/api/v1/**` Method·경로·DTO |
+| Learning HTTP 계약 | `LearningHttpService` | 실제 `/api/v1/**` Method·경로·DTO |
 | 하류 오류 처리 | `LearningGatewayCallExecutor` | 연결 실패와 Learning 오류 변환 |
 | JSON 오류 응답 | `ApiExceptionHandler` | Browser에 공개 가능한 오류 선별 |
 | 보안 | `SecurityConfig`, `CsrfBffController` | 인증 필요 경로와 CSRF Token 제공 |
@@ -368,8 +361,7 @@ Learning Service가 예상된 업무 오류를 반환하면 BFF가 공통 형태
 | --- | --- | --- |
 | 화면 담당 | `static/js/api.js`, `static/js/home/*.js` | BFF 경로, 화면에 필요한 응답 필드, 오류 `code` |
 | Frontend 서버/BFF 담당 | `*BffController`, `*BffService`, `LearningHttpService`, Frontend DTO | Browser 계약과 Learning API 계약 양쪽 |
-| Gateway 담당 | Learning route와 인증 Header 전달 설정 | BFF가 호출하는 `/api/v1/**`, Learning upstream |
-| Learning 담당 | Learning Controller·Service·Repository·DTO | Gateway에 공개한 API 계약, JWT·기수·리소스 권한 |
+| Learning 담당 | Learning Controller·Service·Repository·DTO | BFF에 공개한 API 계약, JWT·기수·리소스 권한 |
 
 화면 담당자는 Learning Controller를 직접 호출하지 않는다. Learning 담당자는 Browser의
 DOM을 직접 수정하지 않는다. 두 계약을 연결하고 필요한 값을 조합하는 곳이 BFF다.
@@ -379,20 +371,20 @@ DOM을 직접 수정하지 않는다. 두 계약을 연결하고 필요한 값�
 기능 하나를 붙일 때 일반적으로 다음 순서로 작업한다.
 
 1. Learning Service의 실제 Method·경로·요청·응답 계약을 확인한다.
-2. `LearningHttpService`에 Gateway로 보낼 HTTP 계약을 추가한다.
+2. `LearningHttpService`에 Learning으로 보낼 HTTP 계약을 추가한다.
 3. 조합이 필요하면 기능별 BFF Service를 만들고, 단순 전달이면
    `LearningProxyBffService`를 사용한다.
 4. `*BffController`에 Browser용 `/bff/v1/**` 경로를 만든다.
 5. `api.js`에 `window.OmagotchiApi` 함수를 추가한다.
 6. 화면 JavaScript가 그 함수의 응답을 Loading·Empty·Ready·Error 상태로 Mapping한다.
-7. Controller·HTTP 계약 테스트와 실제 Frontend–Gateway–Service E2E를 확인한다.
+7. Controller·HTTP 계약 테스트와 실제 Frontend–Learning E2E를 확인한다.
 
 요청 경로 세 개를 혼동하지 않아야 한다.
 
 ```text
 화면 Page 경로:          /home
 Browser용 BFF 경로:      /bff/v1/attendance/history
-내부 Gateway API 경로:   /api/v1/cohorts/{cohortId}/attendance-records/me
+내부 Learning API 경로:  /api/v1/cohorts/{cohort-id}/attendance-records/me
 ```
 
 ### 팀끼리 API를 전달할 때 필요한 최소 정보
@@ -424,7 +416,8 @@ BFF 경로: GET /bff/v1/attendance/history
 ### “BFF는 Gateway와 같은 것인가?”
 
 아니다. BFF는 **화면에 맞게 요청을 조합하는 Frontend 전용 서버 경계**이고, Gateway는
-**내부 서비스로 요청을 Routing하는 공통 입구**다.
+**외부 `/api/**`·Webhook 요청을 Routing하는 공통 입구**다. BFF의 Learning 호출은
+Gateway를 경유하지 않는다.
 
 ### “BFF를 쓰면 Learning Service의 권한 검사는 필요 없는가?”
 
@@ -456,11 +449,12 @@ Browser 개발자 도구의 Network에서 `/bff/v1/**` 요청 하나를 고른 �
 3. 상태 변경 요청의 `403`이면 CSRF Token을 전달했는가?
 4. `404`이면 BFF 경로가 틀렸는가, 실제 업무 리소스가 없는가? 응답 `code`를 확인한다.
 5. `409`이면 승인 기수 없음·중복 출석 같은 정상 업무 거절인가?
-6. `502`이면 Gateway/Learning 응답 DTO가 BFF 계약과 다른가?
-7. `503`이면 Redis, Gateway 또는 대상 Service가 실행 중인가?
+6. `502`이면 Learning 응답 DTO가 BFF 계약과 다른가?
+7. `503`이면 Redis 또는 대상 Service가 실행 중인가?
 8. Frontend 로그에서 BFF Controller 도달 여부와 하류 Status·`requestId`를 확인한다.
 
-로컬 실행 시 기본 확인 순서는 Redis → Identity → Learning → Gateway → Frontend다.
+로컬 Learning 기능 확인 순서는 Redis → Identity → Learning → Frontend다. AI Chat까지
+확인할 때만 현재 Gateway를 함께 실행한다.
 Learning의 PostgreSQL은 팀 정책에 따라 로컬 DB에 직접 연결하지 않고 Testcontainers로
 실행·검증한다.
 
@@ -471,7 +465,7 @@ Browser는 /bff/v1/**만 호출한다.
 Browser는 Access Token과 내부 서비스 주소를 모른다.
 BFF는 Frontend Spring Boot 안에 있다.
 BFF는 Session Token과 화면에 필요한 값을 보완한다.
-Gateway는 요청을 Learning Service로 전달한다.
+BFF는 담당 Learning Service를 직접 호출한다.
 최종 업무 규칙과 권한 검사는 Learning Service가 담당한다.
 ```
 
@@ -481,6 +475,6 @@ Gateway는 요청을 Learning Service로 전달한다.
 > `/bff/v1/**`만 호출합니다. BFF는 별도 서버가 아니라 `view` Spring Boot 안에 있고,
 > Redis Session에서 Access Token을 꺼내 Bearer Header로 바꿉니다. 화면에 기수 ID가
 > 없는 경우에는 BFF가 Profile을 먼저 조회해서 필요한 값을 보완합니다. 그 요청을
-> Gateway가 Learning Service로 전달하고, 실제 업무 규칙과 최종 권한 검사는 Learning
+> Learning Service로 직접 전달하고, 실제 업무 규칙과 최종 권한 검사는 Learning
 > Service가 담당합니다. 성공이나 허용된 업무 오류가 다시 BFF를 통해 화면용 JSON으로
 > 돌아오는 구조입니다.

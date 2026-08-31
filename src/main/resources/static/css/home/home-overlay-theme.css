@@ -592,7 +592,8 @@
     font-style: normal;
 }
 
-.overlay-settings-status {
+.overlay-settings-status,
+.overlay-settings-open {
     flex: 0 0 auto;
     min-height: 30px;
     display: inline-flex;
@@ -603,6 +604,11 @@
     color: var(--overlay-accent-strong);
     font-size: 12px;
     font-weight: 900;
+}
+
+.overlay-settings-open {
+    justify-content: center;
+    text-decoration: none;
 }
 
 .overlay-settings-logout {
@@ -1720,6 +1726,13 @@
     box-shadow: var(--ui-shadow);
 }
 
+.ui-menu-live-panel,
+.ui-menu-live-panel *,
+.ui-menu-live-panel *::before,
+.ui-menu-live-panel *::after {
+    box-sizing: border-box;
+}
+
 .ui-menu-live-panel .ui-menu-live-header {
     background: linear-gradient(135deg, var(--ui-emerald-500), #5ed99b);
     color: var(--ui-ink);
@@ -1758,10 +1771,10 @@
     }
 }
 
-/* 2026-08-14 unified list surfaces.
-   진행·내 정보·커뮤니티·설정은 여러 파스텔 카드 대신 한 가지 밝은 목록 문법을 쓴다. */
+/* 실제 Home의 표준 밝은 목록 문법. */
 .ui-menu-live-panel.home-overlay--progress,
 .ui-menu-live-panel.home-overlay--personal,
+.ui-menu-live-panel.home-overlay--cohort,
 .ui-menu-live-panel.home-overlay--community,
 .ui-menu-live-panel.home-overlay--settings {
     --overlay-list-surface: #f7fcf9;
@@ -1775,19 +1788,288 @@
     color: var(--overlay-list-ink);
 }
 
-.ui-menu-live-panel:is(.home-overlay--progress, .home-overlay--personal, .home-overlay--community, .home-overlay--settings) .ui-menu-live-header {
+.ui-menu-live-panel:is(.home-overlay--progress, .home-overlay--personal, .home-overlay--cohort, .home-overlay--community, .home-overlay--settings) .ui-menu-live-header {
     border-bottom-color: rgba(18, 56, 42, 0.18);
     background: #2fc47c;
     color: #0c3022;
 }
 
-.ui-menu-live-panel:is(.home-overlay--progress, .home-overlay--personal, .home-overlay--community, .home-overlay--settings) .ui-menu-live-header :is(h2, p),
-.ui-menu-live-panel:is(.home-overlay--progress, .home-overlay--personal, .home-overlay--community, .home-overlay--settings) > .home-overlay-close {
+.ui-menu-live-panel:is(.home-overlay--progress, .home-overlay--personal, .home-overlay--cohort, .home-overlay--community, .home-overlay--settings) .ui-menu-live-header :is(h2, p),
+.ui-menu-live-panel:is(.home-overlay--progress, .home-overlay--personal, .home-overlay--cohort, .home-overlay--community, .home-overlay--settings) > .home-overlay-close {
     color: #0c3022 !important;
 }
 
-.ui-menu-live-panel:is(.home-overlay--progress, .home-overlay--personal, .home-overlay--community, .home-overlay--settings) .ui-menu-live-body {
+.ui-menu-live-panel:is(.home-overlay--progress, .home-overlay--personal, .home-overlay--cohort, .home-overlay--community, .home-overlay--settings) .ui-menu-live-body {
     background: var(--overlay-list-surface);
+}
+
+/* 실제 Home 기수 · 팀 화면: 표준 Home 오버레이 안에서 밀도 있게 배치한다. */
+.home-overlay--cohort [data-home-party-app] {
+    min-width: 0;
+}
+
+.home-overlay--cohort .ui-menu-live-content,
+.home-overlay--cohort .ui-cohort-shell,
+.home-overlay--cohort .ui-party-page {
+    gap: 10px;
+}
+
+.home-overlay--cohort .ui-cohort-shell {
+    padding: 14px;
+    border-radius: 18px;
+}
+
+.home-overlay--cohort .ui-cohort-shell > .ui-menu-eyebrow {
+    line-height: 1;
+}
+
+.home-overlay--cohort .ui-cohort-summary {
+    min-height: 58px;
+    padding: 10px 12px;
+    border: 1px solid var(--ui-line);
+    border-radius: 14px;
+    background: #ffffff;
+}
+
+.home-overlay--cohort .ui-cohort-summary__copy {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    align-items: center;
+    gap: 12px;
+}
+
+.home-overlay--cohort .ui-cohort-summary__copy h3 {
+    font-size: 21px;
+}
+
+.home-overlay--cohort .ui-cohort-summary__copy p {
+    margin: 0;
+    font-size: 12px;
+}
+
+.home-overlay--cohort .ui-cohort-party-zone {
+    gap: 10px;
+    padding: 13px;
+    border-radius: 16px;
+}
+
+.home-overlay--cohort .ui-cohort-party-zone > header h3 {
+    font-size: 17px;
+}
+
+.home-overlay--cohort .ui-cohort-party-zone > header p {
+    font-size: 11px;
+}
+
+.home-overlay--cohort .ui-cohort-party-card {
+    gap: 10px;
+    padding: 12px;
+    border-radius: 14px;
+}
+
+.home-overlay--cohort .ui-cohort-party-card .ui-character-avatar {
+    width: 40px;
+    height: 40px;
+}
+
+.home-overlay--cohort .ui-cohort-party-create {
+    min-height: 92px;
+}
+
+.home-overlay--cohort .ui-cohort-affiliation-note {
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 13px;
+}
+
+.home-overlay--cohort .ui-cohort-affiliation-note :is(strong, p) {
+    font-size: 11px;
+}
+
+.home-overlay--cohort .overlay-cohort-join {
+    margin: 0;
+    padding: 14px;
+}
+
+.home-cohort-join-message {
+    grid-column: 1 / -1;
+    margin: 0;
+    color: var(--ui-ink-muted);
+    font-size: 12px;
+}
+
+.home-party-create-form {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(260px, .8fr);
+    align-items: end;
+    gap: 10px;
+    padding: 14px;
+    border: 1px solid var(--ui-line);
+    border-radius: 18px;
+    background: #ffffff;
+}
+
+.home-party-create-form h3,
+.home-party-create-form p {
+    margin: 5px 0 0;
+}
+
+.home-party-create-form p {
+    color: var(--ui-ink-muted);
+    font-size: 13px;
+}
+
+.home-party-create-form > div:last-child {
+    grid-column: 1 / -1;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.home-party-detail-head {
+    min-width: 0;
+    min-height: 48px;
+    display: grid;
+    grid-template-columns: auto auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 12px;
+    border: 1px solid var(--ui-line);
+    border-radius: 14px;
+    background: #ffffff;
+}
+
+.home-party-detail-head > button {
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--ui-emerald-800);
+    font-weight: 900;
+}
+
+.home-party-detail-head > div {
+    min-width: 0;
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+}
+
+.home-party-detail-head small {
+    color: var(--ui-ink-muted);
+    font-size: 10px;
+    font-weight: 900;
+    white-space: nowrap;
+}
+
+.home-party-detail-head strong {
+    overflow: hidden;
+    color: var(--ui-ink);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.home-overlay--cohort .ui-party-management {
+    grid-template-columns: minmax(0, 1.15fr) minmax(240px, .85fr);
+    gap: 10px;
+}
+
+.home-overlay--cohort :is(.ui-party-members, .ui-party-invite, .ui-party-member-note) {
+    gap: 9px;
+    padding: 13px;
+    border-radius: 14px;
+}
+
+.home-overlay--cohort :is(.ui-party-members, .ui-party-invite, .ui-party-member-note) h3 {
+    font-size: 15px;
+}
+
+.home-overlay--cohort .ui-party-members ul {
+    max-height: 178px;
+    overflow: auto;
+    gap: 6px;
+    scrollbar-width: thin;
+}
+
+.home-overlay--cohort .ui-party-members li {
+    grid-template-columns: auto minmax(0, 1fr) auto auto auto;
+    gap: 6px;
+    padding: 6px;
+    border-radius: 11px;
+}
+
+.home-overlay--cohort .ui-party-members li > button {
+    min-height: 30px;
+    padding: 0 8px;
+    border: 1px solid #d8aaaa;
+    border-radius: 10px;
+    background: #ffffff;
+    color: var(--ui-danger);
+    font-weight: 900;
+}
+
+.home-overlay--cohort .ui-party-invite .ui-field {
+    gap: 5px;
+}
+
+.home-overlay--cohort .ui-party-invite .ui-field input {
+    min-height: 42px;
+}
+
+.home-overlay--cohort .ui-party-invite > .ui-button {
+    min-height: 40px;
+}
+
+.home-overlay--cohort .ui-party-danger-zone {
+    gap: 8px;
+    padding-top: 9px;
+}
+
+.home-overlay--cohort .ui-party-danger-zone .ui-party-danger-action {
+    width: auto;
+    min-height: 38px;
+    padding: 0 13px;
+}
+
+.home-party-message {
+    margin: 10px 0 0;
+    color: var(--ui-emerald-800);
+    font-size: 12px;
+    font-weight: 800;
+    text-align: right;
+}
+
+@media (max-width: 840px) {
+    .home-overlay--cohort .ui-cohort-summary__copy {
+        grid-template-columns: 1fr auto;
+    }
+
+    .home-overlay--cohort .ui-cohort-summary__copy p {
+        grid-column: 1 / -1;
+    }
+
+    .home-party-create-form {
+        grid-template-columns: 1fr;
+    }
+
+    .home-party-create-form > div:last-child {
+        grid-column: 1;
+    }
+
+    .home-overlay--cohort .ui-party-members li {
+        grid-template-columns: auto minmax(0, 1fr) auto;
+    }
+
+    .home-overlay--cohort .ui-party-members li > button {
+        grid-column: 2 / -1;
+    }
+
+    .home-overlay--cohort .ui-party-management {
+        grid-template-columns: 1fr;
+    }
+
+    .home-overlay--cohort .ui-party-members ul {
+        max-height: none;
+    }
 }
 
 .home-overlay--progress .overlay-tabs {
@@ -2002,6 +2284,7 @@
 }
 
 .home-overlay--settings .overlay-settings-row,
+.home-overlay--settings .overlay-settings-open,
 .home-overlay--settings .overlay-settings-logout {
     border: 1px solid var(--overlay-list-line);
     background: var(--overlay-list-row);
@@ -2016,7 +2299,8 @@
     color: var(--overlay-list-muted);
 }
 
-.home-overlay--settings .overlay-settings-status {
+.home-overlay--settings .overlay-settings-status,
+.home-overlay--settings .overlay-settings-open {
     background: var(--overlay-list-soft);
     color: #176b46;
 }

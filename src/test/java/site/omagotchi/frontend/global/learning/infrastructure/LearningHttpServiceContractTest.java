@@ -16,6 +16,7 @@ import org.springframework.web.client.support.RestClientAdapter;
 import org.springframework.web.service.invoker.HttpServiceProxyFactory;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
+import site.omagotchi.frontend.cohort.infrastructure.response.UserAccessContextResponse;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -55,6 +56,34 @@ class LearningHttpServiceContractTest {
                 .builderFor(RestClientAdapter.create(builder.build()))
                 .build()
                 .createClient(LearningHttpService.class);
+    }
+
+    @Test
+    @DisplayName("내 접근 컨텍스트 경로와 응답 계약을 사용한다")
+    void getsMyAccessContext() {
+        server.expect(once(), requestTo(BASE_URL + "/api/v1/cohorts/me/access-context"))
+                .andExpect(header(HttpHeaders.AUTHORIZATION, BEARER))
+                .andRespond(withSuccess("""
+                        {
+                          "globalRole": "USER",
+                          "accessType": "COHORT_MANAGER",
+                          "managedCohorts": [{
+                            "cohortId": 7,
+                            "name": "AIoT 3기",
+                            "startDate": "2026-09-01",
+                            "endDate": "2026-12-31",
+                            "status": "PREPARING"
+                          }],
+                          "studentCohorts": []
+                        }
+                        """, MediaType.APPLICATION_JSON));
+
+        UserAccessContextResponse response = service.getMyAccessContext(BEARER);
+
+        assertThat(response.isCohortManager()).isTrue();
+        assertThat(response.managedCohorts()).extracting("cohortId").containsExactly(7L);
+        assertThat(response.managedCohorts().getFirst().status()).isEqualTo("PREPARING");
+        server.verify();
     }
 
     @Nested
@@ -347,6 +376,55 @@ class LearningHttpServiceContractTest {
                     .andRespond(withNoContent());
 
             service.deleteCohort(BEARER, 7L);
+
+            server.verify();
+        }
+    }
+
+    @Nested
+    @DisplayName("관리자 공부 통계 계약")
+    class AdminStudyStatisticsContract {
+
+        @Test
+        @DisplayName("오늘 요약과 추이 조회를 전달한다")
+        void mapsTodayAndTrendStatisticsPath() {
+            server.expect(once(), requestTo(BASE_URL + "/api/v1/cohorts/7/study-statistics/today"))
+                    .andExpect(method(HttpMethod.GET))
+                    .andExpect(header(HttpHeaders.AUTHORIZATION, BEARER))
+                    .andRespond(withSuccess("{\"totalStudySeconds\": 3600}", MediaType.APPLICATION_JSON));
+
+            server.expect(once(), requestTo(BASE_URL + "/api/v1/cohorts/7/study-statistics/trend?window=7d"))
+                    .andExpect(method(HttpMethod.GET))
+                    .andExpect(header(HttpHeaders.AUTHORIZATION, BEARER))
+                    .andRespond(withSuccess("{\"totalStudySeconds\": 25200}", MediaType.APPLICATION_JSON));
+
+            service.getStudyStatisticsToday(BEARER, 7L);
+            service.getStudyStatisticsTrend(BEARER, 7L, "7d");
+
+            server.verify();
+        }
+
+        @Test
+        @DisplayName("수강생 목록과 세부 통계 조회를 전달한다")
+        void mapsMembersAndDetailStatisticsPath() {
+            server.expect(once(), requestTo(BASE_URL + "/api/v1/cohorts/7/study-statistics/members?window=7d&page=0&size=20&sort=periodStudySeconds%2Cdesc"))
+                    .andExpect(method(HttpMethod.GET))
+                    .andExpect(header(HttpHeaders.AUTHORIZATION, BEARER))
+                    .andRespond(withSuccess("{\"items\": []}", MediaType.APPLICATION_JSON));
+
+            server.expect(once(), requestTo(BASE_URL + "/api/v1/cohorts/7/study-statistics/members/10/overview?window=7d"))
+                    .andExpect(method(HttpMethod.GET))
+                    .andExpect(header(HttpHeaders.AUTHORIZATION, BEARER))
+                    .andRespond(withSuccess("{\"cohortMembershipId\": 10}", MediaType.APPLICATION_JSON));
+
+            server.expect(once(), requestTo(BASE_URL + "/api/v1/cohorts/7/study-statistics/members/10/records?date=2026-08-25"))
+                    .andExpect(method(HttpMethod.GET))
+                    .andExpect(header(HttpHeaders.AUTHORIZATION, BEARER))
+                    .andRespond(withSuccess("{\"records\": []}", MediaType.APPLICATION_JSON));
+
+            service.getStudyStatisticsMembers(BEARER, 7L, "7d", 0, 20, "periodStudySeconds,desc");
+            service.getStudyStatisticsMemberOverview(BEARER, 7L, 10L, "7d");
+            service.getStudyStatisticsMemberDailyRecords(BEARER, 7L, 10L, "2026-08-25");
 
             server.verify();
         }

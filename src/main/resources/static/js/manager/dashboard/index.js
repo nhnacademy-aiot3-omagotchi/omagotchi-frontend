@@ -19,8 +19,16 @@ async function hydrateDashboard(
 ) {
     try {
         const api = globalThis.OmagotchiApi;
-        const cohorts = await api.cohort.list();
-        const source = Array.isArray(cohorts) ? cohorts : [];
+        const [accessContext, account] = await Promise.all([
+            api.access.getContext(),
+            api.account.get().catch(() => null)
+        ]);
+        const source = Array.isArray(accessContext?.managedCohorts)
+            ? accessContext.managedCohorts.map((cohort) => ({
+                ...cohort,
+                id: cohort.cohortId
+            }))
+            : [];
         const applications = [];
         let partialFailure = false;
         let attendanceFailure = null;
@@ -39,8 +47,11 @@ async function hydrateDashboard(
                 api.manager.getAttendanceRecords(cohort.id, attendanceDate),
                 api.manager.getJoinCode(cohort.id)
             ]);
-            partialFailure ||= [membersResult, applicationsResult, attendanceResult, joinCodeResult]
+            const joinCodeMissing = joinCodeResult.status === "rejected"
+                && joinCodeResult.reason?.code === "JOIN_CODE_NOT_FOUND";
+            partialFailure ||= [membersResult, applicationsResult, attendanceResult]
                 .some((result) => result.status === "rejected");
+            partialFailure ||= joinCodeResult.status === "rejected" && !joinCodeMissing;
             if (attendanceResult.status === "rejected") {
                 attendanceFailure ??= attendanceResult.reason;
             }
@@ -72,11 +83,14 @@ async function hydrateDashboard(
                     checkOut: timeLabel(record.checkedOutAt)
                 }))
                 : [];
+            const joinCode = joinCodeResult.status === "fulfilled" ? joinCodeResult.value : null;
             return {
                 ...cohort,
                 members,
                 attendance,
-                joinCode: joinCodeResult.status === "fulfilled" ? joinCodeResult.value : null
+                joinCode: joinCode?.code
+                    ? { ...joinCode, value: joinCode.code }
+                    : joinCode
             };
         }));
         if (rejectAttendanceFailure && attendanceFailure) {
@@ -88,6 +102,13 @@ async function hydrateDashboard(
                 cohorts: hydratedCohorts,
                 applications,
                 notices,
+                manager: account ? {
+                    name: account.name || "관리자",
+                    email: account.email || "",
+                    organization: hydratedCohorts.length
+                        ? `${hydratedCohorts.length}개 기수 관리`
+                        : "기수 관리자"
+                } : undefined,
                 selectedCohortId: store.getState().selectedCohortId || hydratedCohorts[0]?.id
             }
         });
@@ -121,6 +142,7 @@ function statusLabel(status) {
         MENTOR: "멘토",
         STUDENT: "수강생",
         ACTIVE: "활성",
+        EXPIRED: "만료",
         INACTIVE: "비활성",
         ENDED: "종료",
         PREPARING: "준비 중",
@@ -226,6 +248,7 @@ function renderSummary(state) {
 
 function renderShell() {
     const state = store.getState();
+    renderSession();
     renderCohortSelect(state);
     renderSummary(state);
 }
@@ -272,7 +295,7 @@ document.querySelector("[data-manager-logout-form]").addEventListener("submit", 
         store.dispatch({ type: "CLEAR_SESSION" });
     } catch (error) {
         // Browser 저장소 정리에 실패해도 Spring Security Logout Form은 제출한다.
-        console.warn("관리자 Prototype 상태를 정리하지 못했습니다.", error);
+        console.warn("관리자 화면 상태를 정리하지 못했습니다.", error);
     }
 });
 
@@ -285,8 +308,20 @@ window.OmagotchiDashboardPanels.start({
         statusLabel,
         openDialog,
         setBubble,
-        fetchStatistics: (cohortId, range) => (
-            window.OmagotchiApi?.manager?.getStudyStatistics?.(cohortId, range)
+        fetchTodayStats: (cohortId) => (
+            window.OmagotchiApi?.manager?.getStudyStatsToday?.(cohortId)
+        ),
+        fetchTrendStats: (cohortId, window) => (
+            window.OmagotchiApi?.manager?.getStudyStatsTrend?.(cohortId, window)
+        ),
+        fetchMemberStats: (cohortId, query) => (
+            window.OmagotchiApi?.manager?.getStudyStatsMembers?.(cohortId, query)
+        ),
+        fetchMemberOverview: (cohortId, membershipId, window) => (
+            window.OmagotchiApi?.manager?.getStudyStatsMemberOverview?.(cohortId, membershipId, window)
+        ),
+        fetchMemberRecords: (cohortId, membershipId, date) => (
+            window.OmagotchiApi?.manager?.getStudyStatsMemberDailyRecords?.(cohortId, membershipId, date)
         ),
         getMemberProfiles: () => store.getState().currentCohort.members,
         refreshDashboard: hydrateDashboard,

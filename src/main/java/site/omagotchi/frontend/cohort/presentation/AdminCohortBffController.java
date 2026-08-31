@@ -20,6 +20,7 @@ import site.omagotchi.frontend.global.learning.application.LearningProxyBffServi
 public class AdminCohortBffController {
 
     private final LearningProxyBffService proxy;
+    private final ManagerJoinCodeSessionStore joinCodeSessionStore;
 
     @GetMapping("/cohorts")
     public JsonNode getCohorts(HttpServletRequest request) {
@@ -33,105 +34,110 @@ public class AdminCohortBffController {
                 .createCohort(context.bearerToken(), body));
     }
 
-    @PatchMapping("/cohorts/{cohortId}")
+    @PatchMapping("/cohorts/{cohort-id}")
     public JsonNode updateCohort(
             HttpServletRequest request,
-            @PathVariable Long cohortId,
+            @PathVariable("cohort-id") Long cohortId,
             @RequestBody JsonNode body
     ) {
         return proxy.execute(request, context -> context.service()
                 .updateCohort(context.bearerToken(), cohortId, body));
     }
 
-    @PatchMapping("/cohorts/{cohortId}/status")
+    @PatchMapping("/cohorts/{cohort-id}/status")
     public JsonNode updateCohortStatus(
             HttpServletRequest request,
-            @PathVariable Long cohortId,
+            @PathVariable("cohort-id") Long cohortId,
             @RequestBody JsonNode body
     ) {
         return proxy.execute(request, context -> context.service()
                 .updateCohortStatus(context.bearerToken(), cohortId, body));
     }
 
-    @DeleteMapping("/cohorts/{cohortId}")
-    public ResponseEntity<Void> deleteCohort(HttpServletRequest request, @PathVariable Long cohortId) {
+    @DeleteMapping("/cohorts/{cohort-id}")
+    public ResponseEntity<Void> deleteCohort(HttpServletRequest request, @PathVariable("cohort-id") Long cohortId) {
         proxy.execute(request, context -> context.service()
                 .deleteCohort(context.bearerToken(), cohortId));
         return ResponseEntity.noContent().build();
     }
 
-    @GetMapping("/cohorts/{cohortId}/members")
-    public JsonNode getMembers(HttpServletRequest request, @PathVariable Long cohortId) {
+    @GetMapping("/cohorts/{cohort-id}/members")
+    public JsonNode getMembers(HttpServletRequest request, @PathVariable("cohort-id") Long cohortId) {
         return proxy.execute(request, context -> context.service()
                 .getCohortMembers(context.bearerToken(), cohortId));
     }
 
-    @GetMapping("/cohorts/{cohortId}/applications")
-    public JsonNode getApplications(HttpServletRequest request, @PathVariable Long cohortId) {
+    @GetMapping("/cohorts/{cohort-id}/applications")
+    public JsonNode getApplications(HttpServletRequest request, @PathVariable("cohort-id") Long cohortId) {
         return proxy.execute(request, context -> context.service()
                 .getCohortApplications(context.bearerToken(), cohortId));
     }
 
-    @PostMapping("/cohorts/{cohortId}/managers")
+    @PostMapping("/cohorts/{cohort-id}/managers")
     public JsonNode addManager(
             HttpServletRequest request,
-            @PathVariable Long cohortId,
+            @PathVariable("cohort-id") Long cohortId,
             @RequestBody JsonNode body
     ) {
         return proxy.execute(request, context -> context.service()
                 .addCohortManager(context.bearerToken(), cohortId, body));
     }
 
-    @PatchMapping("/cohorts/{cohortId}/members/{userId}/role")
+    @PatchMapping("/cohorts/{cohort-id}/members/{member-user-id}/role")
     public JsonNode updateMemberRole(
             HttpServletRequest request,
-            @PathVariable Long cohortId,
-            @PathVariable String userId,
+            @PathVariable("cohort-id") Long cohortId,
+            @PathVariable("member-user-id") String userId,
             @RequestBody JsonNode body
     ) {
         return proxy.execute(request, context -> context.service()
                 .updateMemberRole(context.bearerToken(), cohortId, userId, body));
     }
 
-    @PatchMapping("/memberships/{membershipId}/approve")
+    @PatchMapping("/memberships/{membership-id}/approve")
     public JsonNode approveMembership(
             HttpServletRequest request,
-            @PathVariable Long membershipId,
+            @PathVariable("membership-id") Long membershipId,
             @RequestBody JsonNode body
     ) {
         return proxy.execute(request, context -> context.service()
                 .approveMembership(context.bearerToken(), membershipId, body));
     }
 
-    @PatchMapping("/memberships/{membershipId}/reject")
+    @PatchMapping("/memberships/{membership-id}/reject")
     public JsonNode rejectMembership(
             HttpServletRequest request,
-            @PathVariable Long membershipId,
+            @PathVariable("membership-id") Long membershipId,
             @RequestBody JsonNode body
     ) {
         return proxy.execute(request, context -> context.service()
                 .rejectMembership(context.bearerToken(), membershipId, body));
     }
 
-    @GetMapping("/cohorts/{cohortId}/join-code")
-    public JsonNode getJoinCode(HttpServletRequest request, @PathVariable Long cohortId) {
-        return proxy.execute(request, context -> context.service()
+    @GetMapping("/cohorts/{cohort-id}/join-code")
+    public JsonNode getJoinCode(HttpServletRequest request, @PathVariable("cohort-id") Long cohortId) {
+        JsonNode metadata = proxy.execute(request, context -> context.service()
                 .getJoinCode(context.bearerToken(), cohortId));
+        return joinCodeSessionStore.restore(request, cohortId, metadata);
     }
 
-    @PostMapping("/cohorts/{cohortId}/join-code")
+    @PostMapping("/cohorts/{cohort-id}/join-code")
     public JsonNode createJoinCode(
             HttpServletRequest request,
-            @PathVariable Long cohortId,
+            @PathVariable("cohort-id") Long cohortId,
             @RequestBody JsonNode body
     ) {
-        return proxy.execute(request, context -> context.service()
+        JsonNode issued = proxy.execute(request, context -> context.service()
                 .createJoinCode(context.bearerToken(), cohortId, body));
+        joinCodeSessionStore.save(request, cohortId, issued);
+        return issued;
     }
 
-    @PatchMapping("/cohorts/{cohortId}/join-code/revoke")
-    public JsonNode revokeJoinCode(HttpServletRequest request, @PathVariable Long cohortId) {
-        return proxy.execute(request, context -> context.service()
+    @PatchMapping("/cohorts/{cohort-id}/join-code/revoke")
+    public JsonNode revokeJoinCode(HttpServletRequest request, @PathVariable("cohort-id") Long cohortId) {
+        JsonNode revoked = proxy.execute(request, context -> context.service()
                 .revokeJoinCode(context.bearerToken(), cohortId));
+        joinCodeSessionStore.remove(request, cohortId);
+        return revoked;
     }
 }

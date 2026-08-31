@@ -34,17 +34,17 @@ public interface SensorAdminHttpService {
             @RequestBody JsonNode request
     );
 
-    @PutExchange("/sensors/{deviceEui}")
+    @PutExchange("/sensors/{device-eui}")
     JsonNode updateSensorDevice(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
-            @PathVariable String deviceEui,
+            @PathVariable("device-eui") String deviceEui,
             @RequestBody JsonNode request
     );
 
-    @PatchExchange("/sensors/{deviceEui}/active")
+    @PatchExchange("/sensors/{device-eui}/active")
     JsonNode updateSensorDeviceActive(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
-            @PathVariable String deviceEui,
+            @PathVariable("device-eui") String deviceEui,
             @RequestBody JsonNode request
     );
 
@@ -69,10 +69,10 @@ public interface SensorAdminHttpService {
     @GetExchange("/threshold-rules/spaces")
     JsonNode getSpaceThresholds(@RequestHeader(HttpHeaders.AUTHORIZATION) String authorization);
 
-    @PatchExchange("/threshold-rules/spaces/{spaceId}")
+    @PatchExchange("/threshold-rules/spaces/{space-id}")
     JsonNode applySpaceThreshold(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
-            @PathVariable Long spaceId,
+            @PathVariable("space-id") Long spaceId,
             @RequestHeader(value = "X-Request-ID", required = false) String requestId,
             @RequestBody JsonNode request
     );

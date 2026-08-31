@@ -4,6 +4,16 @@ const character = document.querySelector(".omagotchi-character");
 const bubble = document.querySelector("[data-auth-feedback]") || document.querySelector(".speech-bubble");
 const inputs = document.querySelectorAll(".input-group input");
 
+const currentUrl = new URL(window.location.href);
+if (currentUrl.searchParams.has("notice")) {
+    currentUrl.searchParams.delete("notice");
+    window.history.replaceState(
+        null,
+        "",
+        `${currentUrl.pathname}${currentUrl.search}${currentUrl.hash}`
+    );
+}
+
 function setFeedback(message) {
     if (bubble) {
         bubble.textContent = message;

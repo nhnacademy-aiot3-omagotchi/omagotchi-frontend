@@ -44,17 +44,17 @@ public class CommunityBffController {
         ));
     }
 
-    @GetMapping("/{postId}")
-    public JsonNode getPost(HttpServletRequest request, @PathVariable Long postId) {
+    @GetMapping("/{post-id}")
+    public JsonNode getPost(HttpServletRequest request, @PathVariable("post-id") Long postId) {
         return proxy.execute(request, context -> context.service()
                 .getCommunityPost(context.bearerToken(), postId));
     }
 
-    @GetMapping("/{postId}/attachments/{attachmentId}")
+    @GetMapping("/{post-id}/attachments/{attachment-id}")
     public ResponseEntity<Resource> downloadAttachment(
             HttpServletRequest request,
-            @PathVariable Long postId,
-            @PathVariable Long attachmentId
+            @PathVariable("post-id") Long postId,
+            @PathVariable("attachment-id") Long attachmentId
     ) {
         return proxy.execute(request, context -> context.service().downloadCommunityAttachment(
                 context.bearerToken(), postId, attachmentId
@@ -77,20 +77,20 @@ public class CommunityBffController {
                 .createCommunityPostMultipart(context.bearerToken(), post, parts(attachments)));
     }
 
-    @PatchMapping(value = "/{postId}", consumes = MediaType.APPLICATION_JSON_VALUE)
+    @PatchMapping(value = "/{post-id}", consumes = MediaType.APPLICATION_JSON_VALUE)
     public JsonNode updateJson(
             HttpServletRequest request,
-            @PathVariable Long postId,
+            @PathVariable("post-id") Long postId,
             @RequestBody JsonNode body
     ) {
         return proxy.execute(request, context -> context.service()
                 .updateCommunityPost(context.bearerToken(), postId, body));
     }
 
-    @PatchMapping(value = "/{postId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PatchMapping(value = "/{post-id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public JsonNode updateMultipart(
             HttpServletRequest request,
-            @PathVariable Long postId,
+            @PathVariable("post-id") Long postId,
             @RequestPart("post") JsonNode post,
             @RequestPart(value = "attachments", required = false) MultipartFile[] attachments
     ) {
@@ -98,8 +98,8 @@ public class CommunityBffController {
                 .updateCommunityPostMultipart(context.bearerToken(), postId, post, parts(attachments)));
     }
 
-    @DeleteMapping("/{postId}")
-    public ResponseEntity<Void> delete(HttpServletRequest request, @PathVariable Long postId) {
+    @DeleteMapping("/{post-id}")
+    public ResponseEntity<Void> delete(HttpServletRequest request, @PathVariable("post-id") Long postId) {
         proxy.execute(request, context -> context.service()
                 .deleteCommunityPost(context.bearerToken(), postId));
         return ResponseEntity.noContent().build();

@@ -76,6 +76,7 @@
 | [Home 하단 HUD 반응형 리팩토링 기록](home-ui/04-work-records/home-bottom-hud-refactor.md) | 하단 HUD 변경 이력 |
 | [Storybook 공통 UI·화면 Pattern 리팩토링 기록](home-ui/04-work-records/storybook-ui-pattern-refactor.md) | 공통 UI, 화면 Pattern과 반응형 검증 변경 이력 |
 | [백엔드 연동 전 UI 통합 리팩토링 기록](home-ui/04-work-records/pre-backend-ui-integration-2026-08-14.md) | 출석·인증·Home 메뉴의 실제 View 연결과 검증 결과 |
+| [AI 도우미 메신저 레이아웃·모델 선택 리팩토링 기록](home-ui/04-work-records/home-ai-assistant-messenger-refactor.md) | 캐릭터 아바타 메신저 형식 전환, 모델 선택 활성화, Enter 전송·자동 스크롤 변경 이력 |
 
 ## 작업용 Prompt
 
@@ -88,7 +89,7 @@
 - [관리자 공간·센서 Chart.js 연동 가이드](prompt/센서-차트.md)
 - [System Admin BFF 연동 가이드](prompt/시스템-관리자-BFF-연동.md)
 - [Home AI 도우미 구현 Prompt](prompt/AI-도우미.md)
-- [MCP 기반 AI 도우미 연동 Prompt](prompt/MCP-연동.md)
+- [AI 도우미 연동 Prompt](prompt/AI-연동.md)
 
 ## 라이선스
 

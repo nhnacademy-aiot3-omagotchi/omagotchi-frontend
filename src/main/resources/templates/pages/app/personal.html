@@ -22,32 +22,34 @@
         <section class="panel">
             <div class="panel-header">
                 <h2>요약</h2>
-                <span class="status-pill">Lv 1</span>
+                <span class="status-pill" data-personal-level>불러오는 중</span>
             </div>
             <div class="stat-grid">
                 <article class="stat-card">
                     <h3>총 학습</h3>
-                    <strong>0분</strong>
+                    <strong data-personal-study-time>—</strong>
                     <p>타이머 기록 기준</p>
                 </article>
                 <article class="stat-card">
                     <h3>세션</h3>
-                    <strong>0회</strong>
+                    <strong data-personal-sessions>—</strong>
                     <p>완료한 학습 세션</p>
                 </article>
                 <article class="stat-card">
                     <h3>연속 출석</h3>
-                    <strong>0일</strong>
+                    <strong data-personal-streak>—</strong>
                     <p>입실 기록 기준</p>
                 </article>
                 <article class="stat-card">
-                    <h3>이번 주</h3>
-                    <strong>0분</strong>
-                    <p>주간 학습 시간</p>
+                    <h3>참여 기수</h3>
+                    <strong data-personal-cohort>—</strong>
+                    <p>현재 승인된 기수</p>
                 </article>
             </div>
         </section>
     </section>
 </main>
+<script src="/js/api.js" th:src="@{/js/api.js}"></script>
+<script src="/js/personal.js" th:src="@{/js/personal.js}"></script>
 </body>
 </html>

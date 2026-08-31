@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { expect, fireEvent, fn, userEvent, waitFor, within } from "storybook/test";
 import { createStudyRecords } from "../../../resources/static/js/home/studyRecords.js";
+import { renderServiceIntegrationPending } from "../../../resources/static/js/serviceIntegrationState.js";
 import { HomeOverlay } from "./HomeOverlay.jsx";
 
 function localDateKey(date) {
@@ -63,24 +64,29 @@ const storyApi = { createRecord: createStoryRecord, updateRecord: updateStoryRec
 
 function StudyRecordsOverlayStory({ records = storyRecords, api, selectedDateKey }) {
   const hostRef = useRef(null);
-  const storageKeyRef = useRef(null);
-
-  if (!storageKeyRef.current) {
-    storageKeyRef.current = `storybook:home-study-records:${globalThis.crypto?.randomUUID?.() || Date.now()}`;
-  }
 
   useEffect(() => {
     const target = hostRef.current?.querySelector("[data-story-study-records]");
     if (!target) return undefined;
 
-    const storageKey = storageKeyRef.current;
-    const previous = localStorage.getItem(storageKey);
-    localStorage.setItem(storageKey, JSON.stringify(records));
-
     const controller = createStudyRecords({
-      storageKey,
-      getElapsedSeconds: () => 0,
-      api
+      api: {
+        ...api,
+        getDailyRecords: async (date) => records.filter((record) => record.aggregationDate === date),
+        getMonthlySummary: async (month) => {
+          const monthlyRecords = records.filter((record) => record.aggregationDate.startsWith(month));
+          const dailyTotals = Object.entries(monthlyRecords.reduce((totals, record) => ({
+            ...totals,
+            [record.aggregationDate]: (totals[record.aggregationDate] || 0) + record.studySeconds
+          }), {})).map(([aggregationDate, studySeconds]) => ({aggregationDate, studySeconds}));
+          return {
+            aggregationMonth: month,
+            totalStudySeconds: monthlyRecords.reduce((total, record) => total + record.studySeconds, 0),
+            dailyTotals
+          };
+        },
+        deleteRecord: async () => undefined
+      }
     });
     const handleClick = (event) => controller.handleClick(event);
     const handleInput = (event) => controller.handleInput(event);
@@ -97,8 +103,6 @@ function StudyRecordsOverlayStory({ records = storyRecords, api, selectedDateKey
       target.removeEventListener("input", handleInput);
       target.removeEventListener("submit", handleSubmit);
       target.replaceChildren();
-      if (previous === null) localStorage.removeItem(storageKey);
-      else localStorage.setItem(storageKey, previous);
     };
   }, [api, records, selectedDateKey]);
 
@@ -122,7 +126,18 @@ const meta = {
   title: "Home/HomeOverlay",
   component: HomeOverlay,
   decorators: [
-    (Story) => <div className="home-page" style={{ minHeight: "100vh", background: "#087046" }}><Story /></div>
+    (Story) => (
+      <div className="home-page" style={{ minHeight: "100vh", background: "#087046" }}>
+        {/* pages/app/home.html 의 <div class="home-overlay-root" data-home-overlay-root> 를 재현한다.
+            --overlay-ink / --overlay-muted / --overlay-paper / --overlay-paper-soft 가
+            home-overlay-theme.css 에서 이 래퍼에만 정의돼 있어, 빠뜨리면 변수가 미정의가 되어
+            스토리북에서만 글자색이 달라지고 일부 배경·테두리가 통째로 사라진다.
+            .home-overlay-root 는 기본이 display:none 이므로 is-open 이 반드시 필요하다. */}
+        <div className="home-overlay-root is-open" data-home-overlay-root aria-live="polite">
+          <Story />
+        </div>
+      </div>
+    )
   ],
   args: {
     type: "help",
@@ -169,7 +184,10 @@ export const Progress = {
       </section>
       <section data-overlay-panel="achievements">
         <div class="overlay-section-label"><strong>업적</strong><span></span><em>달성 기록</em></div>
-        <div class="overlay-empty-state" role="status"><strong>업적 기능은 아직 준비되지 않았습니다.</strong><p>기능이 준비되면 달성 기록을 확인할 수 있습니다.</p></div>
+        ${renderServiceIntegrationPending({
+          title: "서비스 연동 대기",
+          description: "업적 API가 연결되면 실제 달성 기록을 표시합니다."
+        })}
       </section>
       <section data-overlay-panel="leaders">
         <div class="overlay-section-label"><strong>명예의 전당</strong><span></span><em>전체 학습 시간</em></div>
@@ -179,9 +197,10 @@ export const Progress = {
       </section>
       <section data-overlay-panel="timeline">
         <div class="overlay-section-label"><strong>타임라인</strong><span></span><em>최근 활동</em></div>
-        <ul class="overlay-state-list overlay-timeline-list" aria-label="최근 활동">
-          <li><div><strong>활동 기록이 없습니다.</strong><p>출석과 학습 기록이 생기면 시간순으로 표시됩니다.</p></div><em>최근 활동</em></li>
-        </ul>
+        ${renderServiceIntegrationPending({
+          title: "서비스 연동 대기",
+          description: "활동 이력 API가 연결되면 실제 출석과 학습 기록을 시간순으로 표시합니다."
+        })}
       </section>
       <section data-overlay-panel="stats">
         <div class="overlay-section-label"><strong>학습 통계</strong><span></span><em>나의 기록</em></div>
@@ -239,7 +258,7 @@ export const StudyRecords = {
   parameters: {
     docs: {
       description: {
-        story: "Home에서 사용하는 실제 createStudyRecords 렌더러를 마운트합니다. 조회 fixture는 Storybook localStorage에 격리하고 수정 요청 계약은 Story mock 함수로 검증합니다."
+        story: "Home에서 사용하는 실제 createStudyRecords 렌더러를 마운트합니다. 조회·수정 요청은 Storybook 전용 API fixture로 계약을 검증합니다."
       }
     }
   }
