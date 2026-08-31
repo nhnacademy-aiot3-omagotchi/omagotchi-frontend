@@ -134,6 +134,11 @@ class IdentityLogoutHandlerTest {
         }
 
         @Override
+        public BrowserSessionTokenBundle refresh(String refreshToken) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
         public void logout(String refreshToken) {
             if (logoutFailure != null) {
                 throw logoutFailure;

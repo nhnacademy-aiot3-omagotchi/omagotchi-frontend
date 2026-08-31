@@ -10,5 +10,7 @@ public interface IdentityAuthClient {
 
     BrowserSessionTokenBundle login(String email, String password);
 
+    BrowserSessionTokenBundle refresh(String refreshToken);
+
     void logout(String refreshToken);
 }

@@ -44,6 +44,14 @@ clients:
     username: frontend
     password: test-only-frontend-credential-value
 
+auth:
+  access-token-refresh:
+    refresh-before-expiry: 30s
+    lock:
+      wait-timeout: 2s
+      poll-interval: 25ms
+      lease: 45s
+
 management:
   health:
     redis:

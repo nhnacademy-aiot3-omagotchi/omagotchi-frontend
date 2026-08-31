@@ -14,6 +14,7 @@ import site.omagotchi.frontend.auth.application.AuthenticationService;
 import site.omagotchi.frontend.auth.application.result.SignupResult;
 import site.omagotchi.frontend.auth.presentation.page.SignupForm;
 import site.omagotchi.frontend.auth.presentation.page.SignupPageController;
+import site.omagotchi.frontend.auth.presentation.security.AccessTokenRefreshInterceptor;
 import site.omagotchi.frontend.global.exception.BusinessException;
 import site.omagotchi.frontend.global.exception.CommonErrorCode;
 import site.omagotchi.frontend.global.security.BrowserSessionInvalidator;
@@ -51,6 +52,9 @@ class SignupPageMvcTest {
 
     @MockitoBean
     private AuthenticationService authenticationService;
+
+    @MockitoBean
+    private AccessTokenRefreshInterceptor accessTokenRefreshInterceptor;
 
     @Test
     @DisplayName("회원가입 Page의 빈 Form 제공")
