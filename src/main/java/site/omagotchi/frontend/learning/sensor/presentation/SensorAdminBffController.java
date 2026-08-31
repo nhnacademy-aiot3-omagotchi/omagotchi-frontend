@@ -43,6 +43,21 @@ public class SensorAdminBffController {
         return sensorAdminBffService.createDevice(request, body);
     }
 
+    /**
+     * 주인 없는 센서 인계.
+     *
+     * <p>등록(POST /devices)이 409로 막혔을 때 화면이 이어서 부른다. 경로가 세 세그먼트라
+     * PUT /devices/{device-eui} 와 겹치지 않는다.
+     */
+    @PostMapping("/devices/{device-eui}/claim")
+    public JsonNode claimDevice(
+            HttpServletRequest request,
+            @PathVariable("device-eui") String deviceEui,
+            @RequestBody JsonNode body
+    ) {
+        return sensorAdminBffService.claimDevice(request, deviceEui, body);
+    }
+
     @PutMapping("/devices/{device-eui}")
     public JsonNode updateDevice(
             HttpServletRequest request,

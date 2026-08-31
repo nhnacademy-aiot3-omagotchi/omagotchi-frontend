@@ -25,25 +25,46 @@ public interface SensorAdminHttpService {
     @GetExchange("/spaces")
     JsonNode getSpaces(@RequestHeader(HttpHeaders.AUTHORIZATION) String authorization);
 
-    @GetExchange("/sensors")
-    JsonNode getSensorDevices(@RequestHeader(HttpHeaders.AUTHORIZATION) String authorization);
+    @GetExchange("/cohorts/{cohort-id}/sensors")
+    JsonNode getSensorDevices(
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
+            @PathVariable("cohort-id") Long cohortId
+    );
 
-    @PostExchange("/sensors")
+    @PostExchange("/cohorts/{cohort-id}/sensors")
     JsonNode createSensorDevice(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
+            @PathVariable("cohort-id") Long cohortId,
             @RequestBody JsonNode request
     );
 
-    @PutExchange("/sensors/{device-eui}")
-    JsonNode updateSensorDevice(
+    /**
+     * 주인 없는 센서를 이 기수로 인계한다.
+     *
+     * <p>기수가 끝나면 그 기수 공간의 센서는 어느 기수에도 속하지 않게 되는데, deviceEui가
+     * 하류의 기본키라 재등록이 409로 막힌다. 등록 실패를 막다른 길로 두지 않으려면 이
+     * 경로가 필요하다.</p>
+     */
+    @PostExchange("/cohorts/{cohort-id}/sensors/{device-eui}/claim")
+    JsonNode claimSensorDevice(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
+            @PathVariable("cohort-id") Long cohortId,
             @PathVariable("device-eui") String deviceEui,
             @RequestBody JsonNode request
     );
 
-    @PatchExchange("/sensors/{device-eui}/active")
+    @PutExchange("/cohorts/{cohort-id}/sensors/{device-eui}")
+    JsonNode updateSensorDevice(
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
+            @PathVariable("cohort-id") Long cohortId,
+            @PathVariable("device-eui") String deviceEui,
+            @RequestBody JsonNode request
+    );
+
+    @PatchExchange("/cohorts/{cohort-id}/sensors/{device-eui}/active")
     JsonNode updateSensorDeviceActive(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
+            @PathVariable("cohort-id") Long cohortId,
             @PathVariable("device-eui") String deviceEui,
             @RequestBody JsonNode request
     );
@@ -54,9 +75,10 @@ public interface SensorAdminHttpService {
      * <p>선택 파라미터가 null이면 Spring이 쿼리에서 제외한다. 여기서 기본값을 채우면
      * 하류의 required=false 계약보다 엄격해져 정상 요청을 막게 된다.
      */
-    @GetExchange("/sensors/events")
+    @GetExchange("/cohorts/{cohort-id}/sensor-events")
     JsonNode getSensorEvents(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
+            @PathVariable("cohort-id") Long cohortId,
             @RequestParam(required = false) String type,
             @RequestParam(required = false) String deviceEui,
             @RequestParam(required = false) String from,
@@ -66,12 +88,16 @@ public interface SensorAdminHttpService {
     );
 
     /** 공간별 현재 임계치. 화면이 이 값으로 임계값 입력 폼을 그린다. */
-    @GetExchange("/threshold-rules/spaces")
-    JsonNode getSpaceThresholds(@RequestHeader(HttpHeaders.AUTHORIZATION) String authorization);
+    @GetExchange("/cohorts/{cohort-id}/threshold-rules/spaces")
+    JsonNode getSpaceThresholds(
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
+            @PathVariable("cohort-id") Long cohortId
+    );
 
-    @PatchExchange("/threshold-rules/spaces/{space-id}")
+    @PatchExchange("/cohorts/{cohort-id}/threshold-rules/spaces/{space-id}")
     JsonNode applySpaceThreshold(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
+            @PathVariable("cohort-id") Long cohortId,
             @PathVariable("space-id") Long spaceId,
             @RequestHeader(value = "X-Request-ID", required = false) String requestId,
             @RequestBody JsonNode request

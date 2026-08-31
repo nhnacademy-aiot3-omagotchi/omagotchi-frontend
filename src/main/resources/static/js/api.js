@@ -413,6 +413,11 @@
             listSpaces: () => request("/admin/sensors/spaces"),
             listDevices: () => request("/admin/sensors/devices"),
             createDevice: (payload) => request("/admin/sensors/devices", {method: "POST", body: payload}),
+            // 주인 없는 센서를 우리 기수로 가져온다. 등록이 409로 막혔을 때 이어서 부른다.
+            claimDevice: (deviceEui, spaceId) => request(
+                `/admin/sensors/devices/${encodeURIComponent(deviceEui)}/claim`,
+                {method: "POST", body: {spaceId}}
+            ),
             updateDevice: (deviceEui, payload) => request(`/admin/sensors/devices/${encodeURIComponent(deviceEui)}`, {
                 method: "PUT",
                 body: payload
