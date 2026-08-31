@@ -11,6 +11,10 @@
  *
  * 따라서 Storybook 에서는 home-ui.css 가 @import 하던 파일들을 "같은 순서로" 직접 import 한다.
  * home-ui.css 에 파일을 추가/삭제하면 아래 목록도 반드시 함께 갱신할 것.
+ *
+ * 그리고 아래 순서는 pages/app/home.html 의 <link> 순서와 동일하게 유지한다.
+ * 캐스케이드 우선순위가 달라지면 스토리북과 운영 화면이 조용히 어긋난다.
+ * 동기화 여부는 npm run test:storybook-css 가 검사한다.
  */
 import "../src/main/resources/static/css/home.css";
 import "../src/main/resources/static/css/home/ui/status-dock.css";
@@ -24,6 +28,12 @@ import "../src/main/resources/static/css/home/react-stage.css";
 import "../src/main/resources/static/css/studyRecords.css";
 import "../src/main/resources/static/css/gameFont.css";
 import "../src/main/resources/static/css/ui/design-system.css";
+import "../src/main/resources/static/css/spaceRoom.css";
+import "../src/main/resources/static/css/notificationPanel.css";
+import "../src/main/resources/static/css/imageProtection.css";
+import "../src/main/resources/static/css/homeAttendance.css";
+import "../src/main/resources/static/css/homeAttendanceSync.css";
+import "../src/main/resources/static/css/cursor.css";
 import "../src/main/resources/static/css/home/home-responsive.css";
 import "../src/main/resources/static/css/home/home-overlay-theme.css";
 import "../src/main/resources/static/css/home/home-quick-panels.css";

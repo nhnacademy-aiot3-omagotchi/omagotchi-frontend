@@ -1,6 +1,6 @@
 # Session 인증 흐름
 
-> 상태: Signup·Login·Logout·BFF 공통 JSON 경계 구현 · 기능별 BFF·Refresh·관리자 권한 미구현
+> 상태: Browser Session·Identity·BFF 인증 흐름 설명
 
 ## 1. 인증 경계
 
@@ -28,30 +28,28 @@ Browser
   - Signup·Login·Logout 내부 HTTP 호출
   - Browser 사용자 Credential과 별도인 Frontend Basic Credential
 - Frontend ↔ Domain Service
-  - 현재 기능별 호출 없음
   - Browser 계약: `/bff/v1/**`
-  - 목표: Session Access JWT의 Bearer 전달
-  - 목표 경로: Discovery·Client-side Load Balancing 기반 직접 내부 호출
+  - Session Access JWT를 Bearer로 전달
+  - 현재: Identity 본인 계정 API는 Discovery·Client-side Load Balancing 기반 직접 호출
+  - 현재: Learning API는 Gateway 경유 호출이 남아 있음
+  - 목표: BFF의 Domain Service 호출을 직접 호출로 정렬하는 별도 변경
+  - Access Token Refresh는 아직 구현하지 않고 하류 `401`에서 재로그인 요구
 - Gateway
   - 외부 `/api/**`·Webhook 경계
   - Frontend BFF 내부 호출의 필수 중계자 아님
 
-## 2. 인증 Route
+## 2. 인증 요청 경계
 
-| 기능 | Browser 요청 | 처리 경계 |
-|---|---|---|
-| Signup Page | `GET /register` | `SignupPageController` |
-| Signup 제출 | `POST /register` | `SignupPageController` |
-| Login Page | `GET /login` | `LoginPageController` |
-| Login 제출 | `POST /login` | Spring Security Form Login |
-| Logout | `POST /logout` | Spring Security Logout Filter |
-
-- 별도 JSON 인증 API
-  - 현재 없음
-  - 과거 `/session/v1/**` 제거 완료
-- 관리자 인증
-  - 공통 `/login` 사용
-  - 별도 `/manager-login`·`/manager-register` Route 없음
+- Page Form
+  - Signup·Login은 Spring MVC·Spring Security의 Form 경계를 사용한다.
+  - Logout은 Spring Security Logout Filter가 처리한다.
+- Browser JSON BFF
+  - 인증 사용자의 조회·변경 요청은 `/bff/v1/**`을 사용한다.
+  - Frontend는 Session에서 Access JWT를 찾아 Identity의 본인 자원 API로 전달한다.
+  - 비밀번호 변경 성공 후에는 기존 Browser Session을 폐기한다.
+- 실제 Route·Controller·보호 조건
+  - `WebConfig`, 인증 Page Controller, BFF `@RestController`, `SecurityConfig`에서 확인한다.
+  - 온보딩 문서에 전체 Route 현황을 복제하지 않는다.
 
 ## 3. Type 책임
 
@@ -395,7 +393,41 @@ sequenceDiagram
   - `5xx`·Network 실패: 표시 상태 유지와 현재 화면의 실패 안내
   - Server 완료 전 Logout 성공으로 보이는 화면 전환 금지
 
-## 9. Identity HTTP 경계
+## 9. Access JWT 만료와 계정 변경
+
+### 하류 `401`
+
+```text
+Identity·Learning이 Access JWT 401 반환
+→ ApiExceptionHandler가 기존 인증 Session·SecurityContext 폐기
+→ Browser에 JSON 401 반환
+→ Browser JavaScript가 /login?notice=session-expired로 이동
+→ LoginPageController가 허용된 안내 Code를 고정 문구로 변환
+→ Login JavaScript가 주소에서 notice 제거
+```
+
+- Access Token Refresh와 요청 자동 재실행은 아직 구현하지 않습니다.
+- 기존 인증 Session을 유지한 채 `/login`으로 보내면 인증 사용자 Redirect와 충돌해
+  `/home`과 `/login` 사이를 반복하므로, Login 이동 전에 서버가 Session을 먼저 폐기합니다.
+- Redis 접속 장애는 인증 만료로 오인하지 않고 기존처럼 `503`으로 처리합니다.
+
+### 인증 사용자 비밀번호 변경
+
+```text
+PATCH /bff/v1/users/me/password
+→ Identity PATCH /api/v1/users/me/password
+→ 비밀번호 변경·모든 Refresh Session 폐기 성공
+→ Frontend 기존 인증 Session·SecurityContext 폐기
+→ Browser가 /login?notice=password-changed로 이동
+→ LoginPageController가 허용된 안내 Code를 고정 문구로 변환
+→ Login JavaScript가 주소에서 notice 제거
+```
+
+- `notice`는 사용자가 바꿀 수 있으므로 인증·성공 여부의 근거로 사용하지 않습니다.
+- Login Page는 허용 목록의 Code만 고정 안내 문구로 변환하고 나머지는 무시합니다.
+- 기존 인증 Session ID와 Token Bundle은 성공 뒤 재사용하지 않습니다.
+
+## 10. Identity HTTP 경계
 
 ```text
 AuthenticationService
@@ -428,7 +460,7 @@ AuthenticationService
   - 로컬: 명시적 `http://localhost:8083`
   - 운영: `lb://identity-service`
 
-## 10. 관리자 경계
+## 11. 관리자 경계
 
 - 현재 구현
   - `/manager-dashboard`의 Session 인증만 확인
@@ -442,25 +474,19 @@ AuthenticationService
   - Browser 저장소 관리자 값의 권한 근거 사용
   - Dashboard HTML 접근의 권한 구현 완료 판단
 
-## 11. 미구현
+## 12. 미구현
 
-- 기능별 BFF Endpoint
 - Access Token Refresh
 - 동일 Session Refresh single-flight
 - Login 성공 뒤 Redis 저장 실패의 Refresh Token Family 보상
+- Identity의 비밀번호 변경은 성공했지만 Redis 세션 폐기는 실패한 경우의 보상 처리
 - Learning 기반 관리자 소속 확인
-- 비밀번호 변경·재설정
+- 이메일 기반 비밀번호 재설정
 
-## 12. 주요 Code·Test
+## 13. 검증 기준
 
-- Code
-  - [`SecurityConfig.java`](../../src/main/java/site/omagotchi/frontend/global/security/SecurityConfig.java)
-  - [`AuthenticationService.java`](../../src/main/java/site/omagotchi/frontend/auth/application/AuthenticationService.java)
-  - [`SignupPageController.java`](../../src/main/java/site/omagotchi/frontend/auth/presentation/page/SignupPageController.java)
-  - [`IdentityLoginAuthenticationProvider.java`](../../src/main/java/site/omagotchi/frontend/auth/presentation/security/IdentityLoginAuthenticationProvider.java)
-  - [`BrowserSessionTokens.java`](../../src/main/java/site/omagotchi/frontend/auth/presentation/security/BrowserSessionTokens.java)
-  - [`IdentityLogoutHandler.java`](../../src/main/java/site/omagotchi/frontend/auth/presentation/security/IdentityLogoutHandler.java)
-- Test
-  - [`AuthenticationSecurityMvcTest.java`](../../src/test/java/site/omagotchi/frontend/auth/presentation/AuthenticationSecurityMvcTest.java)
-  - [`SignupPageMvcTest.java`](../../src/test/java/site/omagotchi/frontend/auth/presentation/SignupPageMvcTest.java)
-  - [`BrowserSessionRedisIntegrationTest.java`](../../src/test/java/site/omagotchi/frontend/auth/presentation/BrowserSessionRedisIntegrationTest.java)
+- Signup·Login·Logout: Form·Security MVC Test
+- Session ID 교체·Token Bundle 저장·폐기: Redis Integration Test
+- Browser BFF 인증·CSRF: Security Filter Chain을 통과하는 Server Boundary Test
+- Identity 호출: Method·Path·Authorization Header·성공 Status·공개 오류 계약 Test
+- 실제 파일명과 Test 목록은 `src/main`·`src/test`에서 확인한다.

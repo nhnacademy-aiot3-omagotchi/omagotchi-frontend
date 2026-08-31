@@ -19,8 +19,13 @@ async function hydrateDashboard(
 ) {
     try {
         const api = globalThis.OmagotchiApi;
-        const cohorts = await api.cohort.list();
-        const source = Array.isArray(cohorts) ? cohorts : [];
+        const accessContext = await api.access.getContext();
+        const source = Array.isArray(accessContext?.managedCohorts)
+            ? accessContext.managedCohorts.map((cohort) => ({
+                ...cohort,
+                id: cohort.cohortId
+            }))
+            : [];
         const applications = [];
         let partialFailure = false;
         let attendanceFailure = null;
@@ -39,8 +44,11 @@ async function hydrateDashboard(
                 api.manager.getAttendanceRecords(cohort.id, attendanceDate),
                 api.manager.getJoinCode(cohort.id)
             ]);
-            partialFailure ||= [membersResult, applicationsResult, attendanceResult, joinCodeResult]
+            const joinCodeMissing = joinCodeResult.status === "rejected"
+                && joinCodeResult.reason?.code === "JOIN_CODE_NOT_FOUND";
+            partialFailure ||= [membersResult, applicationsResult, attendanceResult]
                 .some((result) => result.status === "rejected");
+            partialFailure ||= joinCodeResult.status === "rejected" && !joinCodeMissing;
             if (attendanceResult.status === "rejected") {
                 attendanceFailure ??= attendanceResult.reason;
             }
@@ -72,11 +80,14 @@ async function hydrateDashboard(
                     checkOut: timeLabel(record.checkedOutAt)
                 }))
                 : [];
+            const joinCode = joinCodeResult.status === "fulfilled" ? joinCodeResult.value : null;
             return {
                 ...cohort,
                 members,
                 attendance,
-                joinCode: joinCodeResult.status === "fulfilled" ? joinCodeResult.value : null
+                joinCode: joinCode?.code
+                    ? { ...joinCode, value: joinCode.code }
+                    : joinCode
             };
         }));
         if (rejectAttendanceFailure && attendanceFailure) {
@@ -121,6 +132,7 @@ function statusLabel(status) {
         MENTOR: "멘토",
         STUDENT: "수강생",
         ACTIVE: "활성",
+        EXPIRED: "만료",
         INACTIVE: "비활성",
         ENDED: "종료",
         PREPARING: "준비 중",

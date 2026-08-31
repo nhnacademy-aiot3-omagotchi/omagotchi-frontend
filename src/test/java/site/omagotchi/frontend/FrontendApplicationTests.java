@@ -12,17 +12,24 @@ import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 import site.omagotchi.frontend.auth.application.result.BrowserSessionTokenBundle;
 import site.omagotchi.frontend.auth.domain.GlobalRole;
+import site.omagotchi.frontend.cohort.application.UserAccessContextBffService;
+import site.omagotchi.frontend.cohort.infrastructure.response.CohortAccessSummaryResponse;
+import site.omagotchi.frontend.cohort.infrastructure.response.UserAccessContextResponse;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
@@ -42,6 +49,8 @@ class FrontendApplicationTests {
 	private MockMvc mockMvc;
 	@Autowired
 	private WebApplicationContext applicationContext;
+	@MockitoBean
+	private UserAccessContextBffService accessContextService;
 	private MockMvc unfilteredMockMvc;
 	private MockMvc securityMockMvc;
 
@@ -79,6 +88,8 @@ class FrontendApplicationTests {
 	@Test
 	@DisplayName("관리자 Dashboard Route는 Module Dashboard 반환")
 	void managerDashboardUsesModularView() throws Exception {
+		given(accessContextService.getContext(any())).willReturn(managerContext());
+
 		unfilteredMockMvc.perform(get("/manager-dashboard"))
 				.andExpect(status().isOk())
 				.andExpect(view().name("manager/dashboard/index"));
@@ -90,6 +101,74 @@ class FrontendApplicationTests {
 				.andExpect(status().isOk());
 
 		mockMvc.perform(get("/js/manager/dashboard/popups/studyDetailModal.js"))
+				.andExpect(status().isOk());
+	}
+
+	@Test
+	@DisplayName("일반 기수 사용자는 관리자 Dashboard 대신 Home으로 이동")
+	void studentCannotOpenManagerDashboard() throws Exception {
+		given(accessContextService.getContext(any())).willReturn(studentContext());
+
+		securityMockMvc.perform(get("/manager-dashboard")
+					.with(authenticatedUser(
+							"11111111-1111-1111-1111-111111111111",
+							GlobalRole.USER
+					)))
+				.andExpect(status().is3xxRedirection())
+				.andExpect(redirectedUrl("/home"));
+	}
+
+	@Test
+	@DisplayName("기수 관리자의 접근 판정은 관리자 Dashboard로 이동")
+	void managerLandingRedirectsToManagerDashboard() throws Exception {
+		given(accessContextService.getContext(any())).willReturn(managerContext());
+
+		securityMockMvc.perform(get("/authenticated-landing")
+					.with(authenticatedUser(
+							"11111111-1111-1111-1111-111111111111",
+							GlobalRole.USER
+					)))
+				.andExpect(status().is3xxRedirection())
+				.andExpect(redirectedUrl("/manager-dashboard"));
+	}
+
+	@Test
+	@DisplayName("계정 설정 Page의 인증 보호와 전용 View")
+	void accountSettingsPageIsProtectedAndRendered() throws Exception {
+		// When: 제거된 공용 설정 Page 요청
+		// Then: 미등록 경로 응답
+		unfilteredMockMvc.perform(get("/settings"))
+				.andExpect(status().isNotFound());
+
+		// When: 인증 없는 계정 설정 Page 요청
+		// Then: Login Page 이동
+		securityMockMvc.perform(get("/settings/account"))
+				.andExpect(status().is3xxRedirection())
+				.andExpect(redirectedUrl("/login"));
+
+		// When: 인증된 계정 설정 Page 요청
+		// Then: 전용 View와 읽기 전용 이메일 표시
+		unfilteredMockMvc.perform(get("/settings/account"))
+				.andExpect(status().isOk())
+				.andExpect(view().name("pages/auth/accountSettings"))
+				.andExpect(content().string(org.hamcrest.Matchers.containsString(
+						"data-account-settings"
+				)))
+				.andExpect(content().string(org.hamcrest.Matchers.containsString(
+						"/js/accountSettings.js"
+				)))
+				.andExpect(content().string(org.hamcrest.Matchers.containsString(
+						"data-settings-email"
+				)))
+				.andExpect(content().string(org.hamcrest.Matchers.containsString(
+						"href=\"/home?overlay=settings\""
+				)))
+				.andExpect(content().string(org.hamcrest.Matchers.not(
+						org.hamcrest.Matchers.containsString("type=\"email\"")
+				)));
+
+		// Then: 계정 설정 JavaScript 정적 Resource 제공
+		mockMvc.perform(get("/js/accountSettings.js"))
 				.andExpect(status().isOk());
 	}
 
@@ -167,6 +246,36 @@ class FrontendApplicationTests {
 			request.setAttribute(RequestDispatcher.ERROR_REQUEST_URI, "/test/error");
 			return request;
 		};
+	}
+
+	private static UserAccessContextResponse managerContext() {
+		return new UserAccessContextResponse(
+				"USER",
+				"COHORT_MANAGER",
+				List.of(new CohortAccessSummaryResponse(
+						1L,
+						"AIoT 3기",
+						LocalDate.of(2026, 9, 1),
+						LocalDate.of(2026, 12, 31),
+						"PREPARING"
+				)),
+				List.of()
+		);
+	}
+
+	private static UserAccessContextResponse studentContext() {
+		return new UserAccessContextResponse(
+				"USER",
+				"STUDENT",
+				List.of(),
+				List.of(new CohortAccessSummaryResponse(
+						2L,
+						"AIoT 2기",
+						LocalDate.of(2026, 3, 1),
+						LocalDate.of(2026, 6, 30),
+						"ACTIVE"
+				))
+		);
 	}
 
 	private static RequestPostProcessor authenticatedUser(String userId, GlobalRole globalRole) {

@@ -17,7 +17,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.mock.web.MockHttpServletResponse;
+import org.springframework.mock.web.MockHttpSession;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.web.ErrorResponseException;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -28,6 +31,8 @@ import site.omagotchi.frontend.global.exception.ApiErrorResponse;
 import site.omagotchi.frontend.global.exception.BusinessException;
 import site.omagotchi.frontend.global.exception.CommonErrorCode;
 import site.omagotchi.frontend.global.learning.infrastructure.LearningDownstreamException;
+import site.omagotchi.frontend.global.security.BrowserSessionInvalidator;
+import site.omagotchi.frontend.global.security.SecurityErrorCode;
 
 import java.util.Set;
 
@@ -45,6 +50,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc(addFilters = false)
 @Import({
         ApiExceptionHandler.class,
+        BrowserSessionInvalidator.class,
         ApiExceptionHandlerTest.TestRestController.class
 })
 class ApiExceptionHandlerTest {
@@ -88,6 +94,42 @@ class ApiExceptionHandlerTest {
                                 "/bff/v1/test/errors/learning-approved-4xx"
                         ),
                         jsonPath("$.requestId").value("learning-request-4xx")
+                );
+    }
+
+    @Test
+    @DisplayName("Learning Access JWT 401의 기존 인증 세션 폐기")
+    void invalidatesStaleSessionForLearningAuthenticationFailure() throws Exception {
+        assertAuthenticationFailureExpiresSession(
+                "/bff/v1/test/errors/learning-authentication-required"
+        );
+    }
+
+    @Test
+    @DisplayName("BFF Business 401의 기존 인증 세션 폐기")
+    void invalidatesStaleSessionForBusinessAuthenticationFailure() throws Exception {
+        assertAuthenticationFailureExpiresSession(
+                "/bff/v1/test/errors/authentication-required"
+        );
+    }
+
+    @Test
+    @DisplayName("Telegram 미연동 하류 404는 Frontend 404 계약으로 전달")
+    void forwardsTelegramUserLinkNotFound() throws Exception {
+        // Given: Telegram 연동 이력이 없는 사용자를 Learning이 404로 응답
+        // When: 실제 Spring MVC 오류 경계를 통과
+        // Then: Browser가 정상 미연동 상태로 판정할 수 있도록 404와 Code 유지
+        mockMvc.perform(get("/bff/v1/test/errors/telegram-link-not-found"))
+                .andExpectAll(
+                        status().isNotFound(),
+                        content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON),
+                        header().string(HttpHeaders.CACHE_CONTROL, "no-store"),
+                        jsonPath("$.code").value("TELEGRAM_USER_LINK_NOT_FOUND"),
+                        jsonPath("$.message").value("요청한 정보를 찾을 수 없습니다."),
+                        jsonPath("$.path").value(
+                                "/bff/v1/test/errors/telegram-link-not-found"
+                        ),
+                        jsonPath("$.requestId").value("learning-telegram-link-not-found")
                 );
     }
 
@@ -227,7 +269,8 @@ class ApiExceptionHandlerTest {
         // When: 공개 ErrorCode가 확정된 5xx 오류의 공통 응답 변환
         ResponseEntity<ApiErrorResponse> response = handler.handleBusinessException(
                 new BusinessException(CommonErrorCode.SERVICE_UNAVAILABLE, cause),
-                request
+                request,
+                new MockHttpServletResponse()
         );
 
         // Then: 공개 상태와 원본 예외 기록
@@ -364,6 +407,21 @@ class ApiExceptionHandlerTest {
         assertThat(output).contains("unexpected controller failure");
     }
 
+    private void assertAuthenticationFailureExpiresSession(String path) throws Exception {
+        MockHttpSession authenticatedSession = new MockHttpSession();
+
+        MvcResult result = mockMvc.perform(get(path).session(authenticatedSession))
+                .andExpectAll(
+                        status().isUnauthorized(),
+                        header().string(HttpHeaders.CACHE_CONTROL, "no-store"),
+                        jsonPath("$.code").value("AUTH_AUTHENTICATION_REQUIRED")
+                )
+                .andReturn();
+
+        assertThat(authenticatedSession.isInvalid()).isTrue();
+        assertThat(result.getRequest().getSession(false)).isNull();
+    }
+
     @RestController
     public static class TestRestController {
 
@@ -389,6 +447,25 @@ class ApiExceptionHandlerTest {
             throw new IllegalStateException("unexpected controller failure");
         }
 
+        @GetMapping("/bff/v1/test/errors/authentication-required")
+        void authenticationRequired() {
+            throw new BusinessException(SecurityErrorCode.AUTHENTICATION_REQUIRED);
+        }
+
+        @GetMapping("/bff/v1/test/errors/learning-authentication-required")
+        void learningAuthenticationRequired() {
+            throw new LearningDownstreamException(
+                    HttpStatus.UNAUTHORIZED,
+                    new ApiErrorResponse(
+                            "AUTH_AUTHENTICATION_REQUIRED",
+                            "expired bearer token",
+                            "/api/v1/me/profile",
+                            "learning-authentication-request"
+                    ),
+                    new IllegalStateException("expired access token")
+            );
+        }
+
         @PostMapping("/bff/v1/test/errors/learning-approved-4xx")
         void approvedLearningClientError() {
             throw new LearningDownstreamException(
@@ -400,6 +477,20 @@ class ApiExceptionHandlerTest {
                             "learning-request-4xx"
                     ),
                     new IllegalStateException("approved downstream rejection")
+            );
+        }
+
+        @GetMapping("/bff/v1/test/errors/telegram-link-not-found")
+        void telegramLinkNotFound() {
+            throw new LearningDownstreamException(
+                    HttpStatus.NOT_FOUND,
+                    new ApiErrorResponse(
+                            "TELEGRAM_USER_LINK_NOT_FOUND",
+                            "Telegram 연동 정보를 찾을 수 없습니다.",
+                            "/api/v1/telegram/link",
+                            "learning-telegram-link-not-found"
+                    ),
+                    new IllegalStateException("telegram link not found")
             );
         }
 

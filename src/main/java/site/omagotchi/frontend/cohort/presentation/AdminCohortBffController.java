@@ -20,6 +20,7 @@ import site.omagotchi.frontend.global.learning.application.LearningProxyBffServi
 public class AdminCohortBffController {
 
     private final LearningProxyBffService proxy;
+    private final ManagerJoinCodeSessionStore joinCodeSessionStore;
 
     @GetMapping("/cohorts")
     public JsonNode getCohorts(HttpServletRequest request) {
@@ -115,8 +116,9 @@ public class AdminCohortBffController {
 
     @GetMapping("/cohorts/{cohortId}/join-code")
     public JsonNode getJoinCode(HttpServletRequest request, @PathVariable Long cohortId) {
-        return proxy.execute(request, context -> context.service()
+        JsonNode metadata = proxy.execute(request, context -> context.service()
                 .getJoinCode(context.bearerToken(), cohortId));
+        return joinCodeSessionStore.restore(request, cohortId, metadata);
     }
 
     @PostMapping("/cohorts/{cohortId}/join-code")
@@ -125,13 +127,17 @@ public class AdminCohortBffController {
             @PathVariable Long cohortId,
             @RequestBody JsonNode body
     ) {
-        return proxy.execute(request, context -> context.service()
+        JsonNode issued = proxy.execute(request, context -> context.service()
                 .createJoinCode(context.bearerToken(), cohortId, body));
+        joinCodeSessionStore.save(request, cohortId, issued);
+        return issued;
     }
 
     @PatchMapping("/cohorts/{cohortId}/join-code/revoke")
     public JsonNode revokeJoinCode(HttpServletRequest request, @PathVariable Long cohortId) {
-        return proxy.execute(request, context -> context.service()
+        JsonNode revoked = proxy.execute(request, context -> context.service()
                 .revokeJoinCode(context.bearerToken(), cohortId));
+        joinCodeSessionStore.remove(request, cohortId);
+        return revoked;
     }
 }

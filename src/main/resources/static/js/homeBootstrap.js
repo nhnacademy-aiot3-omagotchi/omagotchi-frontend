@@ -7,7 +7,7 @@ async function bootstrapHome() {
         profile = await globalThis.OmagotchiApi.profile.get();
     } catch (error) {
         if (error?.status === 401) {
-            globalThis.location.replace("/login");
+            globalThis.location.replace("/login?notice=session-expired");
             return;
         }
 
@@ -32,8 +32,8 @@ async function bootstrapHome() {
     }
 
     try {
-        await import("./spaceRoom.js?v=20260824-1");
-        await import("./home.js?v=20260825-5");
+        await import("./spaceRoom.js?v=20260829-2");
+        await import("./home.js?v=20260829-2");
     } catch (error) {
         const toast = document.querySelector("[data-home-toast]");
         if (toast) {

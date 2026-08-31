@@ -38,6 +38,7 @@
             <th:block th:replace="~{manager/dashboard/panels/community :: panel}"></th:block>
             <th:block th:replace="~{manager/dashboard/panels/studyStats :: panel}"></th:block>
             <th:block th:replace="~{manager/dashboard/panels/audits :: panel}"></th:block>
+            <th:block th:replace="~{manager/dashboard/panels/telegram :: panel}"></th:block>
 
             <!-- 통합 모달/팝업 영역 -->
             <div id="manager-modals">
@@ -59,10 +60,13 @@
     <script src="/js/manager/dashboard/panels/communityPanel.js" th:src="@{/js/manager/dashboard/panels/communityPanel.js}"></script>
     <script src="/js/manager/dashboard/panels/auditsPanel.js" th:src="@{/js/manager/dashboard/panels/auditsPanel.js}"></script>
     <script src="/js/manager/dashboard/panels/studyStatsPanel.js" th:src="@{/js/manager/dashboard/panels/studyStatsPanel.js}"></script>
+    <script src="/js/manager/dashboard/panels/telegramPanel.js" th:src="@{/js/manager/dashboard/panels/telegramPanel.js}"></script>
     <script src="/js/manager/dashboard/popups/studyDetailModal.js" th:src="@{/js/manager/dashboard/popups/studyDetailModal.js}"></script>
     <script src="/js/manager/dashboard/index.js" th:src="@{/js/manager/dashboard/index.js}"></script>
     <script type="module" src="/js/home-react/manager-sensors-app.js"
             th:src="@{/js/home-react/manager-sensors-app.js}"></script>
+    <script type="module" src="/js/home-react/manager-telegram-app.js"
+            th:src="@{/js/home-react/manager-telegram-app.js}"></script>
 </th:block>
 </body>
 </html>

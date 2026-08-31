@@ -1,7 +1,7 @@
 import React, { useMemo } from "react";
 import { GameDialog, GameDialogClose } from "../../ui/GameDialog.jsx";
 import { GameTabs } from "../../ui/GameTabs.jsx";
-import { HomeMenuLiveContent } from "../../ui/HomeMenuPanel.jsx";
+import { HomeMenuLiveContent } from "../../ui/HomeMenuLiveContent.jsx";
 
 const radixDialogTypes = new Set(["help", "settings"]);
 const progressTabDefinitions = [

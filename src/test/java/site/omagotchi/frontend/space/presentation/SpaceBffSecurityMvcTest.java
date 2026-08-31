@@ -19,6 +19,7 @@ import site.omagotchi.frontend.auth.presentation.security.BrowserTokenSessionAut
 import site.omagotchi.frontend.auth.presentation.security.IdentityLogoutHandler;
 import site.omagotchi.frontend.auth.presentation.security.LoginAuthenticationFailureHandler;
 import site.omagotchi.frontend.global.security.BffApiSecurityErrorHandler;
+import site.omagotchi.frontend.global.security.BrowserSessionInvalidator;
 import site.omagotchi.frontend.global.security.SecurityConfig;
 import site.omagotchi.frontend.global.web.BffApiExceptionResolver;
 import site.omagotchi.frontend.global.web.ServletApiErrorResponseWriter;
@@ -45,6 +46,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         AuthenticationService.class,
         BrowserSessionTokens.class,
         BrowserTokenSessionAuthenticationStrategy.class,
+        BrowserSessionInvalidator.class,
         BffApiSecurityErrorHandler.class,
         IdentityLogoutHandler.class,
         LoginAuthenticationFailureHandler.class,

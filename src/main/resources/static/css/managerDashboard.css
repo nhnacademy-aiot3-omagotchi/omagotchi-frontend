@@ -360,6 +360,19 @@ button {
     box-shadow: none;
 }
 
+.dashboard-panel--telegram-react {
+    padding: 0;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+}
+
+.telegram-island-loading {
+    padding: 32px;
+    color: var(--muted);
+    text-align: center;
+}
+
 .sensor-island-loading {
     display: grid;
     min-height: 360px;
@@ -655,6 +668,13 @@ td small {
     margin-top: 10px;
     color: var(--muted);
     font-size: 11px;
+}
+
+.code-description {
+    margin: 8px 0 0;
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.65;
 }
 
 .code-actions {

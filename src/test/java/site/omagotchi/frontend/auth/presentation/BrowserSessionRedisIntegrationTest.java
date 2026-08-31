@@ -14,6 +14,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.client.JdkClientHttpRequestFactory;
+import org.springframework.session.SessionRepository;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.client.EntityExchangeResult;
@@ -24,11 +25,15 @@ import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
+import site.omagotchi.frontend.account.application.port.IdentityAccountClient;
 import site.omagotchi.frontend.auth.application.port.IdentityAuthClient;
 import site.omagotchi.frontend.auth.application.result.BrowserSessionTokenBundle;
 import site.omagotchi.frontend.auth.domain.GlobalRole;
+import site.omagotchi.frontend.global.security.CsrfBffController.CsrfTokenResponse;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.util.Base64;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -70,6 +75,12 @@ class BrowserSessionRedisIntegrationTest {
     @MockitoBean
     private IdentityAuthClient identityAuthClient;
 
+    @MockitoBean
+    private IdentityAccountClient identityAccountClient;
+
+    @Autowired
+    private SessionRepository<?> sessionRepository;
+
     @Test
     @DisplayName("Redis Browser Session 로그인·인증 복원·로그아웃")
     void restoresAuthenticationAndInvalidatesSession() {
@@ -94,7 +105,7 @@ class BrowserSessionRedisIntegrationTest {
         // Then: Session ID 교체와 Browser 응답의 Token 비노출
         assertThat(loginResponse.getStatus().value()).isEqualTo(302);
         assertThat(loginResponse.getResponseHeaders().getLocation())
-                .hasPath("/home");
+                .hasPath("/authenticated-landing");
         assertThat(authenticatedSessionCookie.getValue())
                 .isNotEqualTo(anonymousSessionCookie.getValue());
         assertThat(authenticatedSessionCookie.isHttpOnly()).isTrue();
@@ -143,6 +154,50 @@ class BrowserSessionRedisIntegrationTest {
                 .hasPath("/login");
     }
 
+    @Test
+    @DisplayName("비밀번호 변경 뒤 Redis 인증 Session 폐기")
+    void changesPasswordThenInvalidatesAuthenticatedSession() {
+        // Given: Redis에 저장된 인증 세션
+        given(identityAuthClient.login("user@example.com", "password-passphrase"))
+                .willReturn(tokenBundle());
+        EntityExchangeResult<String> loginPageResponse = sendGet("/login", null);
+        EntityExchangeResult<String> loginResponse = sendLogin(
+                csrfToken(loginPageResponse),
+                sessionCookie(loginPageResponse).getValue()
+        );
+        ResponseCookie authenticatedSessionCookie = sessionCookie(loginResponse);
+        String authenticatedSessionId = sessionId(authenticatedSessionCookie);
+        assertThat(sessionRepository.findById(authenticatedSessionId)).isNotNull();
+
+        // Given: 인증 세션에 연결된 JSON 요청용 CSRF 토큰
+        CsrfTokenResponse csrf = sendCsrfToken(authenticatedSessionCookie.getValue());
+
+        // When: 보안 필터와 컨트롤러를 통한 비밀번호 변경 요청
+        EntityExchangeResult<String> passwordChangeResponse = sendPasswordChange(
+                csrf,
+                authenticatedSessionCookie.getValue()
+        );
+
+        // Then: Identity에는 세션의 Access JWT와 비밀번호만 전달
+        assertThat(passwordChangeResponse.getStatus().value()).isEqualTo(204);
+        verify(identityAccountClient).changePassword(
+                ACCESS_JWT,
+                "current-password-passphrase",
+                "new-password-passphrase"
+        );
+        assertTokensAreNotExposed(passwordChangeResponse);
+
+        // Then: 기존 Redis 인증 세션 삭제와 이전 쿠키를 사용한 보호 화면 접근 차단
+        assertThat(sessionRepository.findById(authenticatedSessionId)).isNull();
+        EntityExchangeResult<String> previousSessionHomeResponse = sendGet(
+                "/home",
+                authenticatedSessionCookie.getValue()
+        );
+        assertThat(previousSessionHomeResponse.getStatus().value()).isEqualTo(302);
+        assertThat(previousSessionHomeResponse.getResponseHeaders().getLocation())
+                .hasPath("/login");
+    }
+
     private EntityExchangeResult<String> sendLogin(
             String csrfToken,
             String sessionCookie
@@ -179,6 +234,41 @@ class BrowserSessionRedisIntegrationTest {
                 .returnResult();
     }
 
+    private CsrfTokenResponse sendCsrfToken(String sessionCookie) {
+        EntityExchangeResult<CsrfTokenResponse> response = restTestClient.get()
+                .uri("/bff/v1/csrf")
+                .accept(MediaType.APPLICATION_JSON)
+                .cookie(SESSION_COOKIE, sessionCookie)
+                .exchange()
+                .expectBody(CsrfTokenResponse.class)
+                .returnResult();
+
+        assertThat(response.getStatus().value()).isEqualTo(200);
+        assertThat(response.getResponseHeaders().getCacheControl())
+                .contains("no-store");
+        assertThat(response.getResponseBody()).isNotNull();
+        return response.getResponseBody();
+    }
+
+    private EntityExchangeResult<String> sendPasswordChange(
+            CsrfTokenResponse csrf,
+            String sessionCookie
+    ) {
+        return restTestClient.patch()
+                .uri("/bff/v1/users/me/password")
+                .contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaType.APPLICATION_JSON)
+                .header(csrf.headerName(), csrf.token())
+                .cookie(SESSION_COOKIE, sessionCookie)
+                .body(new PasswordChangeRequest(
+                        "current-password-passphrase",
+                        "new-password-passphrase"
+                ))
+                .exchange()
+                .expectBody(String.class)
+                .returnResult();
+    }
+
     private EntityExchangeResult<String> sendGet(
             String path,
             String sessionCookie
@@ -209,10 +299,17 @@ class BrowserSessionRedisIntegrationTest {
         ));
     }
 
-    private ResponseCookie sessionCookie(EntityExchangeResult<String> response) {
+    private ResponseCookie sessionCookie(EntityExchangeResult<?> response) {
         ResponseCookie cookie = response.getResponseCookies().getFirst(SESSION_COOKIE);
         assertThat(cookie).as(SESSION_COOKIE + " Set-Cookie").isNotNull();
         return cookie;
+    }
+
+    private String sessionId(ResponseCookie cookie) {
+        return new String(
+                Base64.getDecoder().decode(cookie.getValue()),
+                StandardCharsets.UTF_8
+        );
     }
 
     private BrowserSessionTokenBundle tokenBundle() {
@@ -224,6 +321,12 @@ class BrowserSessionRedisIntegrationTest {
                 REFRESH_TOKEN,
                 Instant.parse("2099-08-09T15:00:00Z")
         );
+    }
+
+    private record PasswordChangeRequest(
+            String currentPassword,
+            String newPassword
+    ) {
     }
 
     @TestConfiguration(proxyBeanMethods = false)

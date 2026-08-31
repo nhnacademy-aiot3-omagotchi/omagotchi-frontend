@@ -15,6 +15,7 @@ import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientResponseException;
 import org.springframework.web.client.support.RestClientAdapter;
 import org.springframework.web.service.invoker.HttpServiceProxyFactory;
+import site.omagotchi.frontend.account.application.AccountErrorCode;
 import site.omagotchi.frontend.auth.application.AuthErrorCode;
 import site.omagotchi.frontend.auth.application.result.BrowserSessionTokenBundle;
 import site.omagotchi.frontend.auth.application.result.SignupResult;
@@ -22,6 +23,7 @@ import site.omagotchi.frontend.auth.domain.GlobalRole;
 import site.omagotchi.frontend.global.exception.BusinessException;
 import site.omagotchi.frontend.global.exception.CommonErrorCode;
 import site.omagotchi.frontend.global.exception.ErrorCode;
+import site.omagotchi.frontend.global.http.ApiErrorContractResolver;
 import site.omagotchi.frontend.global.http.ApiErrorResponseDecoder;
 import site.omagotchi.frontend.global.http.RestClientCallExecutor;
 
@@ -59,7 +61,9 @@ class IdentityRestAuthClientTest {
         client = new IdentityRestAuthClient(
                 httpService,
                 new RestClientCallExecutor(),
-                new IdentityAuthErrorResolver(new ApiErrorResponseDecoder())
+                new IdentityAuthErrorResolver(
+                        new ApiErrorContractResolver(new ApiErrorResponseDecoder())
+                )
         );
     }
 
@@ -428,25 +432,25 @@ class IdentityRestAuthClientTest {
                         "이메일 정책 오류",
                         HttpStatus.BAD_REQUEST,
                         "ACCOUNT_INVALID_EMAIL",
-                        AuthErrorCode.INVALID_EMAIL
+                        AccountErrorCode.INVALID_EMAIL
                 ),
                 Arguments.of(
                         "비밀번호 정책 오류",
                         HttpStatus.BAD_REQUEST,
                         "ACCOUNT_INVALID_PASSWORD",
-                        AuthErrorCode.INVALID_PASSWORD
+                        AccountErrorCode.INVALID_PASSWORD
                 ),
                 Arguments.of(
                         "이름 정책 오류",
                         HttpStatus.BAD_REQUEST,
                         "ACCOUNT_INVALID_NAME",
-                        AuthErrorCode.INVALID_NAME
+                        AccountErrorCode.INVALID_NAME
                 ),
                 Arguments.of(
                         "이메일 중복",
                         HttpStatus.CONFLICT,
                         "ACCOUNT_DUPLICATE_EMAIL",
-                        AuthErrorCode.DUPLICATE_EMAIL
+                        AccountErrorCode.DUPLICATE_EMAIL
                 )
         );
     }

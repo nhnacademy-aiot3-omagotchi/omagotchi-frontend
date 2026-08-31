@@ -132,12 +132,26 @@
     window.OmagotchiApi = {
         request,
         optional,
+        account: {
+            get: () => request("/users/me"),
+            changeName: (name) => request("/users/me", {
+                method: "PATCH",
+                body: {name}
+            }),
+            changePassword: (currentPassword, newPassword) => request("/users/me/password", {
+                method: "PATCH",
+                body: {currentPassword, newPassword}
+            })
+        },
         profile: {
             get: () => request("/me/profile"),
             updateNickname: (nickname) => request("/me/nickname", {
                 method: "PATCH",
                 body: {nickname}
             })
+        },
+        access: {
+            getContext: () => request("/cohorts/me/access-context")
         },
         character: {
             list: () => request("/gamification/characters"),
@@ -354,6 +368,16 @@
             ),
         },
         // 응답 필드는 Learning Service 계약 그대로다. 화면이 그 이름으로 읽으므로 여기서 바꾸지 않는다.
+        telegram: {
+            // 미연동이면 404다. 호출부가 그것을 정상 상태로 다룬다.
+            getMyLink: () => request("/me/telegram/link"),
+            issueLinkToken: () => request("/me/telegram/link-token", {method: "POST"}),
+            updateNotification: (enabled) => request("/me/telegram/link/notification", {
+                method: "PATCH",
+                body: {enabled}
+            }),
+            disconnect: () => request("/me/telegram/link", {method: "DELETE"})
+        },
         sensor: {
             listSpaces: () => request("/admin/sensors/spaces"),
             listDevices: () => request("/admin/sensors/devices"),
