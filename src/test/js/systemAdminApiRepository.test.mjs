@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {createSystemAdminApiRepository} from "../../main/resources/static/js/system-admin/dashboard/data/systemAdminApiRepository.js";
+import {mergeManagerCohortSelection} from "../../main/resources/static/js/system-admin/dashboard/dashboardController.js";
 
 function apiFixture() {
     const calls = [];
@@ -170,6 +171,62 @@ test("기수 매니저 변경은 해제 후 신규 승격 순서로 Learning API
     assert.deepEqual(fixture.calls, [
         ["removeManager", "user-id", "3"],
         ["assignManager", "user-id", "5"]
+    ]);
+});
+
+test("선택 UI에 없는 CLOSED 기수 관리자 배정은 저장 목록에 보존한다", () => {
+    assert.deepEqual(
+        mergeManagerCohortSelection(
+            ["closed-cohort", "editable-old"],
+            ["editable-old", "editable-new"],
+            ["editable-new"]
+        ),
+        ["closed-cohort", "editable-new"]
+    );
+});
+
+test("신규 관리자 승격이 실패하면 먼저 해제한 권한을 보상 복구한다", async () => {
+    const fixture = apiFixture();
+    const assignmentFailure = new Error("신규 관리자 승격 실패");
+    fixture.api.systemAdmin.assignManager = async (userId, cohortId) => {
+        fixture.calls.push(["assignManager", userId, cohortId]);
+        if (cohortId === "5") throw assignmentFailure;
+    };
+    const repository = createSystemAdminApiRepository(fixture.api);
+
+    await assert.rejects(repository.updateUserPermissions("user-id", {
+        previousManagerCohortIds: ["3", "4"],
+        managerCohortIds: ["4", "5"]
+    }), assignmentFailure);
+
+    assert.deepEqual(fixture.calls, [
+        ["removeManager", "user-id", "3"],
+        ["assignManager", "user-id", "5"],
+        ["assignManager", "user-id", "3"]
+    ]);
+});
+
+test("권한 변경과 보상 복구가 모두 실패하면 부분 실패 코드로 알린다", async () => {
+    const fixture = apiFixture();
+    fixture.api.systemAdmin.assignManager = async (userId, cohortId) => {
+        fixture.calls.push(["assignManager", userId, cohortId]);
+        throw new Error(`${cohortId} 승격 실패`);
+    };
+    const repository = createSystemAdminApiRepository(fixture.api);
+
+    await assert.rejects(
+        repository.updateUserPermissions("user-id", {
+            previousManagerCohortIds: ["3"],
+            managerCohortIds: ["5"]
+        }),
+        (error) => error.code === "MANAGER_PERMISSION_UPDATE_PARTIAL_FAILURE"
+            && error.rollbackErrors.length === 1
+    );
+
+    assert.deepEqual(fixture.calls, [
+        ["removeManager", "user-id", "3"],
+        ["assignManager", "user-id", "5"],
+        ["assignManager", "user-id", "3"]
     ]);
 });
 

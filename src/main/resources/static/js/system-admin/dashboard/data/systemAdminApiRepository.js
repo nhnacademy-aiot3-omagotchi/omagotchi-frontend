@@ -87,12 +87,44 @@ export function createSystemAdminApiRepository(api = window.OmagotchiApi) {
             const next = new Set((payload.managerCohortIds || []).map(String));
             const removals = [...previous].filter((cohortId) => !next.has(cohortId));
             const additions = [...next].filter((cohortId) => !previous.has(cohortId));
+            const removed = [];
+            const added = [];
 
-            for (const cohortId of removals) {
-                await client.systemAdmin.removeManager(userId, cohortId);
-            }
-            for (const cohortId of additions) {
-                await client.systemAdmin.assignManager(userId, cohortId);
+            try {
+                for (const cohortId of removals) {
+                    await client.systemAdmin.removeManager(userId, cohortId);
+                    removed.push(cohortId);
+                }
+                for (const cohortId of additions) {
+                    await client.systemAdmin.assignManager(userId, cohortId);
+                    added.push(cohortId);
+                }
+            } catch (operationError) {
+                const rollbackErrors = [];
+                for (const cohortId of added.reverse()) {
+                    try {
+                        await client.systemAdmin.removeManager(userId, cohortId);
+                    } catch (rollbackError) {
+                        rollbackErrors.push(rollbackError);
+                    }
+                }
+                for (const cohortId of removed.reverse()) {
+                    try {
+                        await client.systemAdmin.assignManager(userId, cohortId);
+                    } catch (rollbackError) {
+                        rollbackErrors.push(rollbackError);
+                    }
+                }
+                if (rollbackErrors.length) {
+                    const partialFailure = new Error(
+                        "기수 권한 변경 일부를 복구하지 못했습니다.",
+                        {cause: operationError}
+                    );
+                    partialFailure.code = "MANAGER_PERMISSION_UPDATE_PARTIAL_FAILURE";
+                    partialFailure.rollbackErrors = rollbackErrors;
+                    throw partialFailure;
+                }
+                throw operationError;
             }
         },
 

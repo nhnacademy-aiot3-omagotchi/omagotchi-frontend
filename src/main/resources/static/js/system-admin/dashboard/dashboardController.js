@@ -16,6 +16,12 @@ function periodsOverlap(first, second) {
     return first.startDate < second.endDate && second.startDate < first.endDate;
 }
 
+export function mergeManagerCohortSelection(previousIds, editableIds, selectedIds) {
+    const editable = new Set((editableIds || []).map(String));
+    const preserved = (previousIds || []).map(String).filter((id) => !editable.has(id));
+    return [...new Set([...preserved, ...(selectedIds || []).map(String)])];
+}
+
 export async function initializeSystemAdminDashboard(root = document, repository) {
     if (!repository) throw new Error("System Admin 저장소 구현체가 필요합니다.");
     let state = await repository.loadDashboard();
@@ -224,10 +230,15 @@ export async function initializeSystemAdminDashboard(root = document, repository
         const dialog = find("[data-permission-dialog]");
         const globalRole = dialog.querySelector("[data-system-admin-toggle]").checked ? "SYSTEM_ADMIN" : "USER";
         const status = dialog.querySelector("[data-account-status-select]").value;
-        const managerCohortIds = [...dialog.querySelectorAll("[data-dialog-cohort-options] input:checked")].map((input) => input.value);
+        const selectedUser = state.users.find((user) => user.id === selectedUserId);
+        const editableInputs = [...dialog.querySelectorAll("[data-dialog-cohort-options] input")];
+        const managerCohortIds = mergeManagerCohortSelection(
+            selectedUser?.managerCohortIds,
+            editableInputs.map((input) => input.value),
+            editableInputs.filter((input) => input.checked).map((input) => input.value)
+        );
         const errorMessage = dialog.querySelector("[data-permission-error]");
         try {
-            const selectedUser = state.users.find((user) => user.id === selectedUserId);
             await repository.updateUserPermissions(selectedUserId, {
                 status,
                 globalRole,
@@ -237,9 +248,19 @@ export async function initializeSystemAdminDashboard(root = document, repository
             repository.appendAudit({action: "권한 변경", detail: `${userName(selectedUserId)} 사용자 권한 변경`});
             state = await repository.loadDashboard(); renderAll(); setDialogOpen(dialog, false); showToast("사용자 권한이 저장되었습니다.");
         } catch (error) {
-            errorMessage.textContent = error.code === "COHORT_MANAGER_PERIOD_CONFLICT"
+            let publicMessage = error.code === "COHORT_MANAGER_PERIOD_CONFLICT"
                 ? "운영 기간이 겹치는 여러 기수에 같은 관리자를 배치할 수 없습니다."
-                : error.message;
+                : error.code === "MANAGER_PERMISSION_UPDATE_PARTIAL_FAILURE"
+                    ? "일부 권한을 복구하지 못했습니다. 서버 상태를 확인한 뒤 다시 시도해 주세요."
+                    : "기수 권한을 저장하지 못했습니다. 잠시 후 다시 시도해 주세요.";
+            try {
+                state = await repository.loadDashboard();
+                renderAll();
+                openPermissionDialog(selectedUserId);
+            } catch {
+                publicMessage += " 서버 상태도 다시 불러오지 못했습니다. 페이지를 새로고침해 주세요.";
+            }
+            errorMessage.textContent = publicMessage;
             errorMessage.hidden = false;
         }
     });
