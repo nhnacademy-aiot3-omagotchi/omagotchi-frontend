@@ -89,6 +89,9 @@ flowchart LR
 | 예상하지 못한 Page 오류 | Boot `/error` | HTML 오류 |
 | Page Redis Session 장애 | `SessionStoreErrorFilter` → `SessionStoreFailureResponseWriter` | HTML 503 |
 | REST `BusinessException` | `ApiExceptionHandler` | JSON 4xx·5xx |
+| Access Token 만료 임박 | `AccessTokenRefreshInterceptor` | 선제 Refresh 뒤 원래 요청 1회 |
+| Refresh 명시적 503·응답 미수신·Refresh 전 Redis 장애 | `AccessTokenRefreshService` | Session 유지 + JSON 503 |
+| Refresh 401·응답 계약 위반·새 Bundle 저장 결과 불명확 | `ApiExceptionHandler` | Cookie·Session best-effort 폐기 + JSON 401 |
 | 하류 Access JWT 인증 실패 | `ApiExceptionHandler` | 인증 Session 폐기 + JSON 401 |
 | 예상하지 못한 REST 오류 | `ApiExceptionHandler` | JSON 500 |
 | 미인증 BFF | `BffApiSecurityErrorHandler` | JSON 401 |
@@ -99,8 +102,9 @@ flowchart LR
 - 경로 계약
   - Frontend BFF: `/bff/v1/**`
   - Gateway 외부 API: `/api/**`
-- 미구현
-  - Access Token Refresh·안전한 요청 재실행
+- 요청 재실행 정책
+  - 선제 Refresh와 무관하게 원래 Controller·downstream 요청은 최대 1회
+  - 하류 `401` 뒤 자동 재실행 금지
 
 ## 4. Form 복구
 
@@ -232,7 +236,7 @@ flowchart TD
   - HTML 예외 처리기의 후순위 fallback
 - 현재 제한
   - DispatcherServlet 이전의 Security·Session Filter 오류 직접 처리 불가
-  - Access Token Refresh 없이 하류 `401`을 재로그인으로 종료
+  - 하류 `401`은 Refresh 대상이 아니며 원래 요청 재실행 없이 재로그인으로 종료
 
 ### `BffApiExceptionResolver`
 
@@ -281,6 +285,7 @@ flowchart TD
 | 응답 형식 불가 | 406 | `COMMON_NOT_ACCEPTABLE` |
 | 요청 형식 불가 | 415 | `COMMON_UNSUPPORTED_MEDIA_TYPE` |
 | 호출 대상 응답 계약 위반 | 502 | `COMMON_DOWNSTREAM_INVALID_RESPONSE` |
+| Identity Refresh 응답 계약 위반 | 401 | `AUTH_AUTHENTICATION_REQUIRED` |
 | Identity·Redis 일시 장애 | 503 | `COMMON_SERVICE_UNAVAILABLE` |
 | 예상하지 못한 내부 오류 | 500 | `COMMON_INTERNAL_SERVER_ERROR` |
 
@@ -435,7 +440,7 @@ flowchart TB
   - `RedisConnectionFailureException`
   - 원인 체인의 `RedisCommandTimeoutException`
 - 현재 전제
-  - Frontend Redis 사용처의 Spring Session 단일 구성
+  - Spring Session과 Access Token Refresh Lock이 같은 Session Redis 구성을 사용
 - 의도적 비대상
   - 원인 없는 `QueryTimeoutException`
   - 일반 `TimeoutException`을 포함한 다른 Data Store 오류
@@ -448,7 +453,7 @@ flowchart TB
   - Spring Security 보안 Header 보존
 - 알려진 한계
   - Login Token 발급 뒤 Redis 저장 실패의 Refresh Token Family 보상 부재
-  - 다른 Redis 사용처 추가 시 Session 장애 오분류 가능성
+  - Session과 무관한 Redis 사용처 추가 시 Session 장애 오분류 가능성
 
 ## 11. Boot ERROR Dispatch
 
@@ -503,6 +508,7 @@ flowchart TB
 - Handler Mapping·표현 협상 오류: Method·Content-Type·Accept를 포함한 BFF Test
 - Security 오류: 미인증·권한·CSRF가 Filter Chain에서 돌아오는지 검증
 - Redis Session 오류: MVC 진입 전·응답 반환 후 실패를 포함한 Integration Test
+- Access Token Refresh: 단위 `*Test`와 실제 Redis를 사용하는 Maven `verify` 단계의 `*IT`
 - 하류 오류: 공개 Code·HTTP Status·계약 위반·일시 장애의 구분 검증
 - 실제 처리기와 Test 파일은 `global/web`, `global/security`, `global/session`,
   기능별 Infrastructure의 현재 코드에서 확인한다.
