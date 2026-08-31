@@ -35,7 +35,7 @@ public class SignupPageController {
             Principal principal
     ) {
         if (principal != null) {
-            return "redirect:/home";
+            return "redirect:/authenticated-landing";
         }
         if (!model.containsAttribute("signupForm")) {
             model.addAttribute("signupForm", new SignupForm());
@@ -53,7 +53,7 @@ public class SignupPageController {
             HttpServletResponse response
     ) {
         if (principal != null) {
-            return "redirect:/home";
+            return "redirect:/authenticated-landing";
         }
         if (bindingResult.hasErrors()) {
             // Form Binding 입력 오류의 400 응답

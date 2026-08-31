@@ -59,7 +59,7 @@ class AuthenticatedLoginRequestFilterTest {
     }
 
     @Test
-    @DisplayName("인증된 Login 요청의 Home Redirect")
+    @DisplayName("인증된 Login 요청의 접근 판정 Redirect")
     void redirectsAuthenticatedLoginRequestToHome() throws Exception {
         // Given: 인증된 SecurityContext와 Login 요청
         SecurityContextHolder.getContext().setAuthentication(
@@ -81,7 +81,7 @@ class AuthenticatedLoginRequestFilterTest {
 
         // Then: Identity 호출 Filter 이전 Home Redirect
         assertSoftly(softly -> {
-            softly.assertThat(response.getRedirectedUrl()).isEqualTo("/home");
+            softly.assertThat(response.getRedirectedUrl()).isEqualTo("/authenticated-landing");
             softly.assertThat(chainInvoked).isFalse();
         });
     }

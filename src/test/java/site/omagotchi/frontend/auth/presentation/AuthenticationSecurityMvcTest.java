@@ -183,7 +183,7 @@ class AuthenticationSecurityMvcTest {
     }
 
     @Test
-    @DisplayName("Spring Security Form Login의 Session 수립과 Home Redirect")
+    @DisplayName("Spring Security Form Login의 Session 수립과 접근 판정 Redirect")
     void establishesSessionAndRedirectsAfterLogin() throws Exception {
         // Given: Identity Token Bundle과 익명 Session
         BrowserSessionTokenBundle tokenBundle = tokenBundle();
@@ -198,7 +198,7 @@ class AuthenticationSecurityMvcTest {
                         .param("password", "password-passphrase"))
                 .andExpectAll(
                         status().isFound(),
-                        redirectedUrl("/home")
+                        redirectedUrl("/authenticated-landing")
                 )
                 .andReturn();
 
@@ -258,7 +258,7 @@ class AuthenticationSecurityMvcTest {
                         .param("password", "other-password"))
                 .andExpectAll(
                         status().isFound(),
-                        redirectedUrl("/home")
+                        redirectedUrl("/authenticated-landing")
                 )
                 .andReturn();
 

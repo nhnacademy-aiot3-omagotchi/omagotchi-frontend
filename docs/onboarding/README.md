@@ -81,7 +81,7 @@ flowchart LR
 - Browser는 Opaque Session Cookie만 보관하고 Token 원문을 취급하지 않는다.
 - Browser 전용 JSON 계약은 `/bff/v1/**`을 사용한다.
 - Frontend BFF는 Session의 Access JWT를 하류 호출 인증으로 변환하고 화면용 계약을 소유한다.
-- 하류를 Gateway로 호출하는지 직접 호출하는지는 현재 코드와 관련 ADR에서 확인한다.
+- Frontend BFF는 담당 Domain Service를 직접 호출한다. AI Chat은 후속 전환 전까지 Gateway를 사용한다.
 - Page·JSON·Security·Session 오류 경계를 서로 구분한다.
 
 ## 4. 문서 순서
@@ -95,7 +95,7 @@ flowchart LR
 4. [오류·장애 흐름](03-error-and-failure-flow.md)
    - HTML·JSON 오류 경계, Identity·Redis 실패
 5. [BFF 실제 요청 흐름](04-bff-request-flow.md)
-   - Browser·BFF·Gateway·Learning 역할과 출결·Presence·첨부파일 처리 순서
+   - Browser·BFF·Learning 역할과 출결·Presence·첨부파일 처리 순서
 6. [기능 연동 개발 가이드](05-feature-integration-guide.md)
    - Prototype 전환, SSR·JSON BFF 선택, Session·CSRF·내부 HTTP·검증 기준
 7. [BFF와 Learning HTTP Interface 경계](06-bff-http-interface-boundary.md)

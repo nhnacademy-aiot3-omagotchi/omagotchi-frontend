@@ -74,7 +74,12 @@ public class SecurityConfig {
                                 "/actuator/info"
                         ).permitAll() // 배포 확인용 최소 Actuator endpoint
                         .requestMatchers("/system-admin-dashboard").hasRole("SYSTEM_ADMIN")
-                        .requestMatchers("/manager-dashboard").authenticated() // TODO 기수 관리자 권한 정책 적용
+                        // 인가가 Security 밖(ManagerDashboardPageController)에 있음.
+                        // 기수 관리자는 Learning DB 사실이라 로그인 Authentication에 없어
+                        // 여기에서는 판정할 수 없다.
+                        // TODO 관리자 전용 Page 추가 시 로그인 authority 주입 후
+                        //      hasRole("COHORT_MANAGER")로 이전
+                        .requestMatchers("/manager-dashboard").authenticated()
                         .requestMatchers(bffApiRequestMatcher).authenticated() // Browser Session 기반 BFF API
                         .anyRequest().authenticated() // 기본 보호 정책
                 )
@@ -99,7 +104,7 @@ public class SecurityConfig {
                         .logoutSuccessUrl("/login")
                         .permitAll()
                 )
-                .requestCache(RequestCacheConfigurer::disable) // Login 성공의 Home 고정 이동
+                .requestCache(RequestCacheConfigurer::disable) // Login 성공 뒤 역할별 접근 판정 화면으로 이동
                 .exceptionHandling(exceptions -> exceptions
                         // BFF API의 401·403 JSON 응답
                         .defaultAuthenticationEntryPointFor(

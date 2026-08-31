@@ -20,12 +20,18 @@ import org.springframework.web.bind.annotation.RequestPart;
 import site.omagotchi.frontend.profile.infrastructure.request.UpdateNicknameRequest;
 import site.omagotchi.frontend.profile.infrastructure.response.UserNicknameResponse;
 import site.omagotchi.frontend.profile.infrastructure.response.UserProfileResponse;
+import site.omagotchi.frontend.cohort.infrastructure.response.UserAccessContextResponse;
 
 import java.util.List;
 import java.util.UUID;
 
 @HttpExchange("/api/v1")
 public interface LearningHttpService {
+
+    @GetExchange("/cohorts/me/access-context")
+    UserAccessContextResponse getMyAccessContext(
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization
+    );
 
     @GetExchange("/user-profiles/me/profile")
     UserProfileResponse getMyProfile(
@@ -36,6 +42,27 @@ public interface LearningHttpService {
     UserNicknameResponse updateMyNickname(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
             @RequestBody UpdateNicknameRequest request
+    );
+
+    @GetExchange("/telegram/link")
+    JsonNode getMyTelegramLink(
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization
+    );
+
+    @PostExchange("/telegram/link-token")
+    JsonNode issueTelegramLinkToken(
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization
+    );
+
+    @PatchExchange("/telegram/link/notification")
+    JsonNode updateTelegramNotification(
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
+            @RequestBody JsonNode request
+    );
+
+    @DeleteExchange("/telegram/link")
+    JsonNode disconnectTelegram(
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization
     );
 
     @GetExchange("/cohorts")

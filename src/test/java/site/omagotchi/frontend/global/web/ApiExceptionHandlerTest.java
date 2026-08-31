@@ -114,6 +114,26 @@ class ApiExceptionHandlerTest {
     }
 
     @Test
+    @DisplayName("Telegram 미연동 하류 404는 Frontend 404 계약으로 전달")
+    void forwardsTelegramUserLinkNotFound() throws Exception {
+        // Given: Telegram 연동 이력이 없는 사용자를 Learning이 404로 응답
+        // When: 실제 Spring MVC 오류 경계를 통과
+        // Then: Browser가 정상 미연동 상태로 판정할 수 있도록 404와 Code 유지
+        mockMvc.perform(get("/bff/v1/test/errors/telegram-link-not-found"))
+                .andExpectAll(
+                        status().isNotFound(),
+                        content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON),
+                        header().string(HttpHeaders.CACHE_CONTROL, "no-store"),
+                        jsonPath("$.code").value("TELEGRAM_USER_LINK_NOT_FOUND"),
+                        jsonPath("$.message").value("요청한 정보를 찾을 수 없습니다."),
+                        jsonPath("$.path").value(
+                                "/bff/v1/test/errors/telegram-link-not-found"
+                        ),
+                        jsonPath("$.requestId").value("learning-telegram-link-not-found")
+                );
+    }
+
+    @Test
     @DisplayName("기수 관리자 기간 중복 오류는 Frontend 409 계약으로 전달")
     void forwardsCohortManagerPeriodConflict() throws Exception {
         mockMvc.perform(post("/bff/v1/test/errors/cohort-manager-period-conflict"))
@@ -443,6 +463,20 @@ class ApiExceptionHandlerTest {
                             "learning-request-4xx"
                     ),
                     new IllegalStateException("approved downstream rejection")
+            );
+        }
+
+        @GetMapping("/bff/v1/test/errors/telegram-link-not-found")
+        void telegramLinkNotFound() {
+            throw new LearningDownstreamException(
+                    HttpStatus.NOT_FOUND,
+                    new ApiErrorResponse(
+                            "TELEGRAM_USER_LINK_NOT_FOUND",
+                            "Telegram 연동 정보를 찾을 수 없습니다.",
+                            "/api/v1/telegram/link",
+                            "learning-telegram-link-not-found"
+                    ),
+                    new IllegalStateException("telegram link not found")
             );
         }
 
