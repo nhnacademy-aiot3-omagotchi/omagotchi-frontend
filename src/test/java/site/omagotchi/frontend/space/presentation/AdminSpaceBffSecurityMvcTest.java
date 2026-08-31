@@ -13,6 +13,7 @@ import site.omagotchi.frontend.auth.application.AuthenticationService;
 import site.omagotchi.frontend.auth.application.port.IdentityAuthClient;
 import site.omagotchi.frontend.auth.application.result.BrowserSessionTokenBundle;
 import site.omagotchi.frontend.auth.domain.GlobalRole;
+import site.omagotchi.frontend.auth.presentation.security.AccessTokenRefreshInterceptor;
 import site.omagotchi.frontend.auth.presentation.security.BrowserSessionTokens;
 import site.omagotchi.frontend.auth.presentation.security.BrowserTokenSessionAuthenticationStrategy;
 import site.omagotchi.frontend.auth.presentation.security.IdentityLogoutHandler;
@@ -27,6 +28,7 @@ import site.omagotchi.frontend.space.application.AdminSpaceBffService;
 import java.time.Instant;
 import java.util.UUID;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -62,11 +64,16 @@ class AdminSpaceBffSecurityMvcTest {
     private IdentityAuthClient identityAuthClient;
 
     @MockitoBean
+    private AccessTokenRefreshInterceptor accessTokenRefreshInterceptor;
+
+    @MockitoBean
     private AdminSpaceBffService service;
 
     @BeforeEach
-    void configureIdentityLogin() {
+    void configureIdentityLogin() throws Exception {
         given(identityAuthClient.login(anyString(), anyString())).willReturn(tokenBundle());
+        given(accessTokenRefreshInterceptor.preHandle(any(), any(), any()))
+                .willReturn(true);
     }
 
     @Test

@@ -13,6 +13,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientResponseException;
+import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.support.RestClientAdapter;
 import org.springframework.web.service.invoker.HttpServiceProxyFactory;
 import site.omagotchi.frontend.account.application.AccountErrorCode;
@@ -45,6 +46,7 @@ class IdentityRestAuthClientTest {
     private static final String BASE_URL = "http://identity-service:8080";
     private static final String SIGNUP_PATH = "/api/v1/auth/signup";
     private static final String LOGIN_PATH = "/api/v1/auth/login";
+    private static final String REFRESH_PATH = "/api/v1/auth/refresh";
     private static final String LOGOUT_PATH = "/api/v1/auth/logout";
 
     private IdentityRestAuthClient client;
@@ -136,6 +138,158 @@ class IdentityRestAuthClientTest {
                 "refresh-token",
                 Instant.parse("2026-08-10T12:00:00Z")
         ));
+        server.verify();
+    }
+
+    @Test
+    @DisplayName("Refresh 요청 JSON과 회전된 Token Bundle 변환")
+    void refreshesAndMapsRotatedTokenBundle() {
+        // Given: Identity Refresh 성공 응답
+        server.expect(once(), requestTo(BASE_URL + REFRESH_PATH))
+                .andExpect(method(HttpMethod.POST))
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(content().json("""
+                        {
+                          "refreshToken": "previous-refresh-token"
+                        }
+                        """))
+                .andRespond(withStatus(HttpStatus.OK)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .body("""
+                                {
+                                  "userId": "00000000-0000-0000-0000-000000000001",
+                                  "globalRole": "USER",
+                                  "accessToken": "new-access-token",
+                                  "accessTokenExpiresAt": "2026-08-03T12:15:00Z",
+                                  "refreshToken": "new-refresh-token",
+                                  "refreshTokenExpiresAt": "2026-08-10T12:15:00Z"
+                                }
+                                """));
+
+        // When: Refresh Token 회전 요청
+        BrowserSessionTokenBundle result = client.refresh("previous-refresh-token");
+
+        // Then: Browser Session 교체용 Token Bundle
+        assertThat(result).isEqualTo(new BrowserSessionTokenBundle(
+                UUID.fromString("00000000-0000-0000-0000-000000000001"),
+                GlobalRole.USER,
+                "new-access-token",
+                Instant.parse("2026-08-03T12:15:00Z"),
+                "new-refresh-token",
+                Instant.parse("2026-08-10T12:15:00Z")
+        ));
+        server.verify();
+    }
+
+    @Test
+    @DisplayName("명시적인 Refresh 401의 인증 오류 변환")
+    void mapsInvalidRefreshTokenResponse() {
+        // Given: Identity가 명시적으로 거절한 Refresh Token
+        expectError(
+                REFRESH_PATH,
+                HttpStatus.UNAUTHORIZED,
+                "AUTH_INVALID_REFRESH_TOKEN"
+        );
+
+        // When: Refresh 요청
+        // Then: Application이 Session 폐기를 결정할 수 있는 인증 오류
+        assertError(
+                () -> client.refresh("invalid-refresh-token"),
+                AuthErrorCode.INVALID_REFRESH_TOKEN
+        );
+        server.verify();
+    }
+
+    @Test
+    @DisplayName("정상적인 Refresh HTTP 503의 일시 장애 변환")
+    void mapsExplicitRefreshServiceUnavailableResponse() {
+        // Given: Identity가 반환한 정상적인 HTTP 503 응답
+        expectError(
+                REFRESH_PATH,
+                HttpStatus.SERVICE_UNAVAILABLE,
+                "COMMON_SERVICE_UNAVAILABLE"
+        );
+
+        // When: Refresh 요청
+        // Then: Session 유지 대상인 공통 일시 장애
+        assertError(
+                () -> client.refresh("refresh-token"),
+                CommonErrorCode.SERVICE_UNAVAILABLE
+        );
+        server.verify();
+    }
+
+    @Test
+    @DisplayName("Refresh 응답 미수신의 일시 장애 변환")
+    void mapsMissingRefreshResponseAsServiceUnavailable() {
+        // Given: 요청 이후 응답을 확인할 수 없는 연결 종료
+        server.expect(once(), requestTo(BASE_URL + REFRESH_PATH))
+                .andExpect(method(HttpMethod.POST))
+                .andRespond(request -> {
+                    throw new ResourceAccessException("connection reset");
+                });
+
+        // When: Refresh 요청
+        // Then: 같은 요청에서 재시도하지 않는 공통 일시 장애
+        assertError(
+                () -> client.refresh("refresh-token"),
+                CommonErrorCode.SERVICE_UNAVAILABLE
+        );
+        server.verify();
+    }
+
+    @Test
+    @DisplayName("읽을 수 없는 Refresh 성공 응답의 계약 위반 변환")
+    void rejectsUnreadableRefreshSuccess() {
+        // Given: Token 회전 뒤일 수 있으나 읽을 수 없는 성공 응답
+        server.expect(once(), requestTo(BASE_URL + REFRESH_PATH))
+                .andExpect(method(HttpMethod.POST))
+                .andRespond(withStatus(HttpStatus.OK)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .body("{invalid-json"));
+
+        // When: Refresh 요청
+        // Then: Application이 재로그인을 결정할 수 있는 응답 계약 위반
+        assertError(
+                () -> client.refresh("refresh-token"),
+                CommonErrorCode.DOWNSTREAM_INVALID_RESPONSE
+        );
+        server.verify();
+    }
+
+    @Test
+    @DisplayName("누락된 Refresh 성공 응답 본문의 계약 위반 변환")
+    void rejectsMissingRefreshSuccessBody() {
+        // Given: Token 회전 뒤일 수 있으나 본문이 없는 성공 응답
+        server.expect(once(), requestTo(BASE_URL + REFRESH_PATH))
+                .andExpect(method(HttpMethod.POST))
+                .andRespond(withStatus(HttpStatus.OK));
+
+        // When: Refresh 요청
+        // Then: Application이 재로그인을 결정할 수 있는 응답 계약 위반
+        assertError(
+                () -> client.refresh("refresh-token"),
+                CommonErrorCode.DOWNSTREAM_INVALID_RESPONSE
+        );
+        server.verify();
+    }
+
+    @Test
+    @DisplayName("Refresh API가 공개하지 않은 4xx의 응답 계약 위반 변환")
+    void rejectsUnexpectedRefreshError() {
+        // Given: Refresh API가 공개하지 않은 오류 응답
+        expectError(
+                REFRESH_PATH,
+                HttpStatus.BAD_REQUEST,
+                "COMMON_INVALID_REQUEST"
+        );
+
+        // When: Refresh 요청
+        // Then: Application이 재로그인을 결정할 수 있는 응답 계약 위반
+        assertError(
+                () -> client.refresh("refresh-token"),
+                CommonErrorCode.DOWNSTREAM_INVALID_RESPONSE
+        );
         server.verify();
     }
 

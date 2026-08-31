@@ -196,11 +196,7 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
         if (!BffApiPaths.matches(request)) {
             return;
         }
-        // TODO: Access JWT 만료 처리
-        // - Refresh Token을 사용한 Access·Refresh Token 재발급
-        // - 재발급된 토큰 묶음으로 세션 저장값 교체
-        // - 재발급 실패 시 기존 브라우저 세션 폐기 정책 유지
-        sessionInvalidator.invalidate(request, response);
+        sessionInvalidator.invalidateBestEffort(request, response);
     }
 
     private boolean isPublicLearningDownstreamError(

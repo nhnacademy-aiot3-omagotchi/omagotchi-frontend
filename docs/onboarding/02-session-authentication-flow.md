@@ -25,15 +25,16 @@ Browser
   - 로컬 이름 예시: `OMAGOTCHI_SESSION`
   - Access·Refresh Token 원문 미노출
 - Frontend ↔ Identity
-  - Signup·Login·Logout 내부 HTTP 호출
+  - Signup·Login·Refresh·Logout 내부 HTTP 호출
   - Browser 사용자 Credential과 별도인 Frontend Basic Credential
 - Frontend ↔ Domain Service
   - Browser 계약: `/bff/v1/**`
   - Session Access JWT를 Bearer로 전달
-  - 현재: Identity 본인 계정 API는 Discovery·Client-side Load Balancing 기반 직접 호출
-  - 현재: Learning API는 Gateway 경유 호출이 남아 있음
-  - 목표: BFF의 Domain Service 호출을 직접 호출로 정렬하는 별도 변경
-  - Access Token Refresh는 아직 구현하지 않고 하류 `401`에서 재로그인 요구
+  - 현재: Identity 본인 계정 API는 Identity Service 직접 호출
+  - 현재: Learning 선언형 HTTP Client는 Learning Service 직접 호출
+  - 현재: AI Chat은 후속 전환 전까지 Gateway 경유 호출
+  - Access Token 만료 임박 시 BFF 진입 단계에서 선제 Refresh
+  - 하류 `401` 뒤 원래 요청 자동 재실행 없음
 - Gateway
   - 외부 `/api/**`·Webhook 경계
   - Frontend BFF 내부 호출의 필수 중계자 아님
@@ -63,10 +64,13 @@ Browser
 | Security | `LoginAuthenticationFailureHandler` | Credential 실패 Redirect·장애 상태 처리 |
 | Security | `BrowserTokenSessionAuthenticationStrategy` | Session ID 교체 뒤 Token Bundle 기록·SecurityContext 비밀값 제거 |
 | Security | `BrowserSessionTokens` | Token Bundle Session attribute 접근 |
+| Security | `AccessTokenRefreshInterceptor` | BFF Controller 진입 전 선제 Refresh·현재 요청 Bundle override |
 | Security | `IdentityLogoutHandler` | Identity Refresh Token 폐기 시도 |
 | Application | `AuthenticationService` | Presentation과 Identity Port 사이의 Use Case 경계 |
-| Port | `IdentityAuthClient` | Signup·Login·Logout Application 계약 |
+| Application | `AccessTokenRefreshService` | Session별 single-flight·최신 Bundle 재조회·Identity Refresh·명시 저장 |
+| Port | `IdentityAuthClient` | Signup·Login·Refresh·Logout Application 계약 |
 | Infrastructure | `IdentityRestAuthClient` | Identity HTTP 응답의 Application 결과·실패 변환 |
+| Infrastructure | `RedisBrowserSessionRefreshLock` | 유한 lease와 owner 검증 해제를 사용하는 Redis Lock |
 
 - Spring Security 확장점 분리 사유
   - Provider: Credential 검증 시점
@@ -395,6 +399,28 @@ sequenceDiagram
 
 ## 9. Access JWT 만료와 계정 변경
 
+### 만료 임박 선제 Refresh
+
+```text
+BFF 요청 진입
+→ AccessTokenRefreshInterceptor가 만료 임박 확인
+→ Redis Session별 Lock 획득
+→ SessionRepository로 최신 Token Bundle 재조회
+→ 아직 만료 임박이면 Identity Refresh 1회
+→ 새 Bundle을 Redis Session에 명시 저장
+→ 현재 요청에는 새 Bundle을 request-local로 반영
+→ 원래 Controller·downstream 요청 1회 실행
+```
+
+- Lock은 TTL이 있는 `SET NX`로 획득하고 owner가 일치할 때만 Lua Script로 해제합니다.
+- lease는 Identity HTTP와 Redis Session 조회·저장 timeout보다 충분히 길게 설정하고, 관련 timeout을 늘릴 때 함께 조정합니다.
+- Lock owner는 획득 뒤 최신 Bundle을 다시 읽고 이미 갱신됐으면 Identity를 호출하지 않습니다.
+- 동시 요청은 Lock 종료 뒤 최신 Bundle을 재사용하고 Identity를 중복 호출하지 않습니다.
+- 현재 요청은 캐시된 `HttpSession`을 다시 변경하지 않고 request-local Bundle을 우선 사용합니다.
+- Identity의 명시적 `503`, 응답 미수신과 Refresh 전 Redis 장애는 Session을 유지한 채 JSON `503`을 반환합니다.
+- 응답 미수신은 같은 Browser 요청에서 자동 재시도하지 않으며 다음 요청의 Refresh는 허용합니다.
+- Refresh `401`, Identity Refresh 응답 계약 위반, 새 Bundle 저장 결과 불명확은 Cookie와 Session을 best-effort로 폐기하고 JSON `401`을 반환합니다.
+
 ### 하류 `401`
 
 ```text
@@ -406,7 +432,7 @@ Identity·Learning이 Access JWT 401 반환
 → Login JavaScript가 주소에서 notice 제거
 ```
 
-- Access Token Refresh와 요청 자동 재실행은 아직 구현하지 않습니다.
+- 하류 `401`에서는 Refresh하지 않고 원래 GET·POST 요청도 자동 재실행하지 않습니다.
 - 기존 인증 Session을 유지한 채 `/login`으로 보내면 인증 사용자 Redirect와 충돌해
   `/home`과 `/login` 사이를 반복하므로, Login 이동 전에 서버가 Session을 먼저 폐기합니다.
 - Redis 접속 장애는 인증 만료로 오인하지 않고 기존처럼 `503`으로 처리합니다.
@@ -476,8 +502,6 @@ AuthenticationService
 
 ## 12. 미구현
 
-- Access Token Refresh
-- 동일 Session Refresh single-flight
 - Login 성공 뒤 Redis 저장 실패의 Refresh Token Family 보상
 - Identity의 비밀번호 변경은 성공했지만 Redis 세션 폐기는 실패한 경우의 보상 처리
 - Learning 기반 관리자 소속 확인
@@ -487,6 +511,7 @@ AuthenticationService
 
 - Signup·Login·Logout: Form·Security MVC Test
 - Session ID 교체·Token Bundle 저장·폐기: Redis Integration Test
+- Access Token single-flight·Lock lease·동시 Session 저장: Maven `verify`의 `*IT`
 - Browser BFF 인증·CSRF: Security Filter Chain을 통과하는 Server Boundary Test
 - Identity 호출: Method·Path·Authorization Header·성공 Status·공개 오류 계약 Test
 - 실제 파일명과 Test 목록은 `src/main`·`src/test`에서 확인한다.
