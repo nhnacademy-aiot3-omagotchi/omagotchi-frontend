@@ -1471,5 +1471,31 @@ import {
         root.innerHTML = renderPartyManager();
     }
 
+    function updateData(data = {}) {
+        if (Array.isArray(data.rooms)) {
+            state.rooms = data.rooms;
+            const hasSelectedRoom = state.rooms.some(
+                (room) => String(room.id) === String(state.selectedRoomId)
+            );
+            if (!hasSelectedRoom) state.selectedRoomId = "";
+        }
+
+        if (Object.hasOwn(data, "party")) {
+            state.party = data.party;
+            state.partyCreateOpen = false;
+            state.partyDetailOpen = false;
+        }
+
+        if (Array.isArray(data.cohortMembers)) {
+            cohortMembers = normalizeCohortMembers(data.cohortMembers);
+        }
+
+        if (data.telegram && typeof data.telegram === "object") {
+            telegramOverride = { ...data.telegram };
+        }
+
+        renderAll();
+    }
+
     window.OmagotchiSpaceRoom = { mount, mountParty, updateData };
 })();
