@@ -1,3 +1,12 @@
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    clip-path: inset(50%);
+    white-space: nowrap;
+}
 .system-admin-page { --system-navy: #15342a; --system-mint: #17a66c; --system-blue: #3159d9; }
 body.system-admin-preview { overflow-x: hidden !important; overflow-y: auto !important; }
 body.system-admin-preview #storybook-root { min-height: 100%; }
