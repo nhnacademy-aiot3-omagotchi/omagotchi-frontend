@@ -211,8 +211,6 @@ class FrontendApplicationTests {
 		mockMvc.perform(get("/js/system-admin/dashboard/data/systemAdminApiRepository.js"))
 				.andExpect(status().isOk());
 
-		mockMvc.perform(get("/js/system-admin/dashboard/data/systemAdminMockRepository.js"))
-				.andExpect(status().isOk());
 	}
 
 	@Test

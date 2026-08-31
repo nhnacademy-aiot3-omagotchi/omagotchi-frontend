@@ -85,7 +85,14 @@ export function createAttendance({
             return;
         }
         if (!api?.getHistory) {
-            if (panel) panel.dataset.uiSource = "local-prototype";
+            if (panel) {
+                panel.dataset.uiState = "error";
+                panel.dataset.uiSource = "api-unavailable";
+            }
+            if (stateMessage) {
+                stateMessage.hidden = false;
+                stateMessage.textContent = "출석 API를 불러오지 못했습니다. 페이지를 새로고침해 주세요.";
+            }
             return;
         }
 

@@ -5,11 +5,11 @@ import { HomeMenuLiveContent } from "../../ui/HomeMenuLiveContent.jsx";
 
 const radixDialogTypes = new Set(["help", "settings"]);
 const progressTabDefinitions = [
-  { value: "quests", icon: "▣", label: "퀘스트" },
-  { value: "achievements", icon: "★", label: "업적" },
-  { value: "leaders", icon: "▥", label: "랭킹" },
-  { value: "timeline", icon: "↶", label: "타임라인" },
-  { value: "stats", icon: "▥", label: "통계" }
+  { value: "quests", label: "퀘스트" },
+  { value: "achievements", label: "업적" },
+  { value: "leaders", label: "랭킹" },
+  { value: "timeline", label: "타임라인" },
+  { value: "stats", label: "통계" }
 ];
 
 function ProgressTabsContent({ content }) {

@@ -67,8 +67,14 @@
         return errorDetails(payload).message || `API request failed: ${status}`;
     }
 
-    async function request(path, options = {}) {
-        const { body, headers = {}, method = "GET", ...rest } = options;
+    function redirectToLogin(status) {
+        if (status === 401 && window.location.pathname !== "/login") {
+            window.location.replace("/login?notice=session-expired");
+        }
+    }
+
+    async function requestResponse(path, options = {}) {
+        const { body, headers = {}, method = "GET", __csrfRetried = false, ...rest } = options;
         const hasBody = body !== undefined;
         const isFormData = isFormDataBody(body);
         const normalizedMethod = method.toUpperCase();
@@ -86,27 +92,32 @@
             method: normalizedMethod,
             ...rest
         });
+        if (response.ok) return response;
+
+        const payload = await parseResponsePayload(response).catch(() => ({}));
+        const isCsrfFailure = response.status === 403
+            && errorDetails(payload).code === "AUTH_CSRF_INVALID";
+        if (isCsrfFailure && needsCsrf && !__csrfRetried) {
+            csrfTokenPromise = null;
+            return requestResponse(path, {...options, __csrfRetried: true});
+        }
+
+        const error = new ApiRequestError(
+            response.status,
+            errorMessage(payload, response.status),
+            errorDetails(payload)
+        );
+        redirectToLogin(response.status);
+        throw error;
+    }
+
+    async function request(path, options = {}) {
+        const response = await requestResponse(path, options);
         if (response.status === 204) {
             return null;
         }
 
-        const payload = await parseResponsePayload(response);
-        const isCsrfFailure = response.status === 403
-            && errorDetails(payload).code === "AUTH_CSRF_INVALID";
-        if (isCsrfFailure && needsCsrf && !options.__csrfRetried) {
-            csrfTokenPromise = null;
-            return request(path, {...options, __csrfRetried: true});
-        }
-
-        if (!response.ok) {
-            throw new ApiRequestError(
-                response.status,
-                errorMessage(payload, response.status),
-                errorDetails(payload)
-            );
-        }
-
-        return payload;
+        return parseResponsePayload(response);
     }
 
     async function optional(path, options) {
@@ -197,6 +208,15 @@
             forceRelease: (spaceId) => request(
                 `/admin/spaces/${encodeURIComponent(spaceId)}/occupancies/force-release`,
                 {method: "POST"}
+            )
+        },
+        ai: {
+            streamChat: (question, {signal, model = "GEMINI"} = {}) => requestResponse(
+                withQuery("/ai/chat", {question, model}),
+                {
+                    headers: {Accept: "text/event-stream"},
+                    signal
+                }
             )
         },
         study: {

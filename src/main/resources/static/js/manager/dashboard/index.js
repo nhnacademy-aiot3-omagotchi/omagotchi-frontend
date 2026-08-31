@@ -19,7 +19,10 @@ async function hydrateDashboard(
 ) {
     try {
         const api = globalThis.OmagotchiApi;
-        const accessContext = await api.access.getContext();
+        const [accessContext, account] = await Promise.all([
+            api.access.getContext(),
+            api.account.get().catch(() => null)
+        ]);
         const source = Array.isArray(accessContext?.managedCohorts)
             ? accessContext.managedCohorts.map((cohort) => ({
                 ...cohort,
@@ -99,6 +102,13 @@ async function hydrateDashboard(
                 cohorts: hydratedCohorts,
                 applications,
                 notices,
+                manager: account ? {
+                    name: account.name || "관리자",
+                    email: account.email || "",
+                    organization: hydratedCohorts.length
+                        ? `${hydratedCohorts.length}개 기수 관리`
+                        : "기수 관리자"
+                } : undefined,
                 selectedCohortId: store.getState().selectedCohortId || hydratedCohorts[0]?.id
             }
         });
@@ -238,6 +248,7 @@ function renderSummary(state) {
 
 function renderShell() {
     const state = store.getState();
+    renderSession();
     renderCohortSelect(state);
     renderSummary(state);
 }
@@ -284,7 +295,7 @@ document.querySelector("[data-manager-logout-form]").addEventListener("submit", 
         store.dispatch({ type: "CLEAR_SESSION" });
     } catch (error) {
         // Browser 저장소 정리에 실패해도 Spring Security Logout Form은 제출한다.
-        console.warn("관리자 Prototype 상태를 정리하지 못했습니다.", error);
+        console.warn("관리자 화면 상태를 정리하지 못했습니다.", error);
     }
 });
 

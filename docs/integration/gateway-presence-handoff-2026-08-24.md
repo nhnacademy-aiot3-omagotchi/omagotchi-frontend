@@ -93,7 +93,7 @@ Gateway 담당자 단독으로 인증 우회 경로를 만들지 않는다. 특�
 | 잘못된 `/ws-*`, `/api/ws` 경로 | `404`로 라우팅하지 않는다. |
 | 허용되지 않은 Origin | 합의한 상태 코드로 거부한다. |
 | STOMP 인증 실패 | 연결이 성립한 것처럼 보이지 않고 명시적으로 종료된다. |
-| 정상 CONNECT·SUBSCRIBE | `/topic/cohorts/{cohortId}/presence` message가 왕복한다. |
+| 정상 CONNECT·SUBSCRIBE | `/topic/cohorts/{cohort-id}/presence` message가 왕복한다. |
 | heartbeat·disconnect | 연결 유지와 종료가 Learning까지 전달된다. |
 | REST 회귀 | 기존 49개 Gateway 테스트가 계속 통과한다. |
 

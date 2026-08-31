@@ -5,6 +5,7 @@
     "dev:home": "vite build --watch",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
+    "test:api": "node --test src/test/js/apiAiStream.test.mjs",
     "test:account-settings": "node --test src/test/js/accountSettingsValidation.test.mjs",
     "test:manager-join-code": "node --test src/test/js/managerJoinCodePanel.test.mjs",
     "test:manager-study-stats": "node --test src/test/js/managerStudyStatsPanel.test.mjs",
@@ -12,7 +13,8 @@
     "test:storybook-css": "node --test src/test/js/storybookPreviewCss.test.mjs",
     "test:vacancy-alerts": "node --test src/test/js/vacancyAlerts.test.mjs",
     "test:participants": "node --test src/test/js/participants.test.mjs src/test/js/participantActions.test.mjs",
-    "test:admin-occupancies": "node --test src/test/js/adminOccupancies.test.mjs"
+    "test:admin-occupancies": "node --test src/test/js/adminOccupancies.test.mjs",
+    "test:service-integration": "node --test src/test/js/serviceIntegrationState.test.mjs"
   },
   "dependencies": {
     "@vitejs/plugin-react": "^5.0.0",

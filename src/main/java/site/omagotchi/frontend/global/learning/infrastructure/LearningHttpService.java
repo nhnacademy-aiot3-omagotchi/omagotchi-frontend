@@ -80,10 +80,10 @@ public interface LearningHttpService {
     @GetExchange("/cohorts")
     JsonNode getCohorts(@RequestHeader(HttpHeaders.AUTHORIZATION) String authorization);
 
-    @GetExchange("/cohorts/{cohortId}")
+    @GetExchange("/cohorts/{cohort-id}")
     JsonNode getCohort(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
-            @PathVariable Long cohortId
+            @PathVariable("cohort-id") Long cohortId
     );
 
     @PostExchange("/cohorts/applications")
@@ -115,10 +115,10 @@ public interface LearningHttpService {
     JsonNode getDailyQuests(@RequestHeader(HttpHeaders.AUTHORIZATION) String authorization);
 
     // Learning 계약은 Quest 정의 ID가 아니라 사용자별 일일 Quest 인스턴스 ID를 받는다.
-    @PostExchange("/gamification/quests/{userDailyQuestId}/claim")
+    @PostExchange("/gamification/quests/{user-daily-quest-id}/claim")
     JsonNode claimQuest(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
-            @PathVariable Long userDailyQuestId
+            @PathVariable("user-daily-quest-id") Long userDailyQuestId
     );
 
     // aggregationDate는 Learning에서 선택 값이다. View가 더 엄격하면 정상 요청을 막는다.
@@ -129,105 +129,105 @@ public interface LearningHttpService {
             @RequestParam(required = false) String aggregationDate
     );
 
-    @GetExchange("/cohorts/{cohortId}/study-rankings/today")
+    @GetExchange("/cohorts/{cohort-id}/study-rankings/today")
     JsonNode getTodayStudyRankings(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
-            @PathVariable Long cohortId,
+            @PathVariable("cohort-id") Long cohortId,
             @RequestParam(required = false) Integer maxRank
     );
 
-    @GetExchange("/cohorts/{cohortId}/study-rankings/daily/{date}")
+    @GetExchange("/cohorts/{cohort-id}/study-rankings/daily/{date}")
     JsonNode getDailyStudyRankings(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
-            @PathVariable Long cohortId,
+            @PathVariable("cohort-id") Long cohortId,
             @PathVariable String date,
             @RequestParam(required = false) Integer maxRank
     );
 
-    @GetExchange("/cohorts/{cohortId}/study-rankings/weekly/{weekStartDate}")
+    @GetExchange("/cohorts/{cohort-id}/study-rankings/weekly/{week-start-date}")
     JsonNode getWeeklyStudyRankings(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
-            @PathVariable Long cohortId,
-            @PathVariable String weekStartDate,
+            @PathVariable("cohort-id") Long cohortId,
+            @PathVariable("week-start-date") String weekStartDate,
             @RequestParam(required = false) Integer maxRank
     );
 
-    @GetExchange("/cohorts/{cohortId}/study-rankings/monthly/{month}")
+    @GetExchange("/cohorts/{cohort-id}/study-rankings/monthly/{month}")
     JsonNode getMonthlyStudyRankings(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
-            @PathVariable Long cohortId,
+            @PathVariable("cohort-id") Long cohortId,
             @PathVariable String month,
             @RequestParam(required = false) Integer maxRank
     );
 
-    @GetExchange("/cohorts/{cohortId}/study-records/{studyRecordId}")
+    @GetExchange("/cohorts/{cohort-id}/study-records/{study-record-id}")
     JsonNode getStudyRecord(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
-            @PathVariable Long cohortId,
-            @PathVariable UUID studyRecordId
+            @PathVariable("cohort-id") Long cohortId,
+            @PathVariable("study-record-id") UUID studyRecordId
     );
 
-    @GetExchange("/cohorts/{cohortId}/study-records")
+    @GetExchange("/cohorts/{cohort-id}/study-records")
     JsonNode getDailyStudyRecords(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
-            @PathVariable Long cohortId,
+            @PathVariable("cohort-id") Long cohortId,
             @RequestParam String date
     );
 
-    @GetExchange("/cohorts/{cohortId}/study-time-summaries")
+    @GetExchange("/cohorts/{cohort-id}/study-time-summaries")
     JsonNode getMonthlyStudyTimeSummary(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
-            @PathVariable Long cohortId,
+            @PathVariable("cohort-id") Long cohortId,
             @RequestParam String month
     );
 
-    @PostExchange("/cohorts/{cohortId}/study-records")
+    @PostExchange("/cohorts/{cohort-id}/study-records")
     ResponseEntity<JsonNode> createStudyRecord(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
-            @PathVariable Long cohortId,
+            @PathVariable("cohort-id") Long cohortId,
             @RequestBody JsonNode request
     );
 
-    @PutExchange("/cohorts/{cohortId}/study-records/{studyRecordId}")
+    @PutExchange("/cohorts/{cohort-id}/study-records/{study-record-id}")
     JsonNode updateStudyRecord(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
-            @PathVariable Long cohortId,
-            @PathVariable UUID studyRecordId,
+            @PathVariable("cohort-id") Long cohortId,
+            @PathVariable("study-record-id") UUID studyRecordId,
             @RequestBody JsonNode request
     );
 
-    @DeleteExchange("/cohorts/{cohortId}/study-records/{studyRecordId}")
+    @DeleteExchange("/cohorts/{cohort-id}/study-records/{study-record-id}")
     ResponseEntity<Void> deleteStudyRecord(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
-            @PathVariable Long cohortId,
-            @PathVariable UUID studyRecordId,
+            @PathVariable("cohort-id") Long cohortId,
+            @PathVariable("study-record-id") UUID studyRecordId,
             @RequestHeader("X-RESOURCE-VERSION") Long resourceVersion
     );
 
-    @GetExchange("/cohorts/{cohortId}/timer")
+    @GetExchange("/cohorts/{cohort-id}/timer")
     JsonNode getCurrentTimer(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
-            @PathVariable Long cohortId
+            @PathVariable("cohort-id") Long cohortId
     );
 
-    @PostExchange("/cohorts/{cohortId}/timer/start")
+    @PostExchange("/cohorts/{cohort-id}/timer/start")
     ResponseEntity<JsonNode> startTimer(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
-            @PathVariable Long cohortId
+            @PathVariable("cohort-id") Long cohortId
     );
 
-    @PostExchange("/cohorts/{cohortId}/timer/{timerRunId}/stop")
+    @PostExchange("/cohorts/{cohort-id}/timer/{timer-run-id}/stop")
     ResponseEntity<Void> stopTimer(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
-            @PathVariable Long cohortId,
-            @PathVariable UUID timerRunId
+            @PathVariable("cohort-id") Long cohortId,
+            @PathVariable("timer-run-id") UUID timerRunId
     );
 
-    @PostExchange("/cohorts/{cohortId}/timer/{timerRunId}/discard")
+    @PostExchange("/cohorts/{cohort-id}/timer/{timer-run-id}/discard")
     ResponseEntity<Void> discardTimer(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
-            @PathVariable Long cohortId,
-            @PathVariable UUID timerRunId
+            @PathVariable("cohort-id") Long cohortId,
+            @PathVariable("timer-run-id") UUID timerRunId
     );
 
     @GetExchange("/community/posts")
@@ -239,17 +239,17 @@ public interface LearningHttpService {
             @RequestParam(required = false) String search
     );
 
-    @GetExchange("/community/posts/{postId}")
+    @GetExchange("/community/posts/{post-id}")
     JsonNode getCommunityPost(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
-            @PathVariable Long postId
+            @PathVariable("post-id") Long postId
     );
 
-    @GetExchange("/community/posts/{postId}/attachments/{attachmentId}")
+    @GetExchange("/community/posts/{post-id}/attachments/{attachment-id}")
     ResponseEntity<Resource> downloadCommunityAttachment(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
-            @PathVariable Long postId,
-            @PathVariable Long attachmentId
+            @PathVariable("post-id") Long postId,
+            @PathVariable("attachment-id") Long attachmentId
     );
 
     @PostExchange(value = "/community/posts", contentType = MediaType.APPLICATION_JSON_VALUE)
@@ -265,25 +265,25 @@ public interface LearningHttpService {
             @RequestPart(value = "attachments", required = false) List<HttpEntity<Resource>> attachments
     );
 
-    @PatchExchange(value = "/community/posts/{postId}", contentType = MediaType.APPLICATION_JSON_VALUE)
+    @PatchExchange(value = "/community/posts/{post-id}", contentType = MediaType.APPLICATION_JSON_VALUE)
     JsonNode updateCommunityPost(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
-            @PathVariable Long postId,
+            @PathVariable("post-id") Long postId,
             @RequestBody JsonNode request
     );
 
-    @PatchExchange(value = "/community/posts/{postId}", contentType = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PatchExchange(value = "/community/posts/{post-id}", contentType = MediaType.MULTIPART_FORM_DATA_VALUE)
     JsonNode updateCommunityPostMultipart(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
-            @PathVariable Long postId,
+            @PathVariable("post-id") Long postId,
             @RequestPart("post") JsonNode post,
             @RequestPart(value = "attachments", required = false) List<HttpEntity<Resource>> attachments
     );
 
-    @DeleteExchange("/community/posts/{postId}")
+    @DeleteExchange("/community/posts/{post-id}")
     ResponseEntity<Void> deleteCommunityPost(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
-            @PathVariable Long postId
+            @PathVariable("post-id") Long postId
     );
 
     @PostExchange("/cohorts")
@@ -297,160 +297,161 @@ public interface LearningHttpService {
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization
     );
 
-    @PatchExchange("/cohorts/{cohortId}")
+    @PatchExchange("/cohorts/{cohort-id}")
     JsonNode updateCohort(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
-            @PathVariable Long cohortId,
+            @PathVariable("cohort-id") Long cohortId,
             @RequestBody JsonNode request
     );
 
-    @PatchExchange("/cohorts/{cohortId}/status")
+    @PatchExchange("/cohorts/{cohort-id}/status")
     JsonNode updateCohortStatus(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
-            @PathVariable Long cohortId,
+            @PathVariable("cohort-id") Long cohortId,
             @RequestBody JsonNode request
     );
 
-    @DeleteExchange("/cohorts/{cohortId}")
+    @DeleteExchange("/cohorts/{cohort-id}")
     ResponseEntity<Void> deleteCohort(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
-            @PathVariable Long cohortId
+            @PathVariable("cohort-id") Long cohortId
     );
 
-    @GetExchange("/cohorts/{cohortId}/members")
+    @GetExchange("/cohorts/{cohort-id}/members")
     JsonNode getCohortMembers(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
-            @PathVariable Long cohortId
+            @PathVariable("cohort-id") Long cohortId
     );
 
-    @GetExchange("/cohorts/{cohortId}/join-requests")
+    @GetExchange("/cohorts/{cohort-id}/join-requests")
     JsonNode getCohortApplications(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
-            @PathVariable Long cohortId
+            @PathVariable("cohort-id") Long cohortId
     );
 
-    @PostExchange("/cohorts/{cohortId}/managers")
+    @PostExchange("/cohorts/{cohort-id}/managers")
     JsonNode addCohortManager(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
-            @PathVariable Long cohortId,
+            @PathVariable("cohort-id") Long cohortId,
             @RequestBody JsonNode request
     );
 
-    @PatchExchange("/cohorts/{cohortId}/members/{userId}/role")
+    @PatchExchange("/cohorts/{cohort-id}/members/{member-user-id}/role")
     JsonNode updateMemberRole(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
-            @PathVariable Long cohortId,
-            @PathVariable String userId,
+            @PathVariable("cohort-id") Long cohortId,
+            @PathVariable("member-user-id") String userId,
             @RequestBody JsonNode request
     );
 
-    @PatchExchange("/cohort-memberships/{membershipId}/approve")
+    @PatchExchange("/cohort-memberships/{membership-id}/approve")
     JsonNode approveMembership(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
-            @PathVariable Long membershipId,
+            @PathVariable("membership-id") Long membershipId,
             @RequestBody JsonNode request
     );
 
-    @PatchExchange("/cohort-memberships/{membershipId}/reject")
+    @PatchExchange("/cohort-memberships/{membership-id}/reject")
     JsonNode rejectMembership(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
-            @PathVariable Long membershipId,
+            @PathVariable("membership-id") Long membershipId,
             @RequestBody JsonNode request
     );
 
-    @GetExchange("/cohorts/{cohortId}/join-code")
+    @GetExchange("/cohorts/{cohort-id}/join-code")
     JsonNode getJoinCode(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
-            @PathVariable Long cohortId
+            @PathVariable("cohort-id") Long cohortId
     );
 
-    @PostExchange("/cohorts/{cohortId}/join-code")
+    @PostExchange("/cohorts/{cohort-id}/join-code")
     JsonNode createJoinCode(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
-            @PathVariable Long cohortId,
+            @PathVariable("cohort-id") Long cohortId,
             @RequestBody JsonNode request
     );
 
-    @PatchExchange("/cohorts/{cohortId}/join-code/revoke")
+    @PatchExchange("/cohorts/{cohort-id}/join-code/revoke")
     JsonNode revokeJoinCode(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
-            @PathVariable Long cohortId
+            @PathVariable("cohort-id") Long cohortId
     );
 
-    @GetExchange("/cohorts/{cohortId}/attendance-policy")
+    @GetExchange("/cohorts/{cohort-id}/attendance-policy")
     JsonNode getAttendancePolicy(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
-            @PathVariable Long cohortId
+            @PathVariable("cohort-id") Long cohortId
     );
 
-    @PutExchange("/cohorts/{cohortId}/attendance-policy")
+    @PutExchange("/cohorts/{cohort-id}/attendance-policy")
     JsonNode updateAttendancePolicy(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
-            @PathVariable Long cohortId,
+            @PathVariable("cohort-id") Long cohortId,
             @RequestBody JsonNode request
     );
 
-    @GetExchange("/cohorts/{cohortId}/attendance-records")
+    @GetExchange("/cohorts/{cohort-id}/attendance-records")
     JsonNode getAttendanceRecords(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
-            @PathVariable Long cohortId,
+            @PathVariable("cohort-id") Long cohortId,
             @RequestParam String date,
             @RequestParam Integer page,
             @RequestParam Integer size
     );
 
-    @PatchExchange("/cohorts/{cohortId}/attendance-records/{attendanceRecordId}/status")
+    @PatchExchange("/cohorts/{cohort-id}/attendance-records/{attendance-id}/status")
     ResponseEntity<Void> updateAttendanceStatus(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
-            @PathVariable Long cohortId,
-            @PathVariable Long attendanceRecordId,
+            @PathVariable("cohort-id") Long cohortId,
+            @PathVariable("attendance-id") Long attendanceRecordId,
             @RequestBody JsonNode request
     );
 
-    @PatchExchange("/community/posts/{postId}/pin")
+    @PatchExchange("/community/posts/{post-id}/pin")
     JsonNode updateCommunityPostPin(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
-            @PathVariable Long postId,
+            @PathVariable("post-id") Long postId,
             @RequestBody JsonNode request
     );
 
-    @GetExchange("/cohorts/{cohortId}/study-statistics/today")
+    @GetExchange("/cohorts/{cohort-id}/study-statistics/today")
     JsonNode getStudyStatisticsToday(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
-            @PathVariable Long cohortId
+            @PathVariable("cohort-id") Long cohortId
     );
 
-    @GetExchange("/cohorts/{cohortId}/study-statistics/trend")
+    @GetExchange("/cohorts/{cohort-id}/study-statistics/trend")
     JsonNode getStudyStatisticsTrend(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
-            @PathVariable Long cohortId,
+            @PathVariable("cohort-id") Long cohortId,
             @RequestParam String window
     );
 
-    @GetExchange("/cohorts/{cohortId}/study-statistics/members")
+    @GetExchange("/cohorts/{cohort-id}/study-statistics/members")
     JsonNode getStudyStatisticsMembers(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
-            @PathVariable Long cohortId,
+            @PathVariable("cohort-id") Long cohortId,
             @RequestParam String window,
             @RequestParam(required = false) Integer page,
             @RequestParam(required = false) Integer size,
             @RequestParam(required = false) String sort
     );
 
-    @GetExchange("/cohorts/{cohortId}/study-statistics/members/{cohortMembershipId}/overview")
+    @GetExchange("/cohorts/{cohort-id}/study-statistics/members/{cohort-membership-id}/overview")
     JsonNode getStudyStatisticsMemberOverview(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
-            @PathVariable Long cohortId,
-            @PathVariable Long cohortMembershipId,
+            @PathVariable("cohort-id") Long cohortId,
+            @PathVariable("cohort-membership-id") Long cohortMembershipId,
             @RequestParam String window
     );
 
-    @GetExchange("/cohorts/{cohortId}/study-statistics/members/{cohortMembershipId}/records")
+    @GetExchange("/cohorts/{cohort-id}/study-statistics/members/{cohort-membership-id}/records")
     JsonNode getStudyStatisticsMemberDailyRecords(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
-            @PathVariable Long cohortId,
-            @PathVariable Long cohortMembershipId,
-            @RequestParam String date);
+            @PathVariable("cohort-id") Long cohortId,
+            @PathVariable("cohort-membership-id") Long cohortMembershipId,
+            @RequestParam String date
+    );
     @GetExchange("/spaces")
     ResponseEntity<List<LearningSpaceResponse>> getSpaces(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization

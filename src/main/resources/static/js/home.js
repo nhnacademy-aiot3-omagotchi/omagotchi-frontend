@@ -5,6 +5,7 @@ import { createLevel } from "./home/level.js";
 import { createStudyRecords } from "./home/studyRecords.js?v=20260825-5";
 import { createTimer } from "./home/timer.js";
 import { escapeHtml, formatDuration } from "./home/utils.js";
+import { renderServiceIntegrationPending } from "./serviceIntegrationState.js";
 
 const timerDisplay = document.querySelector("[data-timer-display]");
 const timerToggle = document.querySelector("[data-timer-toggle]");
@@ -45,7 +46,6 @@ const attendanceDetail = document.querySelector("[data-attendance-panel-toggle]"
 
 const currentProfile = window.OmagotchiProfile || {};
 let currentCharacter = currentProfile.currentCharacter || {};
-const currentUserId = currentProfile.userId;
 const currentUserName = currentProfile.nickname || currentCharacter.nickname || "나";
 const selectedCharacterAssetKey = typeof currentCharacter.assetKey === "string"
     ? currentCharacter.assetKey.trim().replace(/^\/+/, "").replace(/\.(?:png|gif)$/i, "")
@@ -74,19 +74,6 @@ const selectedCharacterAnimatedImage = characterAssets
 const selectedCharacterName = currentCharacter.name || "오마고치";
 const displayCharacterName = currentCharacter.nickname || currentUserName;
 
-const studyRecordsKey = `omagotchiStudyRecords:${currentUserId}`;
-const sessionOnlyKeys = [
-    "omagotchiEmail",
-    "omagotchiUsername",
-    "omagotchiCharacterId",
-    "omagotchiCharacterName",
-    "omagotchiCharacterImage",
-    "omagotchiCharacterAnimatedImage",
-    "omagotchiCharacterBaseImage",
-    "omagotchiCharacterColorId",
-    "omagotchiCharacterColorName",
-    "omagotchiCharacterColor"
-];
 const api = window.OmagotchiApi;
 
 let communityFilter = "all";
@@ -268,8 +255,6 @@ const timerController = createTimer({
 
 // 월간 요약과 선택 날짜 기록, 수정·삭제를 Study BFF 계약에 연결한다.
 studyRecordsController = createStudyRecords({
-    storageKey: studyRecordsKey,
-    getElapsedSeconds: timerController.getElapsedSeconds,
     api: api?.study
 });
 
@@ -675,7 +660,10 @@ const overlayContent = {
         </section>
         <section class="overlay-tab-panel" role="tabpanel" data-overlay-panel="achievements" hidden>
             <div class="overlay-section-label"><strong>업적</strong><span></span><em>달성 기록</em></div>
-            <div class="overlay-empty-state" role="status"><strong>업적 기능은 아직 준비되지 않았습니다.</strong><p>기능이 준비되면 달성 기록을 확인할 수 있습니다.</p></div>
+            ${renderServiceIntegrationPending({
+                title: "서비스 연동 대기",
+                description: "업적 API가 연결되면 실제 달성 기록을 표시합니다."
+            })}
         </section>
         <section class="overlay-tab-panel" role="tabpanel" data-overlay-panel="leaders" hidden>
             <div class="overlay-section-label"><strong>명예의 전당</strong><span></span><em>전체 학습 시간</em></div>
@@ -685,9 +673,10 @@ const overlayContent = {
         </section>
         <section class="overlay-tab-panel" role="tabpanel" data-overlay-panel="timeline" hidden>
             <div class="overlay-section-label"><strong>타임라인</strong><span></span><em>최근 활동</em></div>
-            <ul class="overlay-state-list overlay-timeline-list" aria-label="최근 활동">
-                <li><div><strong>활동 기록이 없습니다.</strong><p>출석과 학습 기록이 생기면 시간순으로 표시됩니다.</p></div><em>최근 활동</em></li>
-            </ul>
+            ${renderServiceIntegrationPending({
+                title: "서비스 연동 대기",
+                description: "활동 이력 API가 연결되면 실제 출석과 학습 기록을 시간순으로 표시합니다."
+            })}
         </section>
         <section class="overlay-tab-panel" role="tabpanel" data-overlay-panel="stats" hidden>
             <div class="overlay-section-label"><strong>학습 통계</strong><span></span><em>나의 기록</em></div>
@@ -1033,29 +1022,12 @@ function openHomeOverlay(type) {
     }
 }
 
-function setOverlayTab(tabButton) {
-    const overlay = tabButton.closest(".home-overlay");
-    const tabName = tabButton.dataset.overlayTab;
-
-    overlay.querySelectorAll("[data-overlay-tab]").forEach((button) => {
-        button.classList.toggle("is-active", button === tabButton);
-        button.setAttribute("aria-selected", String(button === tabButton));
-    });
-
-    overlay.querySelectorAll("[data-overlay-panel]").forEach((panel) => {
-        const isActive = panel.dataset.overlayPanel === tabName;
-        panel.classList.toggle("is-active", isActive);
-        panel.hidden = !isActive;
-    });
-}
-
 function logout(logoutButton) {
     const logoutForm = document.querySelector("[data-logout-form]");
     const detail = logoutButton?.querySelector("em");
     if (logoutButton) logoutButton.disabled = true;
 
     try {
-        sessionOnlyKeys.forEach((key) => sessionStorage.removeItem(key));
         logoutForm.requestSubmit();
     } catch (error) {
         if (logoutButton) logoutButton.disabled = false;
@@ -1109,7 +1081,6 @@ homeOverlayRoot?.addEventListener("click", (event) => {
     }
 
     const closeTarget = event.target.closest("[data-close-home-overlay]");
-    const tabButton = event.target.closest("[data-overlay-tab]");
     const claimButton = event.target.closest("[data-home-claim]");
     const logoutButton = event.target.closest("[data-logout]");
     const communityFilterButton = event.target.closest("[data-community-filter]");
@@ -1121,15 +1092,6 @@ homeOverlayRoot?.addEventListener("click", (event) => {
 
     if (closeTarget && (event.target === closeTarget || closeTarget.matches("button, a"))) {
         closeHomeOverlay();
-        return;
-    }
-
-    if (tabButton) {
-        // 진행 Overlay는 Radix Tabs가 선택·키보드 상태를 관리한다.
-        if (tabButton.closest(".home-progress-tabs")) {
-            return;
-        }
-        setOverlayTab(tabButton);
         return;
     }
 

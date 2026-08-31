@@ -30,10 +30,10 @@ public class StudyRecordBffController {
 
     private final LearningProxyBffService proxy;
 
-    @GetMapping("/study-records/{studyRecordId}")
+    @GetMapping("/study-records/{study-record-id}")
     public JsonNode getStudyRecord(
             HttpServletRequest request,
-            @PathVariable UUID studyRecordId
+            @PathVariable("study-record-id") UUID studyRecordId
     ) {
         return proxy.executeWithCohort(request, (context, cohortId) -> context.service()
                 .getStudyRecord(context.bearerToken(), cohortId, studyRecordId));
@@ -68,10 +68,10 @@ public class StudyRecordBffController {
                 .createStudyRecord(context.bearerToken(), cohortId, body));
     }
 
-    @PutMapping("/study-records/{studyRecordId}")
+    @PutMapping("/study-records/{study-record-id}")
     public JsonNode updateStudyRecord(
             HttpServletRequest request,
-            @PathVariable UUID studyRecordId,
+            @PathVariable("study-record-id") UUID studyRecordId,
             @RequestBody JsonNode body
     ) {
         return proxy.executeWithCohort(request, (context, cohortId) -> context.service()
@@ -80,11 +80,11 @@ public class StudyRecordBffController {
                 ));
     }
 
-    @DeleteMapping("/study-records/{studyRecordId}")
+    @DeleteMapping("/study-records/{study-record-id}")
     public ResponseEntity<Void> deleteStudyRecord(
             HttpServletRequest request,
             @RequestHeader(RESOURCE_VERSION_HEADER) Long resourceVersion,
-            @PathVariable UUID studyRecordId
+            @PathVariable("study-record-id") UUID studyRecordId
     ) {
         return proxy.executeWithCohort(request, (context, cohortId) -> context.service()
                 .deleteStudyRecord(

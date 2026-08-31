@@ -893,7 +893,7 @@ import {
             <section class="ui-space-meeting" aria-labelledby="space-meeting-title">
                 <header>
                     <div>
-                        <span class="ui-menu-eyebrow">FIRST COME, FIRST SERVED</span>
+                        <span class="ui-menu-eyebrow">MEETING ROOMS</span>
                         <h3 id="space-meeting-title">회의실</h3>
                     </div>
                     <div class="ui-space-meeting__tools">
@@ -1418,15 +1418,11 @@ import {
     }
 
     function mount(root, options = {}) {
-        if (!root) {
-            return;
-        }
-
+        if (!root) return;
         roots.add(root);
         if (["meeting", "library"].includes(options.initialTab)) {
             state.activeTab = options.initialTab;
         }
-
         if (!root.dataset.spaceRoomMounted) {
             root.addEventListener("click", (event) => {
                 void handleAction(event, root);
@@ -1442,7 +1438,6 @@ import {
             });
             root.dataset.spaceRoomMounted = "true";
         }
-
         render(root);
 
         if (!spaceLoadPromise && state.roomsLoading) {
@@ -1461,7 +1456,6 @@ import {
 
     function mountParty(root) {
         if (!root) return;
-
         partyRoots.add(root);
         if (!root.dataset.partyManagerMounted) {
             root.addEventListener("click", (event) => handleAction(event, root));
@@ -1475,26 +1469,6 @@ import {
             root.dataset.partyManagerMounted = "true";
         }
         root.innerHTML = renderPartyManager();
-    }
-
-    function updateData(data = {}) {
-        if (Array.isArray(data.rooms)) {
-            state.rooms = data.rooms;
-            const hasSelectedRoom = state.rooms.some((room) => String(room.id) === String(state.selectedRoomId));
-            if (!hasSelectedRoom) state.selectedRoomId = "";
-        }
-        if (Object.hasOwn(data, "party")) {
-            state.party = data.party;
-            state.partyCreateOpen = false;
-            state.partyDetailOpen = false;
-        }
-        if (Array.isArray(data.cohortMembers)) {
-            cohortMembers = normalizeCohortMembers(data.cohortMembers);
-        }
-        if (data.telegram && typeof data.telegram === "object") {
-            telegramOverride = { ...data.telegram };
-        }
-        renderAll();
     }
 
     window.OmagotchiSpaceRoom = { mount, mountParty, updateData };

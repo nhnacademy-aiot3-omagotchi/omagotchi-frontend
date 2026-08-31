@@ -1,12 +1,7 @@
 import { createStudyRecords } from "./home/studyRecords.js";
 
-const currentUserEmail = sessionStorage.getItem("omagotchiEmail")
-    || localStorage.getItem("omagotchiLastEmail")
-    || "guest";
-
 const records = createStudyRecords({
-    storageKey: `omagotchiStudyRecords:${currentUserEmail}`,
-    getElapsedSeconds: () => 0
+    api: window.OmagotchiApi?.study
 });
 
 const root = document.querySelector("[data-study-records]");

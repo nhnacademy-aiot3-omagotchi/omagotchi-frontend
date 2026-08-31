@@ -12,7 +12,7 @@
 | --- | --- | --- |
 | 기수 목록·활성 구성원 수·관리자 ID | Learning | 연결됨 (`GET /bff/v1/admin/cohorts`) |
 | 기수 생성 | Learning | 연결됨 (`POST /bff/v1/admin/cohorts`) |
-| 기수 상태 변경 | Learning | 연결됨 (`PATCH /bff/v1/admin/cohorts/{cohortId}/status`) |
+| 기수 상태 변경 | Learning | 연결됨 (`PATCH /bff/v1/admin/cohorts/{cohort-id}/status`) |
 | 기수 관리자 배치 | Learning | BFF 경로 준비됨. Identity 사용자 목록 연결 후 UI에서 사용 |
 | 관리자 기간 중복 오류 | Learning | `409 COHORT_MANAGER_PERIOD_CONFLICT` 전달됨 |
 | 사용자 목록·검색 | Identity | 미구현 |
@@ -80,14 +80,14 @@ Authorization: Bearer {SYSTEM_ADMIN access token}
 ### 전역 권한과 계정 상태 변경
 
 ```http
-PATCH /api/v1/admin/users/{userId}/global-role
+PATCH /api/v1/admin/users/{member-user-id}/global-role
 Content-Type: application/json
 
 {"globalRole":"SYSTEM_ADMIN"}
 ```
 
 ```http
-PATCH /api/v1/admin/users/{userId}/status
+PATCH /api/v1/admin/users/{member-user-id}/status
 Content-Type: application/json
 
 {"status":"ACTIVE"}
@@ -101,8 +101,8 @@ Browser에는 Identity Service 주소를 노출하지 않고 다음 BFF 경로�
 
 ```http
 GET   /bff/v1/system-admin/users
-PATCH /bff/v1/system-admin/users/{userId}/global-role
-PATCH /bff/v1/system-admin/users/{userId}/status
+PATCH /bff/v1/system-admin/users/{member-user-id}/global-role
+PATCH /bff/v1/system-admin/users/{member-user-id}/status
 ```
 
 구현 순서는 다음과 같다.
@@ -127,7 +127,7 @@ managerCohortIds          -> Learning BFF
 
 ## Learning 후속 계약
 
-실제 화면은 SYSTEM_ADMIN 전용 기수 요약 API를 사용한다. `GET /api/v1/cohorts/{cohortId}/members`는 해당 기수의 활성 MANAGER 권한을 요구하므로 전체 현황 조회에 사용하지 않는다.
+실제 화면은 SYSTEM_ADMIN 전용 기수 요약 API를 사용한다. `GET /api/v1/cohorts/{cohort-id}/members`는 해당 기수의 활성 MANAGER 권한을 요구하므로 전체 현황 조회에 사용하지 않는다.
 
 ```json
 {
@@ -141,7 +141,7 @@ managerCohortIds          -> Learning BFF
 }
 ```
 
-기수 삭제는 `DELETE /api/v1/cohorts/{cohortId}`를 사용하며 SYSTEM_ADMIN의 PREPARING 기수만 허용한다. Frontend BFF는 `DELETE /bff/v1/admin/cohorts/{cohortId}`로 전달한다.
+기수 삭제는 `DELETE /api/v1/cohorts/{cohort-id}`를 사용하며 SYSTEM_ADMIN의 PREPARING 기수만 허용한다. Frontend BFF는 `DELETE /bff/v1/admin/cohorts/{cohort-id}`로 전달한다.
 
 ## 완료 확인
 

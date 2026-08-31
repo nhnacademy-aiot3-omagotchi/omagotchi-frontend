@@ -1,15 +1,8 @@
 export async function* streamAiChat(question, {signal, model = "GEMINI"} = {}) {
-    const params = new URLSearchParams({question, model});
-    const response = await fetch(`/bff/v1/ai/chat?${params.toString()}`, {
-        method: "GET",
-        credentials: "same-origin",
-        headers: {Accept: "text/event-stream"},
-        signal
-    });
-
-    if (!response.ok) {
-        throw new Error(`AI 응답 요청 실패: ${response.status}`);
-    }
+    const streamChat = globalThis.OmagotchiApi?.ai?.streamChat;
+    if (typeof streamChat !== "function") throw new Error("AI API is unavailable");
+    const response = await streamChat(question, {signal, model});
+    if (!response.body) throw new Error("AI 응답 스트림을 열지 못했습니다.");
 
     const reader = response.body.getReader();
     const decoder = new TextDecoder();

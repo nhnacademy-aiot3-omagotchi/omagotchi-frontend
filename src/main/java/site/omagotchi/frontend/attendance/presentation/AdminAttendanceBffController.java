@@ -16,13 +16,13 @@ import site.omagotchi.frontend.global.learning.application.LearningProxyBffServi
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/bff/v1/admin/cohorts/{cohortId}")
+@RequestMapping("/bff/v1/admin/cohorts/{cohort-id}")
 public class AdminAttendanceBffController {
 
     private final LearningProxyBffService proxy;
 
     @GetMapping("/attendance-policy")
-    public JsonNode getAttendancePolicy(HttpServletRequest request, @PathVariable Long cohortId) {
+    public JsonNode getAttendancePolicy(HttpServletRequest request, @PathVariable("cohort-id") Long cohortId) {
         return proxy.execute(request, context -> context.service()
                 .getAttendancePolicy(context.bearerToken(), cohortId));
     }
@@ -30,7 +30,7 @@ public class AdminAttendanceBffController {
     @PutMapping("/attendance-policy")
     public JsonNode updateAttendancePolicy(
             HttpServletRequest request,
-            @PathVariable Long cohortId,
+            @PathVariable("cohort-id") Long cohortId,
             @RequestBody JsonNode body
     ) {
         return proxy.execute(request, context -> context.service()
@@ -40,7 +40,7 @@ public class AdminAttendanceBffController {
     @GetMapping("/attendance-records")
     public JsonNode getAttendanceRecords(
             HttpServletRequest request,
-            @PathVariable Long cohortId,
+            @PathVariable("cohort-id") Long cohortId,
             @RequestParam String date,
             @RequestParam(defaultValue = "0") Integer page,
             @RequestParam(defaultValue = "100") Integer size
@@ -50,11 +50,11 @@ public class AdminAttendanceBffController {
         ));
     }
 
-    @PatchMapping("/attendance-records/{attendanceRecordId}/status")
+    @PatchMapping("/attendance-records/{attendance-id}/status")
     public ResponseEntity<Void> updateAttendanceStatus(
             HttpServletRequest request,
-            @PathVariable Long cohortId,
-            @PathVariable Long attendanceRecordId,
+            @PathVariable("cohort-id") Long cohortId,
+            @PathVariable("attendance-id") Long attendanceRecordId,
             @RequestBody JsonNode body
     ) {
         proxy.execute(request, context -> context.service()
