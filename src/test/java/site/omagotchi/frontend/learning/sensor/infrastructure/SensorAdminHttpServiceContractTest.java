@@ -49,7 +49,7 @@ class SensorAdminHttpServiceContractTest {
                 .put("measurement", "co2")
                 .put("warningThreshold", 1000);
 
-        server.expect(once(), requestTo(BASE_URL + "/api/v1/threshold-rules/spaces/7"))
+        server.expect(once(), requestTo(BASE_URL + "/api/v1/cohorts/3/threshold-rules/spaces/7"))
                 .andExpect(method(HttpMethod.PATCH))
                 .andExpect(header(HttpHeaders.AUTHORIZATION, BEARER))
                 .andExpect(header("X-Request-ID", "request-123"))
@@ -57,10 +57,33 @@ class SensorAdminHttpServiceContractTest {
                 .andRespond(withSuccess("{\"spaceId\":7}", MediaType.APPLICATION_JSON));
 
         // When: 실제 HTTP Service Interface 호출
-        JsonNode response = service.applySpaceThreshold(BEARER, 7L, "request-123", request);
+        JsonNode response = service.applySpaceThreshold(BEARER, 3L, 7L, "request-123", request);
 
         // Then: 응답 역직렬화와 요청 계약 충족
         assertThat(response.get("spaceId").asLong()).isEqualTo(7L);
+        server.verify();
+    }
+
+    @Test
+    @DisplayName("센서 인계는 기수 경로로 spaceId만 전달")
+    void mapsSensorClaimToLearningEndpoint() {
+        // Given: 인계는 배치할 공간만 보낸다 — 나머지 속성은 하류가 이전 값을 잇는다
+        JsonNode request = JSON_MAPPER.createObjectNode().put("spaceId", 12);
+
+        server.expect(once(), requestTo(BASE_URL + "/api/v1/cohorts/3/sensors/24e124136d151547/claim"))
+                .andExpect(method(HttpMethod.POST))
+                .andExpect(header(HttpHeaders.AUTHORIZATION, BEARER))
+                .andExpect(content().json(request.toString()))
+                .andRespond(withSuccess(
+                        "{\"deviceEui\":\"24e124136d151547\",\"spaceId\":12,\"active\":true}",
+                        MediaType.APPLICATION_JSON));
+
+        // When
+        JsonNode response = service.claimSensorDevice(BEARER, 3L, "24e124136d151547", request);
+
+        // Then: 인계된 센서는 다시 운영 상태로 돌아온다
+        assertThat(response.get("spaceId").asLong()).isEqualTo(12L);
+        assertThat(response.get("active").asBoolean()).isTrue();
         server.verify();
     }
 }

@@ -37,6 +37,7 @@ function normalizeSensorContext(context = {}) {
     error: context.error ? String(context.error) : null,
     forbidden: Boolean(context.forbidden),
     onSaveSensor: fn(context.onSaveSensor),
+    onClaimSensor: fn(context.onClaimSensor),
     onSaveThresholds: fn(context.onSaveThresholds),
     onAlertQueryChange: fn(context.onAlertQueryChange),
     onRetry: fn(context.onRetry)
@@ -83,6 +84,7 @@ if (sensorRootElement) {
         error={normalized.error}
         forbidden={normalized.forbidden}
         onSaveSensor={normalized.onSaveSensor}
+        onClaimSensor={normalized.onClaimSensor}
         onSaveThresholds={normalized.onSaveThresholds}
         onAlertQueryChange={normalized.onAlertQueryChange}
         onRetry={normalized.onRetry}

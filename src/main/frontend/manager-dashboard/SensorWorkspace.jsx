@@ -726,7 +726,7 @@ function SensorListContent({ sensors, spaces, onAdd, onEdit }) {
 // 서버 검증: @Pattern("[0-9a-f]+") @Size(max = 32)
 const EUI_PATTERN = "[0-9a-f]{1,32}";
 
-function SensorDialog({ mode, sensor, spaces, onClose, onSave }) {
+function SensorDialog({ mode, sensor, spaces, onClose, onSave, onClaim }) {
   const isEdit = mode === "edit";
   // SensorDevice의 displayName·installationPoint·spaceId는 nullable이다.
   // null을 controlled input에 그대로 넣으면 React가 uncontrolled로 보고 경고한다.
@@ -743,13 +743,27 @@ function SensorDialog({ mode, sensor, spaces, onClose, onSave }) {
   });
   const [form, setForm] = useState(() => toForm(sensor));
   const [saving, setSaving] = useState(false);
+  // 이미 등록된 EUI라 막힌 상태. 이전 기수가 쓰던 센서면 인계로 이어갈 수 있다.
+  const [claimable, setClaimable] = useState(false);
   useEffect(() => { if (sensor) setForm(toForm(sensor)); }, [sensor]);
-  function update(field, value) { setForm((current) => ({ ...current, [field]: value })); }
+  function update(field, value) {
+    // 입력을 고치면 아까의 충돌은 더 이상 이 폼의 상태가 아니다.
+    setClaimable(false);
+    setForm((current) => ({ ...current, [field]: value }));
+  }
   async function submit(event) {
     event.preventDefault();
     setSaving(true);
     try {
-      await onSave(form);
+      setClaimable(await onSave(form) === "claimable");
+    } finally {
+      setSaving(false);
+    }
+  }
+  async function claim() {
+    setSaving(true);
+    try {
+      await onClaim(form);
     } finally {
       setSaving(false);
     }
@@ -771,6 +785,18 @@ function SensorDialog({ mode, sensor, spaces, onClose, onSave }) {
               <input required disabled={isEdit} maxLength={32} pattern={EUI_PATTERN} value={form.deviceEui} onChange={(event) => update("deviceEui", event.target.value.toLowerCase())} placeholder="예: 24e124725e5c2862" />
               <small>{isEdit ? "등록 후에는 변경할 수 없습니다." : "16진수 소문자만 사용합니다 (최대 32자)."}</small>
             </label>
+            {claimable && (
+              <p className="sensor-dialog-conflict sensor-field--wide" role="alert">
+                <span>
+                  이미 등록된 센서입니다. 이전 기수에서 쓰던 센서라면
+                  <b> {spaces.find((space) => space.spaceId === form.spaceId)?.name ?? "선택한 공간"}</b>
+                  으로 인계할 수 있습니다.
+                </span>
+                <button type="button" className="sensor-claim-button" onClick={claim} disabled={saving}>
+                  {saving ? "인계 중…" : "인계하기"}
+                </button>
+              </p>
+            )}
             <div className="sensor-field-row">
               <label className="sensor-field"><span>위치</span><select value={form.spaceId ?? ""} onChange={(event) => update("spaceId", event.target.value === "" ? null : Number(event.target.value))}>{spaces.map((space) => <option key={space.spaceId} value={space.spaceId}>{space.name}</option>)}</select></label>
               <label className="sensor-field"><span>모델</span><input required disabled={isEdit} maxLength={32} value={form.model} onChange={(event) => update("model", event.target.value)} placeholder="예: WS202" />{isEdit && <small>등록 후에는 변경할 수 없습니다.</small>}</label>
@@ -809,6 +835,7 @@ export function SensorWorkspace({
   error = null,
   forbidden = false,
   onSaveSensor,
+  onClaimSensor,
   onSaveThresholds,
   onAlertQueryChange,
   onRetry,
@@ -844,13 +871,23 @@ export function SensorWorkspace({
     if (onSaveSensor) {
       // 서버가 거절하면(예: 중복 EUI 409) 창을 닫지 않는다. 닫으면 입력이 전부 사라진다.
       const ok = await onSaveSensor(next, dialog?.mode === "edit" ? "update" : "create");
-      if (ok === false) return;
+      // 인계로 이어갈 수 있는 충돌은 창을 연 채로 다이얼로그에 알려 준다.
+      if (ok === "claimable") return "claimable";
+      if (ok === false) return false;
     } else {
       setSensors((current) => current.some((sensor) => sensor.deviceEui === next.deviceEui)
         ? current.map((sensor) => sensor.deviceEui === next.deviceEui ? next : sensor)
         : [...current, next]);
     }
     setDialog(null);
+    return true;
+  }
+
+  async function claimSensor(next) {
+    if (!onClaimSensor) return false;
+    if (await onClaimSensor(next) === false) return false;
+    setDialog(null);
+    return true;
   }
 
   async function saveThresholds(spaceId, body) {
@@ -915,7 +952,7 @@ export function SensorWorkspace({
           </div>
         </Tabs.Root>
       </section>
-      {dialog && <SensorDialog mode={dialog.mode} sensor={dialog.sensor} spaces={spaces} onClose={() => setDialog(null)} onSave={saveSensor} />}
+      {dialog && <SensorDialog mode={dialog.mode} sensor={dialog.sensor} spaces={spaces} onClose={() => setDialog(null)} onSave={saveSensor} onClaim={claimSensor} />}
     </main>
   );
 }

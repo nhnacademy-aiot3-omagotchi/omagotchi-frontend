@@ -44,7 +44,7 @@ class SensorHttpServiceContractTest {
     void mapsSpaceSeriesRequestToSensorEndpoint() {
         // given: 가짜 서버에 "이런 요청이 와야 하고, 오면 이렇게 응답해라"를 등록한다
         server.expect(once(), requestToUriTemplate(BASE_URL
-                                + "/api/v1/sensors/space-series?location={l}&measurement={m}&window={w}",
+                                + "/api/v1/cohorts/3/sensors/space-series?location={l}&measurement={m}&window={w}",
                         "study-room-1", "co2", "DAY"))
                 .andExpect(method(HttpMethod.GET))
                 .andExpect(header(HttpHeaders.AUTHORIZATION, BEARER))
@@ -56,7 +56,7 @@ class SensorHttpServiceContractTest {
                         """, MediaType.APPLICATION_JSON));
 
         // when
-        JsonNode response = service.getSpaceSeries(BEARER, "study-room-1", "co2", "DAY");
+        JsonNode response = service.getSpaceSeries(BEARER, 3L, "study-room-1", "co2", "DAY");
 
         // then: 응답 JSON이 그대로 우리 손에 들어온다
         assertThat(response.get("location").asString()).isEqualTo("study-room-1");
