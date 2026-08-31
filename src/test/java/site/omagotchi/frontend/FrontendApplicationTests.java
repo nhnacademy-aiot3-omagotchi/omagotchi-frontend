@@ -193,13 +193,10 @@ class FrontendApplicationTests {
 					)))
 				.andExpect(status().isOk())
 				.andExpect(view().name("system-admin/dashboard/index"))
-				.andExpect(model().attribute(
-						"systemAdminIdentifier",
-						"22222222-2222-2222-2222-222222222222"
-				))
 				.andExpect(content().string(org.hamcrest.Matchers.containsString("name=\"_csrf\"")))
-				.andExpect(content().string(org.hamcrest.Matchers.containsString(
-						"22222222-2222-2222-2222-222222222222"
+				// 응답 본문에 사용자 식별자(UUID)와 이메일이 모두 없어야 한다.
+				.andExpect(content().string(org.hamcrest.Matchers.not(
+						org.hamcrest.Matchers.containsString("22222222-2222-2222-2222-222222222222")
 				)))
 				.andExpect(content().string(org.hamcrest.Matchers.not(
 						org.hamcrest.Matchers.containsString("test@test.com")
