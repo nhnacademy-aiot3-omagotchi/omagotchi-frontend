@@ -10,6 +10,7 @@ import site.omagotchi.frontend.account.application.port.IdentityAccountClient;
 import site.omagotchi.frontend.account.application.result.AccountSettings;
 import site.omagotchi.frontend.account.infrastructure.request.IdentityChangePasswordRequest;
 import site.omagotchi.frontend.account.infrastructure.request.IdentityUpdateNameRequest;
+import site.omagotchi.frontend.account.infrastructure.request.IdentityWithdrawAccountRequest;
 import site.omagotchi.frontend.account.infrastructure.response.IdentityAccountResponse;
 import site.omagotchi.frontend.global.exception.BusinessException;
 import site.omagotchi.frontend.global.exception.CommonErrorCode;
@@ -99,6 +100,28 @@ public class IdentityRestAccountClient implements IdentityAccountClient {
                 }
         );
         requireStatus(response, HttpStatus.NO_CONTENT, "Password change");
+    }
+
+    @Override
+    public void withdraw(String accessToken, String currentPassword) {
+        ResponseEntity<Void> response = callExecutor.execute(
+                () -> httpService.withdraw(
+                        "Bearer " + accessToken,
+                        new IdentityWithdrawAccountRequest(currentPassword)
+                ),
+                exception -> {
+                    ErrorCode errorCode = errorResolver.resolve(
+                            exception,
+                            SecurityErrorCode.AUTHENTICATION_REQUIRED,
+                            AccountErrorCode.CURRENT_PASSWORD_MISMATCH,
+                            AccountErrorCode.WITHDRAWAL_NOT_ALLOWED,
+                            AccountErrorCode.LAST_SYSTEM_ADMIN,
+                            AccountErrorCode.NOT_FOUND
+                    );
+                    throw new BusinessException(errorCode, exception);
+                }
+        );
+        requireStatus(response, HttpStatus.NO_CONTENT, "Account withdrawal");
     }
 
     private static void requireStatus(

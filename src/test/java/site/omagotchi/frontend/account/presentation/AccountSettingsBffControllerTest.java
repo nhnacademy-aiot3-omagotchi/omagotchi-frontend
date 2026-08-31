@@ -19,6 +19,7 @@ import site.omagotchi.frontend.account.application.AccountSettingsBffService;
 import site.omagotchi.frontend.account.application.port.IdentityAccountClient;
 import site.omagotchi.frontend.account.application.result.AccountSettings;
 import site.omagotchi.frontend.account.presentation.request.ChangeAccountPasswordRequest;
+import site.omagotchi.frontend.account.presentation.request.WithdrawAccountRequest;
 import site.omagotchi.frontend.auth.application.result.BrowserSessionTokenBundle;
 import site.omagotchi.frontend.auth.domain.GlobalRole;
 import site.omagotchi.frontend.auth.presentation.security.BrowserSessionTokens;
@@ -31,6 +32,7 @@ import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
@@ -161,6 +163,81 @@ class AccountSettingsBffControllerTest {
         assertThat(session.isInvalid()).isFalse();
     }
 
+    @Test
+    @DisplayName("계정 탈퇴 성공 후 현재 브라우저 세션 폐기")
+    void withdrawsThenInvalidatesTheLocalBrowserSession() throws Exception {
+        // Given: 인증 브라우저 세션과 현재 인증 Principal
+        MockHttpSession session = authenticatedSession();
+        TestingAuthenticationToken authentication =
+                new TestingAuthenticationToken("user", null);
+
+        // When: 현재 사용자 계정 탈퇴 BFF 요청
+        MvcResult result = mockMvc.perform(delete("/bff/v1/users/me")
+                        .session(session)
+                        .principal(authentication)
+                        .contentType("application/json")
+                        .content("{\"currentPassword\":\"current-password\"}"))
+                .andExpectAll(
+                        status().isNoContent(),
+                        header().string("Cache-Control", "no-store")
+                )
+                .andReturn();
+
+        // Then: Access Token과 현재 비밀번호가 전달된 Identity 탈퇴 요청
+        assertThat(identityClient.accessToken).isEqualTo("session-access-token");
+        assertThat(identityClient.withdrawalCurrentPassword)
+                .isEqualTo("current-password");
+
+        // Then: 현재 HTTP 세션 폐기와 요청의 세션 연결 제거
+        assertThat(session.isInvalid()).isTrue();
+        assertThat(result.getRequest().getSession(false)).isNull();
+    }
+
+    @Test
+    @DisplayName("계정 탈퇴 실패 후 현재 브라우저 세션 유지")
+    void keepsTheLocalBrowserSessionWhenWithdrawalFails() {
+        // Given: 인증 브라우저 요청과 Identity 계정 탈퇴 실패
+        MockHttpServletRequest request = authenticatedRequest();
+        MockHttpSession session = (MockHttpSession) request.getSession(false);
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        TestingAuthenticationToken authentication =
+                new TestingAuthenticationToken("user", null);
+        BusinessException failure = new BusinessException(
+                AccountErrorCode.CURRENT_PASSWORD_MISMATCH
+        );
+        identityClient.withdrawalFailure = failure;
+
+        // When: Identity에서 거절된 계정 탈퇴
+        ThrowingCallable action = () -> controller.withdraw(
+                request,
+                response,
+                authentication,
+                new WithdrawAccountRequest("wrong-current-password")
+        );
+
+        // Then: 원본 오류 전파와 현재 HTTP 세션 유지
+        assertThatThrownBy(action).isSameAs(failure);
+        assertThat(session.isInvalid()).isFalse();
+    }
+
+    @Test
+    @DisplayName("계정 탈퇴 현재 비밀번호 누락의 400 응답")
+    void rejectsWithdrawalWithoutCurrentPassword() throws Exception {
+        // Given: 인증 브라우저 세션과 현재 비밀번호가 누락된 탈퇴 JSON
+        MockHttpSession session = authenticatedSession();
+
+        // When: 현재 사용자 계정 탈퇴 BFF 요청
+        mockMvc.perform(delete("/bff/v1/users/me")
+                        .session(session)
+                        .contentType("application/json")
+                        .content("{}"))
+                .andExpect(status().isBadRequest());
+
+        // Then: Identity 탈퇴 요청 미수행과 현재 브라우저 세션 유지
+        assertThat(identityClient.withdrawalCurrentPassword).isNull();
+        assertThat(session.isInvalid()).isFalse();
+    }
+
     @ParameterizedTest(name = "{0}")
     @MethodSource("missingRequiredFields")
     @DisplayName("계정 변경 필수 필드 누락의 400 응답")
@@ -232,7 +309,9 @@ class AccountSettingsBffControllerTest {
         private String name;
         private String currentPassword;
         private String newPassword;
+        private String withdrawalCurrentPassword;
         private RuntimeException changePasswordFailure;
+        private RuntimeException withdrawalFailure;
 
         @Override
         public AccountSettings getCurrentAccount(String accessToken) {
@@ -258,6 +337,15 @@ class AccountSettingsBffControllerTest {
             this.accessToken = accessToken;
             this.currentPassword = currentPassword;
             this.newPassword = newPassword;
+        }
+
+        @Override
+        public void withdraw(String accessToken, String currentPassword) {
+            if (withdrawalFailure != null) {
+                throw withdrawalFailure;
+            }
+            this.accessToken = accessToken;
+            this.withdrawalCurrentPassword = currentPassword;
         }
     }
 }
