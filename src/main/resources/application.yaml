@@ -78,3 +78,11 @@ clients:
   identity:
     username: ${FRONTEND_USERNAME}
     password: ${FRONTEND_PASSWORD}
+
+auth:
+  access-token-refresh:
+    refresh-before-expiry: ${ACCESS_TOKEN_REFRESH_BEFORE_EXPIRY}
+    lock:
+      wait-timeout: ${ACCESS_TOKEN_REFRESH_LOCK_WAIT_TIMEOUT}
+      poll-interval: ${ACCESS_TOKEN_REFRESH_LOCK_POLL_INTERVAL}
+      lease: ${ACCESS_TOKEN_REFRESH_LOCK_LEASE}
