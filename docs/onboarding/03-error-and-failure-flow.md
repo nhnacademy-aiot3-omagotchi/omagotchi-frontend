@@ -89,9 +89,9 @@ flowchart LR
 | 예상하지 못한 Page 오류 | Boot `/error` | HTML 오류 |
 | Page Redis Session 장애 | `SessionStoreErrorFilter` → `SessionStoreFailureResponseWriter` | HTML 503 |
 | REST `BusinessException` | `ApiExceptionHandler` | JSON 4xx·5xx |
-| Access Token 만료 임박 | `AccessTokenRefreshInterceptor` | 선제 Refresh 뒤 원래 요청 1회 |
-| Refresh 명시적 503·응답 미수신·Refresh 전 Redis 장애 | `AccessTokenRefreshService` | Session 유지 + JSON 503 |
-| Refresh 401·응답 계약 위반·새 Bundle 저장 결과 불명확 | `ApiExceptionHandler` | Cookie·Session best-effort 폐기 + JSON 401 |
+| `/bff/v1/**` Access Token 만료 임박 | `AccessTokenRefreshInterceptor` | 선제 Refresh 뒤 원래 요청 1회 |
+| `/bff/v1/**` Refresh 명시적 503·응답 미수신·Refresh 전 Redis 장애 | `AccessTokenRefreshService` | Session 유지 + JSON 503 |
+| `/bff/v1/**` Refresh 401·응답 계약 위반·새 Bundle 저장 결과 불명확 | `ApiExceptionHandler` | Cookie·Session best-effort 폐기 + JSON 401 |
 | 하류 Access JWT 인증 실패 | `ApiExceptionHandler` | 인증 Session 폐기 + JSON 401 |
 | 예상하지 못한 REST 오류 | `ApiExceptionHandler` | JSON 500 |
 | 미인증 BFF | `BffApiSecurityErrorHandler` | JSON 401 |
@@ -102,6 +102,7 @@ flowchart LR
 - 경로 계약
   - Frontend BFF: `/bff/v1/**`
   - Gateway 외부 API: `/api/**`
+  - Access Token 선제 Refresh는 Frontend BFF에만 적용하며 Page 요청은 기존 HTML 오류 흐름 유지
 - 요청 재실행 정책
   - 선제 Refresh와 무관하게 원래 Controller·downstream 요청은 최대 1회
   - 하류 `401` 뒤 자동 재실행 금지

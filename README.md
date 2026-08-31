@@ -36,6 +36,7 @@ SPRING_PROFILES_ACTIVE=local ./mvnw spring-boot:run
 - AI Chat Gateway 주소: `GATEWAY_SERVICE_BASE_URL=http://localhost:8080`
 - 서비스 인증 정보: Identity와 동일한 `FRONTEND_USERNAME`·`FRONTEND_PASSWORD`
 - Access Token 선제 갱신: `ACCESS_TOKEN_REFRESH_BEFORE_EXPIRY`
+  - Identity가 발급하는 Access Token 수명보다 짧게 설정하고, 새 Token Bundle의 만료 시각은 Refresh 응답에서 검증
 - Refresh Lock 대기·Polling·lease: `ACCESS_TOKEN_REFRESH_LOCK_WAIT_TIMEOUT`·`ACCESS_TOKEN_REFRESH_LOCK_POLL_INTERVAL`·`ACCESS_TOKEN_REFRESH_LOCK_LEASE`
   - lease는 Identity HTTP와 Redis Session 조회·저장 timeout보다 충분히 길게 설정하고 timeout 변경 시 함께 조정
 - 운영 Identity 주소: `lb://identity-service`
