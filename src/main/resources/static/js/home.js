@@ -1,4 +1,4 @@
-import { createAttendance } from "./home/attendance.js";
+import { createAttendance, hasApprovedCohort } from "./home/attendance.js";
 import { createBgmPlayer } from "./home/bgm.js";
 import { createCharacter } from "./home/character.js";
 import { createLevel } from "./home/level.js";
@@ -331,7 +331,7 @@ const attendanceController = createAttendance({
     streakCount,
     streakList,
     api: api?.attendance,
-    enabled: Boolean(currentProfile.approvedCohort?.cohortId),
+    enabled: hasApprovedCohort(currentProfile),
     onCheckOutSuccess: () => showHomeToast("퇴실 처리됐어요. 타이머는 계속 사용할 수 있어요."),
     onCheckOutError: () => showHomeToast("퇴실 처리에 실패했어요. 잠시 후 다시 시도해 주세요."),
     confirmCheckOut,
@@ -753,15 +753,16 @@ async function loadProgressOverlay() {
     // 랭킹 조회 기수는 서버가 Session 승인 기수에서 확보하므로 Browser가 지정하지 않는다.
     // 승인 기수가 없으면 서버가 업무 오류를 반환하므로, 빈 랭킹으로 표시하고 화면은 유지한다.
     const hasApprovedCohort = Boolean(currentProfile.approvedCohort?.cohortId);
-    const [home, rankings] = await Promise.all([
+    const [home, quests, rankings] = await Promise.all([
         api.gamification.getHome(),
+        api.gamification.getDailyQuests(),
         hasApprovedCohort
             ? api.ranking.getToday().catch(() => null)
             : Promise.resolve(null)
     ]);
 
-    const quests = Array.isArray(home?.dailyQuests) ? home.dailyQuests : [];
-    questList.innerHTML = quests.length ? quests.map((quest) => {
+    const dailyQuests = Array.isArray(quests) ? quests : [];
+    questList.innerHTML = dailyQuests.length ? dailyQuests.map((quest) => {
         const canClaim = quest.status === "COMPLETED";
         const statusLabel = questStatusLabel(quest);
         return `<li>
