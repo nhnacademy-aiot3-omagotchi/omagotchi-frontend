@@ -469,7 +469,7 @@ DELETE /bff/v1/users/me + 현재 비밀번호
 - 계정 상태 전이, 마지막 이용 가능 SYSTEM_ADMIN 보호와 Refresh Session 폐기는 Identity가 소유합니다.
 - Identity 실패 시 Frontend는 현재 Browser Session을 유지합니다.
 - Identity 성공 뒤 Redis Session 삭제가 실패하면 응답은 `503`이지만 탈퇴는 이미 완료됐을 수 있습니다.
-- 위 부분 성공에서는 Redis Session에 남은 Access JWT가 기존 만료 시각까지 최대 15분 유효할 수 있습니다.
+- 위 부분 성공에서는 [현재 Identity Access JWT 계약](https://github.com/nhnacademy-aiot3-omagotchi/docs/blob/main/30-adr/0014-access-jwt-revocation-and-account-auth-state.md)에 따라 Redis Session에 남은 Access JWT가 기존 만료 시각까지 최대 15분 유효할 수 있습니다.
 - `notice`는 화면 안내용 허용 Code일 뿐 탈퇴 성공 여부의 근거가 아닙니다.
 
 ## 10. Identity HTTP 경계

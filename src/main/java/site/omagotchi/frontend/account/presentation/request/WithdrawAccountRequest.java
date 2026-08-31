@@ -1,9 +1,9 @@
 package site.omagotchi.frontend.account.presentation.request;
 
-import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotBlank;
 
 public record WithdrawAccountRequest(
-        @NotNull(message = "현재 비밀번호는 필수입니다.")
+        @NotBlank(message = "현재 비밀번호는 필수입니다.")
         String currentPassword
 ) {
 

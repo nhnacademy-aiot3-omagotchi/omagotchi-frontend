@@ -220,22 +220,34 @@ class AccountSettingsBffControllerTest {
         assertThat(session.isInvalid()).isFalse();
     }
 
-    @Test
-    @DisplayName("계정 탈퇴 현재 비밀번호 누락의 400 응답")
-    void rejectsWithdrawalWithoutCurrentPassword() throws Exception {
-        // Given: 인증 브라우저 세션과 현재 비밀번호가 누락된 탈퇴 JSON
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("invalidWithdrawalRequests")
+    @DisplayName("계정 탈퇴 현재 비밀번호 누락·공백의 400 응답")
+    void rejectsWithdrawalWithInvalidCurrentPassword(
+            String ignoredDescription,
+            String requestBody
+    ) throws Exception {
+        // Given: 인증 브라우저 세션과 유효하지 않은 현재 비밀번호
         MockHttpSession session = authenticatedSession();
 
         // When: 현재 사용자 계정 탈퇴 BFF 요청
         mockMvc.perform(delete("/bff/v1/users/me")
                         .session(session)
                         .contentType("application/json")
-                        .content("{}"))
+                        .content(requestBody))
                 .andExpect(status().isBadRequest());
 
         // Then: Identity 탈퇴 요청 미수행과 현재 브라우저 세션 유지
         assertThat(identityClient.withdrawalCurrentPassword).isNull();
         assertThat(session.isInvalid()).isFalse();
+    }
+
+    private static Stream<Arguments> invalidWithdrawalRequests() {
+        return Stream.of(
+                Arguments.of("현재 비밀번호 누락", "{}"),
+                Arguments.of("현재 비밀번호 빈 문자열", "{\"currentPassword\":\"\"}"),
+                Arguments.of("현재 비밀번호 공백", "{\"currentPassword\":\"   \"}")
+        );
     }
 
     @ParameterizedTest(name = "{0}")
