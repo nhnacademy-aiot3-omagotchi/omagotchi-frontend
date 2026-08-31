@@ -1,14 +1,5 @@
 (() => {
-    const STORAGE_KEYS = Object.freeze({
-        cohorts: "omagotchiCohortOperations",
-        applications: "omagotchiCohortApplications",
-        notices: "omagotchiCohortNotices",
-        audits: "omagotchiCohortAudits"
-    });
     const SESSION_KEYS = Object.freeze({
-        email: "omagotchiManagerEmail",
-        name: "omagotchiManagerName",
-        organization: "omagotchiManagerOrganization",
         cohort: "omagotchiManagerCohort",
         panel: "omagotchiManagerDashboardTab"
     });
@@ -25,32 +16,7 @@
         sensor: {},
         joinCode: null
     });
-    const STORAGE_KEYS_TO_CLEAR = Object.freeze(Object.values(STORAGE_KEYS));
     const SESSION_KEYS_TO_CLEAR = Object.freeze(Object.values(SESSION_KEYS));
-    const MEMBER_STATUSES = new Set(["ACTIVE", "INACTIVE", "ENDED"]);
-    const ATTENDANCE_STATUSES = new Set([
-        "PRESENT",
-        "LATE",
-        "ABSENT",
-        "LEFT_EARLY",
-        "LATE_LEFT_EARLY",
-        "MISSING_CHECK_OUT"
-    ]);
-    const SENSOR_LOCATION_NAMES = Object.freeze({
-        LAB: "실습실",
-        OFFICE: "사무실",
-        MEETING_ROOM: "회의실"
-    });
-    const SENSOR_LOCATION_IDS = new Set(Object.keys(SENSOR_LOCATION_NAMES));
-    const SENSOR_OPERATOR_LABELS = Object.freeze({
-        GTE: "이상",
-        LT: "미만",
-        GT: "초과",
-        LTE: "이하"
-    });
-    const SENSOR_OPERATORS = new Set(Object.keys(SENSOR_OPERATOR_LABELS));
-    const SENSOR_METRICS = Object.freeze(["temperature", "humidity", "co2"]);
-    const SENSOR_UNITS = Object.freeze({ temperature: "℃", humidity: "%", co2: "ppm" });
     const KST_DATE_FORMATTER = new Intl.DateTimeFormat("en-US", {
         timeZone: "Asia/Seoul",
         year: "numeric",
@@ -65,50 +31,16 @@
         return `${values.year}-${values.month}-${values.day}`;
     }
 
-    function validSensorThresholds(thresholds) {
-        for (const metric of SENSOR_METRICS) {
-            const rule = thresholds?.[metric];
-            if (!SENSOR_OPERATORS.has(rule?.operator) || !Number.isFinite(rule?.value)) return false;
-        }
-        return true;
-    }
-
-    function formatSensorThreshold(metric, rule) {
-        return `${SENSOR_OPERATOR_LABELS[rule.operator]} ${rule.value}${SENSOR_UNITS[metric]}`;
-    }
-
     function clone(value) {
         if (typeof structuredClone === "function") return structuredClone(value);
         return JSON.parse(JSON.stringify(value));
     }
 
-    function createMemoryStorage() {
-        const values = new Map();
-        return {
-            getItem: (key) => values.has(key) ? values.get(key) : null,
-            setItem: (key, value) => values.set(key, String(value)),
-            removeItem: (key) => values.delete(key)
-        };
-    }
-
     function create({
-        // Learning Service가 운영 데이터의 Source of Truth다. 대시보드 상태는 탭 메모리에만 둔다.
-        local = createMemoryStorage(),
         session = window.sessionStorage,
-        now = () => new Date(),
-        random = Math.random,
-        createId = () => crypto.randomUUID?.() || `audit-${Date.now()}`
+        now = () => new Date()
     } = {}) {
         const listeners = new Set();
-
-        function readJson(key, fallback) {
-            try {
-                const value = local.getItem(key);
-                return value ? JSON.parse(value) : clone(fallback);
-            } catch {
-                return clone(fallback);
-            }
-        }
 
         function readSession(key, fallback = "") {
             try {
@@ -121,15 +53,10 @@
         const initialDate = now();
         let state = {
             today: currentKstAggregationDate(initialDate),
-            manager: {
-                email: readSession(SESSION_KEYS.email),
-                name: readSession(SESSION_KEYS.name, "관리자"),
-                organization: readSession(SESSION_KEYS.organization)
-            },
-            cohorts: readJson(STORAGE_KEYS.cohorts, []),
-            applications: readJson(STORAGE_KEYS.applications, []),
-            notices: readJson(STORAGE_KEYS.notices, []),
-            audits: readJson(STORAGE_KEYS.audits, []),
+            manager: { email: "", name: "관리자", organization: "기수 관리자" },
+            cohorts: [],
+            applications: [],
+            notices: [],
             selectedCohortId: readSession(SESSION_KEYS.cohort),
             activePanel: readSession(SESSION_KEYS.panel, "overview")
         };
@@ -183,29 +110,6 @@
             }
         }
 
-        function operationWrites(next, extraWrites = []) {
-            return [
-                { storage: local, key: STORAGE_KEYS.cohorts, value: JSON.stringify(next.cohorts) },
-                { storage: local, key: STORAGE_KEYS.applications, value: JSON.stringify(next.applications) },
-                { storage: local, key: STORAGE_KEYS.notices, value: JSON.stringify(next.notices) },
-                { storage: local, key: STORAGE_KEYS.audits, value: JSON.stringify(next.audits) },
-                ...extraWrites
-            ];
-        }
-
-        function appendAudit(next, action, target, detail) {
-            next.audits.unshift({
-                id: createId(),
-                cohortId: next.selectedCohortId,
-                occurredAt: now().toLocaleString("ko-KR", { hour12: false }),
-                action,
-                target,
-                detail,
-                actor: next.manager.email
-            });
-            next.audits = next.audits.slice(0, 100);
-        }
-
         function notify(command, changes, message) {
             const event = Object.freeze({
                 command,
@@ -215,7 +119,7 @@
             listeners.forEach((listener) => listener(event));
         }
 
-        function commit(command, next, { changes, message = "", writes = operationWrites(next) }) {
+        function commit(command, next, { changes, message = "", writes = [] }) {
             writeAtomically(writes);
             state = next;
             notify(command, changes, message);
@@ -256,232 +160,31 @@
             next.cohorts = Array.isArray(dashboard.cohorts) ? clone(dashboard.cohorts) : next.cohorts;
             next.applications = Array.isArray(dashboard.applications) ? clone(dashboard.applications) : next.applications;
             next.notices = Array.isArray(dashboard.notices) ? clone(dashboard.notices) : next.notices;
-            next.audits = Array.isArray(dashboard.audits) ? clone(dashboard.audits) : next.audits;
+            next.manager = dashboard.manager && typeof dashboard.manager === "object"
+                ? { ...next.manager, ...clone(dashboard.manager) }
+                : next.manager;
             next.selectedCohortId = dashboard.selectedCohortId || next.selectedCohortId;
             normalizeSelection(next);
             return commit(command.type, next, {
                 changes: ["selection", "shell", "all"],
-                writes: [
-                    ...operationWrites(next),
-                    { storage: session, key: SESSION_KEYS.cohort, value: next.selectedCohortId }
-                ]
+                writes: [{ storage: session, key: SESSION_KEYS.cohort, value: next.selectedCohortId }]
             });
         }
 
         function clearSession(command) {
             const next = {
                 today: state.today,
-                manager: { email: "", name: "관리자", organization: "" },
+                manager: { email: "", name: "관리자", organization: "기수 관리자" },
                 cohorts: [],
                 applications: [],
                 notices: [],
-                audits: [],
                 selectedCohortId: "",
                 activePanel: "overview"
             };
-            const writes = [
-                ...SESSION_KEYS_TO_CLEAR.map((key) => ({ storage: session, key, value: null })),
-                ...STORAGE_KEYS_TO_CLEAR.map((key) => ({ storage: local, key, value: null }))
-            ];
+            const writes = SESSION_KEYS_TO_CLEAR.map((key) => ({ storage: session, key, value: null }));
             return commit(command.type, next, {
                 changes: ["selection", "shell", "all"],
                 writes
-            });
-        }
-
-        function updateCohort(command) {
-            const next = clone(state);
-            const cohort = currentCohort(next);
-            if (!cohort.id) return rejected();
-            cohort.description = command.description;
-            cohort.capacity = command.capacity;
-            appendAudit(next, "기수 정보 수정", cohort.name, "설명과 정원 변경");
-            return commit(command.type, next, {
-                changes: ["cohortInfo", "audits"],
-                message: "기수 정보를\n저장했습니다."
-            });
-        }
-
-        function issueJoinCode(command) {
-            const next = clone(state);
-            const cohort = currentCohort(next);
-            if (!cohort.id || !command.expiresAt) return rejected();
-            const code = `${cohort.name.replace(/[^A-Za-z0-9가-힣]/g, "").slice(0, 3).toUpperCase()}${random().toString(36).slice(2, 6).toUpperCase()}`;
-            cohort.joinCode = {
-                value: code,
-                status: "ACTIVE",
-                expiresAt: command.expiresAt,
-                issuedAt: next.today,
-                used: 0
-            };
-            appendAudit(next, "가입 코드 발급", cohort.name, `만료일 ${command.expiresAt}`);
-            return commit(command.type, next, {
-                changes: ["joinCode", "audits"],
-                message: "새 가입 코드를\n발급했습니다."
-            });
-        }
-
-        function revokeJoinCode(command) {
-            const next = clone(state);
-            const cohort = currentCohort(next);
-            if (!cohort.joinCode?.value) return rejected();
-            cohort.joinCode.status = "REVOKED";
-            appendAudit(next, "가입 코드 폐기", cohort.name, cohort.joinCode.value);
-            return commit(command.type, next, { changes: ["joinCode", "audits"] });
-        }
-
-        function approveApplication(command) {
-            const next = clone(state);
-            const cohort = currentCohort(next);
-            const application = next.applications.find(
-                (item) => String(item.id) === String(command.applicationId)
-            );
-            if (
-                !cohort.id
-                || !application
-                || application.cohortId !== cohort.id
-                || application.status !== "PENDING"
-            ) return rejected();
-            application.status = "ACTIVE";
-            cohort.members.push({
-                id: application.userId,
-                name: application.name,
-                email: application.email,
-                role: "STUDENT",
-                status: "ACTIVE"
-            });
-            appendAudit(next, "참가 신청 승인", application.email, "PENDING → ACTIVE");
-            return commit(command.type, next, {
-                changes: ["shell", "members", "applications", "audits"],
-                message: `${application.name} 님을\n승인했습니다.`
-            });
-        }
-
-        function rejectApplication(command) {
-            const next = clone(state);
-            const cohort = currentCohort(next);
-            const application = next.applications.find(
-                (item) => String(item.id) === String(command.applicationId)
-            );
-            if (
-                !application
-                || application.cohortId !== cohort.id
-                || application.status !== "PENDING"
-                || !command.reason
-            ) return rejected();
-            application.status = "REJECTED";
-            application.rejectReason = command.reason;
-            appendAudit(next, "참가 신청 거절", application.email, command.reason);
-            return commit(command.type, next, {
-                changes: ["shell", "applications", "audits"]
-            });
-        }
-
-        function changeMemberStatus(command) {
-            const next = clone(state);
-            const cohort = currentCohort(next);
-            const member = cohort.members.find((item) => String(item.id) === String(command.memberId));
-            if (
-                !member
-                || member.role === "MANAGER"
-                || !MEMBER_STATUSES.has(command.status)
-                || !command.reason
-            ) return rejected();
-            const previous = member.status;
-            member.status = command.status;
-            appendAudit(next, "소속 상태 변경", member.email, `${previous} → ${command.status}: ${command.reason}`);
-            return commit(command.type, next, {
-                changes: ["shell", "members", "audits"]
-            });
-        }
-
-        function changeAttendanceStatus(command) {
-            const next = clone(state);
-            const cohort = currentCohort(next);
-            const member = cohort.members.find((item) => String(item.id) === String(command.memberId));
-            if (!member || !command.date || !ATTENDANCE_STATUSES.has(command.status)) return rejected();
-            let record = cohort.attendance.find(
-                (item) => String(item.memberId) === String(member.id) && item.date === command.date
-            );
-            if (!record) {
-                record = {
-                    memberId: member.id,
-                    date: command.date,
-                    checkIn: "-",
-                    checkOut: "-",
-                    autoStatus: "PENDING",
-                    finalStatus: command.status
-                };
-                cohort.attendance.push(record);
-            } else {
-                record.finalStatus = command.status;
-            }
-            appendAudit(next, "최종 출결 변경", member.email, `${command.date} ${command.status}`);
-            return commit(command.type, next, {
-                changes: ["shell", "attendance", "audits"]
-            });
-        }
-
-        function saveSensorThresholds(command) {
-            const next = clone(state);
-            const cohort = currentCohort(next);
-            const location = command.location || "LAB";
-            const thresholds = command.thresholds;
-            if (
-                !cohort.id
-                || !SENSOR_LOCATION_IDS.has(location)
-                || !validSensorThresholds(thresholds)
-            ) return rejected();
-            cohort.sensor ??= {};
-            cohort.sensor.thresholds = {
-                ...(cohort.sensor.thresholds || {}),
-                [location]: clone(thresholds)
-            };
-            appendAudit(
-                next,
-                "센서 임계치 수정",
-                `${cohort.name} ${SENSOR_LOCATION_NAMES[location]}`,
-                `온도 ${formatSensorThreshold("temperature", thresholds.temperature)}, 습도 ${formatSensorThreshold("humidity", thresholds.humidity)}, CO₂ ${formatSensorThreshold("co2", thresholds.co2)}`
-            );
-            return commit(command.type, next, {
-                changes: ["sensors", "audits"],
-                message: "센서 임계치를\n저장했습니다."
-            });
-        }
-
-        function createNotice(command) {
-            const next = clone(state);
-            const cohort = currentCohort(next);
-            if (!cohort.id || !command.title || !command.content) return rejected();
-            next.notices.unshift({
-                id: `notice-${now().getTime()}`,
-                cohortId: next.selectedCohortId,
-                type: "NOTICE",
-                title: command.title,
-                content: command.content,
-                pinned: false,
-                reports: 0
-            });
-            appendAudit(next, "공지 등록", command.title, "기수 공지 작성");
-            return commit(command.type, next, {
-                changes: ["notices", "audits"]
-            });
-        }
-
-        function moderatePost(command) {
-            const next = clone(state);
-            const cohort = currentCohort(next);
-            const post = next.notices.find((item) => String(item.id) === String(command.postId));
-            if (!post || post.cohortId !== cohort.id) return rejected();
-            if (post.reports) {
-                post.reports = 0;
-                appendAudit(next, "커뮤니티 신고 확인", post.title, "신고 검토 완료");
-            } else {
-                post.pinned = !post.pinned;
-                appendAudit(next, "게시글 고정 변경", post.title, post.pinned ? "고정" : "고정 해제");
-            }
-            return commit(command.type, next, {
-                changes: ["notices", "audits"]
             });
         }
 
@@ -489,17 +192,7 @@
             ["SELECT_PANEL", selectPanel],
             ["SELECT_COHORT", selectCohort],
             ["HYDRATE_DASHBOARD", hydrateDashboard],
-            ["CLEAR_SESSION", clearSession],
-            ["UPDATE_COHORT", updateCohort],
-            ["ISSUE_JOIN_CODE", issueJoinCode],
-            ["REVOKE_JOIN_CODE", revokeJoinCode],
-            ["APPROVE_APPLICATION", approveApplication],
-            ["REJECT_APPLICATION", rejectApplication],
-            ["CHANGE_MEMBER_STATUS", changeMemberStatus],
-            ["CHANGE_ATTENDANCE_STATUS", changeAttendanceStatus],
-            ["SAVE_SENSOR_THRESHOLDS", saveSensorThresholds],
-            ["CREATE_NOTICE", createNotice],
-            ["MODERATE_POST", moderatePost]
+            ["CLEAR_SESSION", clearSession]
         ]);
 
         function dispatch(command) {

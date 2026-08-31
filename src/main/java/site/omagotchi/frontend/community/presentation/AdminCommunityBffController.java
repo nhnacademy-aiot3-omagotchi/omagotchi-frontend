@@ -17,10 +17,10 @@ public class AdminCommunityBffController {
 
     private final LearningProxyBffService proxy;
 
-    @PatchMapping("/{postId}/pin")
+    @PatchMapping("/{post-id}/pin")
     public JsonNode updatePostPin(
             HttpServletRequest request,
-            @PathVariable Long postId,
+            @PathVariable("post-id") Long postId,
             @RequestBody JsonNode body
     ) {
         return proxy.execute(request, context -> context.service()

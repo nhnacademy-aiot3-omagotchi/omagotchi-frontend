@@ -1,0 +1,48 @@
+.service-integration-pending {
+    display: grid;
+    place-items: center;
+    gap: 8px;
+    min-height: 220px;
+    padding: 32px;
+    border: 1px dashed var(--line, #d9e2dc);
+    border-radius: 10px;
+    background: var(--surface, #fff);
+    color: var(--muted, #68766e);
+    text-align: center;
+}
+
+.service-integration-pending > span {
+    display: grid;
+    place-items: center;
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: #edf5f0;
+    color: var(--green-700, #27633f);
+    font-size: 11px;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+}
+
+.service-integration-pending > strong {
+    color: var(--ink, #1f2c25);
+    font-size: 16px;
+}
+
+.service-integration-pending > p {
+    max-width: 520px;
+    margin: 0;
+    line-height: 1.65;
+}
+
+.service-integration-pending-compact > .service-integration-pending {
+    grid-template-columns: auto minmax(0, 1fr);
+    justify-items: start;
+    min-height: 0;
+    padding: 16px;
+    text-align: left;
+}
+
+.service-integration-pending-compact > .service-integration-pending > span {
+    grid-row: 1 / span 2;
+}

@@ -20,10 +20,10 @@
 | --- | --- | --- | --- |
 | 인증 | 쿠키 세션 또는 BFF 세션 권장 | 대부분 `Authorization: Bearer <accessToken>` 필요 | 토큰을 브라우저 JS에 노출할지, BFF에서 Bearer relay할지 결정 |
 | 에러 응답 | `{ message, code }` | `{ status, code, message, path, requestId }` | 프론트 공통 에러 처리에서 백엔드 형식 수용 |
-| 출석 경로 | `/api/attendance/check-in` | `/api/cohorts/{cohortId}/attendance-records/check-in` | 프론트가 `cohortId`를 어디서 얻을지 결정 |
+| 출석 경로 | `/api/attendance/check-in` | `/api/cohorts/{cohort-id}/attendance-records/check-in` | 프론트가 `cohortId`를 어디서 얻을지 결정 |
 | 출석 필드명 | `serviceDate`, `checkInAt`, `checkOutAt`, `attendanceStatus` | `attendanceDate`, `checkedInAt`, `checkedOutAt`, `finalStatus` | 프론트 어댑터에서 필드 변환 필요 |
 | 출석 상태값 | `PRESENT`, `LATE`, `ABSENT`, `EARLY_LEAVE` 등 | `PRESENT`, `LATE`, `ABSENT`, `LEFT_EARLY`, `LATE_LEFT_EARLY`, `MISSING_CHECK_OUT` | 조퇴 enum 이름 통일 또는 매핑 |
-| 학습 기록 경로 | `/api/study-records` | `/api/v1/cohorts/{cohortId}/study-records` | `cohortId` 기반으로 API 래퍼 수정 |
+| 학습 기록 경로 | `/api/study-records` | `/api/v1/cohorts/{cohort-id}/study-records` | `cohortId` 기반으로 API 래퍼 수정 |
 | 학습 기록 모델 | 구간 기록 `durationSeconds`, `elapsedSeconds`, `tags` | `date`, `startTime`, `endTime`, `studySeconds`, `version` | 현재 프론트 구간 기록 UI와 백엔드 모델 간 변환 방식 결정 |
 | 타이머 쓰기 | 단순 start/pause 예상 | `X-Command-Id` 헤더 필요 | 프론트에서 요청마다 UUID 생성 필요 |
 | 학습 기록 삭제 | 미정 | `X-Command-Id`, `X-RESOURCE-VERSION` 필요 | 삭제 UI 추가 시 version 관리 필요 |
@@ -48,7 +48,7 @@
 
 | 영역 | 추가/확정된 백엔드 API | 프론트 반영 방향 |
 | --- | --- | --- |
-| 출결 정책 | `GET /api/cohorts/{cohortId}/attendance-policy`, `PUT /api/cohorts/{cohortId}/attendance-policy` | 관리자 화면에서 출석 기준 시간 설정이 필요하면 이 API 기준으로 연동 |
+| 출결 정책 | `GET /api/cohorts/{cohort-id}/attendance-policy`, `PUT /api/cohorts/{cohort-id}/attendance-policy` | 관리자 화면에서 출석 기준 시간 설정이 필요하면 이 API 기준으로 연동 |
 | 캐릭터 목록 | `GET /gamification/characters` | 캐릭터 선택 화면의 하드코딩 목록을 서버 목록으로 대체 가능 |
 | 대표 캐릭터 생성 | `POST /gamification/characters/representative` | 선택 완료 시 `gameCharacterId`, `nickname`으로 저장 |
 | 홈/성장/퀘스트 | `/gamification/home`, `/gamification/quests/daily`, `/gamification/progression` | 홈 요약과 퀘스트 API는 `/api` prefix 예외 처리 필요 |
@@ -97,14 +97,14 @@
 | --- | --- | --- |
 | User | `GET /api/users/me/profile`에서 `approvedCohort.cohortId` 제공 확정 | 기수별 API 호출 전 이 값을 캐싱해서 사용 |
 | User | `PATCH /api/users/me/nickname` | 닉네임 설정/변경 화면은 이 API로 연결 |
-| Cohort | `GET /api/cohorts/{cohortId}/audit-logs` | 관리자 감사 로그 화면의 로컬 저장소 대체 |
+| Cohort | `GET /api/cohorts/{cohort-id}/audit-logs` | 관리자 감사 로그 화면의 로컬 저장소 대체 |
 | Cohort | 출결 정책 요청/응답 필드 확정 | 관리자 출결 기준 설정 시 `timezone`, `scheduledStartTime`, `scheduledEndTime`, `absenceCutoffTime`, `allowedAwayMinutes` 사용 |
 | Community | multipart 게시글 생성/수정 지원 | 첨부파일 UI 추가 시 `post` JSON part와 `attachments` 파일 part로 전송 |
-| Community | 게시글 고정 `PATCH /api/community/posts/{postId}/pin` | 관리자/공지 고정 기능 추가 가능 |
+| Community | 게시글 고정 `PATCH /api/community/posts/{post-id}/pin` | 관리자/공지 고정 기능 추가 가능 |
 | Gamification | 진행도 `GET /gamification/progression` | 홈/진행 화면에서 `studySeconds`, 4/6/8시간 달성, weekday streak 표시 가능 |
 | Ranking | `GET /rankings/study` | 학습 시간 랭킹 화면 추가 시 사용 |
 | Realtime | Presence snapshot `GET /api/cohorts/me/presence` | MVP는 snapshot 먼저 붙이고 WebSocket은 이후 확장 |
-| Realtime | WebSocket/STOMP 경로 확정 | `/ws`, `/app/presence/heartbeat`, `/topic/cohorts/{cohortId}/presence`, `/user/queue/notifications` |
+| Realtime | WebSocket/STOMP 경로 확정 | `/ws`, `/app/presence/heartbeat`, `/topic/cohorts/{cohort-id}/presence`, `/user/queue/notifications` |
 | Telegram | 텔레그램 링크/알림 API | 설정 화면에 텔레그램 연동 기능 추가 시 사용 |
 
 Handoff 기준으로 기존 가정에서 조정할 내용:

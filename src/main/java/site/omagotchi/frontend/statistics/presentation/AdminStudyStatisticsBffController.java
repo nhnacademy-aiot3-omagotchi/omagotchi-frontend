@@ -15,7 +15,7 @@ import java.time.LocalDate;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/bff/v1/admin/cohorts/{cohortId}/study-statistics")
+@RequestMapping("/bff/v1/admin/cohorts/{cohort-id}/study-statistics")
 public class AdminStudyStatisticsBffController {
 
     private final LearningProxyBffService proxy;
@@ -23,7 +23,7 @@ public class AdminStudyStatisticsBffController {
     @GetMapping("/today")
     public JsonNode getToday(
             HttpServletRequest request,
-            @PathVariable Long cohortId
+            @PathVariable("cohort-id") Long cohortId
     ) {
         return proxy.execute(request, context -> context.service()
                 .getStudyStatisticsToday(context.bearerToken(), cohortId));
@@ -32,7 +32,7 @@ public class AdminStudyStatisticsBffController {
     @GetMapping("/trend")
     public JsonNode getTrend(
             HttpServletRequest request,
-            @PathVariable Long cohortId,
+            @PathVariable("cohort-id") Long cohortId,
             @RequestParam String window
     ) {
         return proxy.execute(request, context -> context.service()
@@ -42,7 +42,7 @@ public class AdminStudyStatisticsBffController {
     @GetMapping("/members")
     public JsonNode getMembers(
             HttpServletRequest request,
-            @PathVariable Long cohortId,
+            @PathVariable("cohort-id") Long cohortId,
             @RequestParam String window,
             @RequestParam(required = false) Integer page,
             @RequestParam(required = false) Integer size,
@@ -59,11 +59,11 @@ public class AdminStudyStatisticsBffController {
                 ));
     }
 
-    @GetMapping("/members/{cohortMembershipId}/overview")
+    @GetMapping("/members/{cohort-membership-id}/overview")
     public JsonNode getMemberOverview(
             HttpServletRequest request,
-            @PathVariable Long cohortId,
-            @PathVariable Long cohortMembershipId,
+            @PathVariable("cohort-id") Long cohortId,
+            @PathVariable("cohort-membership-id") Long cohortMembershipId,
             @RequestParam String window
     ) {
         return proxy.execute(request, context -> context.service()
@@ -75,11 +75,11 @@ public class AdminStudyStatisticsBffController {
                 ));
     }
 
-    @GetMapping("/members/{cohortMembershipId}/records")
+    @GetMapping("/members/{cohort-membership-id}/records")
     public JsonNode getMemberDailyRecords(
             HttpServletRequest request,
-            @PathVariable Long cohortId,
-            @PathVariable Long cohortMembershipId,
+            @PathVariable("cohort-id") Long cohortId,
+            @PathVariable("cohort-membership-id") Long cohortMembershipId,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date
     ) {
         return proxy.execute(request, context -> context.service()

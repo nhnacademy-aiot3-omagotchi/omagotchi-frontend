@@ -32,8 +32,8 @@ public class CohortBffController {
                 .getCohorts(context.bearerToken()));
     }
 
-    @GetMapping("/{cohortId}")
-    public JsonNode getCohort(HttpServletRequest request, @PathVariable Long cohortId) {
+    @GetMapping("/{cohort-id}")
+    public JsonNode getCohort(HttpServletRequest request, @PathVariable("cohort-id") Long cohortId) {
         return proxy.execute(request, context -> context.service()
                 .getCohort(context.bearerToken(), cohortId));
     }

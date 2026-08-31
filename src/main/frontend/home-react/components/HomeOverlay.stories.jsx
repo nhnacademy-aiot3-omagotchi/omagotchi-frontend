@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { expect, fireEvent, fn, userEvent, waitFor, within } from "storybook/test";
 import { createStudyRecords } from "../../../resources/static/js/home/studyRecords.js";
+import { renderServiceIntegrationPending } from "../../../resources/static/js/serviceIntegrationState.js";
 import { HomeOverlay } from "./HomeOverlay.jsx";
 
 function localDateKey(date) {
@@ -63,24 +64,29 @@ const storyApi = { createRecord: createStoryRecord, updateRecord: updateStoryRec
 
 function StudyRecordsOverlayStory({ records = storyRecords, api, selectedDateKey }) {
   const hostRef = useRef(null);
-  const storageKeyRef = useRef(null);
-
-  if (!storageKeyRef.current) {
-    storageKeyRef.current = `storybook:home-study-records:${globalThis.crypto?.randomUUID?.() || Date.now()}`;
-  }
 
   useEffect(() => {
     const target = hostRef.current?.querySelector("[data-story-study-records]");
     if (!target) return undefined;
 
-    const storageKey = storageKeyRef.current;
-    const previous = localStorage.getItem(storageKey);
-    localStorage.setItem(storageKey, JSON.stringify(records));
-
     const controller = createStudyRecords({
-      storageKey,
-      getElapsedSeconds: () => 0,
-      api
+      api: {
+        ...api,
+        getDailyRecords: async (date) => records.filter((record) => record.aggregationDate === date),
+        getMonthlySummary: async (month) => {
+          const monthlyRecords = records.filter((record) => record.aggregationDate.startsWith(month));
+          const dailyTotals = Object.entries(monthlyRecords.reduce((totals, record) => ({
+            ...totals,
+            [record.aggregationDate]: (totals[record.aggregationDate] || 0) + record.studySeconds
+          }), {})).map(([aggregationDate, studySeconds]) => ({aggregationDate, studySeconds}));
+          return {
+            aggregationMonth: month,
+            totalStudySeconds: monthlyRecords.reduce((total, record) => total + record.studySeconds, 0),
+            dailyTotals
+          };
+        },
+        deleteRecord: async () => undefined
+      }
     });
     const handleClick = (event) => controller.handleClick(event);
     const handleInput = (event) => controller.handleInput(event);
@@ -97,8 +103,6 @@ function StudyRecordsOverlayStory({ records = storyRecords, api, selectedDateKey
       target.removeEventListener("input", handleInput);
       target.removeEventListener("submit", handleSubmit);
       target.replaceChildren();
-      if (previous === null) localStorage.removeItem(storageKey);
-      else localStorage.setItem(storageKey, previous);
     };
   }, [api, records, selectedDateKey]);
 
@@ -166,100 +170,6 @@ const meta = {
 
 export default meta;
 
-const runtimeCohortContent = `
-  <section class="ui-cohort-shell" data-cohort-state="approved">
-    <span class="ui-menu-eyebrow">나의 기수</span>
-    <header class="ui-cohort-summary">
-      <div class="ui-cohort-summary__copy">
-        <h3>NHN 아카데미 11기</h3>
-        <p>2026-03-02 — 2026-09-18</p>
-        <span class="ui-menu-chip">운영 중</span>
-      </div>
-    </header>
-    <section class="ui-cohort-party-zone" aria-labelledby="storybook-runtime-party-title">
-      <header><div><h3 id="storybook-runtime-party-title">11기 내 파티</h3><p>같은 기수 멤버와 최대 8명까지 함께할 수 있어요.</p></div></header>
-      <div data-home-party-app></div>
-    </section>
-    <section class="ui-cohort-affiliation-note" aria-label="기수 소속 안내">
-      <strong>과정 소속 안내</strong>
-      <p>과정 중에는 다른 기수로 변경할 수 없습니다. 중도 참여 포기가 필요하면 관리자에게 문의해 주세요.</p>
-    </section>
-  </section>
-`;
-
-const runtimeCohortMembers = [
-  { id: "current-user", name: "m00n", email: "m00n@example.com", status: "present", characterImage: "/images/characters/study/study.png" },
-  { id: "lucky", name: "LUCKY", email: "lucky@example.com", status: "present", characterImage: "/images/characters/caffeine/pistachio.png" },
-  { id: "nabi", name: "NABI", email: "nabi@example.com", status: "offline", characterImage: "/images/characters/sprout/cream_can.png" }
-];
-
-function RuntimeCohortOverlayStory() {
-  const hostRef = useRef(null);
-
-  useEffect(() => {
-    let disposed = false;
-    const previousProfile = globalThis.OmagotchiProfile;
-    const previousApi = globalThis.OmagotchiApi;
-
-    globalThis.sessionStorage.removeItem("omagotchiSpaceState");
-    globalThis.OmagotchiProfile = {
-      userId: "current-user",
-      nickname: "m00n",
-      approvedCohort: { cohortId: 11, name: "NHN 아카데미 11기", members: runtimeCohortMembers },
-      currentCharacter: { nickname: "m00n", type: "study", colorId: "original", assetKey: "study/study" }
-    };
-    globalThis.OmagotchiApi = { attendance: { getToday: async () => ({ checkedInAt: new Date().toISOString() }) } };
-
-    import("../../../resources/static/js/spaceRoom.js?storybook-runtime-overlay")
-      .then(() => {
-        if (disposed) return;
-        globalThis.OmagotchiSpaceRoom.updateData({
-          cohortMembers: runtimeCohortMembers,
-          party: {
-            id: "runtime-party",
-            name: "집에 가고 싶은 사람들",
-            masterId: "current-user",
-            members: runtimeCohortMembers.slice(0, 2)
-          }
-        });
-        const target = hostRef.current?.querySelector("[data-home-party-app]");
-        globalThis.OmagotchiSpaceRoom.mountParty(target);
-        target?.querySelector("[data-party-open-detail]")?.click();
-      });
-
-    return () => {
-      disposed = true;
-      globalThis.sessionStorage.removeItem("omagotchiSpaceState");
-      globalThis.OmagotchiProfile = previousProfile;
-      globalThis.OmagotchiApi = previousApi;
-    };
-  }, []);
-
-  return (
-    <div ref={hostRef}>
-      <HomeOverlay
-        type="cohort"
-        meta={{ icon: "/images/app/cohort.png", title: "기수 · 팀", description: "기수 안에서 팀을 만들고 함께 성장하세요." }}
-        content={runtimeCohortContent}
-        onClose={() => {}}
-      />
-    </div>
-  );
-}
-
-export const CohortRuntimeOverlay = {
-  name: "기수 · 팀 실제 Home 오버레이",
-  render: () => <RuntimeCohortOverlayStory />,
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-    await waitFor(() => expect(canvas.getByRole("button", { name: "파티 나가기" })).toBeInTheDocument());
-    expect(canvas.getByRole("dialog", { name: "기수 · 팀" })).toBeInTheDocument();
-    expect(canvas.getByText("집에 가고 싶은 사람들")).toBeInTheDocument();
-    expect(canvas.getByRole("button", { name: "파티 해체" })).toBeInTheDocument();
-    expect(canvas.queryByText("마스터 전용")).not.toBeInTheDocument();
-  }
-};
-
 export const Help = {};
 export const Progress = {
   args: {
@@ -274,7 +184,10 @@ export const Progress = {
       </section>
       <section data-overlay-panel="achievements">
         <div class="overlay-section-label"><strong>업적</strong><span></span><em>달성 기록</em></div>
-        <div class="overlay-empty-state" role="status"><strong>업적 기능은 아직 준비되지 않았습니다.</strong><p>기능이 준비되면 달성 기록을 확인할 수 있습니다.</p></div>
+        ${renderServiceIntegrationPending({
+          title: "서비스 연동 대기",
+          description: "업적 API가 연결되면 실제 달성 기록을 표시합니다."
+        })}
       </section>
       <section data-overlay-panel="leaders">
         <div class="overlay-section-label"><strong>명예의 전당</strong><span></span><em>전체 학습 시간</em></div>
@@ -284,9 +197,10 @@ export const Progress = {
       </section>
       <section data-overlay-panel="timeline">
         <div class="overlay-section-label"><strong>타임라인</strong><span></span><em>최근 활동</em></div>
-        <ul class="overlay-state-list overlay-timeline-list" aria-label="최근 활동">
-          <li><div><strong>활동 기록이 없습니다.</strong><p>출석과 학습 기록이 생기면 시간순으로 표시됩니다.</p></div><em>최근 활동</em></li>
-        </ul>
+        ${renderServiceIntegrationPending({
+          title: "서비스 연동 대기",
+          description: "활동 이력 API가 연결되면 실제 출석과 학습 기록을 시간순으로 표시합니다."
+        })}
       </section>
       <section data-overlay-panel="stats">
         <div class="overlay-section-label"><strong>학습 통계</strong><span></span><em>나의 기록</em></div>
@@ -344,7 +258,7 @@ export const StudyRecords = {
   parameters: {
     docs: {
       description: {
-        story: "Home에서 사용하는 실제 createStudyRecords 렌더러를 마운트합니다. 조회 fixture는 Storybook localStorage에 격리하고 수정 요청 계약은 Story mock 함수로 검증합니다."
+        story: "Home에서 사용하는 실제 createStudyRecords 렌더러를 마운트합니다. 조회·수정 요청은 Storybook 전용 API fixture로 계약을 검증합니다."
       }
     }
   }
