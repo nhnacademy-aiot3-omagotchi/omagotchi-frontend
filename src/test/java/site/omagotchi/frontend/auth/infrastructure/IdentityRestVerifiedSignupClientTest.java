@@ -74,7 +74,7 @@ class IdentityRestVerifiedSignupClientTest {
                           "name": "오마고치"
                         }
                         """))
-                .andRespond(withStatus(HttpStatus.OK)
+                .andRespond(withStatus(HttpStatus.ACCEPTED)
                         .contentType(MediaType.APPLICATION_JSON)
                         .body("""
                                 {
@@ -279,7 +279,7 @@ class IdentityRestVerifiedSignupClientTest {
                 Arguments.of(
                         "OTP 오류",
                         HttpStatus.BAD_REQUEST,
-                        "EMAIL_VERIFICATION_INVALID",
+                        "EMAIL_VERIFICATION_INVALID_CHALLENGE",
                         AuthErrorCode.EMAIL_VERIFICATION_INVALID
                 ),
                 Arguments.of(
@@ -293,17 +293,17 @@ class IdentityRestVerifiedSignupClientTest {
 
     private static Stream<Arguments> invalidChallengeResponses() {
         return Stream.of(
-                Arguments.of(HttpStatus.ACCEPTED, """
+                Arguments.of(HttpStatus.OK, """
                         {"challengeId":"challenge-id","expiresInSeconds":600}
                         """),
-                Arguments.of(HttpStatus.OK, ""),
-                Arguments.of(HttpStatus.OK, """
+                Arguments.of(HttpStatus.ACCEPTED, ""),
+                Arguments.of(HttpStatus.ACCEPTED, """
                         {"expiresInSeconds":600}
                         """),
-                Arguments.of(HttpStatus.OK, """
+                Arguments.of(HttpStatus.ACCEPTED, """
                         {"challengeId":" ","expiresInSeconds":600}
                         """),
-                Arguments.of(HttpStatus.OK, """
+                Arguments.of(HttpStatus.ACCEPTED, """
                         {"challengeId":"challenge-id","expiresInSeconds":0}
                         """)
         );

@@ -202,7 +202,7 @@ class AuthBffMvcTest {
                                 """))
                 .andExpectAll(
                         status().isBadRequest(),
-                        jsonPath("$.code").value("EMAIL_VERIFICATION_INVALID")
+                        jsonPath("$.code").value("EMAIL_VERIFICATION_INVALID_CHALLENGE")
                 );
         verify(verifiedSignupService).signUp(command);
     }

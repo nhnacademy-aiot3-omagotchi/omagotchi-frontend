@@ -53,7 +53,7 @@ public enum AuthErrorCode implements ErrorCode {
     ),
     EMAIL_VERIFICATION_INVALID(
             ErrorType.INVALID_INPUT,
-            "EMAIL_VERIFICATION_INVALID",
+            "EMAIL_VERIFICATION_INVALID_CHALLENGE",
             "인증 코드가 올바르지 않거나 만료되었습니다."
     ),
     EMAIL_VERIFICATION_COOLDOWN_ACTIVE(

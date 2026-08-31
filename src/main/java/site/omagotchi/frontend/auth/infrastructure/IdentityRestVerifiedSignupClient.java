@@ -53,7 +53,7 @@ public class IdentityRestVerifiedSignupClient implements IdentityVerifiedSignupC
                         );
                         }
                 );
-        requireStatus(response, HttpStatus.OK, "Signup email OTP");
+        requireStatus(response, HttpStatus.ACCEPTED, "Signup email OTP");
         return requireChallenge(response, "Signup email OTP");
     }
 

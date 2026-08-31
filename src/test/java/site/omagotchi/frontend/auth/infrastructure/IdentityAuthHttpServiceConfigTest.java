@@ -154,7 +154,7 @@ class IdentityAuthHttpServiceConfigTest {
                                 StandardCharsets.UTF_8
                         )
                 ))
-                .andRespond(withStatus(HttpStatus.OK)
+                .andRespond(withStatus(HttpStatus.ACCEPTED)
                         .contentType(MediaType.APPLICATION_JSON)
                         .body("""
                                 {
@@ -205,7 +205,7 @@ class IdentityAuthHttpServiceConfigTest {
                 .andExpect(method(HttpMethod.POST))
                 .andExpect(header(HttpHeaders.AUTHORIZATION, frontendBasicCredential()))
                 .andExpect(content().json(SIGNUP_DETAILS))
-                .andRespond(withStatus(HttpStatus.OK)
+                .andRespond(withStatus(HttpStatus.ACCEPTED)
                         .contentType(MediaType.APPLICATION_JSON)
                         .body(CHALLENGE_RESPONSE));
         server.expect(once(), requestTo("http://localhost:8083/api/v2/auth/signup"))
@@ -352,7 +352,7 @@ class IdentityAuthHttpServiceConfigTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .body("""
                                 {
-                                  "code": "EMAIL_VERIFICATION_INVALID",
+                                  "code": "EMAIL_VERIFICATION_INVALID_CHALLENGE",
                                   "message": "인증 코드가 올바르지 않거나 만료되었습니다.",
                                   "path": "/api/v2/users/me/password"
                                 }
@@ -363,11 +363,12 @@ class IdentityAuthHttpServiceConfigTest {
                         .session(session)
                         .with(user("user"))
                         .with(csrf())
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer browser-supplied-token")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(PASSWORD_CHANGE))
                 .andExpectAll(
                         status().isBadRequest(),
-                        jsonPath("$.code").value("EMAIL_VERIFICATION_INVALID")
+                        jsonPath("$.code").value("EMAIL_VERIFICATION_INVALID_CHALLENGE")
                 );
 
         assertThat(session.isInvalid()).isFalse();

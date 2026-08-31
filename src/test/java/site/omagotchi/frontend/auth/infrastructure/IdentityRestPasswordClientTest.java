@@ -137,7 +137,7 @@ class IdentityRestPasswordClientTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .body("""
                                 {
-                                  "code": "EMAIL_VERIFICATION_INVALID",
+                                  "code": "EMAIL_VERIFICATION_INVALID_CHALLENGE",
                                   "message": "인증 코드가 올바르지 않습니다.",
                                   "path": "/api/v2/users/me/password"
                                 }
