@@ -48,6 +48,7 @@ Browser
   - 인증 사용자의 조회·변경 요청은 `/bff/v1/**`을 사용한다.
   - Frontend는 Session에서 Access JWT를 찾아 Identity의 본인 자원 API로 전달한다.
   - 비밀번호 변경 성공 후에는 기존 Browser Session을 폐기한다.
+  - 계정 탈퇴 성공 후에도 기존 Browser Session을 폐기한다.
 - 실제 Route·Controller·보호 조건
   - `WebConfig`, 인증 Page Controller, BFF `@RestController`, `SecurityConfig`에서 확인한다.
   - 온보딩 문서에 전체 Route 현황을 복제하지 않는다.
@@ -453,6 +454,24 @@ PATCH /bff/v1/users/me/password
 - Login Page는 허용 목록의 Code만 고정 안내 문구로 변환하고 나머지는 무시합니다.
 - 기존 인증 Session ID와 Token Bundle은 성공 뒤 재사용하지 않습니다.
 
+### 인증 사용자 계정 탈퇴
+
+```text
+DELETE /bff/v1/users/me + 현재 비밀번호
+→ Identity DELETE /api/v1/users/me
+→ 계정 WITHDRAWN 전환·모든 Refresh Session 폐기 성공
+→ Frontend 기존 인증 Session·SecurityContext 폐기
+→ Browser가 /login?notice=account-withdrawn로 이동
+→ LoginPageController가 허용된 안내 Code를 고정 문구로 변환
+```
+
+- Frontend는 현재 비밀번호와 명시적 확인을 받은 뒤 요청합니다.
+- 계정 상태 전이, 마지막 이용 가능 SYSTEM_ADMIN 보호와 Refresh Session 폐기는 Identity가 소유합니다.
+- Identity 실패 시 Frontend는 현재 Browser Session을 유지합니다.
+- Identity 성공 뒤 Redis Session 삭제가 실패하면 응답은 `503`이지만 탈퇴는 이미 완료됐을 수 있습니다.
+- 위 부분 성공에서는 Redis Session에 남은 Access JWT가 기존 만료 시각까지 최대 15분 유효할 수 있습니다.
+- `notice`는 화면 안내용 허용 Code일 뿐 탈퇴 성공 여부의 근거가 아닙니다.
+
 ## 10. Identity HTTP 경계
 
 ```text
@@ -504,6 +523,7 @@ AuthenticationService
 
 - Login 성공 뒤 Redis 저장 실패의 Refresh Token Family 보상
 - Identity의 비밀번호 변경은 성공했지만 Redis 세션 폐기는 실패한 경우의 보상 처리
+- Identity의 계정 탈퇴는 성공했지만 Redis 세션 폐기는 실패한 경우의 보상 처리
 - Learning 기반 관리자 소속 확인
 - 이메일 기반 비밀번호 재설정
 

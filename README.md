@@ -78,6 +78,7 @@ SPRING_PROFILES_ACTIVE=local ./mvnw spring-boot:run
 - Identity Refresh 응답 계약 위반: Cookie와 Session을 best-effort로 폐기한 뒤 재로그인 요구
 - 새 Token Bundle 저장 결과 불명확: Cookie와 Session을 best-effort로 폐기한 뒤 재로그인 요구
 - 비밀번호 변경 부분 성공: Identity에서 비밀번호가 변경된 뒤 Redis 장애가 발생하면 Frontend 세션 정리는 실패하고 응답은 `503`일 수 있음
+- 계정 탈퇴 부분 성공: Identity에서 탈퇴가 완료된 뒤 Redis 장애가 발생하면 Frontend 세션 정리는 실패하고 응답은 `503`일 수 있음. 남은 Session Access JWT는 기존 만료 시각까지 최대 15분 유효할 수 있음
 - 레거시 관리자 인증 파일: Runtime Route·API 제거 상태
 
 ## 문서
