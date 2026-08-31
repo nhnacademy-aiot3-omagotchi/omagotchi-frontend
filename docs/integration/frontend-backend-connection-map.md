@@ -38,7 +38,7 @@ React·Thymeleaf DOM
 | 업적 | 연결하지 않음 | 준비 중 빈 상태 | `data-overlay-panel="achievements"` | 기능·API가 확정된 뒤 별도 연결 |
 | 설정 | 기존 Form·정적 상태 | `home.js` | `data-logout-form`, `data-logout` | Home Overlay는 로그아웃만 담당하며 계정·알림은 `/settings/account`로 이동 |
 | 계정 설정 | `OmagotchiApi.account` | `accountSettings.js` | `data-account-*`, `data-settings-*` | 연결 완료 |
-| 텔레그램 알림 | `OmagotchiApi.telegram` | `accountSettings.js` | `data-telegram-*` | 연결 완료. 봇 사용자명과 Webhook 등록은 배포 환경에서 확인 |
+| 텔레그램 알림 | `OmagotchiApi.telegram` | `accountSettings.js`, `manager/dashboard/panels/telegramPanel.js` | `data-telegram-*`, `data-manager-telegram-*` | 연결 완료. BFF 경로는 `/bff/v1/me/telegram`으로 단일화. 봇 사용자명과 Webhook 등록은 배포 환경에서 확인 |
 | BGM | Backend 대상 아님 | `home/bgm.js` | 재생·목록·음량 상태 | 정적 `bgm.json`과 브라우저 재생 설정 유지 |
 
 ## 기능별 UI 상태 계약

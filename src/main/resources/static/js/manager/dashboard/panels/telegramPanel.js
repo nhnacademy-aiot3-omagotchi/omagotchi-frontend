@@ -11,11 +11,6 @@
         return window.OmagotchiApi?.telegram || null;
     }
 
-    /** 미연동은 404다. 오류가 아니라 정상 상태이므로 빈 값으로 바꿔 받는다. */
-    function isNotLinked(cause) {
-        return cause?.status === 404;
-    }
-
     function create({ root, setBubble }) {
         if (!root) throw new Error("Telegram panel root is required.");
         if (!root.querySelector("[data-manager-telegram-react-root]")) {
@@ -74,10 +69,9 @@
             } catch (cause) {
                 if (sequence !== loadSequence) return;
                 link = null;
-                if (!isNotLinked(cause)) {
-                    error = cause?.message || "연동 상태를 불러오지 못했습니다.";
-                    warn("텔레그램 연동 상태를\n불러오지 못했습니다.", cause);
-                }
+                // 미연동은 BFF가 204로 바꿔 주므로 여기까지 오지 않는다. 남은 것은 실제 오류다.
+                error = cause?.message || "연동 상태를 불러오지 못했습니다.";
+                warn("텔레그램 연동 상태를\n불러오지 못했습니다.", cause);
             } finally {
                 if (sequence === loadSequence) {
                     loaded = true;

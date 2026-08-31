@@ -139,7 +139,7 @@ export function initializeTelegramSettings(root = document.querySelector("[data-
         setFeedback(feedback, "");
         try {
             // 미연동은 204라 본문이 비어 온다. 오류가 아니므로 catch로 다루지 않는다.
-            const link = await api.getLink();
+            const link = await api.getMyLink();
             if (isStale(seq)) return;
             if (link) renderLinked(link);
             else renderUnlinked();
@@ -201,7 +201,7 @@ export function initializeTelegramSettings(root = document.querySelector("[data-
         const seq = beginOperation();
         setFeedback(feedback, "");
         try {
-            const updated = await api.setNotification(next);
+            const updated = await api.updateNotification(next);
             if (isStale(seq)) return;
             renderLinked(updated || {...previous, notificationEnabled: next});
             setFeedback(feedback, next ? "알림을 켰습니다." : "알림을 껐습니다.", "success");

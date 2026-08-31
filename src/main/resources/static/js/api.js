@@ -143,16 +143,6 @@
                 body: {currentPassword, newPassword}
             })
         },
-        telegram: {
-            // 미연동이면 BFF가 204를 주므로 본문이 빈 문자열이다. 호출부는 falsy로 판정한다.
-            getLink: () => request("/telegram/link"),
-            issueLinkToken: () => request("/telegram/link-token", {method: "POST"}),
-            setNotification: (enabled) => request("/telegram/link/notification", {
-                method: "PATCH",
-                body: {enabled}
-            }),
-            disconnect: () => request("/telegram/link", {method: "DELETE"})
-        },
         profile: {
             get: () => request("/me/profile"),
             updateNickname: (nickname) => request("/me/nickname", {
@@ -337,7 +327,7 @@
         },
         // 응답 필드는 Learning Service 계약 그대로다. 화면이 그 이름으로 읽으므로 여기서 바꾸지 않는다.
         telegram: {
-            // 미연동이면 404다. 호출부가 그것을 정상 상태로 다룬다.
+            // 미연동이면 BFF가 204를 주므로 본문이 빈 문자열이다. 호출부는 falsy로 판정한다.
             getMyLink: () => request("/me/telegram/link"),
             issueLinkToken: () => request("/me/telegram/link-token", {method: "POST"}),
             updateNotification: (enabled) => request("/me/telegram/link/notification", {
