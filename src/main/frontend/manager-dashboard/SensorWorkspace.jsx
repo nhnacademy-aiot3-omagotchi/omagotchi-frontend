@@ -726,6 +726,21 @@ function SensorListContent({ sensors, spaces, onAdd, onEdit }) {
 // 서버 검증: @Pattern("[0-9a-f]+") @Size(max = 32)
 const EUI_PATTERN = "[0-9a-f]{1,32}";
 
+/**
+ * 방향 조사를 받침에 맞춰 고른다. 받침이 없거나 ㄹ이면 "로", 아니면 "으로".
+ *
+ * 공간 이름은 관리자가 자유롭게 짓는다 — "실습실"과 "강의동"이 같은 조사를 쓸 수 없다.
+ * 한글 음절이 아니면(예: "A101") 판정할 근거가 없으므로 "(으)로"로 둔다.
+ */
+function directionParticle(word) {
+  const last = word?.trim().slice(-1);
+  if (!last) return "로";
+  const code = last.charCodeAt(0);
+  if (code < 0xac00 || code > 0xd7a3) return "(으)로";
+  const jongseong = (code - 0xac00) % 28;
+  return jongseong === 0 || jongseong === 8 ? "로" : "으로";
+}
+
 function SensorDialog({ mode, sensor, spaces, onClose, onSave, onClaim }) {
   const isEdit = mode === "edit";
   // SensorDevice의 displayName·installationPoint·spaceId는 nullable이다.
@@ -769,6 +784,9 @@ function SensorDialog({ mode, sensor, spaces, onClose, onSave, onClaim }) {
     }
   }
 
+  const claimTargetName =
+      spaces.find((space) => space.spaceId === form.spaceId)?.name ?? "선택한 공간";
+
   return (
     <div className="sensor-dialog-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
       <section className="sensor-dialog" role="dialog" aria-modal="true" aria-labelledby="sensor-dialog-title">
@@ -788,9 +806,8 @@ function SensorDialog({ mode, sensor, spaces, onClose, onSave, onClaim }) {
             {claimable && (
               <p className="sensor-dialog-conflict sensor-field--wide" role="alert">
                 <span>
-                  이미 등록된 센서입니다. 이전 기수에서 쓰던 센서라면
-                  <b> {spaces.find((space) => space.spaceId === form.spaceId)?.name ?? "선택한 공간"}</b>
-                  으로 인계할 수 있습니다.
+                  이미 등록된 센서입니다. 이전 기수에서 쓰던 센서라면{" "}
+                  <b>{claimTargetName}</b>{directionParticle(claimTargetName)} 인계할 수 있습니다.
                 </span>
                 <button type="button" className="sensor-claim-button" onClick={claim} disabled={saving}>
                   {saving ? "인계 중…" : "인계하기"}
