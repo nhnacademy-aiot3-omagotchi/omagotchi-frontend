@@ -177,6 +177,39 @@
             checkIn: () => request("/attendance/check-in", { method: "POST" }),
             checkOut: () => request("/attendance/check-out", { method: "POST" })
         },
+        spaces: {
+            list: () => request("/spaces"),
+            startOccupancy: (spaceId) => request(`/spaces/${encodeURIComponent(spaceId)}/occupancies`, {method: "POST"}),
+            extendOccupancy: (spaceId) => request(`/spaces/${encodeURIComponent(spaceId)}/occupancies/extend`, {method: "POST"}),
+            releaseOccupancy: (spaceId) => request(`/spaces/${encodeURIComponent(spaceId)}/occupancies/release`, {method: "POST"}),
+            leaveOccupancy: (spaceId) => request(`/spaces/${encodeURIComponent(spaceId)}/occupancies/participants/me`, {method: "DELETE"}),
+            getOccupancyParticipants: (spaceId) => request(`/spaces/${encodeURIComponent(spaceId)}/occupancies/participants`),
+            searchOccupancyParticipantCandidates: (spaceId, query) => request(withQuery(
+                `/spaces/${encodeURIComponent(spaceId)}/occupancies/participants/candidates`,
+                {query}
+            )),
+            addOccupancyParticipant: (spaceId, targetUserId) => request(
+                `/spaces/${encodeURIComponent(spaceId)}/occupancies/participants`,
+                {method: "POST", body: {targetUserId}}
+            ),
+            removeOccupancyParticipant: (spaceId, targetUserId) => request(
+                `/spaces/${encodeURIComponent(spaceId)}/occupancies/participants/${encodeURIComponent(targetUserId)}`,
+                {method: "DELETE"}
+            ),
+            requestVacancyAlert: (spaceId) => request(`/spaces/${encodeURIComponent(spaceId)}/vacancy-alerts`, {method: "POST"}),
+            getMyVacancyAlerts: () => request("/vacancy-alerts/me"),
+            cancelVacancyAlert: (alertId) => request(`/vacancy-alerts/${encodeURIComponent(alertId)}`, {method: "DELETE"})
+        },
+        adminOccupancies: {
+            list: () => request("/admin/spaces/occupancies"),
+            participants: (spaceId) => request(
+                `/admin/spaces/${encodeURIComponent(spaceId)}/occupancies/participants`
+            ),
+            forceRelease: (spaceId) => request(
+                `/admin/spaces/${encodeURIComponent(spaceId)}/occupancies/force-release`,
+                {method: "POST"}
+            )
+        },
         ai: {
             streamChat: (question, {signal, model = "GEMINI"} = {}) => requestResponse(
                 withQuery("/ai/chat", {question, model}),
@@ -294,6 +327,15 @@
                 body: communityFormData(post, attachments)
             }),
             deletePost: (postId) => request(`/community/posts/${encodeURIComponent(postId)}`, {method: "DELETE"})
+        },
+        adminSpaces: {
+            create: (payload) => request("/admin/spaces", {method: "POST", body: payload}),
+            update: (spaceId, payload) => request(`/admin/spaces/${encodeURIComponent(spaceId)}`, {method: "PUT", body: payload}),
+            activate: (spaceId) => request(`/admin/spaces/${encodeURIComponent(spaceId)}/activate`, {method: "POST"}),
+            deactivate: (spaceId, inactiveReason) => request(`/admin/spaces/${encodeURIComponent(spaceId)}/deactivate`, {method: "POST", body: {inactiveReason}}),
+            remove: (spaceId) => request(`/admin/spaces/${encodeURIComponent(spaceId)}`, {method: "DELETE"}),
+            assignCohort: (spaceId, cohortId) => request(`/admin/spaces/${encodeURIComponent(spaceId)}/cohort`, {method: "PUT", body: {cohortId}}),
+            unassignCohort: (spaceId) => request(`/admin/spaces/${encodeURIComponent(spaceId)}/cohort`, {method: "DELETE"})
         },
         manager: {
             getCohorts: () => request("/admin/cohorts"),

@@ -888,8 +888,8 @@ export function SensorWorkspace({
       <section className="sensor-workspace" aria-label="관리자 센서 워크스페이스">
         <Tabs.Root value={activeTab} onValueChange={setActiveTab}>
           <Tabs.List className="sensor-tabs" aria-label="센서 관리 메뉴">
-            <Tabs.Trigger value="dashboard">대시보드</Tabs.Trigger>
-            <Tabs.Trigger value="sensors">센서 목록</Tabs.Trigger>
+            <Tabs.Trigger value="dashboard">센서 대시보드</Tabs.Trigger>
+            <Tabs.Trigger value="sensors">센서 관리</Tabs.Trigger>
             <Tabs.Trigger value="thresholds">임계값 설정</Tabs.Trigger>
           </Tabs.List>
           <div className="sensor-content-shell">

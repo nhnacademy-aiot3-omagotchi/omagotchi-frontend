@@ -1,10 +1,13 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
 import { SensorWorkspace } from "./SensorWorkspace.jsx";
+import { SpaceWorkspace } from "./SpaceWorkspace.jsx";
 import sensorWorkspaceCss from "./SensorWorkspace.css?inline";
 
-const CONTEXT_EVENT = "omagotchi:manager-sensors:context";
-const rootElement = document.querySelector("[data-manager-sensor-react-root]");
+const SENSOR_CONTEXT_EVENT = "omagotchi:manager-sensors:context";
+const SPACE_CONTEXT_EVENT = "omagotchi:manager-spaces:context";
+const sensorRootElement = document.querySelector("[data-manager-sensor-react-root]");
+const spaceRootElement = document.querySelector("[data-manager-space-react-root]");
 
 function installStyles() {
   if (document.querySelector("style[data-manager-sensor-react-styles]")) return;
@@ -23,7 +26,7 @@ function installStyles() {
  * - spaceThresholds : GET /api/v1/threshold-rules/spaces
  * - alertLog        : GET /api/v1/sensors/events 응답 본문
  */
-function normalizeContext(context = {}) {
+function normalizeSensorContext(context = {}) {
   const fn = (value) => (typeof value === "function" ? value : undefined);
   return {
     spaces: Array.isArray(context.spaces) ? context.spaces : [],
@@ -40,12 +43,36 @@ function normalizeContext(context = {}) {
   };
 }
 
-if (rootElement) {
+function normalizeSpaceContext(context = {}) {
+  const fn = (value) => (typeof value === "function" ? value : undefined);
+  return {
+    spaces: Array.isArray(context.spaces) ? context.spaces : [],
+    selectedCohortId: context.selectedCohortId ?? null,
+    loading: Boolean(context.loading),
+    error: context.error ? String(context.error) : null,
+    occupancies: Array.isArray(context.occupancies) ? context.occupancies : [],
+    occupancyLoading: Boolean(context.occupancyLoading),
+    occupancyError: context.occupancyError ? String(context.occupancyError) : null,
+    onSave: fn(context.onSave),
+    onChangeStatus: fn(context.onChangeStatus),
+    onDelete: fn(context.onDelete),
+    onChangeCohort: fn(context.onChangeCohort),
+    onLoadOccupancies: fn(context.onLoadOccupancies),
+    onLoadParticipants: fn(context.onLoadParticipants),
+    onForceEndOccupancy: fn(context.onForceEndOccupancy),
+    onRetry: fn(context.onRetry)
+  };
+}
+
+if (sensorRootElement || spaceRootElement) {
   installStyles();
-  const reactRoot = createRoot(rootElement);
+}
+
+if (sensorRootElement) {
+  const reactRoot = createRoot(sensorRootElement);
 
   function render(context) {
-    const normalized = normalizeContext(context);
+    const normalized = normalizeSensorContext(context);
     reactRoot.render(
       <SensorWorkspace
         spaces={normalized.spaces}
@@ -65,8 +92,22 @@ if (rootElement) {
     );
   }
 
-  window.addEventListener(CONTEXT_EVENT, (event) => render(event.detail));
+  window.addEventListener(SENSOR_CONTEXT_EVENT, (event) => render(event.detail));
   render(window.OmagotchiManagerSensorContext);
 
   window.OmagotchiManagerSensorIsland = Object.freeze({ render });
+}
+
+if (spaceRootElement) {
+  const reactRoot = createRoot(spaceRootElement);
+
+  function render(context) {
+    const normalized = normalizeSpaceContext(context);
+    reactRoot.render(<SpaceWorkspace {...normalized} embedded />);
+  }
+
+  window.addEventListener(SPACE_CONTEXT_EVENT, (event) => render(event.detail));
+  render(window.OmagotchiManagerSpaceContext);
+
+  window.OmagotchiManagerSpaceIsland = Object.freeze({ render });
 }
