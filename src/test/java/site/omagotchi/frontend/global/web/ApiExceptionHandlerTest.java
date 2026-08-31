@@ -106,6 +106,26 @@ class ApiExceptionHandlerTest {
     }
 
     @Test
+    @DisplayName("승인되지 않은 Learning 401도 기존 인증 세션을 폐기")
+    void invalidatesStaleSessionForUnapprovedLearningAuthenticationFailure() throws Exception {
+        MockHttpSession authenticatedSession = new MockHttpSession();
+
+        MvcResult result = mockMvc.perform(
+                        get("/bff/v1/test/errors/learning-unapproved-401")
+                                .session(authenticatedSession)
+                )
+                .andExpectAll(
+                        status().isBadGateway(),
+                        header().string(HttpHeaders.CACHE_CONTROL, "no-store"),
+                        jsonPath("$.code").value("COMMON_DOWNSTREAM_INVALID_RESPONSE")
+                )
+                .andReturn();
+
+        assertThat(authenticatedSession.isInvalid()).isTrue();
+        assertThat(result.getRequest().getSession(false)).isNull();
+    }
+
+    @Test
     @DisplayName("BFF Business 401의 기존 인증 세션 폐기")
     void invalidatesStaleSessionForBusinessAuthenticationFailure() throws Exception {
         assertAuthenticationFailureExpiresSession(
@@ -142,6 +162,20 @@ class ApiExceptionHandlerTest {
                         content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON),
                         jsonPath("$.code").value("COHORT_MANAGER_PERIOD_CONFLICT"),
                         jsonPath("$.path").value("/bff/v1/test/errors/cohort-manager-period-conflict")
+                );
+    }
+
+    @Test
+    @DisplayName("승인된 공간 점유 4xx 오류는 공개 계약을 유지")
+    void forwardsApprovedOccupancyDownstreamClientError() throws Exception {
+        mockMvc.perform(post("/bff/v1/test/errors/occupancy-approved-4xx"))
+                .andExpectAll(
+                        status().isConflict(),
+                        content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON),
+                        header().string(HttpHeaders.CACHE_CONTROL, "no-store"),
+                        jsonPath("$.code").value("OCCUPANCY_ROOM_ALREADY_OCCUPIED"),
+                        jsonPath("$.message").value("현재 상태에서는 요청을 처리할 수 없습니다."),
+                        jsonPath("$.requestId").value("occupancy-request-4xx")
                 );
     }
 
@@ -452,6 +486,20 @@ class ApiExceptionHandlerTest {
             );
         }
 
+        @GetMapping("/bff/v1/test/errors/learning-unapproved-401")
+        void unapprovedLearningAuthenticationFailure() {
+            throw new LearningDownstreamException(
+                    HttpStatus.UNAUTHORIZED,
+                    new ApiErrorResponse(
+                            "LEARNING_INTERNAL_AUTH_DIAGNOSTIC",
+                            "internal authentication detail",
+                            "/api/v1/internal/example",
+                            "learning-unapproved-authentication-request"
+                    ),
+                    new IllegalStateException("unapproved authentication failure")
+            );
+        }
+
         @PostMapping("/bff/v1/test/errors/learning-approved-4xx")
         void approvedLearningClientError() {
             throw new LearningDownstreamException(
@@ -491,6 +539,20 @@ class ApiExceptionHandlerTest {
                             "learning-manager-conflict"
                     ),
                     new IllegalStateException("manager period conflict")
+            );
+        }
+
+        @PostMapping("/bff/v1/test/errors/occupancy-approved-4xx")
+        void approvedOccupancyClientError() {
+            throw new LearningDownstreamException(
+                    HttpStatus.CONFLICT,
+                    new ApiErrorResponse(
+                            "OCCUPANCY_ROOM_ALREADY_OCCUPIED",
+                            "이미 점유 중인 회의실입니다.",
+                            "/api/v1/spaces/3/occupancies",
+                            "occupancy-request-4xx"
+                    ),
+                    new IllegalStateException("approved occupancy rejection")
             );
         }
 

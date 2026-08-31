@@ -11,6 +11,9 @@
     "test:manager-study-stats": "node --test src/test/js/managerStudyStatsPanel.test.mjs",
     "test:system-admin": "node --test src/test/js/systemAdminApiRepository.test.mjs",
     "test:storybook-css": "node --test src/test/js/storybookPreviewCss.test.mjs",
+    "test:vacancy-alerts": "node --test src/test/js/vacancyAlerts.test.mjs",
+    "test:participants": "node --test src/test/js/participants.test.mjs src/test/js/participantActions.test.mjs",
+    "test:admin-occupancies": "node --test src/test/js/adminOccupancies.test.mjs",
     "test:service-integration": "node --test src/test/js/serviceIntegrationState.test.mjs"
   },
   "dependencies": {

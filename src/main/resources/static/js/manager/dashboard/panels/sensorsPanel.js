@@ -16,7 +16,7 @@
         return window.OmagotchiApi?.sensor || null;
     }
 
-    function create({ root, setBubble }) {
+    function create({ root, store, setBubble }) {
         if (!root) throw new Error("Sensors panel root is required.");
         if (!root.querySelector("[data-manager-sensor-react-root]")) {
             throw new Error("Sensors React island root is missing.");
@@ -227,7 +227,7 @@
         label: "공간·센서",
         order: 60,
         // 센서·공간·임계값은 설비 자원이라 기수에 매이지 않는다. 기수 변경으로 다시 부르지 않는다.
-        topics: [],
+        topics: ["selection"],
         create
     });
 })();
