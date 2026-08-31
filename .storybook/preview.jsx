@@ -31,6 +31,7 @@ import "../src/main/resources/static/css/ui/design-system.css";
 import "../src/main/resources/static/css/spaceRoom.css";
 import "../src/main/resources/static/css/notificationPanel.css";
 import "../src/main/resources/static/css/imageProtection.css";
+import "../src/main/resources/static/css/serviceIntegrationState.css";
 import "../src/main/resources/static/css/cursor.css";
 import "../src/main/resources/static/css/home/home-responsive.css";
 import "../src/main/resources/static/css/home/home-overlay-theme.css";

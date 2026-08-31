@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -7,6 +7,7 @@
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon_11.gif" th:href="@{/favicon_11.gif}" />
     <link rel="stylesheet" href="/css/appPages.css" th:href="@{/css/appPages.css}" />
     <link rel="stylesheet" href="/css/progress.css" th:href="@{/css/progress.css}" />
+    <link rel="stylesheet" href="/css/serviceIntegrationState.css" th:href="@{/css/serviceIntegrationState.css}" />
     <link rel="stylesheet" href="/css/cursor.css" th:href="@{/css/cursor.css}" />
 </head>
 <body>
@@ -46,13 +47,10 @@
             </section>
 
             <section class="progress-view" data-progress-view="achievements" aria-label="업적" hidden>
-                <div class="achievement-grid">
-                    <article>
-                        <span>준비 중</span>
-                        <strong>업적 기능은 아직 준비되지 않았습니다.</strong>
-                        <p>서버 기능이 제공되면 실제 달성 기록을 표시합니다.</p>
-                    </article>
-                </div>
+                <th:block th:replace="~{fragments/service-integration-pending :: state(
+                    title='서비스 연동 대기',
+                    description='업적 API가 연결되면 실제 달성 기록을 표시합니다.'
+                )}"></th:block>
             </section>
 
             <section class="progress-view" data-progress-view="leaders" aria-label="랭킹" hidden>
@@ -62,12 +60,10 @@
             </section>
 
             <section class="progress-view" data-progress-view="timeline" aria-label="타임라인" hidden>
-                <div class="timeline-list">
-                    <article>
-                        <strong>타임라인 기능은 아직 준비되지 않았습니다.</strong>
-                        <p>서버 기능이 제공되면 실제 활동 기록을 표시합니다.</p>
-                    </article>
-                </div>
+                <th:block th:replace="~{fragments/service-integration-pending :: state(
+                    title='서비스 연동 대기',
+                    description='활동 이력 API가 연결되면 실제 출석과 학습 기록을 시간순으로 표시합니다.'
+                )}"></th:block>
             </section>
 
             <section class="progress-view" data-progress-view="stats" aria-label="통계" hidden>

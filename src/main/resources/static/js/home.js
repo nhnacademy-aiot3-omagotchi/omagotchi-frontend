@@ -5,6 +5,7 @@ import { createLevel } from "./home/level.js";
 import { createStudyRecords } from "./home/studyRecords.js?v=20260825-5";
 import { createTimer } from "./home/timer.js";
 import { escapeHtml, formatDuration } from "./home/utils.js";
+import { renderServiceIntegrationPending } from "./serviceIntegrationState.js";
 
 const timerDisplay = document.querySelector("[data-timer-display]");
 const timerToggle = document.querySelector("[data-timer-toggle]");
@@ -659,7 +660,10 @@ const overlayContent = {
         </section>
         <section class="overlay-tab-panel" role="tabpanel" data-overlay-panel="achievements" hidden>
             <div class="overlay-section-label"><strong>업적</strong><span></span><em>달성 기록</em></div>
-            <div class="overlay-empty-state" role="status"><strong>업적 기능은 아직 준비되지 않았습니다.</strong><p>기능이 준비되면 달성 기록을 확인할 수 있습니다.</p></div>
+            ${renderServiceIntegrationPending({
+                title: "서비스 연동 대기",
+                description: "업적 API가 연결되면 실제 달성 기록을 표시합니다."
+            })}
         </section>
         <section class="overlay-tab-panel" role="tabpanel" data-overlay-panel="leaders" hidden>
             <div class="overlay-section-label"><strong>명예의 전당</strong><span></span><em>전체 학습 시간</em></div>
@@ -669,9 +673,10 @@ const overlayContent = {
         </section>
         <section class="overlay-tab-panel" role="tabpanel" data-overlay-panel="timeline" hidden>
             <div class="overlay-section-label"><strong>타임라인</strong><span></span><em>최근 활동</em></div>
-            <ul class="overlay-state-list overlay-timeline-list" aria-label="최근 활동">
-                <li><div><strong>활동 기록이 없습니다.</strong><p>출석과 학습 기록이 생기면 시간순으로 표시됩니다.</p></div><em>최근 활동</em></li>
-            </ul>
+            ${renderServiceIntegrationPending({
+                title: "서비스 연동 대기",
+                description: "활동 이력 API가 연결되면 실제 출석과 학습 기록을 시간순으로 표시합니다."
+            })}
         </section>
         <section class="overlay-tab-panel" role="tabpanel" data-overlay-panel="stats" hidden>
             <div class="overlay-section-label"><strong>학습 통계</strong><span></span><em>나의 기록</em></div>

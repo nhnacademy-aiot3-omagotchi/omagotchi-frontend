@@ -34,3 +34,15 @@
     margin: 0;
     line-height: 1.65;
 }
+
+.service-integration-pending-compact > .service-integration-pending {
+    grid-template-columns: auto minmax(0, 1fr);
+    justify-items: start;
+    min-height: 0;
+    padding: 16px;
+    text-align: left;
+}
+
+.service-integration-pending-compact > .service-integration-pending > span {
+    grid-row: 1 / span 2;
+}

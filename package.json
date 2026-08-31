@@ -10,7 +10,8 @@
     "test:manager-join-code": "node --test src/test/js/managerJoinCodePanel.test.mjs",
     "test:manager-study-stats": "node --test src/test/js/managerStudyStatsPanel.test.mjs",
     "test:system-admin": "node --test src/test/js/systemAdminApiRepository.test.mjs",
-    "test:storybook-css": "node --test src/test/js/storybookPreviewCss.test.mjs"
+    "test:storybook-css": "node --test src/test/js/storybookPreviewCss.test.mjs",
+    "test:service-integration": "node --test src/test/js/serviceIntegrationState.test.mjs"
   },
   "dependencies": {
     "@vitejs/plugin-react": "^5.0.0",

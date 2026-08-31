@@ -63,9 +63,9 @@ SPRING_PROFILES_ACTIVE=local ./mvnw spring-boot:run
 
 ## 현재 제한
 
-- 관리자 대시보드: Learning Service 연동 전 Browser Prototype
+- 관리자 대시보드: Learning Service BFF 기반 기수·가입 신청·출결·가입 코드·학습 통계 연동
 - 관리자 접근 제어: 공통 Session 인증만 적용, 역할·기수 권한 검증 미적용
-- 관리자 업무 데이터: Browser 저장소 기반 목업, 서버 권한 근거로 사용 불가
+- System Admin 사용자 권한·감사 로그: Identity 관리 API 미연결, 화면에서 비활성 상태로 안내
 - BFF 업무 기능: 기능별 Endpoint 일부 연동, Access Token 갱신 미구현
 - Access Token 만료: 하류 `401`을 받은 Browser Session을 폐기하고 재로그인 요구
 - 비밀번호 변경 부분 성공: Identity에서 비밀번호가 변경된 뒤 Redis 장애가 발생하면 Frontend 세션 정리는 실패하고 응답은 `503`일 수 있음
