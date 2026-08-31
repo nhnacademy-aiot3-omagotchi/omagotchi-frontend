@@ -152,6 +152,10 @@
             changePassword: (currentPassword, newPassword) => request("/users/me/password", {
                 method: "PATCH",
                 body: {currentPassword, newPassword}
+            }),
+            withdraw: (currentPassword) => request("/users/me", {
+                method: "DELETE",
+                body: {currentPassword}
             })
         },
         profile: {

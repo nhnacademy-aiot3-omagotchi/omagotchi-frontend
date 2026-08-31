@@ -153,6 +153,43 @@
                        role="status" aria-live="polite" data-telegram-feedback></p>
                 </div>
             </section>
+
+            <section class="panel settings-card settings-danger-card"
+                     aria-labelledby="withdrawal-settings-title">
+                <header class="settings-card-header">
+                    <span>DANGER ZONE</span>
+                    <h2 id="withdrawal-settings-title">계정 탈퇴</h2>
+                    <p>
+                        탈퇴하면 현재 계정으로 다시 로그인할 수 없으며,
+                        이 브라우저에서도 로그아웃됩니다.
+                    </p>
+                </header>
+
+                <form class="settings-card-body settings-form" data-account-withdrawal-form novalidate>
+                    <fieldset data-account-withdrawal-fieldset disabled>
+                        <label class="settings-field" for="settings-withdrawal-password">
+                            <span>현재 비밀번호</span>
+                            <input id="settings-withdrawal-password" name="currentPassword" type="password"
+                                   autocomplete="current-password" required
+                                   aria-describedby="settings-withdrawal-feedback"
+                                   data-settings-withdrawal-password />
+                        </label>
+
+                        <label class="settings-confirmation" for="settings-withdrawal-confirmation">
+                            <input id="settings-withdrawal-confirmation" name="withdrawalConfirmed"
+                                   type="checkbox" required data-settings-withdrawal-confirmation />
+                            <span>탈퇴 후에는 현재 계정을 다시 이용할 수 없음을 확인했습니다.</span>
+                        </label>
+
+                        <button class="settings-submit-button settings-danger-button"
+                                type="submit" data-account-withdrawal-submit>
+                            계정 탈퇴
+                        </button>
+                    </fieldset>
+                    <p class="settings-feedback" id="settings-withdrawal-feedback"
+                       role="status" aria-live="polite" data-account-withdrawal-feedback></p>
+                </form>
+            </section>
         </div>
     </section>
 </main>

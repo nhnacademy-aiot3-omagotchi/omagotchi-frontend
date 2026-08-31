@@ -11,6 +11,7 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.client.JdkClientHttpRequestFactory;
@@ -198,6 +199,49 @@ class BrowserSessionRedisIT {
                 .hasPath("/login");
     }
 
+    @Test
+    @DisplayName("계정 탈퇴 뒤 Redis 인증 Session 폐기")
+    void withdrawsAccountThenInvalidatesAuthenticatedSession() {
+        // Given: Redis에 저장된 인증 세션
+        given(identityAuthClient.login("user@example.com", "password-passphrase"))
+                .willReturn(tokenBundle());
+        EntityExchangeResult<String> loginPageResponse = sendGet("/login", null);
+        EntityExchangeResult<String> loginResponse = sendLogin(
+                csrfToken(loginPageResponse),
+                sessionCookie(loginPageResponse).getValue()
+        );
+        ResponseCookie authenticatedSessionCookie = sessionCookie(loginResponse);
+        String authenticatedSessionId = sessionId(authenticatedSessionCookie);
+        assertThat(sessionRepository.findById(authenticatedSessionId)).isNotNull();
+
+        // Given: 인증 세션에 연결된 JSON 요청용 CSRF 토큰
+        CsrfTokenResponse csrf = sendCsrfToken(authenticatedSessionCookie.getValue());
+
+        // When: 보안 필터와 컨트롤러를 통한 계정 탈퇴 요청
+        EntityExchangeResult<String> withdrawalResponse = sendWithdrawal(
+                csrf,
+                authenticatedSessionCookie.getValue()
+        );
+
+        // Then: Identity에는 세션의 Access JWT와 현재 비밀번호만 전달
+        assertThat(withdrawalResponse.getStatus().value()).isEqualTo(204);
+        verify(identityAccountClient).withdraw(
+                ACCESS_JWT,
+                "current-password-passphrase"
+        );
+        assertTokensAreNotExposed(withdrawalResponse);
+
+        // Then: 기존 Redis 인증 세션 삭제와 이전 쿠키를 사용한 보호 화면 접근 차단
+        assertThat(sessionRepository.findById(authenticatedSessionId)).isNull();
+        EntityExchangeResult<String> previousSessionHomeResponse = sendGet(
+                "/home",
+                authenticatedSessionCookie.getValue()
+        );
+        assertThat(previousSessionHomeResponse.getStatus().value()).isEqualTo(302);
+        assertThat(previousSessionHomeResponse.getResponseHeaders().getLocation())
+                .hasPath("/login");
+    }
+
     private EntityExchangeResult<String> sendLogin(
             String csrfToken,
             String sessionCookie
@@ -269,6 +313,22 @@ class BrowserSessionRedisIT {
                 .returnResult();
     }
 
+    private EntityExchangeResult<String> sendWithdrawal(
+            CsrfTokenResponse csrf,
+            String sessionCookie
+    ) {
+        return restTestClient.method(HttpMethod.DELETE)
+                .uri("/bff/v1/users/me")
+                .contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaType.APPLICATION_JSON)
+                .header(csrf.headerName(), csrf.token())
+                .cookie(SESSION_COOKIE, sessionCookie)
+                .body(new WithdrawalRequest("current-password-passphrase"))
+                .exchange()
+                .expectBody(String.class)
+                .returnResult();
+    }
+
     private EntityExchangeResult<String> sendGet(
             String path,
             String sessionCookie
@@ -327,6 +387,9 @@ class BrowserSessionRedisIT {
             String currentPassword,
             String newPassword
     ) {
+    }
+
+    private record WithdrawalRequest(String currentPassword) {
     }
 
     @TestConfiguration(proxyBeanMethods = false)

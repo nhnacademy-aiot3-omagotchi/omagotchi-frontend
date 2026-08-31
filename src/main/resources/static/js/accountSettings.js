@@ -32,6 +32,16 @@ export function validateNewPassword(currentPassword, newPassword, confirmation) 
     return {valid: true};
 }
 
+export function validateAccountWithdrawal(currentPassword, confirmed) {
+    if (!currentPassword) {
+        return {valid: false, message: "현재 비밀번호를 입력해 주세요."};
+    }
+    if (!confirmed) {
+        return {valid: false, message: "탈퇴 안내를 확인해 주세요."};
+    }
+    return {valid: true};
+}
+
 function setFeedback(element, message, type = "") {
     element.textContent = message;
     element.dataset.feedbackType = type;
@@ -256,12 +266,19 @@ export function initializeAccountSettings(root = document.querySelector("[data-a
     const currentPasswordInput = root.querySelector("[data-settings-current-password]");
     const newPasswordInput = root.querySelector("[data-settings-new-password]");
     const confirmPasswordInput = root.querySelector("[data-settings-confirm-password]");
+    const withdrawalForm = root.querySelector("[data-account-withdrawal-form]");
+    const withdrawalFieldset = root.querySelector("[data-account-withdrawal-fieldset]");
+    const withdrawalButton = root.querySelector("[data-account-withdrawal-submit]");
+    const withdrawalFeedback = root.querySelector("[data-account-withdrawal-feedback]");
+    const withdrawalPasswordInput = root.querySelector("[data-settings-withdrawal-password]");
+    const withdrawalConfirmationInput = root.querySelector("[data-settings-withdrawal-confirmation]");
 
     let loadedName = "";
 
     async function loadAccount() {
         nameFieldset.disabled = true;
         passwordFieldset.disabled = true;
+        withdrawalFieldset.disabled = true;
         retryButton.hidden = true;
         setFeedback(loadFeedback, "계정 정보를 불러오는 중입니다.");
 
@@ -272,6 +289,7 @@ export function initializeAccountSettings(root = document.querySelector("[data-a
             loadedName = account.name;
             nameFieldset.disabled = false;
             passwordFieldset.disabled = false;
+            withdrawalFieldset.disabled = false;
             setFeedback(loadFeedback, "계정 정보를 불러왔습니다.", "success");
         } catch (error) {
             if (handleAuthenticationFailure(error)) return;
@@ -345,6 +363,37 @@ export function initializeAccountSettings(root = document.querySelector("[data-a
             newPasswordInput.value = "";
             confirmPasswordInput.value = "";
             setSubmitting(passwordFieldset, passwordButton, false, "비밀번호 변경");
+        }
+    });
+
+    withdrawalForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const currentPassword = withdrawalPasswordInput.value;
+        const validation = validateAccountWithdrawal(
+            currentPassword,
+            withdrawalConfirmationInput.checked
+        );
+        if (!validation.valid) {
+            setFeedback(withdrawalFeedback, validation.message, "error");
+            if (!currentPassword) withdrawalPasswordInput.focus();
+            else withdrawalConfirmationInput.focus();
+            return;
+        }
+
+        setSubmitting(withdrawalFieldset, withdrawalButton, true, "계정 탈퇴");
+        setFeedback(withdrawalFeedback, "");
+        try {
+            await api.withdraw(currentPassword);
+            window.location.assign("/login?notice=account-withdrawn");
+        } catch (error) {
+            if (handleAuthenticationFailure(error)) return;
+            const message = error?.status == null || error.status >= 500
+                ? "탈퇴 처리 결과를 확인하지 못했습니다. 잠시 후 다시 시도해 주세요."
+                : error?.message || "계정을 탈퇴하지 못했습니다.";
+            setFeedback(withdrawalFeedback, message, "error");
+        } finally {
+            withdrawalPasswordInput.value = "";
+            setSubmitting(withdrawalFieldset, withdrawalButton, false, "계정 탈퇴");
         }
     });
 
