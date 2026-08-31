@@ -38,37 +38,9 @@
                     <span data-claim-indicator></span>
                     <em>익일 4시에 초기화</em>
                 </div>
-                <div class="task-list">
-                    <article class="task-item quest-item is-claimable" data-quest-id="focus-beginner">
-                        <div>
-                            <h3>집중 시작</h3>
-                            <p>오늘 학습 타이머를 30분 이상 기록합니다.</p>
-                        </div>
-                        <span class="reward">+50xp</span>
-                        <div class="progress-line"><span style="width: 100%"></span></div>
-                        <div class="quest-progress">49분 / 30분</div>
-                        <button class="claim-button" type="button" data-claim-reward>보상 받기</button>
-                        <p class="claimed-label">수령 완료</p>
-                    </article>
-
+                <div class="task-list" data-progress-quests>
                     <article class="task-item quest-item">
-                        <div>
-                            <h3>출석 완료</h3>
-                            <p>입실과 퇴실을 모두 기록합니다.</p>
-                        </div>
-                        <span class="reward">+30xp</span>
-                        <div class="progress-line"><span style="width: 50%"></span></div>
-                        <div class="quest-progress">입실 완료</div>
-                    </article>
-
-                    <article class="task-item quest-item">
-                        <div>
-                            <h3>기록 남기기</h3>
-                            <p>오늘 배운 내용을 짧게 작성합니다.</p>
-                        </div>
-                        <span class="reward">+20xp</span>
-                        <div class="progress-line"><span style="width: 0%"></span></div>
-                        <div class="quest-progress">0 / 1</div>
+                        <div><h3>퀘스트를 불러오는 중입니다.</h3><p>잠시만 기다려 주세요.</p></div>
                     </article>
                 </div>
             </section>
@@ -76,69 +48,41 @@
             <section class="progress-view" data-progress-view="achievements" aria-label="업적" hidden>
                 <div class="achievement-grid">
                     <article>
-                        <span>BRONZE</span>
-                        <strong>첫 발걸음</strong>
-                        <p>처음으로 출석을 완료합니다.</p>
-                    </article>
-                    <article>
-                        <span>SILVER</span>
-                        <strong>꾸준한 학습자</strong>
-                        <p>학습 타이머 10시간을 달성합니다.</p>
-                    </article>
-                    <article>
-                        <span>GOLD</span>
-                        <strong>세션 마스터</strong>
-                        <p>학습 세션 100회를 완료합니다.</p>
+                        <span>준비 중</span>
+                        <strong>업적 기능은 아직 준비되지 않았습니다.</strong>
+                        <p>서버 기능이 제공되면 실제 달성 기록을 표시합니다.</p>
                     </article>
                 </div>
             </section>
 
             <section class="progress-view" data-progress-view="leaders" aria-label="랭킹" hidden>
-                <ol class="leader-list" aria-label="학습 시간 랭킹">
-                    <li data-empty-ranking><strong>-</strong><span>랭킹 데이터가 없습니다.</span><em>0분</em></li>
+                <ol class="leader-list" aria-label="학습 시간 랭킹" data-progress-ranking>
+                    <li data-empty-ranking><strong>-</strong><span>랭킹을 불러오는 중입니다.</span><em>기록 없음</em></li>
                 </ol>
             </section>
 
             <section class="progress-view" data-progress-view="timeline" aria-label="타임라인" hidden>
                 <div class="timeline-list">
                     <article>
-                        <strong>입실</strong>
-                        <p>오늘 09:04에 입실했습니다.</p>
-                    </article>
-                    <article>
-                        <strong>학습 세션</strong>
-                        <p>49분 집중 세션을 완료했습니다.</p>
+                        <strong>타임라인 기능은 아직 준비되지 않았습니다.</strong>
+                        <p>서버 기능이 제공되면 실제 활동 기록을 표시합니다.</p>
                     </article>
                 </div>
             </section>
 
             <section class="progress-view" data-progress-view="stats" aria-label="통계" hidden>
-                <div class="stat-grid">
+                <div class="stat-grid" data-progress-stats>
                     <article class="stat-card">
-                        <h3>오늘 집중</h3>
-                        <strong>49분</strong>
-                        <p>일일 목표 30분</p>
-                    </article>
-                    <article class="stat-card">
-                        <h3>세션</h3>
-                        <strong>1회</strong>
-                        <p>오늘 완료한 세션</p>
-                    </article>
-                    <article class="stat-card">
-                        <h3>연속 출석</h3>
-                        <strong>1일</strong>
-                        <p>입실 기록 기준</p>
-                    </article>
-                    <article class="stat-card">
-                        <h3>이번 주</h3>
-                        <strong>49분</strong>
-                        <p>주간 학습 시간</p>
+                        <h3>학습 통계</h3>
+                        <strong>불러오는 중</strong>
+                        <p>서버 기록을 확인하고 있습니다.</p>
                     </article>
                 </div>
             </section>
         </section>
     </section>
 </main>
+<script src="/js/api.js" th:src="@{/js/api.js}"></script>
 <script src="/js/progress.js" th:src="@{/js/progress.js}"></script>
 </body>
 </html>
