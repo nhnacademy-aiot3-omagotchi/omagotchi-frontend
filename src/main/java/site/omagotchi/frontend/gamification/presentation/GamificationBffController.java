@@ -51,10 +51,10 @@ public class GamificationBffController {
 
     // Learning 계약과 동일하게 사용자별 일일 Quest 인스턴스 ID를 받는다.
     // Quest 정의 ID를 전달하면 하류에서 조회에 실패하므로 이름으로 의미를 고정한다.
-    @PostMapping("/quests/{userDailyQuestId}/claim")
+    @PostMapping("/quests/{user-daily-quest-id}/claim")
     public JsonNode claimQuest(
             HttpServletRequest request,
-            @PathVariable Long userDailyQuestId
+            @PathVariable("user-daily-quest-id") Long userDailyQuestId
     ) {
         return proxy.execute(request, context -> context.service()
                 .claimQuest(context.bearerToken(), userDailyQuestId));

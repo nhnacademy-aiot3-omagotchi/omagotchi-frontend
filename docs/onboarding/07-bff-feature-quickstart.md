@@ -47,7 +47,7 @@
 ```text
 화면:             /home
 Browser → BFF:    GET /bff/v1/attendance/history
-BFF → Learning:   GET /api/v1/cohorts/{cohortId}/attendance-records/me
+BFF → Learning:   GET /api/v1/cohorts/{cohort-id}/attendance-records/me
 ```
 
 ### 이 경로들이 어디에 설정되어 있는지
@@ -91,7 +91,7 @@ Path·Query·Request Body:
 
 ```text
 기능명: 내 출석 이력 조회
-HTTP Method와 /api/v1 경로: GET /api/v1/cohorts/{cohortId}/attendance-records/me
+HTTP Method와 /api/v1 경로: GET /api/v1/cohorts/{cohort-id}/attendance-records/me
 Path·Query·Request Body:
   path  cohortId : Long, 필수
   query from     : String(yyyy-MM-dd), 선택
@@ -205,7 +205,7 @@ src/main/java/site/omagotchi/frontend/global/learning/infrastructure/LearningHtt
 경로를 선언한다.
 
 ```java
-@GetExchange("/cohorts/{cohortId}/attendance-records/me")
+@GetExchange("/cohorts/{cohort-id}/attendance-records/me")
 AttendanceRecordPageResponse getMyAttendanceRecords(
         @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
         @PathVariable Long cohortId,
@@ -331,13 +331,13 @@ public class ExampleBffController {
 
 ```java
 // 하지 않는다: Browser가 cohortId를 고를 수 있게 된다
-@RequestMapping("/bff/v1/cohorts/{cohortId}/study-rankings")
+@RequestMapping("/bff/v1/cohorts/{cohort-id}/study-rankings")
 
 // 한다: cohortId는 Session에서 나온다
 @RequestMapping("/bff/v1/study-rankings")
 ```
 
-`RankingBffController`가 이 형태로 바뀐 이유다. BFF 경로에 `{cohortId}`가 보이면 설계가 틀린 것이다.
+`RankingBffController`가 이 형태로 바뀐 이유다. BFF 경로에 `{cohort-id}`가 보이면 설계가 틀린 것이다.
 
 #### 빈 결과를 `204`로 줄 때만 `ResponseEntity`를 쓴다
 
@@ -637,7 +637,7 @@ Browser 개발자 도구의 Network에서 확인한다.
 - [ ] 단순 전달과 화면용 조합 중 알맞은 Service 방식을 선택했다.
 - [ ] 모든 하류 호출을 `LearningGatewayCallExecutor` 경계로 통과시켰다.
 - [ ] Token·userId·승인 cohortId를 Browser 입력으로 받지 않는다.
-- [ ] BFF 경로에 `{cohortId}`가 없다.
+- [ ] BFF 경로에 `{cohort-id}`가 없다.
 - [ ] 새 공개 4xx code를 `PUBLIC_LEARNING_DOWNSTREAM_ERRORS`에 등록했다(필요한 경우).
 - [ ] `api.js` 공통 `request()`를 사용한다.
 - [ ] Loading·Empty·Ready·Error 화면을 구분했다.

@@ -57,7 +57,7 @@ AI Chat은 후속 전환 전까지 Gateway 경로를 유지한다.
 ```text
 Page:                  /home
 Browser → View BFF:    /bff/v1/attendance/history
-View → Learning:       /api/v1/cohorts/{cohortId}/attendance-records/me
+View → Learning:       /api/v1/cohorts/{cohort-id}/attendance-records/me
 ```
 
 - `/bff/v1/**`는 화면이 의존하는 View 계약이다.
@@ -118,7 +118,7 @@ HTTP `GET` 요청을 선언한다. 조회 전용이며 서버 상태를 변경�
 ```java
 import org.springframework.web.bind.annotation.RequestParam;
 
-@GetExchange("/cohorts/{cohortId}/attendance-records/me")
+@GetExchange("/cohorts/{cohort-id}/attendance-records/me")
 AttendanceRecordPageResponse getMyAttendanceRecords(
         @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
         @PathVariable Long cohortId,
@@ -141,7 +141,7 @@ Authorization: Bearer <AccessToken>
 생성, 명령 실행 또는 상태 전이를 요청한다.
 
 ```java
-@PostExchange("/cohorts/{cohortId}/attendance-records/check-in")
+@PostExchange("/cohorts/{cohort-id}/attendance-records/check-in")
 AttendanceRecordResponse checkIn(
         @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
         @PathVariable Long cohortId
@@ -165,7 +165,7 @@ AttendanceRecordResponse checkIn(
 | 애노테이션 | HTTP에서 변환되는 위치 | 예 |
 | --- | --- | --- |
 | `@RequestHeader` | Header | `Authorization: Bearer ...` |
-| `@PathVariable` | URL Path | `/cohorts/{cohortId}` |
+| `@PathVariable` | URL Path | `/cohorts/{cohort-id}` |
 | `@RequestParam` | Query String | `?page=0&size=20` |
 | `@RequestBody` | JSON Body | 닉네임 변경 요청 |
 | `@RequestPart` | Multipart Part | 게시글 JSON과 첨부파일 |

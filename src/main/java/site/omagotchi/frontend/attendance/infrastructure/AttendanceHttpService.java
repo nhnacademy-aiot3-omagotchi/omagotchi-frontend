@@ -13,25 +13,25 @@ import site.omagotchi.frontend.attendance.infrastructure.response.AttendanceReco
 @HttpExchange("/api/v1")
 public interface AttendanceHttpService {
 
-    @GetExchange("/cohorts/{cohortId}/attendance-records/me")
+    @GetExchange("/cohorts/{cohort-id}/attendance-records/me")
     AttendanceRecordPageResponse getMyAttendanceRecords(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
-            @PathVariable Long cohortId,
+            @PathVariable("cohort-id") Long cohortId,
             @RequestParam(required = false) String from,
             @RequestParam(required = false) String to,
             @RequestParam(required = false) Integer page,
             @RequestParam(required = false) Integer size
     );
 
-    @PostExchange("/cohorts/{cohortId}/attendance-records/check-in")
+    @PostExchange("/cohorts/{cohort-id}/attendance-records/check-in")
     AttendanceRecordResponse checkIn(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
-            @PathVariable Long cohortId
+            @PathVariable("cohort-id") Long cohortId
     );
 
-    @PostExchange("/cohorts/{cohortId}/attendance-records/check-out")
+    @PostExchange("/cohorts/{cohort-id}/attendance-records/check-out")
     AttendanceRecordResponse checkOut(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
-            @PathVariable Long cohortId
+            @PathVariable("cohort-id") Long cohortId
     );
 }

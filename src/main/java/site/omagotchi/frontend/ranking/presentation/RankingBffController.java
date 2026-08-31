@@ -17,7 +17,7 @@ import java.time.YearMonth;
 /**
  * 학습 랭킹 Browser 계약.
  *
- * <p>이전 경로는 /bff/v1/cohorts/{cohortId}/study-rankings 로 cohortId를 Browser가 지정했다.
+ * <p>이전 경로는 /bff/v1/cohorts/{cohort-id}/study-rankings 로 cohortId를 Browser가 지정했다.
  * 조회 대상 기수는 로그인 사용자의 승인 기수로 결정되어야 하므로 경로에서 제거하고
  * Session 기반으로 확보한다.
  */
@@ -49,10 +49,10 @@ public class RankingBffController {
                 ));
     }
 
-    @GetMapping("/weekly/{weekStartDate}")
+    @GetMapping("/weekly/{week-start-date}")
     public JsonNode getWeeklyRanking(
             HttpServletRequest request,
-            @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            @PathVariable("week-start-date") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
             LocalDate weekStartDate,
             @RequestParam(required = false) Integer maxRank
     ) {
