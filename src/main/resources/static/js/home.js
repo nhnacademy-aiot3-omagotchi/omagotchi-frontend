@@ -1,6 +1,7 @@
 import { createAttendance, hasApprovedCohort } from "./home/attendance.js";
 import { createBgmPlayer } from "./home/bgm.js";
 import { createCharacter } from "./home/character.js";
+import { saveCommunityPost } from "./home/community.js?v=20260831-1";
 import { createLevel } from "./home/level.js";
 import { loadProgressResources, normalizeDailyQuests } from "./home/questData.js";
 import { createStudyRecords } from "./home/studyRecords.js?v=20260825-5";
@@ -900,42 +901,22 @@ function openCommunityComposer(post = null) {
 }
 
 async function submitCommunityPost(form) {
-    const formData = new FormData(form);
-    const rawTitle = formData.get("title");
-    const title = (typeof rawTitle === "string" ? rawTitle : "").trim();
-    const rawContent = formData.get("content");
-    const content = (typeof rawContent === "string" ? rawContent : "").trim();
+    const cohortId = currentProfile.approvedCohort?.cohortId;
+    const result = await saveCommunityPost({
+        form,
+        api: api.community,
+        cohortId
+    });
 
-    if (!title || !content) {
+    if (!result) {
         return;
     }
-    const cohortId = currentProfile.approvedCohort?.cohortId;
-       if (!cohortId) {
-            throw new Error("승인된 기수가 없어 게시글을 작성할 수 없습니다.");
-       }
 
-    const post = {
-        type: formData.get("type") === "notice" ? "NOTICE" : "FREE",
-        title,
-        content,
-        scope: "COHORT",
-        cohortId
-
-    };
-    const attachments = form.querySelector("input[name='attachments']")?.files || [];
-    const postId = form.dataset.communityPostId;
-    if (postId) {
-        if (attachments.length) await api.community.updatePostWithAttachments(postId, post, attachments);
-        else await api.community.updatePost(postId, post);
-    } else if (attachments.length) {
-        await api.community.createPostWithAttachments(post, attachments);
-    } else {
-        await api.community.createPost(post);
-    }
     communityFilter = "all";
     communityKeyword = "";
     communityPage = 1;
     openHomeOverlay("community");
+    showHomeToast(result.message);
 }
 
 async function openCommunityDetail(postId) {
