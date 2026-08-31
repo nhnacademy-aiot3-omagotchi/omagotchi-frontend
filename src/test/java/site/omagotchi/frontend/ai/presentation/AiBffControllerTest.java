@@ -9,6 +9,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import reactor.core.publisher.Flux;
 import site.omagotchi.frontend.ai.infrastructure.AiChatGatewayClient;
+import site.omagotchi.frontend.auth.application.port.BrowserSessionTokenStore;
 import site.omagotchi.frontend.auth.application.result.BrowserSessionTokenBundle;
 import site.omagotchi.frontend.auth.domain.GlobalRole;
 import site.omagotchi.frontend.auth.presentation.security.BrowserSessionTokens;
@@ -36,11 +37,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @DisplayName("AI 채팅 BFF")
 class AiBffControllerTest {
 
-    // BrowserSessionTokens의 세션 attribute key는 private라 클래스명으로 직접 재현한다
-    // (BrowserSessionTokens.find()가 읽는 키와 정확히 같은 문자열이어야 세션이 인식된다)
-    private static final String TOKEN_BUNDLE_SESSION_ATTRIBUTE =
-            BrowserSessionTokens.class.getName() + ".TOKEN_BUNDLE";
-
     private AiChatGatewayClient aiChatGatewayClient;
     private MockMvc mockMvc;
 
@@ -59,14 +55,17 @@ class AiBffControllerTest {
 
     private MockHttpSession sessionWithToken(String accessToken) {
         MockHttpSession session = new MockHttpSession();
-        session.setAttribute(TOKEN_BUNDLE_SESSION_ATTRIBUTE, new BrowserSessionTokenBundle(
-                UUID.randomUUID(),
-                GlobalRole.USER,
-                accessToken,
-                Instant.now().plusSeconds(3600),
-                "refresh-token",
-                Instant.now().plusSeconds(7200)
-        ));
+        session.setAttribute(
+                BrowserSessionTokenStore.SESSION_TOKEN_BUNDLE_ATTRIBUTE,
+                new BrowserSessionTokenBundle(
+                        UUID.randomUUID(),
+                        GlobalRole.USER,
+                        accessToken,
+                        Instant.now().plusSeconds(3600),
+                        "refresh-token",
+                        Instant.now().plusSeconds(7200)
+                )
+        );
         return session;
     }
 

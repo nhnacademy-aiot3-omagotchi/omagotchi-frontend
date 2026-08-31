@@ -20,6 +20,7 @@ import site.omagotchi.frontend.auth.application.port.IdentityAuthClient;
 import site.omagotchi.frontend.auth.application.result.BrowserSessionTokenBundle;
 import site.omagotchi.frontend.auth.domain.GlobalRole;
 import site.omagotchi.frontend.auth.presentation.page.LoginPageController;
+import site.omagotchi.frontend.auth.presentation.security.AccessTokenRefreshInterceptor;
 import site.omagotchi.frontend.auth.presentation.security.BrowserSessionTokens;
 import site.omagotchi.frontend.auth.presentation.security.BrowserTokenSessionAuthenticationStrategy;
 import site.omagotchi.frontend.auth.presentation.security.IdentityLogoutHandler;
@@ -39,6 +40,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.clearInvocations;
@@ -76,13 +78,18 @@ class AuthenticationSecurityMvcTest {
     @MockitoBean
     private IdentityAuthClient identityAuthClient;
 
+    @MockitoBean
+    private AccessTokenRefreshInterceptor accessTokenRefreshInterceptor;
+
     @Autowired
     private BrowserSessionTokens browserSessionTokens;
 
     @BeforeEach
-    void configureIdentityLogin() {
+    void configureIdentityLogin() throws Exception {
         given(identityAuthClient.login(anyString(), anyString()))
                 .willReturn(tokenBundle());
+        given(accessTokenRefreshInterceptor.preHandle(any(), any(), any()))
+                .willReturn(true);
     }
 
     @Test
