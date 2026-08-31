@@ -1474,6 +1474,8 @@ import {
     function updateData(data = {}) {
         if (Array.isArray(data.rooms)) {
             state.rooms = data.rooms;
+            state.roomsLoading = false;
+            state.roomsError = "";
             const hasSelectedRoom = state.rooms.some(
                 (room) => String(room.id) === String(state.selectedRoomId)
             );
