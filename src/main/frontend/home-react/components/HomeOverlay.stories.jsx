@@ -63,24 +63,29 @@ const storyApi = { createRecord: createStoryRecord, updateRecord: updateStoryRec
 
 function StudyRecordsOverlayStory({ records = storyRecords, api, selectedDateKey }) {
   const hostRef = useRef(null);
-  const storageKeyRef = useRef(null);
-
-  if (!storageKeyRef.current) {
-    storageKeyRef.current = `storybook:home-study-records:${globalThis.crypto?.randomUUID?.() || Date.now()}`;
-  }
 
   useEffect(() => {
     const target = hostRef.current?.querySelector("[data-story-study-records]");
     if (!target) return undefined;
 
-    const storageKey = storageKeyRef.current;
-    const previous = localStorage.getItem(storageKey);
-    localStorage.setItem(storageKey, JSON.stringify(records));
-
     const controller = createStudyRecords({
-      storageKey,
-      getElapsedSeconds: () => 0,
-      api
+      api: {
+        ...api,
+        getDailyRecords: async (date) => records.filter((record) => record.aggregationDate === date),
+        getMonthlySummary: async (month) => {
+          const monthlyRecords = records.filter((record) => record.aggregationDate.startsWith(month));
+          const dailyTotals = Object.entries(monthlyRecords.reduce((totals, record) => ({
+            ...totals,
+            [record.aggregationDate]: (totals[record.aggregationDate] || 0) + record.studySeconds
+          }), {})).map(([aggregationDate, studySeconds]) => ({aggregationDate, studySeconds}));
+          return {
+            aggregationMonth: month,
+            totalStudySeconds: monthlyRecords.reduce((total, record) => total + record.studySeconds, 0),
+            dailyTotals
+          };
+        },
+        deleteRecord: async () => undefined
+      }
     });
     const handleClick = (event) => controller.handleClick(event);
     const handleInput = (event) => controller.handleInput(event);
@@ -97,8 +102,6 @@ function StudyRecordsOverlayStory({ records = storyRecords, api, selectedDateKey
       target.removeEventListener("input", handleInput);
       target.removeEventListener("submit", handleSubmit);
       target.replaceChildren();
-      if (previous === null) localStorage.removeItem(storageKey);
-      else localStorage.setItem(storageKey, previous);
     };
   }, [api, records, selectedDateKey]);
 
@@ -344,7 +347,7 @@ export const StudyRecords = {
   parameters: {
     docs: {
       description: {
-        story: "Home에서 사용하는 실제 createStudyRecords 렌더러를 마운트합니다. 조회 fixture는 Storybook localStorage에 격리하고 수정 요청 계약은 Story mock 함수로 검증합니다."
+        story: "Home에서 사용하는 실제 createStudyRecords 렌더러를 마운트합니다. 조회·수정 요청은 Storybook 전용 API fixture로 계약을 검증합니다."
       }
     }
   }

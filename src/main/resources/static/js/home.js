@@ -45,7 +45,6 @@ const attendanceDetail = document.querySelector("[data-attendance-panel-toggle]"
 
 const currentProfile = window.OmagotchiProfile || {};
 let currentCharacter = currentProfile.currentCharacter || {};
-const currentUserId = currentProfile.userId;
 const currentUserName = currentProfile.nickname || currentCharacter.nickname || "나";
 const selectedCharacterAssetKey = typeof currentCharacter.assetKey === "string"
     ? currentCharacter.assetKey.trim().replace(/^\/+/, "").replace(/\.(?:png|gif)$/i, "")
@@ -74,19 +73,6 @@ const selectedCharacterAnimatedImage = characterAssets
 const selectedCharacterName = currentCharacter.name || "오마고치";
 const displayCharacterName = currentCharacter.nickname || currentUserName;
 
-const studyRecordsKey = `omagotchiStudyRecords:${currentUserId}`;
-const sessionOnlyKeys = [
-    "omagotchiEmail",
-    "omagotchiUsername",
-    "omagotchiCharacterId",
-    "omagotchiCharacterName",
-    "omagotchiCharacterImage",
-    "omagotchiCharacterAnimatedImage",
-    "omagotchiCharacterBaseImage",
-    "omagotchiCharacterColorId",
-    "omagotchiCharacterColorName",
-    "omagotchiCharacterColor"
-];
 const api = window.OmagotchiApi;
 
 let communityFilter = "all";
@@ -268,8 +254,6 @@ const timerController = createTimer({
 
 // 월간 요약과 선택 날짜 기록, 수정·삭제를 Study BFF 계약에 연결한다.
 studyRecordsController = createStudyRecords({
-    storageKey: studyRecordsKey,
-    getElapsedSeconds: timerController.getElapsedSeconds,
     api: api?.study
 });
 
@@ -1033,29 +1017,12 @@ function openHomeOverlay(type) {
     }
 }
 
-function setOverlayTab(tabButton) {
-    const overlay = tabButton.closest(".home-overlay");
-    const tabName = tabButton.dataset.overlayTab;
-
-    overlay.querySelectorAll("[data-overlay-tab]").forEach((button) => {
-        button.classList.toggle("is-active", button === tabButton);
-        button.setAttribute("aria-selected", String(button === tabButton));
-    });
-
-    overlay.querySelectorAll("[data-overlay-panel]").forEach((panel) => {
-        const isActive = panel.dataset.overlayPanel === tabName;
-        panel.classList.toggle("is-active", isActive);
-        panel.hidden = !isActive;
-    });
-}
-
 function logout(logoutButton) {
     const logoutForm = document.querySelector("[data-logout-form]");
     const detail = logoutButton?.querySelector("em");
     if (logoutButton) logoutButton.disabled = true;
 
     try {
-        sessionOnlyKeys.forEach((key) => sessionStorage.removeItem(key));
         logoutForm.requestSubmit();
     } catch (error) {
         if (logoutButton) logoutButton.disabled = false;
@@ -1109,7 +1076,6 @@ homeOverlayRoot?.addEventListener("click", (event) => {
     }
 
     const closeTarget = event.target.closest("[data-close-home-overlay]");
-    const tabButton = event.target.closest("[data-overlay-tab]");
     const claimButton = event.target.closest("[data-home-claim]");
     const logoutButton = event.target.closest("[data-logout]");
     const communityFilterButton = event.target.closest("[data-community-filter]");
@@ -1121,15 +1087,6 @@ homeOverlayRoot?.addEventListener("click", (event) => {
 
     if (closeTarget && (event.target === closeTarget || closeTarget.matches("button, a"))) {
         closeHomeOverlay();
-        return;
-    }
-
-    if (tabButton) {
-        // 진행 Overlay는 Radix Tabs가 선택·키보드 상태를 관리한다.
-        if (tabButton.closest(".home-progress-tabs")) {
-            return;
-        }
-        setOverlayTab(tabButton);
         return;
     }
 
