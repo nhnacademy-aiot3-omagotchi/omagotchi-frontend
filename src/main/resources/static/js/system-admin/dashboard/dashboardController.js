@@ -23,7 +23,15 @@ export async function initializeSystemAdminDashboard(root = document, repository
     let currentUserPage = 1;
     const find = (selector) => root.querySelector(selector);
     const findAll = (selector) => [...root.querySelectorAll(selector)];
-    const capabilities = () => ({identity: true, audit: true, cohortDelete: true, cohortSummary: true, ...state.capabilities});
+    const capabilities = () => ({
+        identity: false,
+        managerWrite: false,
+        identityWrite: false,
+        audit: false,
+        cohortDelete: true,
+        cohortSummary: true,
+        ...state.capabilities
+    });
 
     function showToast(message, isError = false) {
         const toast = find("[data-system-toast]");
@@ -95,7 +103,8 @@ export async function initializeSystemAdminDashboard(root = document, repository
             const globalRole = user.globalRole === "SYSTEM_ADMIN"
                 ? '<span class="system-chip is-system">SYSTEM_ADMIN</span>'
                 : '<span class="system-muted">일반 사용자</span>';
-            return `<tr><th scope="row" data-label="사용자"><div class="system-user-cell"><b>${escapeHtml(user.name.slice(0, 1))}</b><span><strong>${escapeHtml(user.name)}</strong><small>${escapeHtml(user.email)}</small></span></div></th><td data-label="계정 상태"><span class="system-account-status is-${user.status.toLowerCase()}">${ACCOUNT_STATUS_LABELS[user.status]}</span></td><td data-label="전역 권한">${globalRole}</td><td data-label="기수 운영 권한"><div class="system-chip-list">${cohortBadges}</div></td><td data-label="가입일">${escapeHtml(user.joinedAt)}</td><td><button class="system-row-button" type="button" data-open-permission="${escapeHtml(user.id)}">권한 관리</button></td></tr>`;
+            const managerWrite = capabilities().managerWrite;
+            return `<tr><th scope="row" data-label="사용자"><div class="system-user-cell"><b>${escapeHtml(user.name.slice(0, 1))}</b><span><strong>${escapeHtml(user.name)}</strong><small>${escapeHtml(user.email)}</small></span></div></th><td data-label="계정 상태"><span class="system-account-status is-${user.status.toLowerCase()}">${escapeHtml(ACCOUNT_STATUS_LABELS[user.status] || user.status)}</span></td><td data-label="전역 권한">${globalRole}</td><td data-label="기수 운영 권한"><div class="system-chip-list">${cohortBadges}</div></td><td data-label="가입일">${escapeHtml(user.joinedAt)}</td><td><button class="system-row-button" type="button" data-open-permission="${escapeHtml(user.id)}" ${managerWrite ? "" : "disabled"} title="${managerWrite ? "기수 운영 권한 관리" : "기수 권한 API 연동 대기"}">${managerWrite ? "기수 권한 관리" : "조회 전용"}</button></td></tr>`;
         }).join("");
         find("[data-user-page-range]").textContent = `${users.length}명`;
         find("[data-user-pagination-footer]").hidden = users.length === 0;
@@ -149,6 +158,8 @@ export async function initializeSystemAdminDashboard(root = document, repository
                 : '<option value="">Identity API 연동 후 배정</option>';
             options.disabled = !capabilities().identity;
         }
+        const savePermission = find("[data-save-permission]");
+        if (savePermission) savePermission.disabled = !capabilities().managerWrite;
     }
 
     function setDialogOpen(dialog, open) {
@@ -157,6 +168,7 @@ export async function initializeSystemAdminDashboard(root = document, repository
     }
 
     function openPermissionDialog(userId) {
+        if (!capabilities().managerWrite) return;
         const user = state.users.find((item) => item.id === userId);
         const dialog = find("[data-permission-dialog]");
         if (!user || !dialog) return;
@@ -215,7 +227,13 @@ export async function initializeSystemAdminDashboard(root = document, repository
         const managerCohortIds = [...dialog.querySelectorAll("[data-dialog-cohort-options] input:checked")].map((input) => input.value);
         const errorMessage = dialog.querySelector("[data-permission-error]");
         try {
-            await repository.updateUserPermissions(selectedUserId, {status, globalRole, managerCohortIds});
+            const selectedUser = state.users.find((user) => user.id === selectedUserId);
+            await repository.updateUserPermissions(selectedUserId, {
+                status,
+                globalRole,
+                managerCohortIds,
+                previousManagerCohortIds: selectedUser?.managerCohortIds || []
+            });
             repository.appendAudit({action: "권한 변경", detail: `${userName(selectedUserId)} 사용자 권한 변경`});
             state = await repository.loadDashboard(); renderAll(); setDialogOpen(dialog, false); showToast("사용자 권한이 저장되었습니다.");
         } catch (error) {
