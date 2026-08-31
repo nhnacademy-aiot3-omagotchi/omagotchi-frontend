@@ -189,19 +189,28 @@ export const ThresholdMixed = {
 // 기수가 끝나면 그 기수 공간의 센서는 어느 기수에도 속하지 않게 되는데, deviceEui가 하류의
 // 기본키라 새 기수가 등록하려 하면 409다. 등록 실패를 막다른 길로 두지 않고 인계로 잇는다.
 
+const SUBMITTED_EUI = "24e124136d151547";
+
+/** onClaimSensor가 실제로 무엇을 받았는지 기록한다. 레이스 회귀의 유일한 증거다. */
+const claimedPayloads = [];
+
 /**
  * 등록 폼을 열고 새 센서 정보를 채운 뒤 등록을 누른다.
  *
  * 첫 입력만 findBy로 기다린다 — 클릭 직후에는 다이얼로그가 아직 마운트되지 않아
  * getBy로 잡으면 간헐적으로 실패한다.
  */
-async function fillAndSubmitNewSensor(canvas) {
+async function fillNewSensorForm(canvas) {
   await userEvent.click(canvas.getByRole("button", { name: /센서 추가/ }));
 
   const nameInput = await canvas.findByPlaceholderText("예: 3층 회의실 A 온도");
   await userEvent.type(nameInput, "창가 CO2 센서");
-  await userEvent.type(canvas.getByPlaceholderText("예: 24e124725e5c2862"), "24e124136d151547");
+  await userEvent.type(canvas.getByPlaceholderText("예: 24e124725e5c2862"), SUBMITTED_EUI);
   await userEvent.type(canvas.getByPlaceholderText("예: WS202"), "AM103");
+}
+
+async function fillAndSubmitNewSensor(canvas) {
+  await fillNewSensorForm(canvas);
   await userEvent.click(canvas.getByRole("button", { name: "등록" }));
 
   // 등록 요청이 끝나고 다시 그려질 때까지 기다린다.
@@ -276,6 +285,58 @@ export const SensorClaimFailed = {
 
     await waitFor(() => expect(canvas.getByRole("button", { name: "인계하기" })).toBeEnabled());
     expect(canvas.getByRole("dialog")).toBeInTheDocument();
+  }
+};
+
+/**
+ * 409 응답 시점을 play가 직접 잡는다.
+ *
+ * setTimeout으로 흉내내면 Storybook의 계측된 userEvent가 얼마나 느린지에 결과가 달라진다 —
+ * 응답이 편집보다 먼저 도착하면 정작 재현하려던 레이스가 아니게 된다.
+ */
+let releaseSave = () => {};
+
+export const SensorClaimTargetsSubmittedValue = {
+  name: "센서 인계 · 응답 대기 중 입력을 고쳐도 제출값을 인계한다",
+  args: {
+    ...baseArgs,
+    defaultTab: "sensors",
+    onSaveSensor: () => new Promise((resolve) => {
+      releaseSave = () => resolve("claimable");
+    }),
+    onClaimSensor: async (sensor) => {
+      claimedPayloads.push({ deviceEui: sensor.deviceEui, spaceId: sensor.spaceId });
+      return true;
+    }
+  },
+  play: async ({ canvasElement }) => {
+    claimedPayloads.length = 0;
+    const canvas = within(canvasElement);
+    await fillNewSensorForm(canvas);
+
+    // 실습실(spaceId 1)로 제출한다 — 폼의 기본 선택이다. 응답은 아직 오지 않는다.
+    await userEvent.click(canvas.getByRole("button", { name: "등록" }));
+
+    // 저장 중에 위치를 사무실로 바꾼다. 이미 날아간 요청은 취소되지 않는다.
+    const dialog = within(canvas.getByRole("dialog"));
+    await userEvent.selectOptions(dialog.getByRole("combobox"), "2");
+
+    // 이제 실습실 제출에 대한 409가 도착한다.
+    releaseSave();
+
+    await waitFor(() => expect(canvas.getByRole("button", { name: "인계하기" })).toBeInTheDocument());
+
+    // 안내는 지금 폼(사무실)이 아니라 충돌한 제출값(실습실)을 가리킨다.
+    expect(canvas.getByRole("alert")).toHaveTextContent(SUBMITTED_EUI);
+    expect(canvas.getByRole("alert")).toHaveTextContent("실습실로 인계할 수 있습니다");
+    expect(dialog.getByRole("combobox")).toHaveValue("2");
+
+    await userEvent.click(canvas.getByRole("button", { name: "인계하기" }));
+
+    // 폼이 아니라 제출값이 나간다. 여기가 흔들리면 엉뚱한 공간으로 인계된다.
+    await waitFor(() => expect(claimedPayloads).toEqual([
+      { deviceEui: SUBMITTED_EUI, spaceId: 1 }
+    ]));
   }
 };
 

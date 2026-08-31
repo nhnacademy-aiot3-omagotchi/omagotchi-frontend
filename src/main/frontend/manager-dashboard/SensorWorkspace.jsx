@@ -758,34 +758,39 @@ function SensorDialog({ mode, sensor, spaces, onClose, onSave, onClaim }) {
   });
   const [form, setForm] = useState(() => toForm(sensor));
   const [saving, setSaving] = useState(false);
-  // 이미 등록된 EUI라 막힌 상태. 이전 기수가 쓰던 센서면 인계로 이어갈 수 있다.
-  const [claimable, setClaimable] = useState(false);
+  // 409가 난 <b>제출 시점의 값</b>. 불리언으로 두면 인계할 때 "지금 폼"을 다시 읽게 되는데,
+  // 저장 요청이 날아가 있는 동안 입력이 바뀌면 충돌한 센서와 인계하는 센서가 어긋난다.
+  const [claimCandidate, setClaimCandidate] = useState(null);
   useEffect(() => { if (sensor) setForm(toForm(sensor)); }, [sensor]);
   function update(field, value) {
     // 입력을 고치면 아까의 충돌은 더 이상 이 폼의 상태가 아니다.
-    setClaimable(false);
+    setClaimCandidate(null);
     setForm((current) => ({ ...current, [field]: value }));
   }
   async function submit(event) {
     event.preventDefault();
+    // 응답을 기다리는 동안 form이 바뀔 수 있다. 이 요청이 무엇을 보냈는지는 지금 붙잡는다.
+    const submitted = form;
     setSaving(true);
     try {
-      setClaimable(await onSave(form) === "claimable");
+      setClaimCandidate(await onSave(submitted) === "claimable" ? submitted : null);
     } finally {
       setSaving(false);
     }
   }
   async function claim() {
+    if (!claimCandidate) return;
     setSaving(true);
     try {
-      await onClaim(form);
+      await onClaim(claimCandidate);
     } finally {
       setSaving(false);
     }
   }
 
+  // 대상 공간도 지금 폼이 아니라 충돌한 제출값에서 읽는다.
   const claimTargetName =
-      spaces.find((space) => space.spaceId === form.spaceId)?.name ?? "선택한 공간";
+      spaces.find((space) => space.spaceId === claimCandidate?.spaceId)?.name ?? "선택한 공간";
 
   return (
     <div className="sensor-dialog-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
@@ -803,10 +808,13 @@ function SensorDialog({ mode, sensor, spaces, onClose, onSave, onClaim }) {
               <input required disabled={isEdit} maxLength={32} pattern={EUI_PATTERN} value={form.deviceEui} onChange={(event) => update("deviceEui", event.target.value.toLowerCase())} placeholder="예: 24e124725e5c2862" />
               <small>{isEdit ? "등록 후에는 변경할 수 없습니다." : "16진수 소문자만 사용합니다 (최대 32자)."}</small>
             </label>
-            {claimable && (
+            {claimCandidate && (
               <p className="sensor-dialog-conflict sensor-field--wide" role="alert">
+                {/* 어느 EUI가 막혔는지 적는다. 응답을 기다리는 사이 입력을 고쳤다면
+                    폼의 값과 다를 수 있고, 그 차이는 감추는 것보다 드러내는 편이 낫다. */}
                 <span>
-                  이미 등록된 센서입니다. 이전 기수에서 쓰던 센서라면{" "}
+                  <b>{claimCandidate.deviceEui}</b> — 이미 등록된 센서입니다. 이전 기수에서
+                  쓰던 센서라면{" "}
                   <b>{claimTargetName}</b>{directionParticle(claimTargetName)} 인계할 수 있습니다.
                 </span>
                 <button type="button" className="sensor-claim-button" onClick={claim} disabled={saving}>
