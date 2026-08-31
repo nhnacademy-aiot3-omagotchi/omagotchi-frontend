@@ -118,3 +118,94 @@ test("force release refreshes server state and a failure preserves the current l
   assert.equal(await currentContext.onForceEndOccupancy(3), true);
   assert.equal(currentContext.occupancies.length, 0);
 });
+
+test("older occupancy response cannot overwrite a newer occupancy list", async () => {
+  let panel;
+  let currentContext;
+  let listCalls = 0;
+
+  let resolveFirst;
+  let resolveSecond;
+
+  const firstResponse = new Promise((resolve) => {
+    resolveFirst = resolve;
+  });
+  const secondResponse = new Promise((resolve) => {
+    resolveSecond = resolve;
+  });
+
+  const staleOccupancy = {
+    occupancyId: 1,
+    spaceId: 3,
+    participantCount: 2
+  };
+
+  const latestOccupancy = {
+    occupancyId: 2,
+    spaceId: 4,
+    participantCount: 1
+  };
+
+  const window = {
+    OmagotchiDashboardPanels: {
+      register: (registered) => {
+        panel = registered;
+      }
+    },
+    OmagotchiApi: {
+      sensor: {
+        listSpaces: async () => []
+      },
+      adminOccupancies: {
+        list: async () => {
+          listCalls += 1;
+          return listCalls === 1 ? firstResponse : secondResponse;
+        },
+        participants: async () => [],
+        forceRelease: async () => {}
+      }
+    },
+    dispatchEvent: () => {}
+  };
+
+  vm.runInNewContext(
+      await readFile(PANEL_SOURCE_URL, "utf8"),
+      { window, CustomEvent: class {} }
+  );
+
+  const instance = panel.create({
+    root: { querySelector: () => ({}) },
+    store: { getState: () => ({ selectedCohortId: 1 }) },
+    setBubble: () => {}
+  });
+
+  window.OmagotchiManagerSpaceIsland = {
+    render: (context) => {
+      currentContext = context;
+    }
+  };
+
+  // 첫 번째 조회 시작
+  instance.activate();
+
+  // 첫 번째 요청이 끝나기 전에 두 번째 조회 시작
+  const secondLoad = currentContext.onLoadOccupancies();
+
+  // 최신 요청(두 번째)이 먼저 완료
+  resolveSecond([latestOccupancy]);
+  await secondLoad;
+
+  assert.equal(currentContext.occupancies.length, 1);
+  assert.equal(currentContext.occupancies[0].occupancyId, 2);
+
+  // 오래된 첫 번째 요청이 나중에 완료
+  resolveFirst([staleOccupancy]);
+
+  // 첫 번째 promise 처리 완료 대기
+  await new Promise((resolve) => setTimeout(resolve, 0));
+
+  // 오래된 응답이 최신 상태를 덮어쓰면 안 됨
+  assert.equal(currentContext.occupancies.length, 1);
+  assert.equal(currentContext.occupancies[0].occupancyId, 2);
+  assert.equal(listCalls, 2);
+});

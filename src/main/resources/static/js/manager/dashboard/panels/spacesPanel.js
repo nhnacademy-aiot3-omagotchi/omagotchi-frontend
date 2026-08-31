@@ -9,6 +9,7 @@
 
         let loaded = false;
         let loadSequence = 0;
+        let occupancyLoadSequence = 0;
         let spaces = [];
         let loading = false;
         let error = null;
@@ -49,20 +50,34 @@
                 publish();
                 return false;
             }
+
+            const sequence = ++occupancyLoadSequence;
             occupancyLoading = true;
             occupancyError = null;
             publish();
+
             try {
                 const response = await api.list();
+
+                if (sequence !== occupancyLoadSequence) {
+                    return false;
+                }
+
                 occupancies = Array.isArray(response) ? response : [];
                 return true;
             } catch (cause) {
+                if (sequence !== occupancyLoadSequence) {
+                    return false;
+                }
+
                 occupancyError = cause?.message || "활성 점유 목록을 불러오지 못했습니다.";
                 warn("활성 점유 목록을 불러오지 못했습니다.", cause);
                 return false;
             } finally {
-                occupancyLoading = false;
-                publish();
+                if (sequence === occupancyLoadSequence) {
+                    occupancyLoading = false;
+                    publish();
+                }
             }
         }
 

@@ -106,6 +106,26 @@ class ApiExceptionHandlerTest {
     }
 
     @Test
+    @DisplayName("승인되지 않은 Learning 401도 기존 인증 세션을 폐기")
+    void invalidatesStaleSessionForUnapprovedLearningAuthenticationFailure() throws Exception {
+        MockHttpSession authenticatedSession = new MockHttpSession();
+
+        MvcResult result = mockMvc.perform(
+                        get("/bff/v1/test/errors/learning-unapproved-401")
+                                .session(authenticatedSession)
+                )
+                .andExpectAll(
+                        status().isBadGateway(),
+                        header().string(HttpHeaders.CACHE_CONTROL, "no-store"),
+                        jsonPath("$.code").value("COMMON_DOWNSTREAM_INVALID_RESPONSE")
+                )
+                .andReturn();
+
+        assertThat(authenticatedSession.isInvalid()).isTrue();
+        assertThat(result.getRequest().getSession(false)).isNull();
+    }
+
+    @Test
     @DisplayName("BFF Business 401의 기존 인증 세션 폐기")
     void invalidatesStaleSessionForBusinessAuthenticationFailure() throws Exception {
         assertAuthenticationFailureExpiresSession(
@@ -463,6 +483,20 @@ class ApiExceptionHandlerTest {
                             "learning-authentication-request"
                     ),
                     new IllegalStateException("expired access token")
+            );
+        }
+
+        @GetMapping("/bff/v1/test/errors/learning-unapproved-401")
+        void unapprovedLearningAuthenticationFailure() {
+            throw new LearningDownstreamException(
+                    HttpStatus.UNAUTHORIZED,
+                    new ApiErrorResponse(
+                            "LEARNING_INTERNAL_AUTH_DIAGNOSTIC",
+                            "internal authentication detail",
+                            "/api/v1/internal/example",
+                            "learning-unapproved-authentication-request"
+                    ),
+                    new IllegalStateException("unapproved authentication failure")
             );
         }
 

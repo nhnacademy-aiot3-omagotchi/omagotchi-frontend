@@ -12,8 +12,8 @@ import site.omagotchi.frontend.learning.infrastructure.request.LearningSpaceMuta
 import site.omagotchi.frontend.learning.infrastructure.request.LearningAssignSpaceCohortRequest;
 import site.omagotchi.frontend.learning.infrastructure.request.LearningUpdateSpaceRequest;
 import site.omagotchi.frontend.space.application.AdminSpaceBffService;
-import site.omagotchi.frontend.learning.infrastructure.response.LearningAdminActiveOccupancyResponse;
-import site.omagotchi.frontend.learning.infrastructure.response.LearningOccupancyParticipantResponse;
+import site.omagotchi.frontend.space.presentation.response.AdminActiveOccupancyResponse;
+import site.omagotchi.frontend.space.presentation.response.OccupancyParticipantResponse;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -148,18 +148,29 @@ class AdminSpaceBffControllerTest {
     void relaysAdminOccupancyManagementEndpoints() throws Exception {
         UUID userId = UUID.randomUUID();
         when(service.getActiveOccupancies(any(HttpServletRequest.class))).thenReturn(List.of(
-                new LearningAdminActiveOccupancyResponse(
+                new AdminActiveOccupancyResponse(
                         3L, "회의실 A", 9L, userId, "점유자", 1,
                         OffsetDateTime.parse("2026-08-28T09:00:00+09:00"),
                         OffsetDateTime.parse("2026-08-28T11:00:00+09:00"), 3600L, "ACTIVE")));
         when(service.getParticipants(eq(3L), any(HttpServletRequest.class))).thenReturn(List.of(
-                new LearningOccupancyParticipantResponse(userId, "점유자", true)));
+                new OccupancyParticipantResponse(userId, "점유자", true)));
 
         mockMvc.perform(get("/bff/v1/admin/spaces/occupancies"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].participantCount").value(1));
+                .andExpect(jsonPath("$[0].spaceId").value(3))
+                .andExpect(jsonPath("$[0].spaceName").value("회의실 A"))
+                .andExpect(jsonPath("$[0].occupancyId").value(9))
+                .andExpect(jsonPath("$[0].occupierUserId").value(userId.toString()))
+                .andExpect(jsonPath("$[0].occupierDisplayName").value("점유자"))
+                .andExpect(jsonPath("$[0].participantCount").value(1))
+                .andExpect(jsonPath("$[0].startedAt").value("2026-08-28T09:00:00+09:00"))
+                .andExpect(jsonPath("$[0].expiresAt").value("2026-08-28T11:00:00+09:00"))
+                .andExpect(jsonPath("$[0].remainingTimeSeconds").value(3600))
+                .andExpect(jsonPath("$[0].status").value("ACTIVE"));
         mockMvc.perform(get("/bff/v1/admin/spaces/3/occupancies/participants"))
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].userId").value(userId.toString()))
+                .andExpect(jsonPath("$[0].displayName").value("점유자"))
                 .andExpect(jsonPath("$[0].occupier").value(true));
         mockMvc.perform(post("/bff/v1/admin/spaces/3/occupancies/force-release"))
                 .andExpect(status().isNoContent());

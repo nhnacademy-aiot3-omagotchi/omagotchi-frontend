@@ -165,10 +165,11 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
     ) {
         ApiErrorResponse downstream = exception.getErrorResponse();
 
+        if (exception.getStatusCode().value() == HttpStatus.UNAUTHORIZED.value()) {
+            expireAuthenticationSession(request, response);
+        }
+
         if (isPublicLearningDownstreamError(exception)) {
-            if (exception.getStatusCode().value() == HttpStatus.UNAUTHORIZED.value()) {
-                expireAuthenticationSession(request, response);
-            }
             ApiErrorResponse publicResponse = new ApiErrorResponse(
                     downstream.code(),
                     publicLearningDownstreamMessage(exception.getStatusCode().value()),

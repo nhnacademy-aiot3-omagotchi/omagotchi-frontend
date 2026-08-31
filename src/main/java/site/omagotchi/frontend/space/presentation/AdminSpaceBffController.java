@@ -20,8 +20,8 @@ import site.omagotchi.frontend.space.presentation.request.AdminSpaceCohortReques
 import site.omagotchi.frontend.space.presentation.request.AdminSpaceUpsertRequest;
 import site.omagotchi.frontend.space.presentation.request.AdminSpaceUpdateRequest;
 import tools.jackson.databind.JsonNode;
-import site.omagotchi.frontend.learning.infrastructure.response.LearningAdminActiveOccupancyResponse;
-import site.omagotchi.frontend.learning.infrastructure.response.LearningOccupancyParticipantResponse;
+import site.omagotchi.frontend.space.presentation.response.AdminActiveOccupancyResponse;
+import site.omagotchi.frontend.space.presentation.response.OccupancyParticipantResponse;
 
 import java.util.List;
 
@@ -33,14 +33,14 @@ public class AdminSpaceBffController {
     private final AdminSpaceBffService adminSpaceBffService;
 
     @GetMapping("/occupancies")
-    public List<LearningAdminActiveOccupancyResponse> getActiveOccupancies(
+    public List<AdminActiveOccupancyResponse> getActiveOccupancies(
             HttpServletRequest request
     ) {
         return adminSpaceBffService.getActiveOccupancies(request);
     }
 
     @GetMapping("/{spaceId}/occupancies/participants")
-    public List<LearningOccupancyParticipantResponse> getParticipants(
+    public List<OccupancyParticipantResponse> getParticipants(
             @PathVariable Long spaceId,
             HttpServletRequest request
     ) {

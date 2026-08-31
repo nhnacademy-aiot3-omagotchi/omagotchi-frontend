@@ -17,6 +17,8 @@ import site.omagotchi.frontend.learning.infrastructure.request.LearningUpdateSpa
 import tools.jackson.databind.JsonNode;
 import site.omagotchi.frontend.learning.infrastructure.response.LearningAdminActiveOccupancyResponse;
 import site.omagotchi.frontend.learning.infrastructure.response.LearningOccupancyParticipantResponse;
+import site.omagotchi.frontend.space.presentation.response.AdminActiveOccupancyResponse;
+import site.omagotchi.frontend.space.presentation.response.OccupancyParticipantResponse;
 
 import java.util.List;
 
@@ -28,7 +30,7 @@ public class AdminSpaceBffService {
     private final LearningGatewayCallExecutor callExecutor;
     private final LearningSessionAuthorization authorization;
 
-    public List<LearningAdminActiveOccupancyResponse> getActiveOccupancies(
+    public List<AdminActiveOccupancyResponse> getActiveOccupancies(
             HttpServletRequest request
     ) {
         ResponseEntity<List<LearningAdminActiveOccupancyResponse>> response = callExecutor.execute(
@@ -38,10 +40,15 @@ public class AdminSpaceBffService {
         if (response.getBody() == null) {
             throw invalidResponse("관리자 활성 점유 조회 성공 응답 Body 누락");
         }
-        return response.getBody();
+        return response.getBody().stream()
+                .map(occupancy -> new AdminActiveOccupancyResponse(
+                        occupancy.spaceId(), occupancy.spaceName(), occupancy.occupancyId(),
+                        occupancy.occupierUserId(), occupancy.occupierDisplayName(), occupancy.participantCount(),
+                        occupancy.startedAt(), occupancy.expiresAt(), occupancy.remainingTimeSeconds(), occupancy.status()))
+                .toList();
     }
 
-    public List<LearningOccupancyParticipantResponse> getParticipants(
+    public List<OccupancyParticipantResponse> getParticipants(
             Long spaceId,
             HttpServletRequest request
     ) {
@@ -52,7 +59,10 @@ public class AdminSpaceBffService {
         if (response.getBody() == null) {
             throw invalidResponse("관리자 참여자 조회 성공 응답 Body 누락");
         }
-        return response.getBody();
+        return response.getBody().stream()
+                .map(participant -> new OccupancyParticipantResponse(
+                        participant.userId(), participant.displayName(), participant.occupier()))
+                .toList();
     }
 
     public void forceRelease(Long spaceId, HttpServletRequest request) {

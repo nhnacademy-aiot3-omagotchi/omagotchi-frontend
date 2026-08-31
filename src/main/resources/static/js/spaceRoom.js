@@ -643,7 +643,7 @@ import {
                         const room = item.room;
                         const view = getRoomView(room);
                         const alertEnabled = Boolean(vacancyAlertForSpace(room.id));
-                        const occupantCount = room.occupancy?.participants?.length || 0;
+                        const occupantCount = room.occupancy?.participantCount ?? 0;
                         const canEnter = view.key === "available";
                         const canAlert = Boolean(room.occupancy) && !["mine", "participating"].includes(view.key);
                         const showDetail = !canEnter && !canAlert;

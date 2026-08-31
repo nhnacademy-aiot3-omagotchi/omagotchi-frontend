@@ -22,6 +22,8 @@ import site.omagotchi.frontend.learning.infrastructure.request.LearningUpdateSpa
 import tools.jackson.databind.JsonNode;
 import site.omagotchi.frontend.learning.infrastructure.response.LearningAdminActiveOccupancyResponse;
 import site.omagotchi.frontend.learning.infrastructure.response.LearningOccupancyParticipantResponse;
+import site.omagotchi.frontend.space.presentation.response.AdminActiveOccupancyResponse;
+import site.omagotchi.frontend.space.presentation.response.OccupancyParticipantResponse;
 
 import java.time.Instant;
 import java.time.OffsetDateTime;
@@ -150,8 +152,12 @@ class AdminSpaceBffServiceTest {
         when(learningHttpService.forceReleaseSpaceOccupancy(BEARER, 3L))
                 .thenReturn(ResponseEntity.noContent().build());
 
-        assertThat(service.getActiveOccupancies(request)).containsExactly(occupancy);
-        assertThat(service.getParticipants(3L, request)).containsExactly(participant);
+        assertThat(service.getActiveOccupancies(request)).containsExactly(new AdminActiveOccupancyResponse(
+                occupancy.spaceId(), occupancy.spaceName(), occupancy.occupancyId(), occupancy.occupierUserId(),
+                occupancy.occupierDisplayName(), occupancy.participantCount(), occupancy.startedAt(), occupancy.expiresAt(),
+                occupancy.remainingTimeSeconds(), occupancy.status()));
+        assertThat(service.getParticipants(3L, request)).containsExactly(new OccupancyParticipantResponse(
+                participant.userId(), participant.displayName(), participant.occupier()));
         service.forceRelease(3L, request);
 
         verify(learningHttpService).getAdminActiveOccupancies(BEARER);
