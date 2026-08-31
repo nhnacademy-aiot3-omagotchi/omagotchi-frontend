@@ -175,6 +175,11 @@ class IdentityLoginAuthenticationProviderTest {
         }
 
         @Override
+        public BrowserSessionTokenBundle refresh(String refreshToken) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
         public void logout(String refreshToken) {
             throw new UnsupportedOperationException();
         }

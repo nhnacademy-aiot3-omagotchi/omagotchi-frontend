@@ -19,6 +19,9 @@ public interface IdentityAuthHttpService {
     @PostExchange("/login")
     ResponseEntity<TokenResponse> login(@RequestBody IdentityLoginRequest request);
 
+    @PostExchange("/refresh")
+    ResponseEntity<TokenResponse> refresh(@RequestBody IdentityRefreshTokenRequest request);
+
     @PostExchange("/logout")
     ResponseEntity<Void> logout(@RequestBody IdentityRefreshTokenRequest request);
 }

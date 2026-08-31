@@ -8,7 +8,7 @@ import site.omagotchi.frontend.global.exception.CommonErrorCode;
 import java.time.Instant;
 import java.util.UUID;
 
-// Identity Login 2xx 응답 본문
+// Identity Login·Refresh 2xx 응답 본문
 public record TokenResponse(
         UUID userId,
         String globalRole,
