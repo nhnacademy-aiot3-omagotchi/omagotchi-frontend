@@ -2,6 +2,7 @@ import { createAttendance, hasApprovedCohort } from "./home/attendance.js";
 import { createBgmPlayer } from "./home/bgm.js";
 import { createCharacter } from "./home/character.js";
 import { createLevel } from "./home/level.js";
+import { loadProgressResources, normalizeDailyQuests } from "./home/questData.js";
 import { createStudyRecords } from "./home/studyRecords.js?v=20260825-5";
 import { createTimer } from "./home/timer.js";
 import { escapeHtml, formatDuration } from "./home/utils.js";
@@ -752,26 +753,27 @@ async function loadProgressOverlay() {
 
     // 랭킹 조회 기수는 서버가 Session 승인 기수에서 확보하므로 Browser가 지정하지 않는다.
     // 승인 기수가 없으면 서버가 업무 오류를 반환하므로, 빈 랭킹으로 표시하고 화면은 유지한다.
-    const hasApprovedCohort = Boolean(currentProfile.approvedCohort?.cohortId);
-    const [home, quests, rankings] = await Promise.all([
-        api.gamification.getHome(),
-        api.gamification.getDailyQuests(),
-        hasApprovedCohort
-            ? api.ranking.getToday().catch(() => null)
-            : Promise.resolve(null)
-    ]);
-
-    const dailyQuests = Array.isArray(quests) ? quests : [];
-    questList.innerHTML = dailyQuests.length ? dailyQuests.map((quest) => {
-        const canClaim = quest.status === "COMPLETED";
-        const statusLabel = questStatusLabel(quest);
-        return `<li>
-            <div><strong>${escapeHtml(quest.title)}</strong><p>${quest.progressCount} / ${quest.targetCount} · ${quest.rewardXp} XP</p></div>
-            ${canClaim
-                ? `<button type="button" data-home-claim="${quest.id}">${statusLabel}</button>`
-                : `<em>${statusLabel}</em>`}
-        </li>`;
-    }).join("") : `<li><div><strong>등록된 퀘스트가 없습니다.</strong><p>오늘 제공된 퀘스트가 없습니다.</p></div><em>대기</em></li>`;
+    const hasRankingCohort = Boolean(currentProfile.approvedCohort?.cohortId);
+    const results = await loadProgressResources(api, hasRankingCohort);
+    const home = results.home.status === "fulfilled" ? results.home.value : null;
+    const rankings = results.rankings.status === "fulfilled" ? results.rankings.value : null;
+    const dailyQuests = results.quests.status === "fulfilled"
+        ? normalizeDailyQuests(results.quests.value)
+        : null;
+    if (dailyQuests === null) {
+        questList.innerHTML = `<li><div><strong>퀘스트를 불러오지 못했습니다.</strong><p>잠시 후 다시 시도해 주세요.</p></div><em>오류</em></li>`;
+    } else {
+        questList.innerHTML = dailyQuests.length ? dailyQuests.map((quest) => {
+            const canClaim = quest.status === "COMPLETED";
+            const statusLabel = questStatusLabel(quest);
+            return `<li>
+                <div><strong>${escapeHtml(quest.title)}</strong><p>${quest.progressCount} / ${quest.targetCount} · ${quest.rewardXp} XP</p></div>
+                ${canClaim
+                    ? `<button type="button" data-home-claim="${escapeHtml(quest.id)}">${escapeHtml(statusLabel)}</button>`
+                    : `<em>${escapeHtml(statusLabel)}</em>`}
+            </li>`;
+        }).join("") : `<li><div><strong>등록된 퀘스트가 없습니다.</strong><p>오늘 제공된 퀘스트가 없습니다.</p></div><em>대기</em></li>`;
+    }
 
     const entries = Array.isArray(rankings?.entries) ? rankings.entries : [];
     rankingList.innerHTML = entries.length ? entries.map((entry) => `
