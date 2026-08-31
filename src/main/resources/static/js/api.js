@@ -337,6 +337,17 @@
             assignCohort: (spaceId, cohortId) => request(`/admin/spaces/${encodeURIComponent(spaceId)}/cohort`, {method: "PUT", body: {cohortId}}),
             unassignCohort: (spaceId) => request(`/admin/spaces/${encodeURIComponent(spaceId)}/cohort`, {method: "DELETE"})
         },
+        systemAdmin: {
+            getUsers: (query = {}) => request(withQuery("/admin/users", query)),
+            assignManager: (userId, cohortId) => request(
+                `/admin/users/${encodeURIComponent(userId)}/managed-cohorts/${encodeURIComponent(cohortId)}`,
+                {method: "PUT"}
+            ),
+            removeManager: (userId, cohortId) => request(
+                `/admin/users/${encodeURIComponent(userId)}/managed-cohorts/${encodeURIComponent(cohortId)}`,
+                {method: "DELETE"}
+            )
+        },
         manager: {
             getCohorts: () => request("/admin/cohorts"),
             createCohort: (payload) => request("/admin/cohorts", {method: "POST", body: payload}),

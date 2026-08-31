@@ -47,6 +47,7 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
             Map.entry("COMMON_MALFORMED_REQUEST", 400),
             Map.entry("AUTH_AUTHENTICATION_REQUIRED", 401),
             Map.entry("AUTH_ACCESS_DENIED", 403),
+            Map.entry("ACCOUNT_ADMIN_ACCESS_NOT_ALLOWED", 403),
             Map.entry("COHORT_INVALID_PERIOD", 400),
             Map.entry("COHORT_INVALID_STATUS_TRANSITION", 400),
             Map.entry("MEMBERSHIP_INVALID_STATUS_TRANSITION", 400),
