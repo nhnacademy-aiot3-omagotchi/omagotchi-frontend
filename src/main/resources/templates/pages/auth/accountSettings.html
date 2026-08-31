@@ -107,6 +107,52 @@
                        role="status" aria-live="polite" data-account-password-feedback></p>
                 </form>
             </section>
+
+            <section class="panel settings-card" aria-labelledby="telegram-settings-title">
+                <header class="settings-card-header">
+                    <span>NOTIFICATION</span>
+                    <h2 id="telegram-settings-title">텔레그램 알림</h2>
+                    <p>출결 마감, 회의실 만료, 공실 알림을 텔레그램으로 받습니다.</p>
+                </header>
+
+                <div class="settings-card-body" data-telegram-section>
+                    <dl class="settings-account-summary">
+                        <div>
+                            <dt>연동 상태</dt>
+                            <dd data-telegram-status>연동되지 않음</dd>
+                        </div>
+                        <div>
+                            <dt>알림 받기</dt>
+                            <dd>
+                                <label>
+                                    <input id="telegram-notification" name="telegramNotification"
+                                           type="checkbox" disabled
+                                           aria-describedby="telegram-feedback" data-telegram-toggle />
+                                    <span data-telegram-toggle-label>연동 후 사용할 수 있습니다</span>
+                                </label>
+                            </dd>
+                        </div>
+                    </dl>
+
+                    <p class="settings-help" data-telegram-help>
+                        연동하면 텔레그램 앱이 열립니다. 봇 대화에서 <strong>시작</strong>을 누른 뒤
+                        이 페이지를 새로고침하세요.
+                    </p>
+
+                    <button class="settings-submit-button" type="button" data-telegram-connect>
+                        텔레그램 연동하기
+                    </button>
+                    <button class="settings-submit-button" type="button" data-telegram-disconnect hidden>
+                        연동 해제
+                    </button>
+                    <button class="settings-submit-button" type="button" data-telegram-retry hidden>
+                        다시 확인
+                    </button>
+
+                    <p class="settings-feedback" id="telegram-feedback"
+                       role="status" aria-live="polite" data-telegram-feedback></p>
+                </div>
+            </section>
         </div>
     </section>
 </main>

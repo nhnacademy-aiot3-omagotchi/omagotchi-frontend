@@ -1,5 +1,9 @@
 import { getServiceDate } from "../attendanceState.js";
 
+export function hasApprovedCohort(profile) {
+    return Boolean(profile?.approvedCohort?.cohortId);
+}
+
 export function createAttendance({
     button,
     checkInTime,

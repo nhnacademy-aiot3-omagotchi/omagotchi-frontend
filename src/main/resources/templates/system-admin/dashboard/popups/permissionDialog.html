@@ -7,11 +7,11 @@
         <div class="system-dialog-user"><b data-dialog-user-initial>사</b><div><strong data-dialog-user-name>사용자</strong><small data-dialog-user-email>user@example.com</small></div></div>
         <section class="system-permission-section">
             <div><h3>계정 상태</h3><p>Identity AccountStatus 계약값만 선택할 수 있습니다.</p></div>
-            <label class="system-select-row"><span>AccountStatus</span><select data-account-status-select><option value="ACTIVE">ACTIVE · 활성</option><option value="LOCKED">LOCKED · 일시 잠금</option><option value="DISABLED">DISABLED · 전역 비활성화</option><option value="WITHDRAWN">WITHDRAWN · 탈퇴</option></select></label>
+            <label class="system-select-row"><span>AccountStatus</span><select data-account-status-select disabled><option value="ACTIVE">ACTIVE · 활성</option><option value="LOCKED">LOCKED · 일시 잠금</option><option value="DISABLED">DISABLED · 전역 비활성화</option><option value="WITHDRAWN">WITHDRAWN · 탈퇴</option></select></label>
         </section>
         <section class="system-permission-section">
             <div><h3>전역 시스템 권한</h3><p>모든 사용자와 기수를 관리할 수 있는 최고 권한입니다.</p></div>
-            <label class="system-switch-row"><span><strong>SYSTEM_ADMIN</strong><small>Omagotchi 전체 시스템 관리</small></span><input type="checkbox" data-system-admin-toggle /><i aria-hidden="true"></i></label>
+            <label class="system-switch-row"><span><strong>SYSTEM_ADMIN</strong><small>Omagotchi 전체 시스템 관리</small></span><input type="checkbox" data-system-admin-toggle disabled /><i aria-hidden="true"></i></label>
             <div class="service-integration-pending-compact">
                 <th:block th:replace="~{fragments/service-integration-pending :: state(
                     title='서비스 연동 대기',

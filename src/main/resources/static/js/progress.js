@@ -56,10 +56,10 @@ function updateClaimIndicator() {
     claimIndicator.hidden = !questList?.querySelector(".quest-item.is-claimable");
 }
 
-function renderQuests(home) {
+function renderQuests(quests) {
     if (!questList) return;
-    const quests = Array.isArray(home?.dailyQuests) ? home.dailyQuests : [];
-    questList.innerHTML = quests.length ? quests.map((quest) => {
+    const dailyQuests = Array.isArray(quests) ? quests : [];
+    questList.innerHTML = dailyQuests.length ? dailyQuests.map((quest) => {
         const progress = Math.max(0, Number(quest.progressCount) || 0);
         const target = Math.max(0, Number(quest.targetCount) || 0);
         const percentage = target ? Math.min(100, Math.round(progress / target * 100)) : 0;
@@ -126,6 +126,7 @@ function renderProgressFailure() {
 async function loadProgress() {
     if (
         typeof api?.gamification?.getHome !== "function"
+        || typeof api?.gamification?.getDailyQuests !== "function"
         || typeof api?.profile?.get !== "function"
         || typeof api?.ranking?.getToday !== "function"
     ) {
@@ -133,14 +134,15 @@ async function loadProgress() {
         return;
     }
 
-    const [homeResult, profileResult, rankingResult] = await Promise.allSettled([
+    const [homeResult, questResult, profileResult, rankingResult] = await Promise.allSettled([
         api.gamification.getHome(),
+        api.gamification.getDailyQuests(),
         api.profile.get(),
         api.ranking.getToday()
     ]);
 
-    if (homeResult.status === "fulfilled") {
-        renderQuests(homeResult.value);
+    if (questResult.status === "fulfilled") {
+        renderQuests(questResult.value);
     } else if (questList) {
         questList.innerHTML = '<article class="task-item quest-item"><div><h3>퀘스트를 불러오지 못했습니다.</h3><p>잠시 후 다시 시도해 주세요.</p></div></article>';
         updateClaimIndicator();

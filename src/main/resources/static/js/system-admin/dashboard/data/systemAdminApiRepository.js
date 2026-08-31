@@ -1,5 +1,8 @@
 function requireApi(api) {
-    if (!api?.manager?.getCohorts) {
+    if (!api?.manager?.getCohorts
+        || !api?.systemAdmin?.getUsers
+        || !api?.systemAdmin?.assignManager
+        || !api?.systemAdmin?.removeManager) {
         throw new Error("System Admin API 클라이언트를 불러오지 못했습니다.");
     }
     return api;
@@ -8,16 +11,51 @@ function requireApi(api) {
 function normalizeCohort(cohort) {
     return {
         ...cohort,
+        id: String(cohort.id),
         memberCount: cohort.memberCount ?? null,
-        managerUserIds: cohort.managerUserIds || [],
+        managerUserIds: (cohort.managerUserIds || []).map(String),
         managerAssignmentKnown: Array.isArray(cohort.managerUserIds)
     };
 }
 
-function identityNotConnectedError() {
-    const error = new Error("Identity 관리자 API 연동 후 사용할 수 있습니다.");
-    error.code = "IDENTITY_ADMIN_API_NOT_CONNECTED";
-    return error;
+function normalizeUser(account) {
+    const managedCohorts = Array.isArray(account.managedCohorts) ? account.managedCohorts : [];
+    return {
+        id: String(account.accountId),
+        email: account.email,
+        name: account.name,
+        globalRole: account.role,
+        status: account.status,
+        joinedAt: String(account.createdAt || "-").slice(0, 10),
+        managerCohortIds: managedCohorts.map((cohort) => String(cohort.cohortId))
+    };
+}
+
+function requireAccountPage(page) {
+    if (!page || !Array.isArray(page.content)
+        || !Number.isInteger(page.totalPages) || page.totalPages < 0) {
+        throw new Error("사용자 목록 응답 형식이 올바르지 않습니다.");
+    }
+    return page;
+}
+
+async function loadAllUsers(client) {
+    const pageSize = 100;
+    const firstPage = requireAccountPage(await client.systemAdmin.getUsers({
+        page: 0,
+        size: pageSize,
+        sort: "CREATED_AT_DESC"
+    }));
+    const users = [...firstPage.content];
+    for (let page = 1; page < firstPage.totalPages; page += 1) {
+        const nextPage = requireAccountPage(await client.systemAdmin.getUsers({
+            page,
+            size: pageSize,
+            sort: "CREATED_AT_DESC"
+        }));
+        users.push(...nextPage.content);
+    }
+    return users.map(normalizeUser);
 }
 
 export function createSystemAdminApiRepository(api = window.OmagotchiApi) {
@@ -25,13 +63,18 @@ export function createSystemAdminApiRepository(api = window.OmagotchiApi) {
 
     return {
         async loadDashboard() {
-            const cohorts = await client.manager.getCohorts();
+            const [users, cohorts] = await Promise.all([
+                loadAllUsers(client),
+                client.manager.getCohorts()
+            ]);
             return {
-                users: [],
+                users,
                 cohorts: (Array.isArray(cohorts) ? cohorts : []).map(normalizeCohort),
                 audits: [],
                 capabilities: {
-                    identity: false,
+                    identity: true,
+                    managerWrite: true,
+                    identityWrite: false,
                     audit: false,
                     cohortDelete: true,
                     cohortSummary: true
@@ -39,8 +82,50 @@ export function createSystemAdminApiRepository(api = window.OmagotchiApi) {
             };
         },
 
-        async updateUserPermissions() {
-            throw identityNotConnectedError();
+        async updateUserPermissions(userId, payload) {
+            const previous = new Set((payload.previousManagerCohortIds || []).map(String));
+            const next = new Set((payload.managerCohortIds || []).map(String));
+            const removals = [...previous].filter((cohortId) => !next.has(cohortId));
+            const additions = [...next].filter((cohortId) => !previous.has(cohortId));
+            const removed = [];
+            const added = [];
+
+            try {
+                for (const cohortId of removals) {
+                    await client.systemAdmin.removeManager(userId, cohortId);
+                    removed.push(cohortId);
+                }
+                for (const cohortId of additions) {
+                    await client.systemAdmin.assignManager(userId, cohortId);
+                    added.push(cohortId);
+                }
+            } catch (operationError) {
+                const rollbackErrors = [];
+                for (const cohortId of added.reverse()) {
+                    try {
+                        await client.systemAdmin.removeManager(userId, cohortId);
+                    } catch (rollbackError) {
+                        rollbackErrors.push(rollbackError);
+                    }
+                }
+                for (const cohortId of removed.reverse()) {
+                    try {
+                        await client.systemAdmin.assignManager(userId, cohortId);
+                    } catch (rollbackError) {
+                        rollbackErrors.push(rollbackError);
+                    }
+                }
+                if (rollbackErrors.length) {
+                    const partialFailure = new Error(
+                        "기수 권한 변경 일부를 복구하지 못했습니다.",
+                        {cause: operationError}
+                    );
+                    partialFailure.code = "MANAGER_PERMISSION_UPDATE_PARTIAL_FAILURE";
+                    partialFailure.rollbackErrors = rollbackErrors;
+                    throw partialFailure;
+                }
+                throw operationError;
+            }
         },
 
         async createCohort(payload) {
