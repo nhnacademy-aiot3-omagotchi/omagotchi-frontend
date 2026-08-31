@@ -12,6 +12,8 @@ import site.omagotchi.frontend.learning.infrastructure.request.LearningSpaceMuta
 import site.omagotchi.frontend.learning.infrastructure.request.LearningAssignSpaceCohortRequest;
 import site.omagotchi.frontend.learning.infrastructure.request.LearningUpdateSpaceRequest;
 import site.omagotchi.frontend.space.application.AdminSpaceBffService;
+import site.omagotchi.frontend.learning.infrastructure.response.LearningAdminActiveOccupancyResponse;
+import site.omagotchi.frontend.learning.infrastructure.response.LearningOccupancyParticipantResponse;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -20,10 +22,15 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import java.time.OffsetDateTime;
+import java.util.List;
+import java.util.UUID;
 
 @ExtendWith(MockitoExtension.class)
 class AdminSpaceBffControllerTest {
@@ -135,6 +142,29 @@ class AdminSpaceBffControllerTest {
 
         verify(service).assignCohort(eq(3L), eq(payload), any(HttpServletRequest.class));
         verify(service).unassignCohort(eq(3L), any(HttpServletRequest.class));
+    }
+
+    @Test
+    void relaysAdminOccupancyManagementEndpoints() throws Exception {
+        UUID userId = UUID.randomUUID();
+        when(service.getActiveOccupancies(any(HttpServletRequest.class))).thenReturn(List.of(
+                new LearningAdminActiveOccupancyResponse(
+                        3L, "회의실 A", 9L, userId, "점유자", 1,
+                        OffsetDateTime.parse("2026-08-28T09:00:00+09:00"),
+                        OffsetDateTime.parse("2026-08-28T11:00:00+09:00"), 3600L, "ACTIVE")));
+        when(service.getParticipants(eq(3L), any(HttpServletRequest.class))).thenReturn(List.of(
+                new LearningOccupancyParticipantResponse(userId, "점유자", true)));
+
+        mockMvc.perform(get("/bff/v1/admin/spaces/occupancies"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].participantCount").value(1));
+        mockMvc.perform(get("/bff/v1/admin/spaces/3/occupancies/participants"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].occupier").value(true));
+        mockMvc.perform(post("/bff/v1/admin/spaces/3/occupancies/force-release"))
+                .andExpect(status().isNoContent());
+
+        verify(service).forceRelease(eq(3L), any(HttpServletRequest.class));
     }
 
     private static JsonNode json(String value) {

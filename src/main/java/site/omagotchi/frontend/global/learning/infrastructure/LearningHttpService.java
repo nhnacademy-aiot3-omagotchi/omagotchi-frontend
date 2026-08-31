@@ -24,6 +24,7 @@ import site.omagotchi.frontend.learning.infrastructure.request.LearningUpdateSpa
 import site.omagotchi.frontend.learning.infrastructure.request.LearningVacancyAlertRequest;
 import site.omagotchi.frontend.learning.infrastructure.request.LearningAddParticipantRequest;
 import site.omagotchi.frontend.learning.infrastructure.response.LearningOccupancyResponse;
+import site.omagotchi.frontend.learning.infrastructure.response.LearningAdminActiveOccupancyResponse;
 import site.omagotchi.frontend.learning.infrastructure.response.LearningSpaceResponse;
 import site.omagotchi.frontend.learning.infrastructure.response.LearningVacancyAlertResponse;
 import site.omagotchi.frontend.learning.infrastructure.response.LearningParticipantCandidateResponse;
@@ -494,6 +495,17 @@ public interface LearningHttpService {
     ResponseEntity<JsonNode> createSpace(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
             @RequestBody LearningSpaceMutationRequest request
+    );
+
+    @GetExchange("/admin/spaces/occupancies")
+    ResponseEntity<List<LearningAdminActiveOccupancyResponse>> getAdminActiveOccupancies(
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization
+    );
+
+    @PostExchange("/spaces/{spaceId}/occupancies/force-release")
+    ResponseEntity<Void> forceReleaseSpaceOccupancy(
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
+            @PathVariable Long spaceId
     );
 
     @PutExchange("/admin/spaces/{spaceId}")

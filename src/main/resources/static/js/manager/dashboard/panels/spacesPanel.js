@@ -12,6 +12,9 @@
         let spaces = [];
         let loading = false;
         let error = null;
+        let occupancies = [];
+        let occupancyLoading = false;
+        let occupancyError = null;
 
         function publish() {
             const context = Object.freeze({
@@ -19,10 +22,16 @@
                 selectedCohortId: store.getState().selectedCohortId,
                 loading,
                 error,
+                occupancies,
+                occupancyLoading,
+                occupancyError,
                 onSave: saveSpace,
                 onChangeStatus: changeSpaceStatus,
                 onDelete: deleteSpace,
                 onChangeCohort: changeSpaceCohort,
+                onLoadOccupancies: loadOccupancies,
+                onLoadParticipants: loadParticipants,
+                onForceEndOccupancy: forceEndOccupancy,
                 onRetry: loadSpaces
             });
             window.OmagotchiManagerSpaceContext = context;
@@ -30,6 +39,49 @@
                 window.OmagotchiManagerSpaceIsland.render(context);
             } else {
                 window.dispatchEvent(new CustomEvent(CONTEXT_EVENT, { detail: context }));
+            }
+        }
+
+        async function loadOccupancies() {
+            const api = window.OmagotchiApi?.adminOccupancies;
+            if (!api?.list) {
+                occupancyError = "점유 API를 사용할 수 없습니다.";
+                publish();
+                return false;
+            }
+            occupancyLoading = true;
+            occupancyError = null;
+            publish();
+            try {
+                const response = await api.list();
+                occupancies = Array.isArray(response) ? response : [];
+                return true;
+            } catch (cause) {
+                occupancyError = cause?.message || "활성 점유 목록을 불러오지 못했습니다.";
+                warn("활성 점유 목록을 불러오지 못했습니다.", cause);
+                return false;
+            } finally {
+                occupancyLoading = false;
+                publish();
+            }
+        }
+
+        async function loadParticipants(spaceId) {
+            const api = window.OmagotchiApi?.adminOccupancies;
+            if (!api?.participants) throw new Error("참여자 API를 사용할 수 없습니다.");
+            return api.participants(spaceId);
+        }
+
+        async function forceEndOccupancy(spaceId) {
+            const api = window.OmagotchiApi?.adminOccupancies;
+            if (!api?.forceRelease) return false;
+            try {
+                await api.forceRelease(spaceId);
+                await loadOccupancies();
+                return true;
+            } catch (cause) {
+                warn("점유를 강제 종료하지 못했습니다.", cause);
+                return false;
             }
         }
 
@@ -125,6 +177,7 @@
         function activate() {
             publish();
             if (!loaded) loadSpaces();
+            loadOccupancies();
         }
 
         return Object.freeze({ activate });

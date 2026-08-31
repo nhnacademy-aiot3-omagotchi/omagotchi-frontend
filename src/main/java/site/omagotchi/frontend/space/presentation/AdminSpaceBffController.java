@@ -5,6 +5,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -19,6 +20,10 @@ import site.omagotchi.frontend.space.presentation.request.AdminSpaceCohortReques
 import site.omagotchi.frontend.space.presentation.request.AdminSpaceUpsertRequest;
 import site.omagotchi.frontend.space.presentation.request.AdminSpaceUpdateRequest;
 import tools.jackson.databind.JsonNode;
+import site.omagotchi.frontend.learning.infrastructure.response.LearningAdminActiveOccupancyResponse;
+import site.omagotchi.frontend.learning.infrastructure.response.LearningOccupancyParticipantResponse;
+
+import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
@@ -26,6 +31,30 @@ import tools.jackson.databind.JsonNode;
 public class AdminSpaceBffController {
 
     private final AdminSpaceBffService adminSpaceBffService;
+
+    @GetMapping("/occupancies")
+    public List<LearningAdminActiveOccupancyResponse> getActiveOccupancies(
+            HttpServletRequest request
+    ) {
+        return adminSpaceBffService.getActiveOccupancies(request);
+    }
+
+    @GetMapping("/{spaceId}/occupancies/participants")
+    public List<LearningOccupancyParticipantResponse> getParticipants(
+            @PathVariable Long spaceId,
+            HttpServletRequest request
+    ) {
+        return adminSpaceBffService.getParticipants(spaceId, request);
+    }
+
+    @PostMapping("/{spaceId}/occupancies/force-release")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void forceRelease(
+            @PathVariable Long spaceId,
+            HttpServletRequest request
+    ) {
+        adminSpaceBffService.forceRelease(spaceId, request);
+    }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)

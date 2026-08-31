@@ -36,6 +36,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 
 @WebMvcTest(SpaceBffController.class)
 @Import({
@@ -101,6 +102,20 @@ class SpaceBffSecurityMvcTest {
                 );
 
         verifyNoInteractions(spaceBffService);
+    }
+
+    @Test
+    @DisplayName("인증된 공간 목록 BFF 응답은 no-store로 캐시를 막는다")
+    void preventsCachingAuthenticatedSpaceList() throws Exception {
+        MvcResult loginResult = mockMvc.perform(post("/login")
+                        .with(csrf())
+                        .param("email", "user@example.com")
+                        .param("password", "password-passphrase"))
+                .andReturn();
+        MockHttpSession session = (MockHttpSession) loginResult.getRequest().getSession(false);
+
+        mockMvc.perform(get("/bff/v1/spaces").session(session))
+                .andExpectAll(status().isOk(), header().string("Cache-Control", org.hamcrest.Matchers.containsString("no-store")));
     }
 
     private static BrowserSessionTokenBundle tokenBundle() {

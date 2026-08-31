@@ -175,6 +175,16 @@
             getMyVacancyAlerts: () => request("/vacancy-alerts/me"),
             cancelVacancyAlert: (alertId) => request(`/vacancy-alerts/${encodeURIComponent(alertId)}`, {method: "DELETE"})
         },
+        adminOccupancies: {
+            list: () => request("/admin/spaces/occupancies"),
+            participants: (spaceId) => request(
+                `/admin/spaces/${encodeURIComponent(spaceId)}/occupancies/participants`
+            ),
+            forceRelease: (spaceId) => request(
+                `/admin/spaces/${encodeURIComponent(spaceId)}/occupancies/force-release`,
+                {method: "POST"}
+            )
+        },
         study: {
             getRecord: (id) => request(`/study-records/${encodeURIComponent(id)}`),
             getDailyRecords: (date) => request(withQuery("/study-records", {date})),

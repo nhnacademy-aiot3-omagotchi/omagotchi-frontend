@@ -15,6 +15,10 @@ import site.omagotchi.frontend.learning.infrastructure.request.LearningAssignSpa
 import site.omagotchi.frontend.learning.infrastructure.request.LearningSpaceMutationRequest;
 import site.omagotchi.frontend.learning.infrastructure.request.LearningUpdateSpaceRequest;
 import tools.jackson.databind.JsonNode;
+import site.omagotchi.frontend.learning.infrastructure.response.LearningAdminActiveOccupancyResponse;
+import site.omagotchi.frontend.learning.infrastructure.response.LearningOccupancyParticipantResponse;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -23,6 +27,40 @@ public class AdminSpaceBffService {
     private final LearningHttpService learningHttpService;
     private final LearningGatewayCallExecutor callExecutor;
     private final LearningSessionAuthorization authorization;
+
+    public List<LearningAdminActiveOccupancyResponse> getActiveOccupancies(
+            HttpServletRequest request
+    ) {
+        ResponseEntity<List<LearningAdminActiveOccupancyResponse>> response = callExecutor.execute(
+                () -> learningHttpService.getAdminActiveOccupancies(
+                        authorization.bearerToken(request)));
+        requireStatus(response, HttpStatus.OK, "관리자 활성 점유 조회");
+        if (response.getBody() == null) {
+            throw invalidResponse("관리자 활성 점유 조회 성공 응답 Body 누락");
+        }
+        return response.getBody();
+    }
+
+    public List<LearningOccupancyParticipantResponse> getParticipants(
+            Long spaceId,
+            HttpServletRequest request
+    ) {
+        ResponseEntity<List<LearningOccupancyParticipantResponse>> response = callExecutor.execute(
+                () -> learningHttpService.getSpaceOccupancyParticipants(
+                        authorization.bearerToken(request), spaceId));
+        requireStatus(response, HttpStatus.OK, "관리자 참여자 조회");
+        if (response.getBody() == null) {
+            throw invalidResponse("관리자 참여자 조회 성공 응답 Body 누락");
+        }
+        return response.getBody();
+    }
+
+    public void forceRelease(Long spaceId, HttpServletRequest request) {
+        ResponseEntity<Void> response = callExecutor.execute(
+                () -> learningHttpService.forceReleaseSpaceOccupancy(
+                        authorization.bearerToken(request), spaceId));
+        requireStatus(response, HttpStatus.NO_CONTENT, "점유 강제 종료");
+    }
 
     public JsonNode create(
             LearningSpaceMutationRequest payload,

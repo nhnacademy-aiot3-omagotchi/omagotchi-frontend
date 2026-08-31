@@ -81,7 +81,7 @@ import {
     function loadState() {
         try {
             const saved = JSON.parse(sessionStorage.getItem(stateKey));
-            if (!saved?.rooms) {
+            if (!saved || typeof saved !== "object" || Array.isArray(saved)) {
                 return cloneInitialState();
             }
 

@@ -20,8 +20,12 @@ import site.omagotchi.frontend.learning.infrastructure.request.LearningAssignSpa
 import site.omagotchi.frontend.learning.infrastructure.request.LearningSpaceMutationRequest;
 import site.omagotchi.frontend.learning.infrastructure.request.LearningUpdateSpaceRequest;
 import tools.jackson.databind.JsonNode;
+import site.omagotchi.frontend.learning.infrastructure.response.LearningAdminActiveOccupancyResponse;
+import site.omagotchi.frontend.learning.infrastructure.response.LearningOccupancyParticipantResponse;
 
 import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -129,5 +133,29 @@ class AdminSpaceBffServiceTest {
 
         verify(learningHttpService).assignSpaceCohort(BEARER, 3L, payload);
         verify(learningHttpService).unassignSpaceCohort(BEARER, 3L);
+    }
+
+    @Test
+    void relaysAdminOccupancyQueriesAndForceRelease() {
+        UUID occupierId = UUID.randomUUID();
+        var occupancy = new LearningAdminActiveOccupancyResponse(
+                3L, "회의실 A", 9L, occupierId, "점유자", 2,
+                OffsetDateTime.parse("2026-08-28T09:00:00+09:00"),
+                OffsetDateTime.parse("2026-08-28T11:00:00+09:00"), 3600L, "ACTIVE");
+        var participant = new LearningOccupancyParticipantResponse(occupierId, "점유자", true);
+        when(learningHttpService.getAdminActiveOccupancies(BEARER))
+                .thenReturn(ResponseEntity.ok(List.of(occupancy)));
+        when(learningHttpService.getSpaceOccupancyParticipants(BEARER, 3L))
+                .thenReturn(ResponseEntity.ok(List.of(participant)));
+        when(learningHttpService.forceReleaseSpaceOccupancy(BEARER, 3L))
+                .thenReturn(ResponseEntity.noContent().build());
+
+        assertThat(service.getActiveOccupancies(request)).containsExactly(occupancy);
+        assertThat(service.getParticipants(3L, request)).containsExactly(participant);
+        service.forceRelease(3L, request);
+
+        verify(learningHttpService).getAdminActiveOccupancies(BEARER);
+        verify(learningHttpService).getSpaceOccupancyParticipants(BEARER, 3L);
+        verify(learningHttpService).forceReleaseSpaceOccupancy(BEARER, 3L);
     }
 }

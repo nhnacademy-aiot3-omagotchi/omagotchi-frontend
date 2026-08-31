@@ -50,10 +50,16 @@ function normalizeSpaceContext(context = {}) {
     selectedCohortId: context.selectedCohortId ?? null,
     loading: Boolean(context.loading),
     error: context.error ? String(context.error) : null,
+    occupancies: Array.isArray(context.occupancies) ? context.occupancies : [],
+    occupancyLoading: Boolean(context.occupancyLoading),
+    occupancyError: context.occupancyError ? String(context.occupancyError) : null,
     onSave: fn(context.onSave),
     onChangeStatus: fn(context.onChangeStatus),
     onDelete: fn(context.onDelete),
     onChangeCohort: fn(context.onChangeCohort),
+    onLoadOccupancies: fn(context.onLoadOccupancies),
+    onLoadParticipants: fn(context.onLoadParticipants),
+    onForceEndOccupancy: fn(context.onForceEndOccupancy),
     onRetry: fn(context.onRetry)
   };
 }
