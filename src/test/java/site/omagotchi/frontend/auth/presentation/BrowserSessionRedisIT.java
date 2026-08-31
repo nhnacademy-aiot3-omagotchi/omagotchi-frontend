@@ -47,8 +47,8 @@ import static org.mockito.Mockito.verify;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
 @Testcontainers
-@Import(BrowserSessionRedisIntegrationTest.HttpClientConfiguration.class)
-class BrowserSessionRedisIntegrationTest {
+@Import(BrowserSessionRedisIT.HttpClientConfiguration.class)
+class BrowserSessionRedisIT {
 
     private static final String SESSION_COOKIE = "OMAGOTCHI_SESSION";
     private static final String ACCESS_JWT =
