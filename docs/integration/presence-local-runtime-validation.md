@@ -28,7 +28,6 @@ View `.env.local`:
 SESSION_REDIS_HOST=localhost
 SESSION_REDIS_PORT=6379
 SESSION_REDIS_DATABASE=0
-GATEWAY_SERVICE_BASE_URL=http://localhost:8080
 ```
 
 Learning `.env.local`:

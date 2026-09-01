@@ -49,8 +49,8 @@ flowchart LR
 ```
 
 이 흐름은 `LearningHttpService`, `AttendanceHttpService`, `SensorHttpService`,
-`SensorAdminHttpService`, `PresenceHttpService`에 적용된다. 별도 Reactive `WebClient`를 쓰는
-AI Chat은 후속 전환 전까지 Gateway 경로를 유지한다.
+`SensorAdminHttpService`, `PresenceHttpService`에 적용된다. AI Chat도 WebClient 기반 HTTP
+Service Client로 Learning Service를 직접 호출한다.
 
 세 종류의 경로를 섞지 않는다.
 
