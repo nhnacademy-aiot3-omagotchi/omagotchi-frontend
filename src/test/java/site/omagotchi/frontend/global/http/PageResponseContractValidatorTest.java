@@ -36,6 +36,23 @@ class PageResponseContractValidatorTest {
         assertThat(validated).isSameAs(response);
     }
 
+    @Test
+    @DisplayName("범위 초과 요청 페이지 번호 유지 허용")
+    void acceptsEmptyPageBeyondLastPage() {
+        // Given: 전체 페이지 범위를 초과한 요청 번호와 빈 항목을 유지한 응답
+        PageResponse<String> response = new PageResponse<>(
+                List.of(),
+                new PageInfo(2, 20, 21, 2)
+        );
+
+        // When: 공통 페이지 계약 검증
+        PageResponse<String> validated =
+                PageResponseContractValidator.requireValid(response, "테스트 조회");
+
+        // Then: 범위 초과 페이지를 빈 결과로 반환하는 계약 허용
+        assertThat(validated).isSameAs(response);
+    }
+
     @ParameterizedTest(name = "{0}")
     @MethodSource("invalidResponses")
     @DisplayName("잘못된 공통 items·page 계약 거부")

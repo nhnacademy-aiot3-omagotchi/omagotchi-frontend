@@ -26,10 +26,10 @@ function normalizeUser(account) {
         || typeof account.role !== "string" || !account.role.trim()
         || typeof account.status !== "string" || !account.status.trim()
         || !Number.isInteger(account.failedLoginAttempts) || account.failedLoginAttempts < 0
-        || (account.lockedUntil !== null
+        || (account.lockedUntil != null
             && (typeof account.lockedUntil !== "string"
                 || Number.isNaN(Date.parse(account.lockedUntil))))
-        || (account.withdrawnAt !== null
+        || (account.withdrawnAt != null
             && (typeof account.withdrawnAt !== "string"
                 || Number.isNaN(Date.parse(account.withdrawnAt))))
         || typeof account.createdAt !== "string" || Number.isNaN(Date.parse(account.createdAt))
@@ -44,8 +44,8 @@ function normalizeUser(account) {
         globalRole: account.role,
         status: account.status,
         failedLoginAttempts: account.failedLoginAttempts,
-        lockedUntil: account.lockedUntil,
-        withdrawnAt: account.withdrawnAt,
+        lockedUntil: account.lockedUntil ?? null,
+        withdrawnAt: account.withdrawnAt ?? null,
         joinedAt: String(account.createdAt || "-").slice(0, 10),
         managerCohortIds: account.managedCohorts.map((cohort) => String(cohort.cohortId))
     };

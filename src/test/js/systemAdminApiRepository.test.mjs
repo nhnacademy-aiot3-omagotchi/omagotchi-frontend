@@ -19,8 +19,6 @@ function apiFixture() {
                             role: "USER",
                             status: "ACTIVE",
                             failedLoginAttempts: 0,
-                            lockedUntil: null,
-                            withdrawnAt: null,
                             createdAt: "2026-08-31T07:00:00Z",
                             managedCohorts: [{cohortId: 3, cohortName: "AIoT 3기", role: "MANAGER"}]
                         }],
@@ -83,7 +81,7 @@ function apiFixture() {
     };
 }
 
-test("Identity 계정과 Learning 기수 운영 권한을 실제 대시보드 모델로 정규화한다", async () => {
+test("Identity 계정과 Learning 기수 운영 권한을 정규화하고 생략된 선택 시각은 null로 채운다", async () => {
     // Given
     const fixture = apiFixture();
     const repository = createSystemAdminApiRepository(fixture.api);
