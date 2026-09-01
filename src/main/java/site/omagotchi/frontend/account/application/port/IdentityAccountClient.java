@@ -13,4 +13,6 @@ public interface IdentityAccountClient {
             String currentPassword,
             String newPassword
     );
+
+    void withdraw(String accessToken, String currentPassword);
 }

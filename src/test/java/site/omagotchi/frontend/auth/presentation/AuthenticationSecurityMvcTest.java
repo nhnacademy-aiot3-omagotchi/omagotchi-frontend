@@ -164,6 +164,20 @@ class AuthenticationSecurityMvcTest {
     }
 
     @Test
+    @DisplayName("허용된 계정 탈퇴 안내 Code의 Login Page 표시")
+    void rendersAccountWithdrawnNotice() throws Exception {
+        // Given: 허용 목록에 등록된 계정 탈퇴 안내 Code
+        // When: 계정 탈퇴 안내 Code의 Login Page 요청
+        mockMvc.perform(get("/login?notice=account-withdrawn"))
+                // Then: 고정된 성공 안내 표시
+                .andExpectAll(
+                        status().isOk(),
+                        model().attribute("authFeedbackType", "success"),
+                        content().string(containsString("계정 탈퇴를 완료했습니다."))
+                );
+    }
+
+    @Test
     @DisplayName("허용된 Session 만료 안내 Code의 Login Page 표시")
     void rendersSessionExpiredNotice() throws Exception {
         // When: 허용된 Session 만료 안내 Code의 Login Page 요청

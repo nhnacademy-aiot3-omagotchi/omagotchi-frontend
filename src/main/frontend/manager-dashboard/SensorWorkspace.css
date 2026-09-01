@@ -96,6 +96,22 @@ button, input, select { font: inherit; }
 .sensor-chart-legend .legend-threshold::before { width: 18px; border-top: 2px dashed #b0413e; }
 .sensor-chart-legend .legend-exceeded::before { width: 8px; height: 8px; border-radius: 50%; background: #a63d2f; }
 
+/* 등록이 409로 막혔을 때. 실패를 막다른 길로 두지 않고 인계로 이어준다. */
+.sensor-dialog-conflict {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px;
+  margin: 0; padding: 11px 13px;
+  border: 1px solid #eec6bd; border-radius: 9px; background: #fdf1ee;
+  color: #a63d2f; font-size: 13px; line-height: 1.55;
+}
+.sensor-dialog-conflict span { flex: 1 1 240px; }
+.sensor-claim-button {
+  flex: none; height: 34px; padding: 0 15px;
+  border: 0; border-radius: 8px; color: #fff; background: #a63d2f;
+  font-size: 13px; font-weight: 750; cursor: pointer;
+}
+.sensor-claim-button:hover:not(:disabled) { background: #8e3226; }
+.sensor-claim-button:disabled { opacity: .6; cursor: default; }
+
 .sensor-empty-state { display: grid; min-height: 390px; padding: 40px; place-items: center; align-content: center; border: 1px dashed #bfc9c4; border-radius: 16px; background: #fafcfb; text-align: center; }
 .sensor-empty-state strong { margin-top: 16px; font-size: 22px; }
 .sensor-empty-state p { max-width: 470px; margin: 8px 0 0; color: var(--sensor-muted); line-height: 1.6; }
@@ -307,6 +323,7 @@ button, input, select { font: inherit; }
   .sensor-alert-table-wrap { overflow-x: visible; }.sensor-alert-table { min-width: 0; }.sensor-alert-table, .sensor-alert-table tbody { display: block; }.sensor-alert-table thead { display: none; }.sensor-alert-table tr { display: grid; gap: 10px; margin-bottom: 12px; padding: 14px; border: 1px solid var(--sensor-line); border-radius: 12px; }.sensor-alert-table th, .sensor-alert-table td { display: grid; grid-template-columns: 64px 1fr; grid-column: 1 / -1; gap: 10px; padding: 0; border: 0; }.sensor-alert-table th::before, .sensor-alert-table td::before { color: var(--sensor-muted); font-size: 11px; font-weight: 700; content: attr(data-label); }
   .sensor-threshold-panel { padding: 16px 12px 28px; }.sensor-threshold-card > header { padding: 18px 16px 14px; }.sensor-threshold-rows { padding: 16px; gap: 12px; }.sensor-threshold-card footer { padding: 14px 16px; }.sensor-threshold-card footer button { flex: 1; }.sensor-threshold-saved { margin: 0 16px 16px; }
   .sensor-pagination { align-items: flex-start; flex-direction: column; }.sensor-pagination > div { width: 100%; justify-content: flex-end; }
+  .sensor-dialog-conflict { flex-direction: column; align-items: stretch; }.sensor-claim-button { width: 100%; }
   .sensor-empty-state { min-height: 330px; padding: 25px 18px; }
   .sensor-list-toolbar { display: grid; grid-template-columns: 1fr auto; gap: 10px; }.sensor-filter-group { display: grid; grid-template-columns: repeat(3, 1fr); width: 100%; }.sensor-filter-group button { padding: 0 8px; font-size: 13px; }.sensor-search { grid-column: 1 / -1; grid-row: 2; }.sensor-add-button { grid-column: 2; grid-row: 1; padding: 0 14px; }
   .sensor-table-wrap { border-top: 0; }.sensor-table, .sensor-table tbody { display: block; }.sensor-table thead { display: none; }.sensor-table tr { position: relative; display: grid; grid-template-columns: 1fr auto; gap: 14px; margin-bottom: 12px; padding: 16px 62px 16px 16px; border: 1px solid var(--sensor-line); border-radius: 12px; }.sensor-table th, .sensor-table td { display: grid; grid-template-columns: 86px 1fr; grid-column: 1 / -1; gap: 10px; padding: 0; border: 0; }.sensor-table th::before, .sensor-table td::before { color: var(--sensor-muted); font-size: 11px; font-weight: 700; content: attr(data-label); }.sensor-table-action { position: static; width: auto; }.sensor-table-action::before { display: none; }.sensor-table-action .sensor-icon-button { position: absolute; top: 12px; right: 12px; }

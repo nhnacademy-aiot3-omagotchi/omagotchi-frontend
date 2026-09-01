@@ -134,6 +134,24 @@ class IdentityRestAccountClientTest {
         server.verify();
     }
 
+    @Test
+    @DisplayName("계정 탈퇴 요청의 DELETE·Bearer·JSON 계약")
+    void withdrawsUsingDeleteBearerAndExpectedJson() {
+        // Given: Identity 계정 탈퇴 성공 응답
+        server.expect(once(), requestTo(BASE_URL + ACCOUNT_PATH))
+                .andExpect(method(HttpMethod.DELETE))
+                .andExpect(header("Authorization", BEARER_TOKEN))
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(content().json("{\"currentPassword\":\"current-password\"}"))
+                .andRespond(withStatus(HttpStatus.NO_CONTENT));
+
+        // When: 인증 사용자 계정 탈퇴
+        client.withdraw(ACCESS_TOKEN, "current-password");
+
+        // Then: Identity 계정 탈퇴 HTTP 요청 계약
+        server.verify();
+    }
+
     @ParameterizedTest(name = "{0}")
     @MethodSource("expectedNameErrors")
     @DisplayName("이름 변경 API가 공개하는 Identity 오류 변환")
@@ -183,6 +201,53 @@ class IdentityRestAccountClientTest {
 
         // Then: BFF가 공개하는 비밀번호 변경 오류 변환
         assertError(action, expectedErrorCode);
+        server.verify();
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("expectedWithdrawalErrors")
+    @DisplayName("계정 탈퇴 API가 공개하는 Identity 오류 변환")
+    void mapsExpectedIdentityWithdrawalError(
+            String ignoredDescription,
+            HttpStatus status,
+            ErrorCode expectedErrorCode
+    ) {
+        // Given: 계정 탈퇴 API가 공개하는 Identity 오류 응답
+        expectError(
+                HttpMethod.DELETE,
+                ACCOUNT_PATH,
+                status,
+                expectedErrorCode.code()
+        );
+
+        // When: 인증 사용자 계정 탈퇴
+        ThrowingCallable action = () -> client.withdraw(
+                ACCESS_TOKEN,
+                "current-password"
+        );
+
+        // Then: BFF가 공개하는 계정 탈퇴 오류 변환
+        assertError(action, expectedErrorCode);
+        server.verify();
+    }
+
+    @Test
+    @DisplayName("계정 탈퇴의 예상하지 않은 성공 상태 502 변환")
+    void rejectsUnexpectedWithdrawalSuccessStatusAsBadGateway() {
+        // Given: 204가 아닌 Identity 계정 탈퇴 성공 응답
+        server.expect(once(), requestTo(BASE_URL + ACCOUNT_PATH))
+                .andExpect(method(HttpMethod.DELETE))
+                .andExpect(header("Authorization", BEARER_TOKEN))
+                .andRespond(withStatus(HttpStatus.OK));
+
+        // When: 인증 사용자 계정 탈퇴
+        ThrowingCallable action = () -> client.withdraw(
+                ACCESS_TOKEN,
+                "current-password"
+        );
+
+        // Then: 호출 대상 성공 응답 계약 위반 변환
+        assertError(action, CommonErrorCode.DOWNSTREAM_INVALID_RESPONSE);
         server.verify();
     }
 
@@ -358,6 +423,36 @@ class IdentityRestAccountClientTest {
                         "계정 상태에 따른 비밀번호 변경 제한",
                         HttpStatus.FORBIDDEN,
                         AccountErrorCode.PASSWORD_CHANGE_NOT_ALLOWED
+                ),
+                Arguments.of(
+                        "계정 없음",
+                        HttpStatus.NOT_FOUND,
+                        AccountErrorCode.NOT_FOUND
+                )
+        );
+    }
+
+    private static Stream<Arguments> expectedWithdrawalErrors() {
+        return Stream.of(
+                Arguments.of(
+                        "인증 필요",
+                        HttpStatus.UNAUTHORIZED,
+                        SecurityErrorCode.AUTHENTICATION_REQUIRED
+                ),
+                Arguments.of(
+                        "현재 비밀번호 불일치",
+                        HttpStatus.BAD_REQUEST,
+                        AccountErrorCode.CURRENT_PASSWORD_MISMATCH
+                ),
+                Arguments.of(
+                        "계정 상태에 따른 탈퇴 제한",
+                        HttpStatus.CONFLICT,
+                        AccountErrorCode.WITHDRAWAL_NOT_ALLOWED
+                ),
+                Arguments.of(
+                        "마지막 이용 가능 시스템 관리자 보호",
+                        HttpStatus.CONFLICT,
+                        AccountErrorCode.LAST_SYSTEM_ADMIN
                 ),
                 Arguments.of(
                         "계정 없음",

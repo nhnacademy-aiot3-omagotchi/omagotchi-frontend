@@ -46,6 +46,7 @@
                 error,
                 forbidden,
                 onSaveSensor: saveSensor,
+                onClaimSensor: claimSensor,
                 onSaveThresholds: saveThresholds,
                 onAlertQueryChange: changeAlertQuery,
                 onRetry: loadAll
@@ -192,7 +193,41 @@
                 await loadAll();
                 return true;
             } catch (cause) {
+                // 이미 등록된 EUI는 막다른 길이 아니다. 이전 기수가 쓰던 센서일 수 있고,
+                // 그렇다면 인계로 이어진다. 화면이 그 선택지를 띄우도록 신호만 돌려준다.
+                if (mode === "create" && isDeviceConflict(cause)) {
+                    return "claimable";
+                }
                 warn("센서를 저장하지 못했습니다.", cause);
+                return false;
+            }
+        }
+
+        /** 등록이 409로 막혔는지. 다른 이유의 실패와 섞이면 인계를 엉뚱하게 권하게 된다. */
+        function isDeviceConflict(cause) {
+            return cause?.status === 409 && cause?.code === "DEVICE_ALREADY_EXISTS";
+        }
+
+        /**
+         * 주인 없는 센서 인계.
+         *
+         * <p>하류는 "인계할 수 있는 센서가 아니다"를 404로 답한다 — 남의 기수 소유인 경우와
+         * 아예 없는 경우를 구분하지 않는다. 화면도 그 구분을 만들어내지 않는다.</p>
+         */
+        async function claimSensor(sensor) {
+            const api = sensorApi();
+            if (!api) return false;
+
+            try {
+                await api.claimDevice(sensor.deviceEui, sensor.spaceId);
+                await loadAll();
+                return true;
+            } catch (cause) {
+                if (cause?.status === 404) {
+                    warn("인계할 수 있는 센서가 아닙니다.\n다른 기수가 사용 중이거나 등록되지 않은 EUI입니다.", cause);
+                } else {
+                    warn("센서를 인계하지 못했습니다.", cause);
+                }
                 return false;
             }
         }

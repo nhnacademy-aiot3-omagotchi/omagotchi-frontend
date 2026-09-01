@@ -1,6 +1,8 @@
 package site.omagotchi.frontend.attendance.infrastructure;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -9,7 +11,8 @@ import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.support.RestClientAdapter;
 import org.springframework.web.service.invoker.HttpServiceProxyFactory;
-import site.omagotchi.frontend.attendance.infrastructure.response.AttendanceRecordPageResponse;
+import site.omagotchi.frontend.attendance.infrastructure.response.LearningAttendanceRecordResponse;
+import site.omagotchi.frontend.global.http.response.PageResponse;
 
 import java.time.LocalDate;
 
@@ -38,8 +41,15 @@ class AttendanceHttpServiceContractTest {
                 .createClient(AttendanceHttpService.class);
     }
 
+    @AfterEach
+    void verifyServer() {
+        server.verify();
+    }
+
     @Test
+    @DisplayName("출결 기간·페이지 조회 HTTP 계약")
     void mapsAttendanceDateRangeAndPagination() {
+        // Given: 출결 항목과 공통 페이지 메타데이터를 포함한 Learning 응답
         server.expect(once(), requestTo(BASE_URL
                         + "/api/v1/cohorts/7/attendance-records/me"
                         + "?from=2026-08-01&to=2026-08-21&page=1&size=10"))
@@ -52,7 +62,8 @@ class AttendanceHttpServiceContractTest {
                         }
                         """, MediaType.APPLICATION_JSON));
 
-        AttendanceRecordPageResponse response = service.getMyAttendanceRecords(
+        // When: 기간과 페이지 조건을 포함한 출결 이력 조회
+        PageResponse<LearningAttendanceRecordResponse> response = service.getMyAttendanceRecords(
                 BEARER,
                 7L,
                 LocalDate.of(2026, 8, 1).toString(),
@@ -61,14 +72,17 @@ class AttendanceHttpServiceContractTest {
                 10
         );
 
+        // Then: 요청 조건 전달과 items·page 응답 역직렬화
         assertThat(response.items()).hasSize(1);
-        assertThat(response.items().getFirst().id()).isEqualTo(3L);
+        assertThat(response.items().getFirst().attendanceDate())
+                .isEqualTo(LocalDate.of(2026, 8, 20));
         assertThat(response.page().totalElements()).isEqualTo(13L);
-        server.verify();
     }
 
     @Test
+    @DisplayName("출석 처리 HTTP 계약")
     void mapsCheckInToAttendanceEndpoint() {
+        // Given: 출석 처리 성공 응답
         server.expect(once(), requestTo(BASE_URL
                         + "/api/v1/cohorts/7/attendance-records/check-in"))
                 .andExpect(method(HttpMethod.POST))
@@ -77,7 +91,10 @@ class AttendanceHttpServiceContractTest {
                         {"id": 4, "attendanceDate": "2026-08-24"}
                         """, MediaType.APPLICATION_JSON));
 
-        assertThat(service.checkIn(BEARER, 7L).id()).isEqualTo(4L);
-        server.verify();
+        // When: 출석 처리 요청
+        LearningAttendanceRecordResponse response = service.checkIn(BEARER, 7L);
+
+        // Then: 합의된 Endpoint 호출과 응답 역직렬화
+        assertThat(response.attendanceDate()).isEqualTo(LocalDate.of(2026, 8, 24));
     }
 }

@@ -2,7 +2,7 @@
     position: fixed;
     right: 22px;
     bottom: 92px;
-    z-index: 40;
+    z-index: 2100;
     width: min(330px, calc(100vw - 44px));
     margin: 0;
     padding: 13px 15px;
