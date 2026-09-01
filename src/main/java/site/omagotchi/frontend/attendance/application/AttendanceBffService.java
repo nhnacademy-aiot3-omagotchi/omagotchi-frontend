@@ -1,12 +1,11 @@
 package site.omagotchi.frontend.attendance.application;
 
-import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import site.omagotchi.frontend.attendance.application.port.AttendanceAccessContext;
 import site.omagotchi.frontend.attendance.application.port.AttendanceClient;
 import site.omagotchi.frontend.attendance.application.result.AttendancePageResult;
 import site.omagotchi.frontend.attendance.application.result.AttendanceRecordResult;
-import site.omagotchi.frontend.global.learning.application.LearningCohortContext;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -26,17 +25,15 @@ public class AttendanceBffService {
     private static final LocalTime SERVICE_DAY_START = LocalTime.of(4, 0);
 
     private final AttendanceClient attendanceClient;
-    private final LearningCohortContext cohortContext;
+    private final AttendanceAccessContext accessContext;
 
-    // TODO: Servlet 요청 의존을 인증·기수 컨텍스트용 Application Port로 대체한다.
     public AttendancePageResult getHistory(
-            HttpServletRequest request,
             LocalDate from,
             LocalDate to,
             Integer page,
             Integer size
     ) {
-        LearningCohortContext.Resolved context = cohortContext.resolve(request);
+        AttendanceAccessContext.Resolved context = accessContext.resolve();
         return attendanceClient.getHistory(
                 context.bearerToken(),
                 context.cohortId(),
@@ -47,9 +44,9 @@ public class AttendanceBffService {
         );
     }
 
-    public Optional<AttendanceRecordResult> getToday(HttpServletRequest request) {
+    public Optional<AttendanceRecordResult> getToday() {
         LocalDate today = serviceDate(Instant.now());
-        AttendancePageResult response = getHistory(request, today, today, 0, 1);
+        AttendancePageResult response = getHistory(today, today, 0, 1);
 
         List<AttendanceRecordResult> items = response.items();
         if (items.isEmpty()) {
@@ -58,13 +55,13 @@ public class AttendanceBffService {
         return Optional.of(items.getFirst());
     }
 
-    public AttendanceRecordResult checkIn(HttpServletRequest request) {
-        LearningCohortContext.Resolved context = cohortContext.resolve(request);
+    public AttendanceRecordResult checkIn() {
+        AttendanceAccessContext.Resolved context = accessContext.resolve();
         return attendanceClient.checkIn(context.bearerToken(), context.cohortId());
     }
 
-    public AttendanceRecordResult checkOut(HttpServletRequest request) {
-        LearningCohortContext.Resolved context = cohortContext.resolve(request);
+    public AttendanceRecordResult checkOut() {
+        AttendanceAccessContext.Resolved context = accessContext.resolve();
         return attendanceClient.checkOut(context.bearerToken(), context.cohortId());
     }
 
