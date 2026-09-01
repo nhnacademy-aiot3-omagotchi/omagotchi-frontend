@@ -27,6 +27,7 @@ import site.omagotchi.frontend.global.exception.BusinessException;
 import site.omagotchi.frontend.global.exception.CommonErrorCode;
 import site.omagotchi.frontend.global.exception.ErrorCode;
 import site.omagotchi.frontend.global.exception.ErrorHttpMapper;
+import site.omagotchi.frontend.global.exception.RetryAfterMetadata;
 import site.omagotchi.frontend.global.session.SessionStoreFailures;
 import site.omagotchi.frontend.global.learning.infrastructure.LearningDownstreamException;
 import site.omagotchi.frontend.global.security.BrowserSessionInvalidator;
@@ -155,7 +156,11 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
         } else if (status.is5xxServerError()) {
             logServerFailure(exception, exception.getErrorCode(), request);
         }
-        return response(exception.getErrorCode(), request);
+        return response(
+                exception.getErrorCode(),
+                request,
+                exception instanceof RetryAfterMetadata metadata ? metadata : null
+        );
     }
 
     @ExceptionHandler(LearningDownstreamException.class)
@@ -398,12 +403,26 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
             ErrorCode errorCode,
             HttpServletRequest request
     ) {
-        HttpStatus status = ErrorHttpMapper.toHttpStatus(errorCode.type());
-        return ResponseEntity.status(status)
-                .cacheControl(CacheControl.noStore())
-                .body(ApiErrorResponse.of(
-                        errorCode,
-                        request.getRequestURI()
-                ));
+        return response(errorCode, request, null);
+    }
+
+    private ResponseEntity<ApiErrorResponse> response(
+            ErrorCode errorCode,
+            HttpServletRequest request,
+            @Nullable RetryAfterMetadata retryAfterMetadata
+    ) {
+        ResponseEntity.BodyBuilder response = ResponseEntity
+                .status(ErrorHttpMapper.toHttpStatus(errorCode.type()))
+                .cacheControl(CacheControl.noStore());
+        if (retryAfterMetadata != null) {
+            response.header(
+                    HttpHeaders.RETRY_AFTER,
+                    retryAfterMetadata.retryAfter().headerValue()
+            );
+        }
+        return response.body(ApiErrorResponse.of(
+                errorCode,
+                request.getRequestURI()
+        ));
     }
 }

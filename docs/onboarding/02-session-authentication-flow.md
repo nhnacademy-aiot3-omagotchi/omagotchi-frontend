@@ -25,15 +25,15 @@ Browser
   - 로컬 이름 예시: `OMAGOTCHI_SESSION`
   - Access·Refresh Token 원문 미노출
 - Frontend ↔ Identity
-  - Signup·Login·Refresh·Logout 내부 HTTP 호출
+  - 이메일 OTP Signup v2·Login·Refresh·Logout 내부 HTTP 호출
   - Browser 사용자 Credential과 별도인 Frontend Basic Credential
 - Frontend ↔ Domain Service
-  - Browser 계약: `/bff/v1/**`
+  - Browser 계약: 기본 `/bff/v1/**`, 회원가입 `/bff/v2/auth/signup/**`
   - Session Access JWT를 Bearer로 전달
   - 현재: Identity 본인 계정 API는 Identity Service 직접 호출
   - 현재: Learning 선언형 HTTP Client는 Learning Service 직접 호출
   - 현재: AI Chat은 WebClient 기반 HTTP Service Client로 Learning Service 직접 호출
-  - Access Token 만료 임박 시 BFF 진입 단계에서 선제 Refresh
+  - Access Token 만료 임박 시 인증 v1 BFF 진입 단계에서 선제 Refresh
   - 하류 `401` 뒤 원래 요청 자동 재실행 없음
 - Gateway
   - 외부 `/api/**`·Webhook 경계
@@ -42,7 +42,8 @@ Browser
 ## 2. 인증 요청 경계
 
 - Page Form
-  - Signup·Login은 Spring MVC·Spring Security의 Form 경계를 사용한다.
+  - Signup은 `GET /register`에서 Page와 CSRF Meta를 렌더링하고, 쓰기는 JSON BFF로 처리한다.
+  - Login은 Spring Security의 Form 경계를 사용한다.
   - Logout은 Spring Security Logout Filter가 처리한다.
 - Browser JSON BFF
   - 인증 사용자의 조회·변경 요청은 `/bff/v1/**`을 사용한다.
@@ -58,19 +59,23 @@ Browser
 | 경계 | Type | 책임 |
 |---|---|---|
 | Page | `LoginPageController` | Login View·실패 안내·인증 사용자 Redirect |
-| Page | `SignupPageController` | Signup Form·Identity 가입·View 복구 |
-| Page | `SignupForm` | 필수값·기본 이메일 형식 |
+| Page | `SignupPageController` | Signup View·CSRF Meta 렌더링·인증 사용자 Redirect |
+| Page | `SignupForm` | Signup View의 초기 필드·정규화 모델 |
+| BFF | `SignupBffController` | 익명 Browser의 OTP Challenge·검증된 회원가입 JSON 계약 |
 | Security | `AuthenticatedLoginRequestFilter` | 인증 Session의 중복 Login 차단 |
 | Security | `IdentityLoginAuthenticationProvider` | Form Credential의 Identity 검증 |
 | Security | `LoginAuthenticationFailureHandler` | Credential 실패 Redirect·장애 상태 처리 |
 | Security | `BrowserTokenSessionAuthenticationStrategy` | Session ID 교체 뒤 Token Bundle 기록·SecurityContext 비밀값 제거 |
 | Security | `BrowserSessionTokens` | Token Bundle Session attribute 접근 |
-| Security | `AccessTokenRefreshInterceptor` | BFF Controller 진입 전 선제 Refresh·현재 요청 Bundle override |
+| Security | `AccessTokenRefreshInterceptor` | 인증 v1 BFF Controller 진입 전 선제 Refresh·현재 요청 Bundle override |
 | Security | `IdentityLogoutHandler` | Identity Refresh Token 폐기 시도 |
 | Application | `AuthenticationService` | Presentation과 Identity Port 사이의 Use Case 경계 |
+| Application | `VerifiedSignupService` | 이메일 OTP 회원가입 v2 Application 진입점 |
 | Application | `AccessTokenRefreshService` | Session별 single-flight·최신 Bundle 재조회·Identity Refresh·명시 저장 |
-| Port | `IdentityAuthClient` | Signup·Login·Refresh·Logout Application 계약 |
-| Infrastructure | `IdentityRestAuthClient` | Identity HTTP 응답의 Application 결과·실패 변환 |
+| Port | `IdentityVerifiedSignupClient` | 이메일 OTP 회원가입 v2 Application 계약 |
+| Port | `IdentityAuthClient` | Login·Refresh·Logout과 제거 대기 중인 Signup v1 Application 계약 |
+| Infrastructure | `IdentityRestVerifiedSignupClient` | Identity Signup v2 HTTP 응답의 Application 결과·실패 변환 |
+| Infrastructure | `IdentityRestAuthClient` | Identity Login·Refresh·Logout과 제거 대기 중인 Signup v1 응답 변환 |
 | Infrastructure | `RedisBrowserSessionRefreshLock` | 유한 lease와 owner 검증 해제를 사용하는 Redis Lock |
 
 - Spring Security 확장점 분리 사유
@@ -211,15 +216,20 @@ Browser
 ## 4. CSRF
 
 ```text
-GET Form Page
+GET /register
 → Spring Security CSRF Token 생성
 → 익명 HttpSession 기록
-→ Thymeleaf hidden _csrf input
+→ Thymeleaf CSRF Meta Tag
 
-POST Form
-→ Session Cookie + _csrf 제출
+POST /bff/v2/auth/signup/** JSON
+→ Session Cookie + CSRF Header 제출
 → CsrfFilter 검증
-→ Signup·Login·Logout 처리
+→ SignupBffController 처리
+
+POST /login·/logout Form
+→ Session Cookie + hidden _csrf 제출
+→ CsrfFilter 검증
+→ Spring Security Login·Logout 처리
 ```
 
 - 적용 대상
@@ -227,9 +237,9 @@ POST Form
   - Login
   - Logout
 - 별도 CSRF 조회 API
-  - 현재 불필요
-- 향후 JSON BFF
-  - 실제 Endpoint 추가 시 Header 전달 정책 결정
+  - 회원가입 Page의 Meta Tag로 Token·Header 이름을 제공하므로 현재 불필요
+- 회원가입 JSON BFF
+  - 같은 Origin의 `/bff/v2/auth/signup/**` 요청에 Page가 제공한 CSRF Header를 전달
 
 ## 5. Signup
 
@@ -237,31 +247,53 @@ POST Form
 sequenceDiagram
     participant B as Browser
     participant PC as SignupPageController
-    participant AS as AuthenticationService
-    participant IC as IdentityRestAuthClient
+    participant SC as SignupBffController
+    participant VS as VerifiedSignupService
+    participant IC as IdentityRestVerifiedSignupClient
     participant I as Identity
 
-    B->>PC: POST /register + CSRF
-    PC->>PC: Binding·기본 형식 검증
-    PC->>AS: signUp(email, password, name)
-    AS->>IC: IdentityAuthClient.signUp(...)
-    IC->>I: POST /api/v1/auth/signup
-    I-->>IC: 201·4xx 또는 장애·계약 위반
-    IC-->>AS: SignupResult 또는 BusinessException
-    AS-->>PC: SignupResult 또는 BusinessException
-    alt Created
-        PC-->>B: 302 /login
-    else Rejected(ErrorCode)
-        PC-->>B: register View + 400/409
+    B->>PC: GET /register
+    PC-->>B: 회원가입 Page + CSRF Meta
+    B->>SC: POST /bff/v2/auth/signup/email-otp + CSRF
+    SC->>VS: requestEmailVerification(...)
+    VS->>IC: IdentityVerifiedSignupClient
+    IC->>I: POST /api/v2/auth/signup/email-otp + Basic
+    alt Challenge 발급
+        I-->>IC: 202 Challenge
+        IC-->>SC: EmailVerificationChallenge
+        SC-->>B: 202 + challengeId + expiresInSeconds
+    else Cooldown
+        I-->>IC: 429 + Retry-After
+        IC-->>SC: EmailVerificationCooldownException
+        SC-->>B: 공통 JSON 429 + Retry-After
     else 장애·계약 위반
-        PC-->>B: 공통 HTML 오류
+        I-->>IC: 4xx·5xx 또는 잘못된 응답
+        IC-->>SC: BusinessException
+        SC-->>B: 공통 JSON 400/409/502/503
+    end
+    B->>SC: POST /bff/v2/auth/signup + Challenge + Code + CSRF
+    SC->>VS: signUp(...)
+    VS->>IC: IdentityVerifiedSignupClient
+    IC->>I: POST /api/v2/auth/signup + Basic
+    alt Created
+        I-->>IC: 201
+        IC-->>SC: Created
+        SC-->>B: 201
+    else Rejected(ErrorCode)
+        I-->>IC: 400/409
+        IC-->>SC: Rejected(ErrorCode)
+        SC-->>B: 공통 JSON 400/409
+    else 장애·계약 위반
+        I-->>IC: 5xx 또는 잘못된 응답
+        IC-->>SC: BusinessException
+        SC-->>B: 공통 JSON 502/503
     end
 ```
 
 - Frontend 검증
   - 필수 필드
   - 기본 이메일 형식
-  - Form 오류 표시
+  - OTP 6자리 형식·만료 시간·재요청 대기 표시
 - Identity 검증
   - 이름·이메일 허용 정책
   - 비밀번호 정책
@@ -271,16 +303,29 @@ sequenceDiagram
   - 일반 `USER` 계정 생성
   - 기수 `MANAGER` 소속 생성 없음
 - Application 결과
-  - `Created`: Login Page Redirect
-  - `Rejected(ErrorCode)`: 동일 Form 복구에 사용할 Frontend 공개 오류
+  - `EmailVerificationChallenge`: OTP Challenge ID와 만료 시간
+  - `Created`: BFF `201 Created` 후 Browser가 Login Page로 이동
+  - `Rejected(ErrorCode)`: BFF 공통 JSON으로 반환할 Frontend 공개 오류
     - `COMMON_INVALID_REQUEST`: Identity 필수값 검증 실패
     - `ACCOUNT_INVALID_EMAIL`: 이메일 정책 위반
     - `ACCOUNT_INVALID_PASSWORD`: 비밀번호 정책 위반
     - `ACCOUNT_INVALID_NAME`: 이름 정책 위반
     - `ACCOUNT_DUPLICATE_EMAIL`: 이메일 중복
+    - `EMAIL_VERIFICATION_INVALID_CHALLENGE`: 잘못되거나 만료된 OTP
+    - `EMAIL_VERIFICATION_COOLDOWN_ACTIVE`: `429`와 `Retry-After`를 포함한 재요청 제한
 - 예외 유지
   - Identity 5xx·연결 장애: 503 `BusinessException`
   - 응답 계약 위반: 502 `BusinessException`
+
+### Legacy v1 가입 폐기 준비
+
+- `POST /register`는 더 이상 매핑하지 않아 `405 Method Not Allowed`로 OTP 우회를 차단한다.
+- `AuthenticationService.signUp`에서 `IdentityRestAuthClient.signUp`과
+  `POST /api/v1/auth/signup`으로 이어지는 내부 호출은 `@Deprecated(forRemoval = true)`다.
+- v2 실패 시 v1으로 자동 전환하지 않는다.
+- 실제 Identity·메일 전달·Browser 종단 검증을 통과하면 위 호출과
+  `IdentitySignupRequest`, 관련 v1 가입 테스트를 함께 제거한다.
+- 비밀번호 변경 v2 전환은 이 회원가입 변경 범위에 포함하지 않는다.
 
 ## 6. Login
 
