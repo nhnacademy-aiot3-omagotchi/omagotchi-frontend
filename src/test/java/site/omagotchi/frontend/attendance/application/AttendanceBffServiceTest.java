@@ -1,17 +1,16 @@
 package site.omagotchi.frontend.attendance.application;
 
-import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import site.omagotchi.frontend.attendance.application.port.AttendanceAccessContext;
 import site.omagotchi.frontend.attendance.application.port.AttendanceClient;
 import site.omagotchi.frontend.attendance.application.result.AttendancePageResult;
 import site.omagotchi.frontend.attendance.application.result.AttendanceRecordResult;
 import site.omagotchi.frontend.global.application.result.PageMetadata;
-import site.omagotchi.frontend.global.learning.application.LearningCohortContext;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -28,18 +27,15 @@ class AttendanceBffServiceTest {
     private AttendanceClient attendanceClient;
 
     @Mock
-    private LearningCohortContext cohortContext;
-
-    @Mock
-    private HttpServletRequest request;
+    private AttendanceAccessContext accessContext;
 
     private AttendanceBffService service;
 
     @BeforeEach
     void setUp() {
-        service = new AttendanceBffService(attendanceClient, cohortContext);
-        when(cohortContext.resolve(request))
-                .thenReturn(new LearningCohortContext.Resolved("Bearer access-token", 7L));
+        service = new AttendanceBffService(attendanceClient, accessContext);
+        when(accessContext.resolve())
+                .thenReturn(new AttendanceAccessContext.Resolved("Bearer access-token", 7L));
     }
 
     @Test
@@ -57,13 +53,11 @@ class AttendanceBffServiceTest {
         )).thenReturn(expected);
 
         // When: 사용자 출결 이력 조회
-        AttendancePageResult result = service.getHistory(
-                request, from, to, 0, 20
-        );
+        AttendancePageResult result = service.getHistory(from, to, 0, 20);
 
         // Then: HTTP 기술 타입 없이 Attendance Port에 위임
         assertThat(result).isSameAs(expected);
-        verify(cohortContext).resolve(request);
+        verify(accessContext).resolve();
         verify(attendanceClient).getHistory(
                 "Bearer access-token", 7L, from, to, 0, 20
         );
@@ -77,11 +71,11 @@ class AttendanceBffServiceTest {
         when(attendanceClient.checkIn("Bearer access-token", 7L)).thenReturn(expected);
 
         // When: 사용자 입실 처리
-        AttendanceRecordResult result = service.checkIn(request);
+        AttendanceRecordResult result = service.checkIn();
 
         // Then: HTTP 기술 타입 없이 Attendance Port에 위임
         assertThat(result).isSameAs(expected);
-        verify(cohortContext).resolve(request);
+        verify(accessContext).resolve();
         verify(attendanceClient).checkIn("Bearer access-token", 7L);
     }
 
@@ -93,11 +87,11 @@ class AttendanceBffServiceTest {
         when(attendanceClient.checkOut("Bearer access-token", 7L)).thenReturn(expected);
 
         // When: 사용자 퇴실 처리
-        AttendanceRecordResult result = service.checkOut(request);
+        AttendanceRecordResult result = service.checkOut();
 
         // Then: HTTP 기술 타입 없이 Attendance Port에 위임
         assertThat(result).isSameAs(expected);
-        verify(cohortContext).resolve(request);
+        verify(accessContext).resolve();
         verify(attendanceClient).checkOut("Bearer access-token", 7L);
     }
 
