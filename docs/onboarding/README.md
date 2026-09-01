@@ -81,7 +81,7 @@ flowchart LR
 - Browser는 Opaque Session Cookie만 보관하고 Token 원문을 취급하지 않는다.
 - Browser 전용 JSON 계약은 `/bff/v1/**`을 사용한다.
 - Frontend BFF는 Session의 Access JWT를 하류 호출 인증으로 변환하고 화면용 계약을 소유한다.
-- Frontend BFF는 담당 Domain Service를 직접 호출한다. AI Chat은 후속 전환 전까지 Gateway를 사용한다.
+- Frontend BFF는 담당 Domain Service를 직접 호출한다. AI Chat도 Learning Service를 직접 호출한다.
 - Page·JSON·Security·Session 오류 경계를 서로 구분한다.
 
 ## 4. 문서 순서

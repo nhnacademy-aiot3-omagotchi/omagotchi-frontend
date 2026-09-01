@@ -25,8 +25,8 @@ AiAssistantPanel (React)
   → aiAssistantClient.js (fetch + ReadableStream, AI 전용 adapter)
   → View /bff/v1/ai/chat (AiBffController)
   → 세션 인증 확인 (LearningSessionAuthorization)
-  → AiChatGatewayClient (WebClient, SSE 스트리밍 프록시)
-  → 게이트웨이
+  → AiChatBffService
+  → LearningAiChatClient (WebClient 기반 HTTP Service Client, SSE 스트리밍)
   → learning-service ChatController (/api/v1/chat, JWT 인증)
   → ChatClient.prompt().stream() (Spring AI, Gemini 호출 + Tool 실행)
 ```
@@ -57,7 +57,7 @@ AiAssistantPanel (React)
 - 로그인 사용자, CSRF, 요청 크기와 입력 형식을 검증한다.
 - 세션에서 꺼낸 JWT를 `Authorization` Header로 `learning-service`에 전달한다.
 - 4xx 공개 오류와 5xx 비공개 오류를 구분한다.
-- 하류 5xx 원본 예외는 서버 로그(`AiChatGatewayClient`의 `doOnError`)에 기록하고
+- 하류 5xx 원본 예외는 서버 로그(`LearningAiChatClient`의 `doOnError`)에 기록하고
   Browser에는 일반 오류만 반환한다. 단, 스트리밍 응답 특성상 이미 데이터 일부가 전송된
   뒤 하류가 실패하면 상태 코드를 바꿔 보낼 수 없다 — 이 경우 연결이 그대로 끊기는 것이
   정상이며, Browser는 이를 일반 오류로 처리한다 (고쳐야 할 결함이 아니다).
@@ -177,7 +177,7 @@ Stream은 구조화된 Event(예: `answer.delta`, `tool.started`)를 쓰지 않�
 | --- | --- | --- |
 | 입력 오류 | 공개 승인된 문구와 Field 오류 | 검증 실패 기록 |
 | 인증·권한 오류 | 로그인 또는 권한 안내 | 사용자·요청 ID 기록 |
-| `learning-service`·Gemini 5xx | 일반 실패 문구 | 원본 예외와 하류 상태 기록 (`AiChatGatewayClient`의 `doOnError`) |
+| `learning-service`·Gemini 5xx | 일반 실패 문구 | 원본 예외와 하류 상태 기록 (`LearningAiChatClient`의 `doOnError`) |
 | 스트리밍 중 연결 끊김 | 일반 실패 문구, 재전송 유도 | 에러 로그 기록. 이미 전송이 시작된 뒤라 상태 코드는 바꿀 수 없다 |
 
 - 하류 `statusCode`, 기술적 `code`, 원문 `message`를 Browser에 그대로 전달하지 않는다.

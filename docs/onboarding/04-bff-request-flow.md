@@ -124,7 +124,7 @@ flowchart LR
 - BFF의 Learning 선언형 Client 주소: `LEARNING_SERVICE_BASE_URL`
 - BFF가 로그인할 때 호출하는 Identity 주소: `IDENTITY_SERVICE_BASE_URL`
 
-AI Chat은 후속 전환 전까지 `GATEWAY_SERVICE_BASE_URL`을 사용한다.
+AI Chat도 WebClient 기반 HTTP Service Client로 `LEARNING_SERVICE_BASE_URL`을 사용한다.
 
 Browser JavaScript에는 `localhost:8080`, `localhost:8084` 같은 주소를 직접 작성하지 않는다.
 
