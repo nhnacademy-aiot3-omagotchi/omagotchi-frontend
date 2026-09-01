@@ -1,48 +1,36 @@
 import { formatDuration } from "./utils.js";
 
-const STUDY_DAY_START_HOUR = 7;
-const STUDY_DAY_CLOSE_HOUR = 4;
-
-function formatDateKey(date) {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const day = String(date.getDate()).padStart(2, "0");
-    return `${year}-${month}-${day}`;
-}
-
-// 오전 7시 전 기록은 전날 학습일에 포함한다.
-function getStudyDate(now = new Date()) {
-    const studyDate = new Date(now);
-    if (studyDate.getHours() < STUDY_DAY_START_HOUR) {
-        studyDate.setDate(studyDate.getDate() - 1);
-    }
-    return formatDateKey(studyDate);
-}
-
-function getStudyDayCloseAt(studyDate) {
-    const [year, month, day] = studyDate.split("-").map(Number);
-    return new Date(year, month - 1, day + 1, STUDY_DAY_CLOSE_HOUR).getTime();
-}
-
-function isMaintenanceTime(now = new Date()) {
-    const hour = now.getHours();
-    return hour >= STUDY_DAY_CLOSE_HOUR && hour < STUDY_DAY_START_HOUR;
-}
-
-// 학습 타이머 생성
+/**
+ * 학습 타이머 컨트롤러를 생성합니다.
+ * learning-service의 타이머 API 계약에 기반하여 동작합니다.
+ *
+ * @param {object} options
+ * @param {HTMLElement} [options.display] - 시간 표시 엘리먼트
+ * @param {HTMLButtonElement} [options.toggle] - 시작/정지 토글 버튼
+ * @param {HTMLElement} [options.statusMessage] - 상태 안내 메시지 엘리먼트
+ * @param {object} [options.api] - 타이머 API 객체 (OmagotchiApi.study)
+ * @param {boolean} [options.warnOnLeave=true] - 실행 중 브라우저 닫기/이동 시 beforeunload 경고 여부
+ * @param {Function} [options.onStart] - 타이머 시작 시 콜백 ({ restored: boolean })
+ * @param {Function} [options.onPause] - 타이머 정지 시 콜백 ({ elapsedSeconds: number })
+ * @param {Function} [options.onDiscard] - 타이머 파기 완료 시 콜백
+ * @param {Function} [options.onError] - 에러 발생 시 콜백 (error: Error)
+ * @param {Function} [options.onRunningTimerDetected] - 복원 가능한 타이머 발견 시 사용자 확인 프롬프트 (Promise<"resume"|"discard"> 반환)
+ */
 export function createTimer({
     display,
     toggle,
     statusMessage,
     api,
+    warnOnLeave = true,
     onStart,
     onPause,
-    onError
+    onDiscard,
+    onError,
+    onRunningTimerDetected
 }) {
     let status = "idle";
     let currentTimerRunId = null;
     let startedAt = 0;
-    let studyDate = getStudyDate();
     let tickId = null;
     let isTransitioning = false;
 
@@ -50,47 +38,29 @@ export function createTimer({
         if (status !== "running" || !startedAt) {
             return 0;
         }
-
-        const cappedNow = Math.min(now, getStudyDayCloseAt(studyDate));
-        return Math.max(0, Math.floor((cappedNow - startedAt) / 1000));
+        return Math.max(0, Math.floor((now - startedAt) / 1000));
     }
 
-    function setMaintenanceUi(maintenance) {
+    function updateToggleUi() {
         if (!toggle) {
             return;
         }
 
-        toggle.disabled = maintenance || isTransitioning;
-        toggle.textContent = maintenance
-            ? "이용 준비 중"
-            : isTransitioning
-                ? "처리 중..."
-                : status === "running" ? "정지" : "시작";
+        toggle.disabled = isTransitioning;
+        toggle.textContent = isTransitioning
+            ? "처리 중..."
+            : status === "running"
+                ? "정지"
+                : "시작";
 
         if (statusMessage) {
-            statusMessage.textContent = maintenance
-                ? "매일 04:00~07:00에는 학습일을 정리합니다."
-                : "오늘의 학습 시간은 다음 날 04:00에 마감됩니다.";
+            statusMessage.textContent = status === "running"
+                ? "학습이 진행 중입니다."
+                : "";
         }
-    }
-
-    function synchronize(now = new Date()) {
-        const nowMs = now.getTime();
-        const currentStudyDate = getStudyDate(now);
-
-        if (status === "running" && nowMs >= getStudyDayCloseAt(studyDate)) {
-            stop("daily-close");
-        }
-
-        if (currentStudyDate !== studyDate && !isMaintenanceTime(now)) {
-            studyDate = currentStudyDate;
-        }
-
-        setMaintenanceUi(isMaintenanceTime(now));
     }
 
     function render() {
-        synchronize();
         const elapsed = getElapsedSeconds();
         const formattedTime = formatDuration(elapsed);
 
@@ -99,9 +69,16 @@ export function createTimer({
             display.setAttribute("datetime", `PT${elapsed}S`);
         }
 
-        document.title = isMaintenanceTime()
-            ? "이용 준비 중 - Omagotchi"
-            : `${formattedTime} - Omagotchi`;
+        document.title = status === "running"
+            ? `${formattedTime} - Omagotchi`
+            : "Omagotchi";
+    }
+
+    function handleBeforeUnload(event) {
+        if (warnOnLeave && status === "running") {
+            event.preventDefault();
+            event.returnValue = "";
+        }
     }
 
     async function syncWithServer() {
@@ -112,18 +89,49 @@ export function createTimer({
         try {
             const res = await api.getCurrentTimer();
             if (res?.state === "RUNNING" && res?.timerRunId) {
-                currentTimerRunId = res.timerRunId;
+                const timerRunId = res.timerRunId;
+                const serverStartedAt = res.startedAt ? new Date(res.startedAt).getTime() : Date.now();
+                const elapsedSeconds = res.elapsedSeconds ?? Math.max(0, Math.floor((Date.now() - serverStartedAt) / 1000));
+
+                let action = "resume";
+                if (typeof onRunningTimerDetected === "function") {
+                    action = await onRunningTimerDetected({
+                        timerRunId,
+                        startedAt: serverStartedAt,
+                        elapsedSeconds
+                    });
+                }
+
+                if (action === "discard") {
+                    if (api.discardTimer) {
+                        try {
+                            await api.discardTimer(timerRunId);
+                        } catch (discardError) {
+                            console.error("타이머 파기 실패:", discardError);
+                            onError?.(discardError);
+                        }
+                    }
+                    status = "idle";
+                    currentTimerRunId = null;
+                    startedAt = 0;
+                    updateToggleUi();
+                    render();
+                    onDiscard?.();
+                    return;
+                }
+
+                // action === "resume"
+                currentTimerRunId = timerRunId;
                 status = "running";
-                startedAt = res.startedAt ? new Date(res.startedAt).getTime() : Date.now();
-                studyDate = getStudyDate(new Date(startedAt));
-                setMaintenanceUi(isMaintenanceTime(new Date()));
+                startedAt = serverStartedAt;
+                updateToggleUi();
                 onStart?.({ restored: true });
                 render();
             } else {
                 status = "idle";
                 currentTimerRunId = null;
                 startedAt = 0;
-                setMaintenanceUi(isMaintenanceTime(new Date()));
+                updateToggleUi();
                 render();
             }
         } catch (error) {
@@ -131,15 +139,13 @@ export function createTimer({
             status = "idle";
             currentTimerRunId = null;
             startedAt = 0;
-            setMaintenanceUi(isMaintenanceTime(new Date()));
+            updateToggleUi();
             render();
         }
     }
 
     async function start() {
-        const now = new Date();
-        synchronize(now);
-        if (isMaintenanceTime(now) || status === "running" || isTransitioning) {
+        if (status === "running" || isTransitioning) {
             return;
         }
 
@@ -149,14 +155,13 @@ export function createTimer({
         }
 
         isTransitioning = true;
-        setMaintenanceUi(false);
+        updateToggleUi();
 
         try {
             const res = await api.startTimer();
             currentTimerRunId = res?.timerRunId;
             status = "running";
-            startedAt = res?.startedAt ? new Date(res.startedAt).getTime() : now.getTime();
-            studyDate = getStudyDate(new Date(startedAt));
+            startedAt = res?.startedAt ? new Date(res.startedAt).getTime() : Date.now();
             onStart?.({ restored: false });
             render();
         } catch (error) {
@@ -167,11 +172,11 @@ export function createTimer({
             onError?.(error);
         } finally {
             isTransitioning = false;
-            setMaintenanceUi(isMaintenanceTime(new Date()));
+            updateToggleUi();
         }
     }
 
-    async function stop(reason = "user") {
+    async function stop() {
         if (status !== "running" || !currentTimerRunId || isTransitioning) {
             return;
         }
@@ -185,45 +190,83 @@ export function createTimer({
         }
 
         isTransitioning = true;
-        setMaintenanceUi(false);
+        updateToggleUi();
 
         try {
             await api.stopTimer(timerRunId);
             status = "idle";
             currentTimerRunId = null;
             startedAt = 0;
-            onPause?.({ reason, elapsedSeconds: elapsed });
+            onPause?.({ elapsedSeconds: elapsed });
             render();
         } catch (error) {
             console.error("타이머 정지 실패:", error);
             onError?.(error);
         } finally {
             isTransitioning = false;
-            setMaintenanceUi(isMaintenanceTime(new Date()));
+            updateToggleUi();
+        }
+    }
+
+    async function discard() {
+        if (!currentTimerRunId || isTransitioning) {
+            return;
+        }
+
+        const timerRunId = currentTimerRunId;
+
+        if (!api?.discardTimer) {
+            onError?.(new Error("타이머 파기 API가 설정되지 않았습니다."));
+            return;
+        }
+
+        isTransitioning = true;
+        updateToggleUi();
+
+        try {
+            await api.discardTimer(timerRunId);
+            status = "idle";
+            currentTimerRunId = null;
+            startedAt = 0;
+            onDiscard?.();
+            render();
+        } catch (error) {
+            console.error("타이머 파기 실패:", error);
+            onError?.(error);
+        } finally {
+            isTransitioning = false;
+            updateToggleUi();
         }
     }
 
     function init() {
         toggle?.addEventListener("click", () => {
             if (status === "running") {
-                stop("user");
+                stop();
             } else {
                 start();
             }
         });
 
-        window.addEventListener("pagehide", () => {
-            if (status === "running" && currentTimerRunId) {
-                if (typeof api?.stopTimerKeepalive === "function") {
-                    api.stopTimerKeepalive(currentTimerRunId);
-                }
-            }
-        });
+        if (warnOnLeave) {
+            window.addEventListener("beforeunload", handleBeforeUnload);
+        }
 
         tickId = window.setInterval(render, 1000);
+        updateToggleUi();
         render();
 
         syncWithServer();
+    }
+
+    function destroy() {
+        if (tickId) {
+            window.clearInterval(tickId);
+            tickId = null;
+        }
+        if (warnOnLeave) {
+            window.removeEventListener("beforeunload", handleBeforeUnload);
+        }
     }
 
     return {
@@ -232,6 +275,9 @@ export function createTimer({
         isRunning: () => status === "running",
         getTimerRunId: () => currentTimerRunId,
         syncWithServer,
-        destroy: () => window.clearInterval(tickId)
+        start,
+        stop,
+        discard,
+        destroy
     };
 }

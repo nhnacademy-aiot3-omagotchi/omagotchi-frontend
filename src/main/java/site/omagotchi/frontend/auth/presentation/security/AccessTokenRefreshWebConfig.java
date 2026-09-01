@@ -16,7 +16,8 @@ public class AccessTokenRefreshWebConfig implements WebMvcConfigurer {
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(interceptor)
-                .addPathPatterns(BffApiPaths.PATTERN)
+                // dev의 선제 갱신 범위는 기존 v1 BFF로 유지
+                .addPathPatterns(BffApiPaths.V1_PATTERN)
                 // 도메인 서비스 호출이 없는 CSRF Token 조회 제외
                 .excludePathPatterns(BffApiPaths.PREFIX + "/csrf");
     }
