@@ -869,32 +869,34 @@ function openCommunityComposer(post = null) {
         return;
     }
 
+    const attachmentInputId = `community-attachments-${post?.postId || "new"}`;
     title.textContent = post ? "게시글 수정" : "새 게시글";
     body.innerHTML = `
-        <form class="overlay-community-compose" data-community-compose${post ? ` data-community-post-id="${post.postId}"` : ""}>
-            <label>
+        <form class="overlay-community-compose" data-community-compose data-community-post-type="${post?.type || "FREE"}"${post ? ` data-community-post-id="${post.postId}"` : ""}>
+            <section class="overlay-community-form-field">
                 <span>게시판</span>
-                <select name="type">
-                    <option value="free"${post?.type === "FREE" ? " selected" : ""}>자유 게시판</option>
-                    <option value="notice"${post?.type === "NOTICE" ? " selected" : ""}>공지 게시판</option>
-                </select>
-            </label>
-            <label>
+                <div class="overlay-community-board">${post?.type === "NOTICE" ? "공지 게시판" : "자유 게시판"}</div>
+            </section>
+            <label class="overlay-community-form-field">
                 <span>제목</span>
                 <input type="text" name="title" maxlength="100" value="${escapeHtml(post?.title || "")}" placeholder="게시글 제목을 입력하세요" required />
             </label>
-            <label>
+            <label class="overlay-community-form-field">
                 <span>내용</span>
                 <textarea name="content" maxlength="1000" placeholder="기수 구성원과 공유할 내용을 입력하세요" required>${escapeHtml(post?.content || "")}</textarea>
             </label>
-            <label>
+            <section class="overlay-community-form-field">
                 <span>이미지 첨부</span>
-                <input type="file" name="attachments" accept="image/jpeg,image/png,image/gif" multiple />
-            </label>
-            <div>
-                <button type="button" data-community-cancel>취소</button>
+                <div class="overlay-community-file-picker">
+                    <input id="${attachmentInputId}" class="overlay-community-file-input" type="file" name="attachments" accept="image/jpeg,image/png,image/gif" multiple />
+                    <label for="${attachmentInputId}" class="overlay-community-file-button">이미지 선택</label>
+                    <span class="overlay-community-file-summary" data-community-file-summary>첨부할 이미지를 선택하세요.</span>
+                </div>
+            </section>
+            <footer>
+                <button type="button" data-community-close>취소</button>
                 <button type="submit">${post ? "수정하기" : "등록하기"}</button>
-            </div>
+            </footer>
         </form>
     `;
     body.querySelector("input")?.focus();
@@ -912,11 +914,14 @@ async function submitCommunityPost(form) {
         return;
     }
 
-    communityFilter = "all";
-    communityKeyword = "";
-    communityPage = 1;
-    openHomeOverlay("community");
+    if (result.action === "updated") {
+        await openCommunityDetail(form.dataset.communityPostId);
+        showHomeToast(result.message);
+        return;
+    }
+
     showHomeToast(result.message);
+    closeHomeOverlay();
 }
 
 async function openCommunityDetail(postId) {
@@ -930,18 +935,25 @@ async function openCommunityDetail(postId) {
     const attachments = Array.isArray(post?.attachments) ? post.attachments : [];
     body.innerHTML = `
         <article class="overlay-community-detail" data-community-detail="${post.postId}">
-            <header>
-                <span class="overlay-community-type${post.type === "NOTICE" ? " is-notice" : ""}">${post.type === "NOTICE" ? "공지" : "자유"}</span>
-                <h3>${escapeHtml(post.title)}</h3>
-                <p>${escapeHtml(new Date(post.createdAt).toLocaleString("ko-KR"))}</p>
-            </header>
-            <div class="overlay-community-detail-content">${escapeHtml(post.content).replaceAll("\n", "<br>")}</div>
-            ${attachments.length ? `<section class="overlay-community-attachments" aria-label="첨부파일">
-                <strong>첨부파일 ${attachments.length}개</strong>
-                <ul>${attachments.map((attachment) => `<li><a href="${escapeHtml(api.community.downloadUrl(post.postId, attachment.attachmentId))}" download="${escapeHtml(attachment.originalFileName)}">${escapeHtml(attachment.originalFileName)}</a> · ${Math.ceil(Number(attachment.sizeBytes || 0) / 1024)}KB</li>`).join("")}</ul>
-            </section>` : ""}
+            <div class="overlay-community-form-field">
+                <span>게시판</span>
+                <div class="overlay-community-board">${post.type === "NOTICE" ? "공지 게시판" : "자유 게시판"}</div>
+            </div>
+            <div class="overlay-community-form-field">
+                <span>제목</span>
+                <div class="overlay-community-readonly">${escapeHtml(post.title)}</div>
+                <p class="overlay-community-date">${escapeHtml(new Date(post.createdAt).toLocaleString("ko-KR"))}</p>
+            </div>
+            <div class="overlay-community-form-field">
+                <span>내용</span>
+                <div class="overlay-community-readonly overlay-community-detail-content">${escapeHtml(post.content).replaceAll("\n", "<br>")}</div>
+            </div>
+            <section class="overlay-community-form-field" aria-label="첨부파일">
+                <span>첨부파일</span>
+                ${attachments.length ? `<ul class="overlay-community-attachment-list">${attachments.map((attachment) => `<li><a href="${escapeHtml(api.community.downloadUrl(post.postId, attachment.attachmentId))}" download="${escapeHtml(attachment.originalFileName)}"><span aria-hidden="true">▧</span>${escapeHtml(attachment.originalFileName)}</a><em>${Math.ceil(Number(attachment.sizeBytes || 0) / 1024)}KB</em></li>`).join("")}</ul>` : `<p class="overlay-community-empty-attachments">첨부파일이 없습니다.</p>`}
+            </section>
             <footer>
-                <button type="button" data-community-cancel>목록</button>
+                <button type="button" data-community-list>목록</button>
                 <button type="button" data-community-edit>수정</button>
                 <button type="button" data-community-delete>삭제</button>
             </footer>
@@ -1036,7 +1048,10 @@ function deleteCommunityPost(button) {
 
     button.disabled = true;
     api.community.deletePost(detail.dataset.communityDetail)
-        .then(() => openHomeOverlay("community"))
+        .then(() => {
+            openHomeOverlay("community");
+            showHomeToast("게시글이 삭제되었습니다.");
+        })
         .catch((error) => {
             button.disabled = false;
             showHomeToast(error.message || "게시글을 삭제하지 못했습니다.");
@@ -1070,7 +1085,8 @@ homeOverlayRoot?.addEventListener("click", (event) => {
     const communityFilterButton = event.target.closest("[data-community-filter]");
     const communityPageButton = event.target.closest("[data-community-page]");
     const communityWriteButton = event.target.closest("[data-community-write]");
-    const communityCancelButton = event.target.closest("[data-community-cancel]");
+    const communityCloseButton = event.target.closest("[data-community-close]");
+    const communityListButton = event.target.closest("[data-community-list]");
     const communityPostButton = event.target.closest("[data-community-post]");
     const communityDeleteButton = event.target.closest("[data-community-delete]");
 
@@ -1108,8 +1124,13 @@ homeOverlayRoot?.addEventListener("click", (event) => {
         return;
     }
 
-    if (communityCancelButton) {
+    if (communityListButton) {
         openHomeOverlay("community");
+        return;
+    }
+
+    if (communityCloseButton) {
+        closeHomeOverlay();
         return;
     }
 
@@ -1139,6 +1160,24 @@ homeOverlayRoot?.addEventListener("input", (event) => {
             loadCommunity().catch((error) => showHomeToast(error.message));
         }, 250);
     }
+});
+
+homeOverlayRoot?.addEventListener("change", (event) => {
+    const attachmentInput = event.target.closest("input[name='attachments']");
+    if (!attachmentInput) {
+        return;
+    }
+
+    const summary = attachmentInput.closest(".overlay-community-file-picker")
+        ?.querySelector("[data-community-file-summary]");
+    if (!summary) {
+        return;
+    }
+
+    const files = Array.from(attachmentInput.files || []);
+    summary.textContent = files.length
+        ? `${files.length}개 파일 선택됨 · ${files.map((file) => file.name).join(", ")}`
+        : "첨부할 이미지를 선택하세요.";
 });
 
 // 커뮤니티 글쓰기와 기수 가입 코드 제출 처리
