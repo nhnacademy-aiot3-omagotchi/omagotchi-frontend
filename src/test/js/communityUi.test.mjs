@@ -120,6 +120,10 @@ test("커뮤니티 목록 행은 버튼 전체 폭을 쓰고 버튼 내부에서
         overlayCss,
         /\.home-overlay--community \.overlay-community-open\s*\{[^}]*grid-template-columns:\s*48px minmax\(0, 1fr\) auto/s
     );
+    assert.match(
+        overlayCss,
+        /\.home-overlay--community \.overlay-community-open > footer\s*\{[^}]*grid-column:\s*2/s
+    );
 });
 
 test("홈 토스트는 모바일 오버레이보다 위에 표시된다", () => {
