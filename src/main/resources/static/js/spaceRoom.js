@@ -619,50 +619,24 @@ import {
     }
 
     function renderRoomList() {
-        const items = [
-            ...state.rooms.map((room) => ({ type: "room", room })),
-            { type: "upcoming", id: "manager-upcoming-space" }
-        ];
-        const pageSize = 2;
-        const pageCount = Math.max(1, Math.ceil(items.length / pageSize));
-        const page = Math.min(Math.max(0, Number(state.roomPage) || 0), pageCount - 1);
-        const visibleItems = items.slice(page * pageSize, (page + 1) * pageSize);
-
         return `
             <section class="ui-space-list" aria-labelledby="space-room-list-title">
-                <header><h3 id="space-room-list-title">공간 목록</h3><span>${state.rooms.length}개</span></header>
+                <header><h3 id="space-room-list-title">회의실 목록</h3><span>${state.rooms.length}개</span></header>
                 <div class="ui-space-list__grid" role="list" aria-label="회의실 목록">
-                    ${visibleItems.map((item) => {
-                        if (item.type === "upcoming") {
-                            return `
-                                <article class="ui-space-upcoming" aria-label="공간 추가 예정 관리자 준비 중">
-                                    <div><h4>공간 추가 예정</h4><strong>관리자 준비 중</strong><p>기수 관리자가 공간을 추가하면 이 목록에 표시됩니다.</p></div>
-                                </article>`;
-                        }
-
-                        const room = item.room;
+                    ${state.rooms.length ? state.rooms.map((room) => {
                         const view = getRoomView(room);
-                        const alertEnabled = Boolean(vacancyAlertForSpace(room.id));
                         const occupantCount = room.occupancy?.participantCount ?? 0;
                         const canEnter = view.key === "available";
-                        const canAlert = Boolean(room.occupancy) && !["mine", "participating"].includes(view.key);
-                        const showDetail = !canEnter && !canAlert;
+                        const selected = sameId(room.id, state.selectedRoomId);
 
                         return `
-                            <article class="ui-space-room-card is-${view.key}" role="listitem">
-                                <div><h4>${escapeHtml(room.name)}</h4><p>${room.capacity}인실 · 함께 공부할 파티와 입장하세요.</p></div>
+                            <article class="ui-space-room-card is-${view.key}${selected ? " is-selected" : ""}" role="listitem" data-space-select-room="${escapeHtml(room.id)}" aria-current="${selected ? "true" : "false"}">
+                                <div><h4>${escapeHtml(room.name)}</h4><p>${room.capacity}인실</p></div>
                                 <span class="ui-menu-chip${canEnter ? " is-available" : ""}">${view.label}</span>
                                 <strong>${occupantCount} / ${room.capacity}</strong>
-                                ${canEnter ? `<button class="ui-button ui-button--primary" type="button" data-space-occupy="${escapeHtml(room.id)}">입장</button>` : ""}
-                                ${canAlert ? `<button class="ui-button ui-button--secondary" type="button" data-space-alert="${escapeHtml(room.id)}" aria-pressed="${alertEnabled}">${alertEnabled ? "공실 알림 취소" : "공실 알림 신청"}</button>` : ""}
-                                ${showDetail ? `<button class="ui-button ui-button--secondary" type="button" data-space-select-room="${escapeHtml(room.id)}">상세 보기</button>` : ""}
                             </article>`;
-                    }).join("")}
+                    }).join("") : `<p class="space-room-list-empty" role="status">등록된 회의실이 없습니다.</p>`}
                 </div>
-                <footer class="ui-space-pagination" aria-label="공간 목록 페이지">
-                    <span>${page + 1} / ${pageCount}</span>
-                    <button type="button" data-space-next-page ${pageCount <= 1 ? "disabled" : ""}>다음 공간 →</button>
-                </footer>
             </section>
         `;
     }
@@ -682,7 +656,6 @@ import {
                     <h4 id="participant-manager-title">참여자 관리</h4>
                     <span>${participants.length} / ${room.capacity}명</span>
                 </div>
-                <p class="space-room-participant-label">현재 참여자</p>
                 <ul class="space-room-participants">
                     ${participants.map((participant) => `
                         <li>
@@ -778,7 +751,7 @@ import {
                     ` : ""}
                 </header>
 
-                <div class="space-room-detail-sensors" aria-label="${escapeHtml(room.name)} 센서 상태">
+                <div class="space-room-detail-sensors" aria-label="${escapeHtml(room.name)} 환경 정보">
                     ${renderSensor(room.sensor)}
                 </div>
 
@@ -799,19 +772,19 @@ import {
                     </section>
                 ` : ""}
 
-                ${occupancy && isSameCohort ? `
+                ${occupancy && isSameCohort && !isMine ? `
                     <section class="space-room-occupancy">
                         <div class="space-room-subhead">
                             <h4>현재 참여자</h4>
                             <span>${occupancy.participantCount ?? "-"} / ${room.capacity}명</span>
                         </div>
-                        ${isParticipant && !isMine ? `
+                        ${isMine || isParticipant ? `
                             <ul class="space-room-member-chips">
                                 ${occupancy.participants.map((participant) => `
                                     <li>${escapeHtml(participant.displayName)}${participant.isOccupier ? " · 점유자" : ""}</li>
                                 `).join("")}
                             </ul>
-                        ` : `<p>같은 기수의 참여 인원만 표시합니다.</p>`}
+                        ` : ""}
                     </section>
                 ` : ""}
 
@@ -897,12 +870,10 @@ import {
                         <h3 id="space-meeting-title">회의실</h3>
                     </div>
                     <div class="ui-space-meeting__tools">
-                        <span class="ui-menu-chip">공실 알림 ${state.vacancyAlerts.length}건</span>
                         ${telegramControl}
                     </div>
                 </header>
                 <div class="ui-space-meeting__body">
-                    ${renderPartyHud()}
                     ${roomContent}
                 </div>
             </section>
@@ -1133,7 +1104,6 @@ import {
             : null;
         const participantCandidate = event.target.closest("[data-space-participant-candidate]");
         const libraryToggle = event.target.closest("[data-space-library-toggle]");
-        const nextPage = event.target.closest("[data-space-next-page]");
         const partyCandidate = event.target.closest("[data-space-party-candidate]");
         const openPartyCreate = event.target.closest("[data-party-open-create]");
         const cancelPartyCreate = event.target.closest("[data-party-cancel-create]");
@@ -1177,9 +1147,6 @@ import {
             await refreshSpaces();
         } else if (tab) {
             state.activeTab = tab.dataset.spaceTab;
-            renderAll();
-        } else if (roomSelect) {
-            state.selectedRoomId = roomSelect.dataset.spaceSelectRoom;
             renderAll();
         } else if (occupy) {
             await occupyRoom(occupy.dataset.spaceOccupy);
@@ -1256,9 +1223,8 @@ import {
         } else if (libraryToggle) {
             state.libraryInside = !state.libraryInside;
             renderAll(state.libraryInside ? "도서관에 입장했습니다." : "도서관에서 나왔습니다.");
-        } else if (nextPage) {
-            const pageCount = Math.max(1, Math.ceil((state.rooms.length + 1) / 2));
-            state.roomPage = (Math.max(0, Number(state.roomPage) || 0) + 1) % pageCount;
+        } else if (roomSelect) {
+            state.selectedRoomId = roomSelect.dataset.spaceSelectRoom;
             renderAll();
         } else if (openPartyCreate) {
             state.partyCreateOpen = true;

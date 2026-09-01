@@ -32,7 +32,7 @@ Browser
   - Session Access JWT를 Bearer로 전달
   - 현재: Identity 본인 계정 API는 Identity Service 직접 호출
   - 현재: Learning 선언형 HTTP Client는 Learning Service 직접 호출
-  - 현재: AI Chat은 후속 전환 전까지 Gateway 경유 호출
+  - 현재: AI Chat은 WebClient 기반 HTTP Service Client로 Learning Service 직접 호출
   - Access Token 만료 임박 시 인증 v1 BFF 진입 단계에서 선제 Refresh
   - 하류 `401` 뒤 원래 요청 자동 재실행 없음
 - Gateway
