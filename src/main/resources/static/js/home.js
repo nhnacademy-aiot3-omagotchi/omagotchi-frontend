@@ -873,10 +873,10 @@ function openCommunityComposer(post = null) {
     title.textContent = post ? "게시글 수정" : "새 게시글";
     body.innerHTML = `
         <form class="overlay-community-compose" data-community-compose data-community-post-type="${post?.type || "FREE"}"${post ? ` data-community-post-id="${post.postId}"` : ""}>
-            <div class="overlay-community-form-field">
+            <section class="overlay-community-form-field">
                 <span>게시판</span>
                 <div class="overlay-community-board">${post?.type === "NOTICE" ? "공지 게시판" : "자유 게시판"}</div>
-            </div>
+            </section>
             <label class="overlay-community-form-field">
                 <span>제목</span>
                 <input type="text" name="title" maxlength="100" value="${escapeHtml(post?.title || "")}" placeholder="게시글 제목을 입력하세요" required />
@@ -885,14 +885,14 @@ function openCommunityComposer(post = null) {
                 <span>내용</span>
                 <textarea name="content" maxlength="1000" placeholder="기수 구성원과 공유할 내용을 입력하세요" required>${escapeHtml(post?.content || "")}</textarea>
             </label>
-            <div class="overlay-community-form-field">
+            <section class="overlay-community-form-field">
                 <span>이미지 첨부</span>
                 <div class="overlay-community-file-picker">
                     <input id="${attachmentInputId}" class="overlay-community-file-input" type="file" name="attachments" accept="image/jpeg,image/png,image/gif" multiple />
                     <label for="${attachmentInputId}" class="overlay-community-file-button">이미지 선택</label>
                     <span class="overlay-community-file-summary" data-community-file-summary>첨부할 이미지를 선택하세요.</span>
                 </div>
-            </div>
+            </section>
             <footer>
                 <button type="button" data-community-close>취소</button>
                 <button type="submit">${post ? "수정하기" : "등록하기"}</button>

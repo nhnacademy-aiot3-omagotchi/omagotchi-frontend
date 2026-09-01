@@ -1030,6 +1030,12 @@
     gap: 7px;
 }
 
+.home-overlay--community .overlay-community-compose > .overlay-community-form-field {
+    grid-column: 1 / -1;
+    width: 100%;
+    min-width: 0;
+}
+
 .home-overlay--community .overlay-community-form-field > span {
     color: var(--overlay-muted);
     font-size: 12px;
