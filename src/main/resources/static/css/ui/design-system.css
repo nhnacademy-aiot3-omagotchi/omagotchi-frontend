@@ -458,8 +458,94 @@
 .ui-auth-tab.is-active { background: #fff; color: var(--ui-emerald-800); box-shadow: 0 4px 12px rgba(23,107,74,0.1); }
 .ui-auth-form { display: grid; gap: 14px; }
 .ui-auth-feedback { margin: 0; padding: 12px 14px; border-radius: 12px; background: var(--ui-danger-soft); color: var(--ui-danger); font-size: 13px; font-weight: 700; }
+.ui-auth-feedback.is-success { background: var(--ui-emerald-50); color: var(--ui-emerald-800); }
+.ui-auth-feedback.is-neutral { background: var(--ui-cream); color: var(--ui-ink-muted); }
 .ui-auth-links { display: flex; justify-content: flex-end; font-size: 13px; }
 .ui-auth-links a { color: var(--ui-emerald-800); font-weight: 800; }
+
+.ui-email-verification {
+    display: grid;
+    gap: 14px;
+}
+
+.ui-email-verification[hidden] {
+    display: none;
+}
+
+.ui-email-verification__summary {
+    display: grid;
+    gap: 5px;
+    padding: 14px 16px;
+    border: 1px solid #a9d9c2;
+    border-radius: 14px;
+    background: var(--ui-emerald-50);
+}
+
+.ui-email-verification__summary p {
+    margin: 0;
+    color: var(--ui-ink-muted);
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.ui-email-verification__summary strong {
+    overflow-wrap: anywhere;
+    color: var(--ui-emerald-800);
+    font-size: 15px;
+}
+
+.ui-email-verification__timer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 6px;
+    margin: -5px 2px 0;
+    color: var(--ui-ink-muted);
+    font-size: 12px;
+}
+
+.ui-email-verification__timer strong {
+    color: var(--ui-emerald-800);
+}
+
+.ui-email-verification__resend {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    color: var(--ui-ink-muted);
+    font-size: 12px;
+}
+
+.ui-email-verification__resend button,
+.ui-email-verification__edit {
+    padding: 2px;
+    border: 0;
+    background: transparent;
+    color: var(--ui-emerald-800);
+    font: inherit;
+    font-weight: 800;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    cursor: pointer;
+}
+
+.ui-email-verification__resend button:disabled {
+    color: var(--ui-ink-muted);
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+.ui-email-verification__resend button:focus-visible,
+.ui-email-verification__edit:focus-visible {
+    outline: 3px solid rgba(47, 196, 124, 0.28);
+    outline-offset: 3px;
+}
+
+.ui-email-verification__edit {
+    justify-self: center;
+    color: var(--ui-ink-muted);
+}
 
 .ui-menu-panel {
     width: min(100%, 1040px);
