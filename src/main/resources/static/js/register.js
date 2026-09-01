@@ -273,11 +273,24 @@ if (form) {
     window.addEventListener("pagehide", () => {
         if (state.timerId !== null) {
             window.clearInterval(state.timerId);
+            state.timerId = null;
         }
         state.challengeId = null;
         state.issuedEmail = null;
+        state.expiresAt = 0;
+        state.resendAvailableAt = 0;
+        state.operation = null;
         passwordInput.value = "";
         codeInput.value = "";
+    });
+
+    window.addEventListener("pageshow", (event) => {
+        if (event.persisted) {
+            otpStep.hidden = true;
+            detailsStep.hidden = false;
+            codeInput.disabled = true;
+            updateControls();
+        }
     });
 
     updateControls();
