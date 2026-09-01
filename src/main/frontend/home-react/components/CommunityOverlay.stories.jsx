@@ -148,6 +148,7 @@ function CommunityOverlayStory() {
 
       event.preventDefault();
       let createdPost;
+      let createdAttachmentCount = 0;
       try {
         const result = await saveCommunityPost({
           form,
@@ -155,6 +156,11 @@ function CommunityOverlayStory() {
           api: {
             async createPost(post) {
               createdPost = post;
+              await new Promise((resolve) => window.setTimeout(resolve, 300));
+            },
+            async createPostWithAttachments(post, attachments) {
+              createdPost = post;
+              createdAttachmentCount = attachments.length;
               await new Promise((resolve) => window.setTimeout(resolve, 300));
             }
           }
@@ -166,7 +172,7 @@ function CommunityOverlayStory() {
           type: createdPost.type,
           title: createdPost.title,
           createdLabel: "방금 전",
-          attachmentCount: 0
+          attachmentCount: createdAttachmentCount
         }, ...current]);
         setMode("list");
         showToast(result.message);
@@ -252,6 +258,29 @@ export const RegistrationComplete = {
     const toast = storyDocument.getByRole("status");
     expect(toast).toHaveTextContent("게시글이 등록되었습니다.");
     expect(Number(getComputedStyle(toast).zIndex)).toBeGreaterThan(1000);
+  }
+};
+
+export const RegistrationCompleteWithAttachment = {
+  name: "첨부파일 포함 글 등록 완료",
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByRole("button", { name: "글쓰기" }));
+    await userEvent.type(canvas.getByPlaceholderText("게시글 제목을 입력하세요"), "첨부파일 등록 테스트");
+    await userEvent.type(canvas.getByPlaceholderText("기수 구성원과 공유할 내용을 입력하세요"), "첨부파일 API mock을 확인합니다.");
+
+    const StoryFile = canvasElement.ownerDocument.defaultView.File;
+    const attachment = new StoryFile(["storybook image"], "storybook.png", { type: "image/png" });
+    await userEvent.upload(canvas.getByLabelText("이미지 첨부"), attachment);
+    await userEvent.click(canvas.getByRole("button", { name: "등록하기" }));
+
+    expect(canvas.getByRole("button", { name: "등록 중…" })).toBeDisabled();
+    await waitFor(() => expect(canvas.getByText("첨부파일 등록 테스트")).toBeInTheDocument());
+    const createdPost = canvas.getByRole("button", { name: "첨부파일 등록 테스트 상세 보기" });
+    expect(within(createdPost).getByText("첨부 1")).toBeInTheDocument();
+
+    const storyDocument = within(canvasElement.ownerDocument.body);
+    expect(storyDocument.getByRole("status")).toHaveTextContent("게시글이 등록되었습니다.");
   }
 };
 
