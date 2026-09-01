@@ -1,9 +1,10 @@
-package site.omagotchi.frontend.account.infrastructure.response;
+package site.omagotchi.frontend.account.application.result;
 
 import java.time.Instant;
 import java.util.UUID;
 
-public record GatewayAdminAccountResponse(
+/** Identity가 소유하는 관리자 계정 조회 결과다. Learning 기수 정보는 포함하지 않는다. */
+public record IdentityAdminAccount(
         UUID accountId,
         String email,
         String name,

@@ -19,41 +19,71 @@ function normalizeCohort(cohort) {
 }
 
 function normalizeUser(account) {
-    const managedCohorts = Array.isArray(account.managedCohorts) ? account.managedCohorts : [];
+    if (!account
+        || typeof account.accountId !== "string" || !account.accountId.trim()
+        || typeof account.email !== "string" || !account.email.trim()
+        || typeof account.name !== "string" || !account.name.trim()
+        || typeof account.role !== "string" || !account.role.trim()
+        || typeof account.status !== "string" || !account.status.trim()
+        || !Number.isInteger(account.failedLoginAttempts) || account.failedLoginAttempts < 0
+        || (account.lockedUntil !== null
+            && (typeof account.lockedUntil !== "string"
+                || Number.isNaN(Date.parse(account.lockedUntil))))
+        || (account.withdrawnAt !== null
+            && (typeof account.withdrawnAt !== "string"
+                || Number.isNaN(Date.parse(account.withdrawnAt))))
+        || typeof account.createdAt !== "string" || Number.isNaN(Date.parse(account.createdAt))
+        || !Array.isArray(account.managedCohorts)
+        || account.managedCohorts.some((cohort) => cohort?.cohortId == null)) {
+        throw new Error("사용자 목록 응답 형식이 올바르지 않습니다.");
+    }
     return {
         id: String(account.accountId),
         email: account.email,
         name: account.name,
         globalRole: account.role,
         status: account.status,
+        failedLoginAttempts: account.failedLoginAttempts,
+        lockedUntil: account.lockedUntil,
+        withdrawnAt: account.withdrawnAt,
         joinedAt: String(account.createdAt || "-").slice(0, 10),
-        managerCohortIds: managedCohorts.map((cohort) => String(cohort.cohortId))
+        managerCohortIds: account.managedCohorts.map((cohort) => String(cohort.cohortId))
     };
 }
 
-function requireAccountPage(page) {
-    if (!page || !Array.isArray(page.content)
-        || !Number.isInteger(page.totalPages) || page.totalPages < 0) {
+function requireAccountPage(response, expectedPageNumber) {
+    const page = response?.page;
+    const validPage = Number.isInteger(page?.number) && page.number >= 0
+        && Number.isInteger(page?.size) && page.size > 0
+        && Number.isInteger(page?.totalElements) && page.totalElements >= 0
+        && Number.isInteger(page?.totalPages) && page.totalPages >= 0;
+    if (!Array.isArray(response?.items)
+        || !validPage
+        || page.number !== expectedPageNumber
+        || page.totalPages !== Math.ceil(page.totalElements / page.size)
+        || response.items.length > page.size
+        || response.items.length > page.totalElements) {
         throw new Error("사용자 목록 응답 형식이 올바르지 않습니다.");
     }
-    return page;
+    return response;
 }
 
 async function loadAllUsers(client) {
     const pageSize = 100;
+    const firstPageNumber = 0;
     const firstPage = requireAccountPage(await client.systemAdmin.getUsers({
-        page: 0,
+        page: firstPageNumber,
         size: pageSize,
         sort: "CREATED_AT_DESC"
-    }));
-    const users = [...firstPage.content];
-    for (let page = 1; page < firstPage.totalPages; page += 1) {
+    }), firstPageNumber);
+    const users = [...firstPage.items];
+    for (let page = 1; page < firstPage.page.totalPages; page += 1) {
         const nextPage = requireAccountPage(await client.systemAdmin.getUsers({
             page,
             size: pageSize,
             sort: "CREATED_AT_DESC"
-        }));
-        users.push(...nextPage.content);
+        }), page);
+        users.push(...nextPage.items);
     }
     return users.map(normalizeUser);
 }
