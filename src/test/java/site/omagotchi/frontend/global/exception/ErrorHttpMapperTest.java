@@ -33,4 +33,11 @@ class ErrorHttpMapperTest {
         assertThat(ErrorHttpMapper.findErrorCode(HttpStatus.UNPROCESSABLE_CONTENT))
                 .isEmpty();
     }
+
+    @Test
+    @DisplayName("재요청 제한 오류를 429로 변환")
+    void mapsRateLimitErrorTypeToTooManyRequests() {
+        assertThat(ErrorHttpMapper.toHttpStatus(ErrorType.RATE_LIMIT))
+                .isEqualTo(HttpStatus.TOO_MANY_REQUESTS);
+    }
 }
