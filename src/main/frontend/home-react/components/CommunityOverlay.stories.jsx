@@ -390,7 +390,7 @@ export const DetailNavigation = {
   name: "상세·목록·닫기",
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await userEvent.click(canvas.getByRole("button", { name: "박쥐우 테스트 글입니다 상세 보기" }));
+    await userEvent.click(canvas.getByRole("button", { name: "박지우 테스트 글입니다 상세 보기" }));
     expect(canvas.getByText("커뮤니티 상세 화면의 읽기 쉬운 구성을 확인하는 예시 글입니다.")).toBeInTheDocument();
     await userEvent.click(canvas.getByRole("button", { name: "목록" }));
     expect(canvas.getByRole("button", { name: "글쓰기" })).toBeInTheDocument();
@@ -450,7 +450,7 @@ export const EditComplete = {
   name: "게시글 수정 완료",
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await userEvent.click(canvas.getByRole("button", { name: "박쥐우 테스트 글입니다 상세 보기" }));
+    await userEvent.click(canvas.getByRole("button", { name: "박지우 테스트 글입니다 상세 보기" }));
     await userEvent.click(canvas.getByRole("button", { name: "수정" }));
     const titleInput = canvas.getByPlaceholderText("게시글 제목을 입력하세요");
     await userEvent.clear(titleInput);
@@ -466,10 +466,10 @@ export const DeleteComplete = {
   name: "게시글 삭제 완료",
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await userEvent.click(canvas.getByRole("button", { name: "박쥐우 테스트 글입니다 상세 보기" }));
+    await userEvent.click(canvas.getByRole("button", { name: "박지우 테스트 글입니다 상세 보기" }));
     await userEvent.click(canvas.getByRole("button", { name: "삭제" }));
     expect(canvas.getByRole("button", { name: "글쓰기" })).toBeInTheDocument();
-    expect(canvas.queryByText("박쥐우 테스트 글입니다")).not.toBeInTheDocument();
+    expect(canvas.queryByText("박지우 테스트 글입니다")).not.toBeInTheDocument();
     expect(within(canvasElement.ownerDocument.body).getByRole("status")).toHaveTextContent("게시글이 삭제되었습니다.");
   }
 };
