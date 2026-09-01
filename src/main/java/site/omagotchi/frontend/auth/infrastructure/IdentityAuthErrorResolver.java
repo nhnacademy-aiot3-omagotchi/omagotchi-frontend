@@ -70,8 +70,8 @@ class IdentityAuthErrorResolver {
         }
         try {
             long seconds = Long.parseLong(value);
-            if (seconds < 0) {
-                throw new NumberFormatException("negative Retry-After");
+            if (seconds < 1) {
+                throw new NumberFormatException("non-positive Retry-After");
             }
             return seconds;
         } catch (NumberFormatException invalidHeader) {

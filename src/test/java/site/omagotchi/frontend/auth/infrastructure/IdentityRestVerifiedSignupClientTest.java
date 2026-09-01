@@ -119,28 +119,30 @@ class IdentityRestVerifiedSignupClientTest {
         server.verify();
     }
 
-    @Test
+    @ParameterizedTest
+    @ValueSource(strings = {"1", "42"})
     @DisplayName("v2 회원가입 OTP 재요청 제한의 Retry-After 보존")
-    void mapsSignupEmailOtpCooldown() {
+    void mapsSignupEmailOtpCooldown(String retryAfter) {
         expectError(
                 EMAIL_OTP_PATH,
                 HttpStatus.TOO_MANY_REQUESTS,
                 "EMAIL_VERIFICATION_COOLDOWN_ACTIVE",
                 HttpHeaders.RETRY_AFTER,
-                "42"
+                retryAfter
         );
 
         assertThatThrownBy(() -> client.requestEmailVerification(
                 signupEmailChallengeCommand()
         )).isInstanceOfSatisfying(
                 EmailVerificationCooldownException.class,
-                exception -> assertThat(exception.retryAfterSeconds()).isEqualTo(42)
+                exception -> assertThat(exception.retryAfter().value())
+                        .isEqualTo(Long.parseLong(retryAfter))
         );
         server.verify();
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"-1", "later"})
+    @ValueSource(strings = {"0", "-1", "later"})
     @DisplayName("OTP cooldown의 잘못된 Retry-After는 계약 오류로 변환")
     void rejectsInvalidRetryAfter(String retryAfter) {
         expectError(
