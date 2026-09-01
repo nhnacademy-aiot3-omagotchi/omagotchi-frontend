@@ -6,6 +6,7 @@ import site.omagotchi.frontend.attendance.infrastructure.AttendanceHttpService;
 import site.omagotchi.frontend.learning.sensor.infrastructure.SensorAdminHttpService;
 import site.omagotchi.frontend.learning.series.infrastructure.SensorHttpService;
 import site.omagotchi.frontend.presence.infrastructure.PresenceHttpService;
+import site.omagotchi.frontend.telegram.infrastructure.TelegramHttpService;
 
 @Configuration(proxyBeanMethods = false)
 @ImportHttpServices(
@@ -15,7 +16,8 @@ import site.omagotchi.frontend.presence.infrastructure.PresenceHttpService;
                 AttendanceHttpService.class,
                 SensorHttpService.class,
                 SensorAdminHttpService.class,
-                PresenceHttpService.class
+                PresenceHttpService.class,
+                TelegramHttpService.class
         }
 )
 @SuppressWarnings("java:S1118") // Spring이 인스턴스화하는 설정 클래스이므로 private 생성자를 둘 수 없다.

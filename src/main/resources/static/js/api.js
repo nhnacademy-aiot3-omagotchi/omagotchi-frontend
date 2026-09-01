@@ -152,6 +152,10 @@
             changePassword: (currentPassword, newPassword) => request("/users/me/password", {
                 method: "PATCH",
                 body: {currentPassword, newPassword}
+            }),
+            withdraw: (currentPassword) => request("/users/me", {
+                method: "DELETE",
+                body: {currentPassword}
             })
         },
         profile: {
@@ -400,7 +404,7 @@
         },
         // 응답 필드는 Learning Service 계약 그대로다. 화면이 그 이름으로 읽으므로 여기서 바꾸지 않는다.
         telegram: {
-            // 미연동이면 404다. 호출부가 그것을 정상 상태로 다룬다.
+            // 미연동이면 BFF가 204를 주므로 본문이 빈 문자열이다. 호출부는 falsy로 판정한다.
             getMyLink: () => request("/me/telegram/link"),
             issueLinkToken: () => request("/me/telegram/link-token", {method: "POST"}),
             updateNotification: (enabled) => request("/me/telegram/link/notification", {
@@ -413,6 +417,11 @@
             listSpaces: () => request("/admin/sensors/spaces"),
             listDevices: () => request("/admin/sensors/devices"),
             createDevice: (payload) => request("/admin/sensors/devices", {method: "POST", body: payload}),
+            // 주인 없는 센서를 우리 기수로 가져온다. 등록이 409로 막혔을 때 이어서 부른다.
+            claimDevice: (deviceEui, spaceId) => request(
+                `/admin/sensors/devices/${encodeURIComponent(deviceEui)}/claim`,
+                {method: "POST", body: {spaceId}}
+            ),
             updateDevice: (deviceEui, payload) => request(`/admin/sensors/devices/${encodeURIComponent(deviceEui)}`, {
                 method: "PUT",
                 body: payload

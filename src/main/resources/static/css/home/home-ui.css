@@ -2,6 +2,6 @@
 @import url("./ui/bgm.css?v=20260824-1");
 @import url("./ui/dock-actions.css?v=20260824-1");
 @import url("./ui/attendance.css?v=20260824-1");
-@import url("./ui/toast.css?v=20260824-1");
+@import "./ui/toast.css?v=20260831-1";
 @import url("./ui/character-chat.css?v=20260824-1");
 @import "./ui/responsive.css?v=20260824-1";

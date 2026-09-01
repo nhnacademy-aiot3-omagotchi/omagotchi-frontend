@@ -30,4 +30,8 @@ public class AccountSettingsBffService {
                 newPassword
         );
     }
+
+    public void withdraw(String accessToken, String currentPassword) {
+        identityAccountClient.withdraw(accessToken, currentPassword);
+    }
 }

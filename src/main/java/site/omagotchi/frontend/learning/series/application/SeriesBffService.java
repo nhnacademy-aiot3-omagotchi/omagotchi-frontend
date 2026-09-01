@@ -22,8 +22,9 @@ public class SeriesBffService {
             String measurement,
             String window
     ) {
-        String bearerToken = cohortContext.bearerToken(request);
+        // 공간 시계열은 기수 범위 집계다 — 승인 기수를 확보해 하류 경로에 싣는다
+        LearningCohortContext.Resolved resolved = cohortContext.resolve(request);
         return callExecutor.execute(() -> sensorHttpService.getSpaceSeries(
-                bearerToken, location, measurement, window));
+                resolved.bearerToken(), resolved.cohortId(), location, measurement, window));
     }
 }

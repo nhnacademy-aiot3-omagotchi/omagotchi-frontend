@@ -41,6 +41,16 @@ public enum AccountErrorCode implements ErrorCode {
             "ACCOUNT_NAME_CHANGE_NOT_ALLOWED",
             "현재 계정 상태에서는 이름을 변경할 수 없습니다."
     ),
+    WITHDRAWAL_NOT_ALLOWED(
+            ErrorType.CONFLICT,
+            "ACCOUNT_WITHDRAWAL_NOT_ALLOWED",
+            "현재 계정 상태에서는 탈퇴할 수 없습니다."
+    ),
+    LAST_SYSTEM_ADMIN(
+            ErrorType.CONFLICT,
+            "ACCOUNT_LAST_SYSTEM_ADMIN",
+            "마지막 이용 가능 시스템 관리자는 탈퇴할 수 없습니다."
+    ),
     INVALID_NAME(
             ErrorType.INVALID_INPUT,
             "ACCOUNT_INVALID_NAME",

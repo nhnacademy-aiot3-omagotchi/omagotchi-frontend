@@ -726,7 +726,22 @@ function SensorListContent({ sensors, spaces, onAdd, onEdit }) {
 // 서버 검증: @Pattern("[0-9a-f]+") @Size(max = 32)
 const EUI_PATTERN = "[0-9a-f]{1,32}";
 
-function SensorDialog({ mode, sensor, spaces, onClose, onSave }) {
+/**
+ * 방향 조사를 받침에 맞춰 고른다. 받침이 없거나 ㄹ이면 "로", 아니면 "으로".
+ *
+ * 공간 이름은 관리자가 자유롭게 짓는다 — "실습실"과 "강의동"이 같은 조사를 쓸 수 없다.
+ * 한글 음절이 아니면(예: "A101") 판정할 근거가 없으므로 "(으)로"로 둔다.
+ */
+function directionParticle(word) {
+  const last = word?.trim().slice(-1);
+  if (!last) return "로";
+  const code = last.charCodeAt(0);
+  if (code < 0xac00 || code > 0xd7a3) return "(으)로";
+  const jongseong = (code - 0xac00) % 28;
+  return jongseong === 0 || jongseong === 8 ? "로" : "으로";
+}
+
+function SensorDialog({ mode, sensor, spaces, onClose, onSave, onClaim }) {
   const isEdit = mode === "edit";
   // SensorDevice의 displayName·installationPoint·spaceId는 nullable이다.
   // null을 controlled input에 그대로 넣으면 React가 uncontrolled로 보고 경고한다.
@@ -743,17 +758,39 @@ function SensorDialog({ mode, sensor, spaces, onClose, onSave }) {
   });
   const [form, setForm] = useState(() => toForm(sensor));
   const [saving, setSaving] = useState(false);
+  // 409가 난 <b>제출 시점의 값</b>. 불리언으로 두면 인계할 때 "지금 폼"을 다시 읽게 되는데,
+  // 저장 요청이 날아가 있는 동안 입력이 바뀌면 충돌한 센서와 인계하는 센서가 어긋난다.
+  const [claimCandidate, setClaimCandidate] = useState(null);
   useEffect(() => { if (sensor) setForm(toForm(sensor)); }, [sensor]);
-  function update(field, value) { setForm((current) => ({ ...current, [field]: value })); }
+  function update(field, value) {
+    // 입력을 고치면 아까의 충돌은 더 이상 이 폼의 상태가 아니다.
+    setClaimCandidate(null);
+    setForm((current) => ({ ...current, [field]: value }));
+  }
   async function submit(event) {
     event.preventDefault();
+    // 응답을 기다리는 동안 form이 바뀔 수 있다. 이 요청이 무엇을 보냈는지는 지금 붙잡는다.
+    const submitted = form;
     setSaving(true);
     try {
-      await onSave(form);
+      setClaimCandidate(await onSave(submitted) === "claimable" ? submitted : null);
     } finally {
       setSaving(false);
     }
   }
+  async function claim() {
+    if (!claimCandidate) return;
+    setSaving(true);
+    try {
+      await onClaim(claimCandidate);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  // 대상 공간도 지금 폼이 아니라 충돌한 제출값에서 읽는다.
+  const claimTargetName =
+      spaces.find((space) => space.spaceId === claimCandidate?.spaceId)?.name ?? "선택한 공간";
 
   return (
     <div className="sensor-dialog-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
@@ -771,6 +808,20 @@ function SensorDialog({ mode, sensor, spaces, onClose, onSave }) {
               <input required disabled={isEdit} maxLength={32} pattern={EUI_PATTERN} value={form.deviceEui} onChange={(event) => update("deviceEui", event.target.value.toLowerCase())} placeholder="예: 24e124725e5c2862" />
               <small>{isEdit ? "등록 후에는 변경할 수 없습니다." : "16진수 소문자만 사용합니다 (최대 32자)."}</small>
             </label>
+            {claimCandidate && (
+              <p className="sensor-dialog-conflict sensor-field--wide" role="alert">
+                {/* 어느 EUI가 막혔는지 적는다. 응답을 기다리는 사이 입력을 고쳤다면
+                    폼의 값과 다를 수 있고, 그 차이는 감추는 것보다 드러내는 편이 낫다. */}
+                <span>
+                  <b>{claimCandidate.deviceEui}</b> — 이미 등록된 센서입니다. 이전 기수에서
+                  쓰던 센서라면{" "}
+                  <b>{claimTargetName}</b>{directionParticle(claimTargetName)} 인계할 수 있습니다.
+                </span>
+                <button type="button" className="sensor-claim-button" onClick={claim} disabled={saving}>
+                  {saving ? "인계 중…" : "인계하기"}
+                </button>
+              </p>
+            )}
             <div className="sensor-field-row">
               <label className="sensor-field"><span>위치</span><select value={form.spaceId ?? ""} onChange={(event) => update("spaceId", event.target.value === "" ? null : Number(event.target.value))}>{spaces.map((space) => <option key={space.spaceId} value={space.spaceId}>{space.name}</option>)}</select></label>
               <label className="sensor-field"><span>모델</span><input required disabled={isEdit} maxLength={32} value={form.model} onChange={(event) => update("model", event.target.value)} placeholder="예: WS202" />{isEdit && <small>등록 후에는 변경할 수 없습니다.</small>}</label>
@@ -809,6 +860,7 @@ export function SensorWorkspace({
   error = null,
   forbidden = false,
   onSaveSensor,
+  onClaimSensor,
   onSaveThresholds,
   onAlertQueryChange,
   onRetry,
@@ -844,13 +896,23 @@ export function SensorWorkspace({
     if (onSaveSensor) {
       // 서버가 거절하면(예: 중복 EUI 409) 창을 닫지 않는다. 닫으면 입력이 전부 사라진다.
       const ok = await onSaveSensor(next, dialog?.mode === "edit" ? "update" : "create");
-      if (ok === false) return;
+      // 인계로 이어갈 수 있는 충돌은 창을 연 채로 다이얼로그에 알려 준다.
+      if (ok === "claimable") return "claimable";
+      if (ok === false) return false;
     } else {
       setSensors((current) => current.some((sensor) => sensor.deviceEui === next.deviceEui)
         ? current.map((sensor) => sensor.deviceEui === next.deviceEui ? next : sensor)
         : [...current, next]);
     }
     setDialog(null);
+    return true;
+  }
+
+  async function claimSensor(next) {
+    if (!onClaimSensor) return false;
+    if (await onClaimSensor(next) === false) return false;
+    setDialog(null);
+    return true;
   }
 
   async function saveThresholds(spaceId, body) {
@@ -915,7 +977,7 @@ export function SensorWorkspace({
           </div>
         </Tabs.Root>
       </section>
-      {dialog && <SensorDialog mode={dialog.mode} sensor={dialog.sensor} spaces={spaces} onClose={() => setDialog(null)} onSave={saveSensor} />}
+      {dialog && <SensorDialog mode={dialog.mode} sensor={dialog.sensor} spaces={spaces} onClose={() => setDialog(null)} onSave={saveSensor} onClaim={claimSensor} />}
     </main>
   );
 }
