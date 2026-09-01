@@ -17,7 +17,8 @@
     "test:participants": "node --test src/test/js/participants.test.mjs src/test/js/participantActions.test.mjs",
     "test:space-room": "node --test src/test/js/spaceRoomInitialization.test.mjs",
     "test:admin-occupancies": "node --test src/test/js/adminOccupancies.test.mjs",
-    "test:service-integration": "node --test src/test/js/serviceIntegrationState.test.mjs"
+    "test:service-integration": "node --test src/test/js/serviceIntegrationState.test.mjs",
+    "test:timer": "node --test src/test/js/timer.test.mjs"
   },
   "dependencies": {
     "@vitejs/plugin-react": "^5.0.0",
