@@ -1,4 +1,4 @@
-package site.omagotchi.frontend.attendance.infrastructure.response;
+package site.omagotchi.frontend.global.http.response;
 
 public record PageInfo(
         int number,

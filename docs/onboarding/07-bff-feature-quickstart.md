@@ -581,7 +581,6 @@ Redis(6379) → Identity(8083) → Learning(8084) → View(8082)
 
 ```text
 LEARNING_SERVICE_BASE_URL   Learning 주소. 여기가 틀리면 Learning BFF가 COMMON_SERVICE_UNAVAILABLE이 된다.
-GATEWAY_SERVICE_BASE_URL    AI Chat이 후속 전환 전까지 사용하는 Gateway 주소다.
 IDENTITY_SERVICE_BASE_URL   로그인 자체가 실패한다.
 SESSION_REDIS_HOST/PORT     Session이 저장되지 않아 매 요청이 401이 된다.
 HTTP_CLIENT_CONNECT_TIMEOUT / HTTP_CLIENT_READ_TIMEOUT

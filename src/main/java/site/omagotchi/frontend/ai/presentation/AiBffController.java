@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Flux;
-import site.omagotchi.frontend.ai.infrastructure.AiChatGatewayClient;
+import site.omagotchi.frontend.ai.application.AiChatBffService;
 import site.omagotchi.frontend.global.learning.application.LearningSessionAuthorization;
 
 @RestController
@@ -16,7 +16,7 @@ import site.omagotchi.frontend.global.learning.application.LearningSessionAuthor
 @RequestMapping("/bff/v1/ai")
 public class AiBffController {
 
-    private final AiChatGatewayClient aiChatGatewayClient;
+    private final AiChatBffService aiChatBffService;
     private final LearningSessionAuthorization learningSessionAuthorization;
 
     @GetMapping(value = "/chat", produces = "text/event-stream;charset=UTF-8")
@@ -27,8 +27,7 @@ public class AiBffController {
             @RequestParam(defaultValue = "GEMINI") String model
     ) {
         response.setCharacterEncoding("UTF-8");
-        String bearerToken = this.learningSessionAuthorization.bearerToken(request);
-
-        return this.aiChatGatewayClient.streamChat(bearerToken, question, model);
+        String bearerToken = learningSessionAuthorization.bearerToken(request);
+        return aiChatBffService.streamChat(bearerToken, question, model);
     }
 }
