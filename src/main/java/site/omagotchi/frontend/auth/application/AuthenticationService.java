@@ -14,10 +14,6 @@ public class AuthenticationService {
 
     private final IdentityAuthClient identityAuthClient;
 
-    /**
-     * @deprecated 이메일 OTP 기반 v2 회원가입으로 대체되었다. 공개 호출 경로는 없으며, 종단 검증 완료 후 제거한다.
-     */
-    @Deprecated(forRemoval = true)
     public SignupResult signUp(String email, String password, String name) {
         return identityAuthClient.signUp(email, password, name);
     }

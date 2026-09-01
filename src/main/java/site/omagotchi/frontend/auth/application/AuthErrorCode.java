@@ -20,16 +20,6 @@ public enum AuthErrorCode implements ErrorCode {
             ErrorType.AUTHENTICATION,
             "AUTH_INVALID_REFRESH_TOKEN",
             "인증이 만료되었습니다. 다시 로그인해 주세요."
-    ),
-    EMAIL_VERIFICATION_INVALID(
-            ErrorType.INVALID_INPUT,
-            "EMAIL_VERIFICATION_INVALID_CHALLENGE",
-            "인증 코드가 올바르지 않거나 만료되었습니다."
-    ),
-    EMAIL_VERIFICATION_COOLDOWN_ACTIVE(
-            ErrorType.RATE_LIMIT,
-            "EMAIL_VERIFICATION_COOLDOWN_ACTIVE",
-            "잠시 후 인증 코드를 다시 요청해 주세요."
     );
 
     private final ErrorType type;

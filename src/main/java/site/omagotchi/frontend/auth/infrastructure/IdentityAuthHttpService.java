@@ -13,10 +13,6 @@ import site.omagotchi.frontend.auth.infrastructure.response.TokenResponse;
 @HttpExchange("/api/v1/auth")
 public interface IdentityAuthHttpService {
 
-    /**
-     * @deprecated Identity v1의 OTP 없는 가입 Endpoint다. v2 종단 검증 완료 후 제거한다.
-     */
-    @Deprecated(forRemoval = true)
     @PostExchange("/signup")
     ResponseEntity<Void> signUp(@RequestBody IdentitySignupRequest request);
 
