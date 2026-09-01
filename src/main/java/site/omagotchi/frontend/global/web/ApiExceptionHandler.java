@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.ServletWebRequest;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
+import site.omagotchi.frontend.auth.application.EmailVerificationCooldownException;
 import site.omagotchi.frontend.global.exception.ApiErrorResponse;
 import site.omagotchi.frontend.global.exception.BusinessException;
 import site.omagotchi.frontend.global.exception.CommonErrorCode;
@@ -141,6 +142,22 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
     );
 
     private final BrowserSessionInvalidator sessionInvalidator;
+
+    @ExceptionHandler(EmailVerificationCooldownException.class)
+    public ResponseEntity<ApiErrorResponse> handleEmailVerificationCooldown(
+            EmailVerificationCooldownException exception,
+            HttpServletRequest request
+    ) {
+        ErrorCode errorCode = exception.getErrorCode();
+        return ResponseEntity
+                .status(ErrorHttpMapper.toHttpStatus(errorCode.type()))
+                .header(
+                        HttpHeaders.RETRY_AFTER,
+                        Long.toString(exception.retryAfterSeconds())
+                )
+                .cacheControl(CacheControl.noStore())
+                .body(ApiErrorResponse.of(errorCode, request.getRequestURI()));
+    }
 
     // 클라이언트 공개 ErrorCode와 응답 방식이 확정된 실패 처리
     @ExceptionHandler(BusinessException.class)
