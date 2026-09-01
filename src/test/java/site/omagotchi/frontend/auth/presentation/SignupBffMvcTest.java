@@ -9,8 +9,10 @@ import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockHttpSession;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 import site.omagotchi.frontend.auth.application.AuthErrorCode;
 import site.omagotchi.frontend.auth.application.AuthenticationService;
 import site.omagotchi.frontend.auth.application.EmailVerificationCooldownException;
@@ -20,6 +22,7 @@ import site.omagotchi.frontend.auth.application.command.VerifiedSignupCommand;
 import site.omagotchi.frontend.auth.application.result.EmailVerificationChallenge;
 import site.omagotchi.frontend.auth.application.result.SignupResult;
 import site.omagotchi.frontend.auth.presentation.bff.SignupBffController;
+import site.omagotchi.frontend.auth.presentation.page.SignupPageController;
 import site.omagotchi.frontend.auth.presentation.security.AccessTokenRefreshInterceptor;
 import site.omagotchi.frontend.auth.presentation.security.BrowserTokenSessionAuthenticationStrategy;
 import site.omagotchi.frontend.auth.presentation.security.IdentityLogoutHandler;
@@ -31,6 +34,10 @@ import site.omagotchi.frontend.global.web.ApiExceptionHandler;
 import site.omagotchi.frontend.global.web.BffApiExceptionResolver;
 import site.omagotchi.frontend.global.web.ServletApiErrorResponseWriter;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
@@ -42,7 +49,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(SignupBffController.class)
+@WebMvcTest({SignupBffController.class, SignupPageController.class})
 @Import({
         ServletApiErrorResponseWriter.class,
         BffApiExceptionResolver.class,
@@ -51,6 +58,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         SecurityConfig.class
 })
 class SignupBffMvcTest {
+
+    private static final Pattern CSRF_META_PATTERN = Pattern.compile(
+            "<meta\\b(?=[^>]*\\bname=[\\\"']%s[\\\"'])"
+                    + "(?=[^>]*\\bcontent=[\\\"']([^\\\"']+)[\\\"'])[^>]*>",
+            Pattern.CASE_INSENSITIVE
+    );
 
     @Autowired
     private MockMvc mockMvc;
@@ -137,6 +150,78 @@ class SignupBffMvcTest {
                 );
         verify(verifiedSignupService).signUp(command);
         verifyNoInteractions(accessTokenRefreshInterceptor);
+    }
+
+    @Test
+    @DisplayName("회원가입 Page가 발급한 CSRF Token으로 익명 v2 회원가입 요청")
+    void acceptsSignupRequestsWithCsrfTokenFromSignupPage() throws Exception {
+        given(verifiedSignupService.requestEmailVerification(any()))
+                .willReturn(new EmailVerificationChallenge("challenge-id", 600));
+        given(verifiedSignupService.signUp(any()))
+                .willReturn(new SignupResult.Created());
+
+        MvcResult pageResult = mockMvc.perform(get("/register"))
+                .andExpect(status().isOk())
+                .andReturn();
+        MockHttpSession anonymousSession =
+                (MockHttpSession) pageResult.getRequest().getSession(false);
+        String page = pageResult.getResponse().getContentAsString();
+        String csrfToken = metaContent(page, "_csrf");
+        String csrfHeader = metaContent(page, "_csrf_header");
+
+        assertThat(anonymousSession).isNotNull();
+
+        mockMvc.perform(post("/bff/v2/auth/signup/email-otp")
+                        .session(anonymousSession)
+                        .header(csrfHeader, csrfToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "email": "user@example.com",
+                                  "password": "password-passphrase",
+                                  "name": "오마고치"
+                                }
+                                """))
+                .andExpect(status().isAccepted());
+
+        mockMvc.perform(post("/bff/v2/auth/signup")
+                        .session(anonymousSession)
+                        .header(csrfHeader, csrfToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "email": "user@example.com",
+                                  "password": "password-passphrase",
+                                  "name": "오마고치",
+                                  "challengeId": "challenge-id",
+                                  "code": "123456"
+                                }
+                                """))
+                .andExpect(status().isCreated());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "/bff/v2/auth/signup/email-otp",
+            "/bff/v2/auth/signup"
+    })
+    @DisplayName("다른 익명 Session은 회원가입 Page의 CSRF Token을 재사용할 수 없음")
+    void rejectsSignupRequestWithCsrfTokenFromAnotherSession(String path) throws Exception {
+        MvcResult pageResult = mockMvc.perform(get("/register"))
+                .andExpect(status().isOk())
+                .andReturn();
+        String page = pageResult.getResponse().getContentAsString();
+
+        mockMvc.perform(post(path)
+                        .session(new MockHttpSession())
+                        .header(metaContent(page, "_csrf_header"), metaContent(page, "_csrf"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpectAll(
+                        status().isForbidden(),
+                        jsonPath("$.code").value("AUTH_CSRF_INVALID")
+                );
+        verifyNoInteractions(verifiedSignupService);
     }
 
     @ParameterizedTest
@@ -241,5 +326,16 @@ class SignupBffMvcTest {
                         jsonPath("$.code")
                                 .value("EMAIL_VERIFICATION_COOLDOWN_ACTIVE")
                 );
+    }
+
+    private static String metaContent(String page, String name) {
+        Matcher matcher = Pattern.compile(
+                CSRF_META_PATTERN.pattern().formatted(Pattern.quote(name)),
+                CSRF_META_PATTERN.flags()
+        ).matcher(page);
+        assertThat(matcher.find())
+                .as("%s meta content", name)
+                .isTrue();
+        return matcher.group(1);
     }
 }
