@@ -1,6 +1,5 @@
 package site.omagotchi.frontend.attendance.presentation;
 
-import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -18,7 +17,6 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -48,7 +46,6 @@ class AttendanceBffControllerTest {
         // Given: 출결 항목과 페이지 정보를 포함한 Application 결과
         AttendanceRecordResult record = attendanceRecord();
         when(service.getHistory(
-                any(HttpServletRequest.class),
                 eq(LocalDate.of(2026, 8, 1)),
                 eq(LocalDate.of(2026, 8, 21)),
                 eq(1),
@@ -76,7 +73,6 @@ class AttendanceBffControllerTest {
                 );
 
         verify(service).getHistory(
-                any(HttpServletRequest.class),
                 eq(LocalDate.of(2026, 8, 1)),
                 eq(LocalDate.of(2026, 8, 21)),
                 eq(1),
@@ -88,7 +84,7 @@ class AttendanceBffControllerTest {
     @DisplayName("입실 Application 결과의 Presentation 응답 변환")
     void returnsCheckInResultAsPresentationResponse() throws Exception {
         // Given: 입실 처리 Application 결과
-        when(service.checkIn(any(HttpServletRequest.class))).thenReturn(attendanceRecord());
+        when(service.checkIn()).thenReturn(attendanceRecord());
 
         // When: 입실 BFF 요청
         mockMvc.perform(post("/bff/v1/attendance/check-in"))
@@ -100,7 +96,7 @@ class AttendanceBffControllerTest {
                         jsonPath("$.finalStatus").value("PRESENT")
                 );
 
-        verify(service).checkIn(any(HttpServletRequest.class));
+        verify(service).checkIn();
     }
 
     private static AttendanceRecordResult attendanceRecord() {

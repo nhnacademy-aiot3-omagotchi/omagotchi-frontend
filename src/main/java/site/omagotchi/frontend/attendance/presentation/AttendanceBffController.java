@@ -1,6 +1,5 @@
 package site.omagotchi.frontend.attendance.presentation;
 
-import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -26,14 +25,12 @@ public class AttendanceBffController {
 
     @GetMapping("/history")
     public PageResponse<AttendanceRecordResponse> getHistory(
-            HttpServletRequest request,
             @RequestParam(required = false) LocalDate from,
             @RequestParam(required = false) LocalDate to,
             @RequestParam(required = false) Integer page,
             @RequestParam(required = false) Integer size
     ) {
         AttendancePageResult result = attendanceBffService.getHistory(
-                request,
                 from,
                 to,
                 page,
@@ -52,20 +49,20 @@ public class AttendanceBffController {
     }
 
     @GetMapping("/today")
-    public ResponseEntity<AttendanceRecordResponse> getToday(HttpServletRequest request) {
-        return attendanceBffService.getToday(request)
+    public ResponseEntity<AttendanceRecordResponse> getToday() {
+        return attendanceBffService.getToday()
                 .map(AttendanceRecordResponse::from)
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.noContent().build());
     }
 
     @PostMapping("/check-in")
-    public AttendanceRecordResponse checkIn(HttpServletRequest request) {
-        return AttendanceRecordResponse.from(attendanceBffService.checkIn(request));
+    public AttendanceRecordResponse checkIn() {
+        return AttendanceRecordResponse.from(attendanceBffService.checkIn());
     }
 
     @PostMapping("/check-out")
-    public AttendanceRecordResponse checkOut(HttpServletRequest request) {
-        return AttendanceRecordResponse.from(attendanceBffService.checkOut(request));
+    public AttendanceRecordResponse checkOut() {
+        return AttendanceRecordResponse.from(attendanceBffService.checkOut());
     }
 }
