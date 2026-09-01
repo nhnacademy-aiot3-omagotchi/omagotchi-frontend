@@ -1,16 +1,16 @@
-package site.omagotchi.frontend.account.application.result;
+package site.omagotchi.frontend.attendance.application.result;
 
 import site.omagotchi.frontend.global.application.result.PageMetadata;
 
 import java.util.List;
 import java.util.Objects;
 
-public record AdminAccountPage(
-        List<AdminAccountView> items,
+public record AttendancePageResult(
+        List<AttendanceRecordResult> items,
         PageMetadata page
 ) {
 
-    public AdminAccountPage {
+    public AttendancePageResult {
         items = items == null ? List.of() : List.copyOf(items);
         page = Objects.requireNonNull(page, "page");
     }
