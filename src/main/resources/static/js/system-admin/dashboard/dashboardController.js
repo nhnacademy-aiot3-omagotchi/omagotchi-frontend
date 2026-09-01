@@ -1,3 +1,5 @@
+import {validateAttendancePolicyDraft} from "./data/systemAdminApiRepository.js";
+
 const STATUS_LABELS = {PREPARING: "준비 중", ACTIVE: "운영 중", CLOSED: "종료"};
 const ACCOUNT_STATUS_LABELS = {ACTIVE: "활성", LOCKED: "잠금", DISABLED: "비활성화", WITHDRAWN: "탈퇴"};
 const USER_PAGE_SIZE = 20;
@@ -26,6 +28,7 @@ export async function initializeSystemAdminDashboard(root = document, repository
     if (!repository) throw new Error("System Admin 저장소 구현체가 필요합니다.");
     let state = await repository.loadDashboard();
     let selectedUserId = null;
+    let policyCohortId = null;
     let currentUserPage = 1;
     const find = (selector) => root.querySelector(selector);
     const findAll = (selector) => [...root.querySelectorAll(selector)];
@@ -145,7 +148,7 @@ export async function initializeSystemAdminDashboard(root = document, repository
             const managerCount = managerAssignmentKnown ? `${managers.length}명` : "연동 대기";
             const managerNames = managerAssignmentKnown ? (managers.join(" · ") || "미배정") : "상세 API 연동 대기";
             const canDelete = capabilities().cohortDelete && cohort.status === "PREPARING";
-            return `<article class="system-cohort-card"><header><span class="system-status is-${cohort.status.toLowerCase()}">${STATUS_LABELS[cohort.status]}</span><span>${escapeHtml(cohort.status)}</span></header><h2>${escapeHtml(cohort.name)}</h2><p>${escapeHtml(cohort.description)}</p><strong class="system-cohort-period">${formatDate(cohort.startDate)} – ${formatDate(cohort.endDate)}</strong><dl><div><dt>구성원</dt><dd>${memberCount}</dd></div><div><dt>기수 관리자</dt><dd>${managerCount}</dd></div></dl><footer><div><span>담당</span><strong>${escapeHtml(managerNames)}</strong></div><div class="system-cohort-actions">${statusAction}<button class="is-danger" type="button" data-delete-cohort="${escapeHtml(cohort.id)}" ${canDelete ? "" : "disabled"}>삭제</button></div></footer></article>`;
+            return `<article class="system-cohort-card"><header><span class="system-status is-${cohort.status.toLowerCase()}">${STATUS_LABELS[cohort.status]}</span><span>${escapeHtml(cohort.status)}</span></header><h2>${escapeHtml(cohort.name)}</h2><p>${escapeHtml(cohort.description)}</p><strong class="system-cohort-period">${formatDate(cohort.startDate)} – ${formatDate(cohort.endDate)}</strong><dl><div><dt>구성원</dt><dd>${memberCount}</dd></div><div><dt>기수 관리자</dt><dd>${managerCount}</dd></div></dl><footer><div><span>담당</span><strong>${escapeHtml(managerNames)}</strong></div><div class="system-cohort-actions"><button type="button" data-open-attendance-policy="${escapeHtml(cohort.id)}">출결 정책</button>${statusAction}<button class="is-danger" type="button" data-delete-cohort="${escapeHtml(cohort.id)}" ${canDelete ? "" : "disabled"}>삭제</button></div></footer></article>`;
         }).join("");
     }
 
@@ -188,6 +191,50 @@ export async function initializeSystemAdminDashboard(root = document, repository
         dialog.querySelector("[data-dialog-cohort-options]").innerHTML = state.cohorts.filter((cohort) => cohort.status !== "CLOSED").map((cohort) => `<label data-cohort-option="${escapeHtml(cohort.id)}"><input type="checkbox" value="${escapeHtml(cohort.id)}" ${user.managerCohortIds.includes(cohort.id) ? "checked" : ""}><span><strong>${escapeHtml(cohort.name)}</strong><small>${formatDate(cohort.startDate)} – ${formatDate(cohort.endDate)} · ${STATUS_LABELS[cohort.status]}</small><em data-cohort-conflict hidden>선택한 기수와 운영 기간 중복</em></span></label>`).join("");
         syncCohortAssignmentOptions(dialog);
         setDialogOpen(dialog, true);
+    }
+
+    /**
+     * 출결 정책 다이얼로그를 연다.
+     *
+     * 정책이 없는 기수도 정상 경로다. 저장소가 미설정을 기본값으로 눕혀 주므로 여기서는
+     * 안내 문구만 갈라 준다. 서버 조회 자체가 실패하면 폼을 열지 않고 토스트로 알린다.
+     */
+    async function openAttendancePolicyDialog(cohortId) {
+        const dialog = find("[data-attendance-policy-dialog]");
+        if (!dialog) return;
+        const form = dialog.querySelector("[data-attendance-policy-form]");
+        const errorMessage = dialog.querySelector("[data-attendance-policy-error]");
+        let loaded;
+        try {
+            loaded = await repository.loadAttendancePolicy(cohortId);
+        } catch (error) {
+            showToast(error.message || "출결 정책을 불러오지 못했습니다.", true);
+            return;
+        }
+        policyCohortId = cohortId;
+        const policy = loaded.policy;
+        form.elements.timezone.value = policy.timezone;
+        form.elements.scheduledStartTime.value = policy.scheduledStartTime;
+        form.elements.scheduledEndTime.value = policy.scheduledEndTime;
+        form.elements.absenceCutoffTime.value = policy.absenceCutoffTime || "";
+        form.elements.allowedAwayMinutes.value = policy.allowedAwayMinutes;
+        dialog.querySelector("[data-policy-unset-note]").hidden = loaded.configured;
+        dialog.querySelector("[data-policy-dialog-subtitle]").textContent = loaded.configured
+            ? `${cohortName(cohortId)}의 출결 판정 기준입니다.`
+            : `${cohortName(cohortId)}는 아직 출결 정책이 없습니다.`;
+        errorMessage.hidden = true;
+        setDialogOpen(dialog, true);
+    }
+
+    /** 생성 폼의 정책 입력만 추려 낸다. 이름 충돌을 피하려고 policy 접두사를 쓴다. */
+    function readPolicyDraftFromCohortForm(form) {
+        return {
+            timezone: form.get("policyTimezone"),
+            scheduledStartTime: form.get("policyScheduledStartTime"),
+            scheduledEndTime: form.get("policyScheduledEndTime"),
+            absenceCutoffTime: form.get("policyAbsenceCutoffTime"),
+            allowedAwayMinutes: form.get("policyAllowedAwayMinutes")
+        };
     }
 
     function syncCohortAssignmentOptions(dialog) {
@@ -271,19 +318,70 @@ export async function initializeSystemAdminDashboard(root = document, repository
         if (form.get("startDate") > form.get("endDate")) {
             error.textContent = "시작일은 종료일보다 늦을 수 없습니다."; error.hidden = false; return;
         }
+        // 정책은 기수를 만들기 전에 본다. 생성 뒤에 걸리면 보상 삭제까지 돌아야 한다.
+        const attendancePolicy = readPolicyDraftFromCohortForm(form);
+        const invalidPolicy = validateAttendancePolicyDraft(attendancePolicy);
+        if (invalidPolicy) {
+            error.textContent = invalidPolicy; error.hidden = false; return;
+        }
         error.hidden = true;
         try {
-            const cohort = await repository.createCohort(Object.fromEntries(form.entries()));
+            const cohort = await repository.createCohort({
+                ...Object.fromEntries(form.entries()),
+                attendancePolicy
+            });
             repository.appendAudit({action: "기수 생성", detail: `${cohort.name}을 PREPARING 상태로 생성`});
             state = await repository.loadDashboard(); renderAll(); event.currentTarget.reset(); setDialogOpen(find("[data-cohort-dialog]"), false); showToast("PREPARING 기수가 생성되었습니다.");
         } catch (repositoryError) {
             error.textContent = repositoryError.code === "COHORT_MANAGER_PERIOD_CONFLICT"
                 ? "선택한 관리자는 같은 기간의 다른 기수를 이미 관리하고 있습니다."
-                : repositoryError.message;
+                : repositoryError.code === "COHORT_CREATED_POLICY_SAVE_FAILED"
+                    ? `${repositoryError.message} 목록을 새로고침한 뒤 해당 기수의 '출결 정책' 버튼으로 직접 설정해 주세요.`
+                    : repositoryError.message;
             error.hidden = false;
         }
     });
+    find("[data-attendance-policy-form]")?.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const form = event.currentTarget;
+        const errorMessage = form.querySelector("[data-attendance-policy-error]");
+        const saveButton = form.querySelector("[data-save-attendance-policy]");
+        const draft = {
+            timezone: form.elements.timezone.value,
+            scheduledStartTime: form.elements.scheduledStartTime.value,
+            scheduledEndTime: form.elements.scheduledEndTime.value,
+            absenceCutoffTime: form.elements.absenceCutoffTime.value,
+            allowedAwayMinutes: form.elements.allowedAwayMinutes.value
+        };
+        errorMessage.hidden = true;
+        // 저장 왕복 중 재제출을 막는다. 같은 기수에 PUT이 겹치면 마지막 값이 조용히 이긴다.
+        saveButton.disabled = true;
+        try {
+            await repository.saveAttendancePolicy(policyCohortId, draft);
+            repository.appendAudit({
+                action: "출결 정책 저장",
+                detail: `${cohortName(policyCohortId)} 출결 정책 갱신`
+            });
+            setDialogOpen(find("[data-attendance-policy-dialog]"), false);
+            showToast("출결 정책이 저장되었습니다.");
+        } catch (error) {
+            errorMessage.textContent = error.code === "COHORT_MANAGER_REQUIRED"
+                ? "이 기수의 출결 정책을 수정할 권한이 없습니다."
+                : error.code === "COHORT_NOT_FOUND"
+                    ? "기수를 찾을 수 없습니다. 목록을 새로고침해 주세요."
+                    : error.message || "출결 정책을 저장하지 못했습니다.";
+            errorMessage.hidden = false;
+        } finally {
+            saveButton.disabled = false;
+        }
+    });
     find("[data-cohort-grid]")?.addEventListener("click", async (event) => {
+        const policyButton = event.target.closest("[data-open-attendance-policy]");
+        // 정책 열기는 조회만 한다. 아래 상태 변경 흐름의 재조회에 얹히지 않도록 먼저 끊는다.
+        if (policyButton) {
+            await openAttendancePolicyDialog(policyButton.dataset.openAttendancePolicy);
+            return;
+        }
         const statusButton = event.target.closest("[data-change-cohort-status]");
         const deleteButton = event.target.closest("[data-delete-cohort]");
         try {
