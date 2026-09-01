@@ -3,7 +3,7 @@ package site.omagotchi.frontend.attendance.infrastructure.response;
 import java.time.Instant;
 import java.time.LocalDate;
 
-public record AttendanceRecordResponse(
+public record LearningAttendanceRecordResponse(
         Long id,
         LocalDate attendanceDate,
         String autoStatus,
@@ -11,9 +11,6 @@ public record AttendanceRecordResponse(
         Instant checkedInAt,
         Instant checkedOutAt,
         Integer lateMinutes,
-        Integer earlyLeaveMinutes,
-        Long version,
-        Instant createdAt,
-        Instant updatedAt
+        Integer earlyLeaveMinutes
 ) {
 }

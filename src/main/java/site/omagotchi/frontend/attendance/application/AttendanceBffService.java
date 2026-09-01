@@ -3,16 +3,16 @@ package site.omagotchi.frontend.attendance.application;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import site.omagotchi.frontend.attendance.infrastructure.AttendanceHttpService;
-import site.omagotchi.frontend.attendance.infrastructure.response.AttendanceRecordPageResponse;
-import site.omagotchi.frontend.attendance.infrastructure.response.AttendanceRecordResponse;
+import site.omagotchi.frontend.attendance.application.port.AttendanceClient;
+import site.omagotchi.frontend.attendance.application.result.AttendancePageResult;
+import site.omagotchi.frontend.attendance.application.result.AttendanceRecordResult;
 import site.omagotchi.frontend.global.learning.application.LearningCohortContext;
-import site.omagotchi.frontend.global.learning.infrastructure.LearningGatewayCallExecutor;
 
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -25,11 +25,11 @@ public class AttendanceBffService {
     // 자정을 기준으로 하면 야간 학습 기록이 이틀로 나뉘므로 오전 4시를 하루 경계로 둔다.
     private static final LocalTime SERVICE_DAY_START = LocalTime.of(4, 0);
 
-    private final AttendanceHttpService attendanceHttpService;
-    private final LearningGatewayCallExecutor callExecutor;
+    private final AttendanceClient attendanceClient;
     private final LearningCohortContext cohortContext;
 
-    public AttendanceRecordPageResponse getHistory(
+    // TODO: Servlet 요청 의존을 인증·기수 컨텍스트용 Application Port로 대체한다.
+    public AttendancePageResult getHistory(
             HttpServletRequest request,
             LocalDate from,
             LocalDate to,
@@ -37,46 +37,39 @@ public class AttendanceBffService {
             Integer size
     ) {
         LearningCohortContext.Resolved context = cohortContext.resolve(request);
-        return callExecutor.execute(() -> attendanceHttpService.getMyAttendanceRecords(
+        return attendanceClient.getHistory(
                 context.bearerToken(),
                 context.cohortId(),
-                from == null ? null : from.toString(),
-                to == null ? null : to.toString(),
+                from,
+                to,
                 page,
                 size
-        ));
+        );
     }
 
-    public Optional<AttendanceRecordResponse> getToday(HttpServletRequest request) {
+    public Optional<AttendanceRecordResult> getToday(HttpServletRequest request) {
         LocalDate today = serviceDate(Instant.now());
-        AttendanceRecordPageResponse response = getHistory(request, today, today, 0, 1);
+        AttendancePageResult response = getHistory(request, today, today, 0, 1);
 
-        // 하류가 2xx를 반환해도 items가 비어 있거나 null일 수 있으므로 방어한다.
-        List<AttendanceRecordResponse> items = response == null ? null : response.items();
-        if (items == null || items.isEmpty()) {
+        List<AttendanceRecordResult> items = response.items();
+        if (items.isEmpty()) {
             return Optional.empty();
         }
-        return Optional.ofNullable(items.getFirst());
+        return Optional.of(items.getFirst());
     }
 
-    public AttendanceRecordResponse checkIn(HttpServletRequest request) {
+    public AttendanceRecordResult checkIn(HttpServletRequest request) {
         LearningCohortContext.Resolved context = cohortContext.resolve(request);
-        return callExecutor.execute(() -> attendanceHttpService.checkIn(
-                context.bearerToken(),
-                context.cohortId()
-        ));
+        return attendanceClient.checkIn(context.bearerToken(), context.cohortId());
     }
 
-    public AttendanceRecordResponse checkOut(HttpServletRequest request) {
+    public AttendanceRecordResult checkOut(HttpServletRequest request) {
         LearningCohortContext.Resolved context = cohortContext.resolve(request);
-        return callExecutor.execute(() -> attendanceHttpService.checkOut(
-                context.bearerToken(),
-                context.cohortId()
-        ));
+        return attendanceClient.checkOut(context.bearerToken(), context.cohortId());
     }
 
     private static LocalDate serviceDate(Instant instant) {
-        var localDateTime = instant.atZone(SERVICE_ZONE);
+        ZonedDateTime localDateTime = instant.atZone(SERVICE_ZONE);
         return localDateTime.toLocalTime().isBefore(SERVICE_DAY_START)
                 ? localDateTime.toLocalDate().minusDays(1)
                 : localDateTime.toLocalDate();

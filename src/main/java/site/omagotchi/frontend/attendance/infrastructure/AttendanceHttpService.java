@@ -7,14 +7,14 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.service.annotation.GetExchange;
 import org.springframework.web.service.annotation.HttpExchange;
 import org.springframework.web.service.annotation.PostExchange;
-import site.omagotchi.frontend.attendance.infrastructure.response.AttendanceRecordPageResponse;
-import site.omagotchi.frontend.attendance.infrastructure.response.AttendanceRecordResponse;
+import site.omagotchi.frontend.attendance.infrastructure.response.LearningAttendanceRecordResponse;
+import site.omagotchi.frontend.global.http.response.PageResponse;
 
 @HttpExchange("/api/v1")
 public interface AttendanceHttpService {
 
     @GetExchange("/cohorts/{cohort-id}/attendance-records/me")
-    AttendanceRecordPageResponse getMyAttendanceRecords(
+    PageResponse<LearningAttendanceRecordResponse> getMyAttendanceRecords(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
             @PathVariable("cohort-id") Long cohortId,
             @RequestParam(required = false) String from,
@@ -24,13 +24,13 @@ public interface AttendanceHttpService {
     );
 
     @PostExchange("/cohorts/{cohort-id}/attendance-records/check-in")
-    AttendanceRecordResponse checkIn(
+    LearningAttendanceRecordResponse checkIn(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
             @PathVariable("cohort-id") Long cohortId
     );
 
     @PostExchange("/cohorts/{cohort-id}/attendance-records/check-out")
-    AttendanceRecordResponse checkOut(
+    LearningAttendanceRecordResponse checkOut(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
             @PathVariable("cohort-id") Long cohortId
     );
