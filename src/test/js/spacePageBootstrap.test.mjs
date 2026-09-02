@@ -10,6 +10,10 @@ const SPACE_JS = readFileSync(
     new URL("../../main/resources/static/js/space.js", import.meta.url),
     "utf8"
 );
+const SPACE_ROOM_CSS = readFileSync(
+    new URL("../../main/resources/static/css/spaceRoom.css", import.meta.url),
+    "utf8"
+);
 
 // 캐시 버스팅 `?v=...`가 붙어도 깨지지 않게 쿼리스트링을 선택으로 둔다.
 // `src="` 바로 뒤에 경로가 오도록 강제해 `th:src="@{/js/...}"`와는 매칭되지 않는다.
@@ -53,4 +57,26 @@ test("space.js는 세션 만료를 로그인으로 넘긴다", () => {
 test("space.js는 프로필 조회 실패에도 화면을 계속 띄운다", () => {
     // 401이 아닌 실패는 빈 프로필로 진행해야 한다. 공간 목록까지 막으면 안 된다.
     assert.match(SPACE_JS, /return \{\};/);
+});
+
+test("실습실 목록은 데스크톱에서 카드 세 개를 유지하고 가로로 스크롤한다", () => {
+    assert.match(
+        SPACE_ROOM_CSS,
+        /\.space-room-lab-grid\s*\{[^}]*display:\s*flex;[^}]*overflow-x:\s*auto;[^}]*scroll-snap-type:\s*x\s+proximity;/s
+    );
+    assert.match(
+        SPACE_ROOM_CSS,
+        /\.space-room-lab-stage\s*\{[^}]*flex:\s*0\s+0\s+calc\(\(100%\s*-\s*32px\)\s*\/\s*3\);/s
+    );
+});
+
+test("실습실 카드 이름과 우측 상단 이용 정보의 배치를 유지한다", () => {
+    assert.match(
+        SPACE_ROOM_CSS,
+        /\.space-room-lab-stage__identity\s*>\s*strong\s*\{[^}]*font-size:\s*20px;/s
+    );
+    assert.match(
+        SPACE_ROOM_CSS,
+        /\.space-room-lab-stage__meta\s*\{[^}]*justify-items:\s*end;[^}]*text-align:\s*right;/s
+    );
 });

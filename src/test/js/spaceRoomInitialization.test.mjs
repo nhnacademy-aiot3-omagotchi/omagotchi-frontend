@@ -96,7 +96,12 @@ test("lab tab appears before meeting and lists only the current cohort labs", as
         assert.match(root.innerHTML, /3기 실습실 A/);
         assert.match(root.innerHTML, /3기 실습실 B/);
         assert.match(root.innerHTML, /2곳 배정/);
-        assert.match(root.innerHTML, /30인실/);
+        assert.match(root.innerHTML, /실습실 목록/);
+        assert.match(root.innerHTML, /role="list"/);
+        assert.match(root.innerHTML, /role="listitem"/);
+        assert.match(root.innerHTML, /space-room-lab-stage__identity/);
+        assert.match(root.innerHTML, /space-room-lab-stage__meta/);
+        assert.match(root.innerHTML, /정원 30명/);
         assert.match(root.innerHTML, /운영 중지/);
         assert.match(root.innerHTML, /선택 가능/);
         assert.match(root.innerHTML, /선택 불가/);

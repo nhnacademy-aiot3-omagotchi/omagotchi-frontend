@@ -659,18 +659,24 @@ import {
                 : "선택 불가";
             const capacityDetail = capacityKnown
                 ? `${reservedCount} / ${lab.capacity}명`
-                : `${lab.capacity}인실`;
+                : `정원 ${lab.capacity}명`;
             return `
-            <article class="space-room-lab-stage${active ? "" : " is-inactive"}">
-                <div>
+            <article class="space-room-lab-stage${active ? "" : " is-inactive"}" role="listitem">
+                <div class="space-room-lab-stage__identity">
                     <span class="space-room-status ${active ? "is-active" : "is-inactive"}">
                         ${active ? "운영 중" : "운영 중지"}
                     </span>
                     <strong>${escapeHtml(lab.name)}</strong>
+                    ${lab.inactiveReason
+                        ? `<small>${escapeHtml(lab.inactiveReason)}</small>`
+                        : ""}
                 </div>
-                <p>${capacityDetail}${lab.inactiveReason
-                    ? ` · ${escapeHtml(lab.inactiveReason)}`
-                    : ""} · ${selectionStatus}</p>
+                <div class="space-room-lab-stage__meta">
+                    <strong>${capacityDetail}</strong>
+                    <span class="${full ? "is-full" : selectable ? "is-selectable" : ""}">
+                        ${selectionStatus}
+                    </span>
+                </div>
                 <button type="button" data-space-lab-move="${lab.spaceId}"${selectable ? "" : " disabled"}>
                     ${current ? "현재 이용 중" : full ? "정원 마감" : "이 실습실로 이동"}
                 </button>
@@ -696,7 +702,17 @@ import {
                         ${state.labs.length ? `${state.labs.length}곳 배정` : "미배정"}
                     </span>
                 </header>
-                ${state.labs.length ? `<div class="space-room-lab-grid">${assignedLabs}</div>` : `
+                ${state.labs.length ? `
+                    <section class="space-room-lab-list" aria-labelledby="space-lab-list-title">
+                        <header>
+                            <h4 id="space-lab-list-title">실습실 목록</h4>
+                            <span>${state.labs.length}개</span>
+                        </header>
+                        <div class="space-room-lab-grid" role="list" aria-label="실습실 목록" tabindex="0">
+                            ${assignedLabs}
+                        </div>
+                    </section>
+                ` : `
                     <div class="space-room-empty-state">
                         <h4>${emptyTitle}</h4>
                         <p>${emptyDescription}</p>
