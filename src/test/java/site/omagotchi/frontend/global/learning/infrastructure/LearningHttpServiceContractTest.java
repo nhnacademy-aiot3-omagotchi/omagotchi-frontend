@@ -133,6 +133,8 @@ class LearningHttpServiceContractTest {
                     .andRespond(withSuccess("""
                             [{
                               "id": 42,
+                              "type": "ROUTINE",
+                              "code": "ATTENDANCE",
                               "title": "출석하기",
                               "targetCount": 1,
                               "progressCount": 1,
