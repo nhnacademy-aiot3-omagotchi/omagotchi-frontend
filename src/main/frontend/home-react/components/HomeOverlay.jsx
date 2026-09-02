@@ -4,12 +4,10 @@ import { GameTabs } from "../../ui/GameTabs.jsx";
 import { HomeMenuLiveContent } from "../../ui/HomeMenuLiveContent.jsx";
 
 const radixDialogTypes = new Set(["help", "settings"]);
+// home.js 의 data-overlay-panel 과 1:1로 맞춘다. 한쪽만 바뀌면 빈 탭이 생긴다.
 const progressTabDefinitions = [
   { value: "quests", label: "퀘스트" },
-  { value: "achievements", label: "업적" },
-  { value: "leaders", label: "랭킹" },
-  { value: "timeline", label: "타임라인" },
-  { value: "stats", label: "통계" }
+  { value: "leaders", label: "랭킹" }
 ];
 
 function ProgressTabsContent({ content }) {

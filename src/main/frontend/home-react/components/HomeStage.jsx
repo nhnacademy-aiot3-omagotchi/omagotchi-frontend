@@ -18,6 +18,7 @@ export function HomeStage({
   bgmProps = {}
 }) {
   const [aiOpen, setAiOpen] = useState(initialAiOpen);
+  const [alertOverlays, setAlertOverlays] = useState([]);
 
   useEffect(() => {
     const closeAiAssistant = () => setAiOpen(false);
@@ -25,9 +26,22 @@ export function HomeStage({
     return () => window.removeEventListener("omagotchi:home-ai-close", closeAiAssistant);
   }, []);
 
+  useEffect(() => {
+    const applyAlerts = (event) => {
+      const next = event.detail?.overlays;
+      setAlertOverlays(Array.isArray(next) ? next : []);
+    };
+    window.addEventListener("omagotchi:home-menu-alert", applyAlerts);
+    // home.js 가 마운트보다 먼저 계산했을 수 있어 남겨 둔 값을 한 번 읽는다.
+    if (Array.isArray(globalThis.OmagotchiHomeMenuAlerts)) {
+      setAlertOverlays(globalThis.OmagotchiHomeMenuAlerts);
+    }
+    return () => window.removeEventListener("omagotchi:home-menu-alert", applyAlerts);
+  }, []);
+
   return (
     <div className="home-stage">
-      <section className="home-top-zone" aria-label="홈 메뉴"><TopMenu {...topMenuProps} /></section>
+      <section className="home-top-zone" aria-label="홈 메뉴"><TopMenu alertOverlays={alertOverlays} {...topMenuProps} /></section>
       <section className="home-timer-zone" aria-label="학습 타이머 영역"><TimerPanel {...timerProps} /></section>
       <section className="home-character-zone" aria-label="오마고치 영역"><CharacterStage {...characterProps} /></section>
       <section className="home-bottom-hud" aria-label="캐릭터 요약과 빠른 실행">

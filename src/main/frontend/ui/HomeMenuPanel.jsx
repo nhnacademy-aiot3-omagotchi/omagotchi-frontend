@@ -17,6 +17,13 @@ function Stat({ label, value }) {
   return <article className="ui-menu-stat"><span>{label}</span><strong>{value}</strong></article>;
 }
 
+/**
+ * 진행 패널의 표현 구조만 보여 준다.
+ *
+ * 실제 화면은 home.js + HomeOverlay 가 서버 응답으로 그린다. 여기에 그럴듯한 숫자를
+ * 적어 두면 실제로 그 값이 나오는 것처럼 오해를 부르므로, 데이터가 없을 때의 상태만
+ * 둔다. 탭 구성도 실제 화면(퀘스트·랭킹)과 같게 맞춘다.
+ */
 function ProgressPanel() {
   const progressItems = [
     {
@@ -24,23 +31,24 @@ function ProgressPanel() {
       label: "퀘스트",
       content: (
         <section className="ui-menu-section">
-          <header><div><span className="ui-menu-eyebrow">오늘의 퀘스트</span><h3>집중 학습 3시간 달성</h3></div><strong>76%</strong></header>
-          <progress value="76" max="100">76%</progress>
-          <p>42분 더 집중하면 경험치 120을 받을 수 있어요.</p>
+          <h3>등록된 퀘스트가 없습니다.</h3>
+          <p>오늘 제공된 퀘스트가 있으면 AI 추천 퀘스트가 맨 위에, 일일 퀘스트가 그 아래에 표시됩니다.</p>
         </section>
       )
     },
-    { value: "achievement", label: "업적", content: <section className="ui-menu-section"><h3>업적 기능은 아직 준비되지 않았습니다.</h3><p>기능이 준비되면 달성 기록을 확인할 수 있습니다.</p></section> },
-    { value: "ranking", label: "랭킹", content: <section className="ui-menu-section"><h3>랭킹 데이터가 없습니다.</h3><p>학습 기록이 제공되면 목록으로 표시됩니다.</p></section> },
-    { value: "statistics", label: "통계", content: <section className="ui-menu-section"><h3>학습 통계</h3><p>오늘·이번 주 기록을 한 가지 목록 형식으로 확인합니다.</p></section> }
+    {
+      value: "ranking",
+      label: "랭킹",
+      content: (
+        <section className="ui-menu-section">
+          <h3>랭킹 데이터가 없습니다.</h3>
+          <p>학습 기록이 제공되면 목록으로 표시됩니다.</p>
+        </section>
+      )
+    }
   ];
 
-  return (
-    <>
-      <div className="ui-menu-stats"><Stat label="오늘 집중" value="2시간 18분" /><Stat label="연속 출석" value="4일" /><Stat label="이번 주" value="8시간 40분" /></div>
-      <GameTabs items={progressItems} defaultValue="quest" ariaLabel="진행 항목" />
-    </>
-  );
+  return <GameTabs items={progressItems} defaultValue="quest" ariaLabel="진행 항목" />;
 }
 
 function PersonalPanel() {
