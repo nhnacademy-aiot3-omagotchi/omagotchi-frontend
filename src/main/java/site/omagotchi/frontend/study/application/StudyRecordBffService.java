@@ -43,6 +43,7 @@ public class StudyRecordBffService {
         requireStatus(response, HttpStatus.OK, "공부 기록 조회");
         return StudyResponseContracts.requireStudyRecord(
                 requireBody(response, "공부 기록 조회"),
+                studyRecordId,
                 "공부 기록 조회"
         );
     }
@@ -126,6 +127,7 @@ public class StudyRecordBffService {
         requireStatus(response, HttpStatus.OK, "공부 기록 수정");
         return StudyResponseContracts.requireStudyRecord(
                 requireBody(response, "공부 기록 수정"),
+                studyRecordId,
                 "공부 기록 수정"
         );
     }

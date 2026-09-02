@@ -2,20 +2,8 @@ package site.omagotchi.frontend.study.application;
 
 import site.omagotchi.frontend.global.exception.BusinessException;
 import site.omagotchi.frontend.global.exception.CommonErrorCode;
-import site.omagotchi.frontend.study.application.result.CurrentTimerView;
-import site.omagotchi.frontend.study.application.result.DailyStudyRecordsView;
-import site.omagotchi.frontend.study.application.result.DailyStudySecondsView;
-import site.omagotchi.frontend.study.application.result.MonthlyStudySecondsView;
-import site.omagotchi.frontend.study.application.result.StartTimerView;
-import site.omagotchi.frontend.study.application.result.StudyRecordView;
-import site.omagotchi.frontend.study.application.result.TimerState;
-import site.omagotchi.frontend.study.infrastructure.response.LearningCurrentTimerResponse;
-import site.omagotchi.frontend.study.infrastructure.response.LearningDailyStudyRecordsResponse;
-import site.omagotchi.frontend.study.infrastructure.response.LearningDailyStudySecondsResponse;
-import site.omagotchi.frontend.study.infrastructure.response.LearningMonthlyStudySecondsResponse;
-import site.omagotchi.frontend.study.infrastructure.response.LearningStartTimerResponse;
-import site.omagotchi.frontend.study.infrastructure.response.LearningStudyRecordResponse;
-import site.omagotchi.frontend.study.infrastructure.response.LearningTimerState;
+import site.omagotchi.frontend.study.application.result.*;
+import site.omagotchi.frontend.study.infrastructure.response.*;
 
 import java.time.LocalDate;
 import java.time.YearMonth;
@@ -36,6 +24,14 @@ final class StudyResponseContracts {
             LearningStudyRecordResponse response,
             String operation
     ) {
+        return requireStudyRecord(response, null, operation);
+    }
+
+    static StudyRecordView requireStudyRecord(
+            LearningStudyRecordResponse response,
+            UUID expectedId,
+            String operation
+    ) {
         if (response == null
                 || response.id() == null
                 || response.aggregationDate() == null
@@ -46,6 +42,9 @@ final class StudyResponseContracts {
                 || response.createdAt() == null
                 || response.updatedAt() == null) {
             throw invalid(operation, "필수 기록 필드 누락");
+        }
+        if (expectedId != null && !expectedId.equals(response.id())) {
+            throw invalid(operation, "기록 ID 불일치");
         }
         if (!response.startTime().isBefore(response.endTime())
                 || response.studySeconds() < 0L

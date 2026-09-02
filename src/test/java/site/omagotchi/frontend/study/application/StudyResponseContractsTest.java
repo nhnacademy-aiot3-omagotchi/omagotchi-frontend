@@ -7,13 +7,7 @@ import org.junit.jupiter.api.Test;
 import site.omagotchi.frontend.global.exception.BusinessException;
 import site.omagotchi.frontend.global.exception.CommonErrorCode;
 import site.omagotchi.frontend.study.application.result.TimerState;
-import site.omagotchi.frontend.study.infrastructure.response.LearningCurrentTimerResponse;
-import site.omagotchi.frontend.study.infrastructure.response.LearningDailyStudyRecordsResponse;
-import site.omagotchi.frontend.study.infrastructure.response.LearningDailyStudySecondsResponse;
-import site.omagotchi.frontend.study.infrastructure.response.LearningMonthlyStudySecondsResponse;
-import site.omagotchi.frontend.study.infrastructure.response.LearningStartTimerResponse;
-import site.omagotchi.frontend.study.infrastructure.response.LearningStudyRecordResponse;
-import site.omagotchi.frontend.study.infrastructure.response.LearningTimerState;
+import site.omagotchi.frontend.study.infrastructure.response.*;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -197,6 +191,31 @@ class StudyResponseContractsTest {
                 assertThat(exception.getCause())
                         .isInstanceOf(ArithmeticException.class);
             });
+        }
+
+        @Test
+        @DisplayName("기록 ID 불일치 계약 위반 거부")
+        void rejectsMismatchedRecordId() {
+            UUID mismatchedId = UUID.fromString("90000000-0000-0000-0000-000000000001");
+            LearningStudyRecordResponse studyRecord = studyRecord(2L);
+
+            assertInvalid(() -> StudyResponseContracts.requireStudyRecord(
+                    studyRecord,
+                    mismatchedId,
+                    "공부 기록 조회"
+            ));
+            assertInvalid(() -> StudyResponseContracts.requireStudyRecord(
+                    studyRecord,
+                    mismatchedId,
+                    "공부 기록 수정"
+            ));
+
+            var validView = StudyResponseContracts.requireStudyRecord(
+                    studyRecord,
+                    RECORD_ID,
+                    "공부 기록 조회"
+            );
+            assertThat(validView.id()).isEqualTo(RECORD_ID);
         }
     }
 

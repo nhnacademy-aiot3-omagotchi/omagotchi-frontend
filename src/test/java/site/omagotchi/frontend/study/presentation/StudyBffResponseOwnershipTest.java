@@ -10,23 +10,17 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.web.servlet.MockMvc;
-import site.omagotchi.frontend.global.security.BrowserSessionInvalidator;
-import site.omagotchi.frontend.global.web.ApiExceptionHandler;
 import site.omagotchi.frontend.global.http.ApiErrorResponseDecoder;
 import site.omagotchi.frontend.global.learning.application.LearningCohortContext;
 import site.omagotchi.frontend.global.learning.infrastructure.LearningGatewayCallExecutor;
 import site.omagotchi.frontend.global.learning.infrastructure.LearningHttpService;
+import site.omagotchi.frontend.global.security.BrowserSessionInvalidator;
+import site.omagotchi.frontend.global.web.ApiExceptionHandler;
 import site.omagotchi.frontend.study.application.StudyRecordBffService;
 import site.omagotchi.frontend.study.application.StudyTimerBffService;
 import site.omagotchi.frontend.study.infrastructure.request.LearningCreateStudyRecordRequest;
 import site.omagotchi.frontend.study.infrastructure.request.LearningUpdateStudyRecordRequest;
-import site.omagotchi.frontend.study.infrastructure.response.LearningCurrentTimerResponse;
-import site.omagotchi.frontend.study.infrastructure.response.LearningDailyStudyRecordsResponse;
-import site.omagotchi.frontend.study.infrastructure.response.LearningDailyStudySecondsResponse;
-import site.omagotchi.frontend.study.infrastructure.response.LearningMonthlyStudySecondsResponse;
-import site.omagotchi.frontend.study.infrastructure.response.LearningStartTimerResponse;
-import site.omagotchi.frontend.study.infrastructure.response.LearningStudyRecordResponse;
-import site.omagotchi.frontend.study.infrastructure.response.LearningTimerState;
+import site.omagotchi.frontend.study.infrastructure.response.*;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
@@ -40,14 +34,8 @@ import java.util.UUID;
 import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 import static org.springframework.test.web.servlet.setup.MockMvcBuilders.standaloneSetup;
 
 @DisplayName("Study BFF 응답 소유권")
@@ -131,6 +119,42 @@ class StudyBffResponseOwnershipTest {
                             jsonPath("$.code").value("COMMON_DOWNSTREAM_INVALID_RESPONSE"),
                             jsonPath("$.message").value("연결된 서비스의 응답이 올바르지 않습니다."),
                             jsonPath("$.path").value("/bff/v1/timer/start")
+                    );
+        }
+
+        @Test
+        @DisplayName("하류 응답의 기록 ID 불일치 시 502 변환")
+        void rejectsMismatchedStudyRecordIdOnGetAndUpdate() throws Exception {
+            UUID mismatchedId = UUID.fromString("90000000-0000-0000-0000-000000000001");
+
+            mockMvc.perform(get("/bff/v1/study-records/{id}", mismatchedId))
+                    .andExpectAll(
+                            status().isBadGateway(),
+                            header().doesNotExist(DOWNSTREAM_HEADER),
+                            header().string(HttpHeaders.CACHE_CONTROL, "no-store"),
+                            content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON),
+                            jsonPath("$.code").value("COMMON_DOWNSTREAM_INVALID_RESPONSE"),
+                            jsonPath("$.message").value("연결된 서비스의 응답이 올바르지 않습니다."),
+                            jsonPath("$.path").value("/bff/v1/study-records/" + mismatchedId)
+                    );
+
+            mockMvc.perform(put("/bff/v1/study-records/{id}", mismatchedId)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("""
+                                    {
+                                      "startDateTime": "2026-08-24T23:40",
+                                      "endDateTime": "2026-08-25T00:40",
+                                      "expectedVersion": 2
+                                    }
+                                    """))
+                    .andExpectAll(
+                            status().isBadGateway(),
+                            header().doesNotExist(DOWNSTREAM_HEADER),
+                            header().string(HttpHeaders.CACHE_CONTROL, "no-store"),
+                            content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON),
+                            jsonPath("$.code").value("COMMON_DOWNSTREAM_INVALID_RESPONSE"),
+                            jsonPath("$.message").value("연결된 서비스의 응답이 올바르지 않습니다."),
+                            jsonPath("$.path").value("/bff/v1/study-records/" + mismatchedId)
                     );
         }
     }
