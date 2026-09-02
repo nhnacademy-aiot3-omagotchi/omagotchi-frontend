@@ -1,10 +1,10 @@
 package site.omagotchi.frontend.study.presentation;
 
-import tools.jackson.databind.JsonNode;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -14,8 +14,14 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
-import site.omagotchi.frontend.global.learning.application.LearningProxyBffService;
+import site.omagotchi.frontend.study.application.StudyRecordBffService;
+import site.omagotchi.frontend.study.presentation.request.CreateStudyRecordRequest;
+import site.omagotchi.frontend.study.presentation.request.UpdateStudyRecordRequest;
+import site.omagotchi.frontend.study.presentation.response.DailyStudyRecordsResponse;
+import site.omagotchi.frontend.study.presentation.response.MonthlyStudySecondsResponse;
+import site.omagotchi.frontend.study.presentation.response.StudyRecordResponse;
 
 import java.time.LocalDate;
 import java.time.YearMonth;
@@ -28,70 +34,81 @@ public class StudyRecordBffController {
 
     private static final String RESOURCE_VERSION_HEADER = "X-RESOURCE-VERSION";
 
-    private final LearningProxyBffService proxy;
+    private final StudyRecordBffService studyRecordBffService;
 
     @GetMapping("/study-records/{study-record-id}")
-    public JsonNode getStudyRecord(
+    public StudyRecordResponse getStudyRecord(
             HttpServletRequest request,
             @PathVariable("study-record-id") UUID studyRecordId
     ) {
-        return proxy.executeWithCohort(request, (context, cohortId) -> context.service()
-                .getStudyRecord(context.bearerToken(), cohortId, studyRecordId));
+        return StudyRecordResponse.from(
+                studyRecordBffService.getStudyRecord(studyRecordId, request)
+        );
     }
 
     @GetMapping("/study-records")
-    public JsonNode getDailyStudyRecords(
+    public DailyStudyRecordsResponse getDailyStudyRecords(
             HttpServletRequest request,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date
     ) {
-        return proxy.executeWithCohort(request, (context, cohortId) -> context.service()
-                .getDailyStudyRecords(context.bearerToken(), cohortId, date.toString()));
+        return DailyStudyRecordsResponse.from(
+                studyRecordBffService.getDailyStudyRecords(date, request)
+        );
     }
 
     @GetMapping("/study-time-summaries")
-    public JsonNode getMonthlyStudyTimeSummary(
+    public MonthlyStudySecondsResponse getMonthlyStudyTimeSummary(
             HttpServletRequest request,
             @RequestParam @DateTimeFormat(pattern = "yyyy-MM") YearMonth month
     ) {
-        return proxy.executeWithCohort(request, (context, cohortId) -> context.service()
-                .getMonthlyStudyTimeSummary(
-                        context.bearerToken(), cohortId, month.toString()
-                ));
+        return MonthlyStudySecondsResponse.from(
+                studyRecordBffService.getMonthlyStudyTimeSummary(month, request)
+        );
     }
 
     @PostMapping("/study-records")
-    public ResponseEntity<JsonNode> createStudyRecord(
+    @ResponseStatus(HttpStatus.CREATED)
+    public StudyRecordResponse createStudyRecord(
             HttpServletRequest request,
-            @RequestBody JsonNode body
+            @Valid @RequestBody CreateStudyRecordRequest body
     ) {
-        return proxy.executeWithCohort(request, (context, cohortId) -> context.service()
-                .createStudyRecord(context.bearerToken(), cohortId, body));
+        return StudyRecordResponse.from(
+                studyRecordBffService.createStudyRecord(
+                        body.startDateTime(),
+                        body.endDateTime(),
+                        request
+                )
+        );
     }
 
     @PutMapping("/study-records/{study-record-id}")
-    public JsonNode updateStudyRecord(
+    public StudyRecordResponse updateStudyRecord(
             HttpServletRequest request,
             @PathVariable("study-record-id") UUID studyRecordId,
-            @RequestBody JsonNode body
+            @Valid @RequestBody UpdateStudyRecordRequest body
     ) {
-        return proxy.executeWithCohort(request, (context, cohortId) -> context.service()
-                .updateStudyRecord(
-                        context.bearerToken(), cohortId, studyRecordId, body
-                ));
+        return StudyRecordResponse.from(
+                studyRecordBffService.updateStudyRecord(
+                        studyRecordId,
+                        body.startDateTime(),
+                        body.endDateTime(),
+                        body.expectedVersion(),
+                        request
+                )
+        );
     }
 
     @DeleteMapping("/study-records/{study-record-id}")
-    public ResponseEntity<Void> deleteStudyRecord(
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteStudyRecord(
             HttpServletRequest request,
             @RequestHeader(RESOURCE_VERSION_HEADER) Long resourceVersion,
             @PathVariable("study-record-id") UUID studyRecordId
     ) {
-        return proxy.executeWithCohort(request, (context, cohortId) -> context.service()
-                .deleteStudyRecord(
-                        context.bearerToken(),
-                        cohortId,
-                        studyRecordId,
-                        resourceVersion
-                ));
+        studyRecordBffService.deleteStudyRecord(
+                studyRecordId,
+                resourceVersion,
+                request
+        );
     }
 }
