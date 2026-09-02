@@ -23,6 +23,8 @@ import site.omagotchi.frontend.learning.infrastructure.request.LearningSpaceMuta
 import site.omagotchi.frontend.learning.infrastructure.request.LearningUpdateSpaceRequest;
 import site.omagotchi.frontend.learning.infrastructure.request.LearningVacancyAlertRequest;
 import site.omagotchi.frontend.learning.infrastructure.request.LearningAddParticipantRequest;
+import site.omagotchi.frontend.learning.infrastructure.request.LearningAddTeamMemberRequest;
+import site.omagotchi.frontend.learning.infrastructure.request.LearningCreateTeamRequest;
 import site.omagotchi.frontend.learning.infrastructure.response.LearningOccupancyResponse;
 import site.omagotchi.frontend.learning.infrastructure.response.LearningAdminActiveOccupancyResponse;
 import site.omagotchi.frontend.learning.infrastructure.response.LearningSpaceResponse;
@@ -30,6 +32,9 @@ import site.omagotchi.frontend.learning.infrastructure.response.LearningVacancyA
 import site.omagotchi.frontend.learning.infrastructure.response.LearningParticipantCandidateResponse;
 import site.omagotchi.frontend.learning.infrastructure.response.LearningOccupancyParticipantResponse;
 import site.omagotchi.frontend.learning.infrastructure.response.LearningSelectableLabResponse;
+import site.omagotchi.frontend.learning.infrastructure.response.LearningTeamDetailResponse;
+import site.omagotchi.frontend.learning.infrastructure.response.LearningTeamMemberCandidateResponse;
+import site.omagotchi.frontend.learning.infrastructure.response.LearningTeamResponse;
 import site.omagotchi.frontend.profile.infrastructure.request.UpdateNicknameRequest;
 import site.omagotchi.frontend.profile.infrastructure.response.UserNicknameResponse;
 import site.omagotchi.frontend.profile.infrastructure.response.UserProfileResponse;
@@ -446,6 +451,64 @@ public interface LearningHttpService {
             @PathVariable("cohort-membership-id") Long cohortMembershipId,
             @RequestParam String date
     );
+
+    @PostExchange("/teams")
+    ResponseEntity<LearningTeamResponse> createTeam(
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
+            @RequestBody LearningCreateTeamRequest request
+    );
+
+    @GetExchange("/teams/me")
+    ResponseEntity<List<LearningTeamResponse>> getMyTeams(
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization
+    );
+
+    @GetExchange("/teams/{team-id}")
+    ResponseEntity<LearningTeamDetailResponse> getTeam(
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
+            @PathVariable("team-id") Long teamId
+    );
+
+    @GetExchange("/teams/{team-id}/member-candidates")
+    ResponseEntity<List<LearningTeamMemberCandidateResponse>> searchTeamMemberCandidates(
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
+            @PathVariable("team-id") Long teamId,
+            @RequestParam String query
+    );
+
+    @PostExchange("/teams/{team-id}/members")
+    ResponseEntity<Void> addTeamMember(
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
+            @PathVariable("team-id") Long teamId,
+            @RequestBody LearningAddTeamMemberRequest request
+    );
+
+    @DeleteExchange("/teams/{team-id}/members/{member-id}")
+    ResponseEntity<Void> kickTeamMember(
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
+            @PathVariable("team-id") Long teamId,
+            @PathVariable("member-id") Long memberId
+    );
+
+    @PostExchange("/teams/{team-id}/leave")
+    ResponseEntity<Void> leaveTeam(
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
+            @PathVariable("team-id") Long teamId
+    );
+
+    @PostExchange("/teams/{team-id}/members/{member-id}/delegate")
+    ResponseEntity<Void> delegateTeamMaster(
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
+            @PathVariable("team-id") Long teamId,
+            @PathVariable("member-id") Long memberId
+    );
+
+    @DeleteExchange("/teams/{team-id}")
+    ResponseEntity<Void> disbandTeam(
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
+            @PathVariable("team-id") Long teamId
+    );
+
     @GetExchange("/spaces")
     ResponseEntity<List<LearningSpaceResponse>> getSpaces(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization
