@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { expect, userEvent, waitFor, within } from "storybook/test";
 import { SensorWorkspace } from "./SensorWorkspace.jsx";
 import "./SensorWorkspace.css";
@@ -118,28 +119,30 @@ const alertTemplates = [
   { type: "DELAYED", device: 2, measurement: "humidity", value: 48.2, detail: "12분 지연 도착", actionStatus: "NONE" }
 ];
 
-function alertLogPage(count = 8) {
+function alertLogPage(count = 8, page = 0, sharedTrace = false) {
   const base = new Date();
   base.setHours(10, 22, 31, 0);
   const content = Array.from({ length: count }, (_, index) => {
-    const template = alertTemplates[index % alertTemplates.length];
+    const absoluteIndex = page * 8 + index;
+    const template = alertTemplates[absoluteIndex % alertTemplates.length];
     const device = alertDevices[template.device];
     return {
-      traceId: `trace-${index + 1}`,
+      eventId: `event-${absoluteIndex + 1}`,
+      traceId: sharedTrace ? "trace-shared-by-one-frame" : `trace-${absoluteIndex + 1}`,
       type: template.type,
       deviceEui: device?.deviceEui ?? null,
       displayName: device?.displayName ?? null,
       measurement: template.measurement,
       value: template.value,
       detail: template.detail,
-      receivedAt: new Date(base.getTime() - index * 97000).toISOString(),
+      receivedAt: new Date(base.getTime() - absoluteIndex * 97000).toISOString(),
       actionLabel: template.actionLabel ?? null,
       actionStatus: template.actionStatus,
       actionSimulated: template.actionSimulated ?? null,
       actionError: template.actionError ?? null
     };
   });
-  return { content, page: 0, size: 8, totalElements: 24, totalPages: 3, capacity: 1000, retention: "PT168H" };
+  return { content, page, size: 8, totalElements: 24, totalPages: 3, capacity: 1000, retention: "PT168H" };
 }
 
 const baseArgs = {
@@ -151,6 +154,34 @@ const baseArgs = {
 
 export const NoSensors = { name: "센서 미등록", args: { spaces, initialSensors: [], initialSpaceThresholds: spaceThresholds, alertLog: { ...alertLogPage(0), totalPages: 1 } } };
 export const DashboardWithData = { name: "대시보드 데이터 수신", args: { ...baseArgs, defaultTab: "dashboard" } };
+
+function PagedAlertLog() {
+  const [page, setPage] = useState(0);
+  return (
+    <SensorWorkspace
+      {...baseArgs}
+      defaultTab="dashboard"
+      alertLog={alertLogPage(8, page, true)}
+      onAlertQueryChange={({ page: requestedPage }) => setPage(requestedPage - 1)}
+    />
+  );
+}
+
+export const AlertLogPagination = {
+  name: "대시보드 · 로그 페이지 교체",
+  render: () => <PagedAlertLog />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const table = canvas.getByRole("table", { name: "센서 알림 로그" });
+    await expect(within(table).getAllByRole("row")).toHaveLength(9);
+
+    await userEvent.click(canvas.getByRole("button", { name: "2" }));
+
+    await waitFor(() => expect(canvas.getByRole("button", { name: "2" })).toHaveAttribute("aria-current", "page"));
+    // 같은 traceId를 공유해도 기존 8개에 더 붙지 않고 다음 페이지 8개로 교체돼야 한다.
+    await expect(within(table).getAllByRole("row")).toHaveLength(9);
+  }
+};
 export const DashboardWithoutThresholds = { name: "대시보드 기준값 미설정", args: { ...baseArgs, initialSpaceThresholds: [{ spaceId: 1, deviceCount: 2, metrics: [] }], defaultTab: "dashboard" } };
 export const SensorList = { name: "센서 목록", args: { ...baseArgs, defaultTab: "sensors" } };
 

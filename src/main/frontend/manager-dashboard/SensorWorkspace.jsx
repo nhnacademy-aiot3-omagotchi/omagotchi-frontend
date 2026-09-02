@@ -381,6 +381,23 @@ function pageWindow(page, totalPages, span = 2) {
 }
 
 /**
+ * 이벤트 UUID가 행의 실제 식별자다. traceId는 한 센서 프레임에서 분리된 여러 측정값이
+ * 공유하므로 React key로 쓰면 페이지 전환 때 기존 행이 남거나 새 행과 합쳐질 수 있다.
+ * 구버전 Learning Service와 함께 배포되는 동안에는 이벤트 내용 조합으로 충돌을 피한다.
+ */
+function alertEntryKey(entry, index) {
+  if (entry.eventId) return entry.eventId;
+  return [
+    entry.traceId,
+    entry.type,
+    entry.deviceEui,
+    entry.measurement,
+    entry.receivedAt,
+    index
+  ].map((value) => value ?? "").join(":");
+}
+
+/**
  * GET /api/v1/sensors/events 응답을 그대로 그린다.
  *
  * onQueryChange가 주어지면 서버 페이징 모드로 동작한다 — 필터·페이지 변경을 위로 올리고
@@ -456,8 +473,8 @@ function AuditLog({ entries, loaded = true, loading = false, page: pageProp, tot
           <caption className="sr-only">센서 알림 로그</caption>
           <thead><tr><th>수신</th><th>유형</th><th>기기</th><th>측정</th><th>내용</th><th>조치</th></tr></thead>
           <tbody>
-            {visibleEntries.map((entry) => (
-              <tr key={entry.traceId}>
+            {visibleEntries.map((entry, index) => (
+              <tr key={alertEntryKey(entry, index)}>
                 <td data-label="수신"><time dateTime={entry.receivedAt || undefined}>{formatReceivedAt(entry.receivedAt)}</time></td>
                 <td data-label="유형"><AlertTypeBadge type={entry.type} /></td>
                 <th scope="row" data-label="기기">
