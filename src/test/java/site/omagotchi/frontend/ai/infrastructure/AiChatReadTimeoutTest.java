@@ -27,12 +27,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 /**
  * AI 채팅은 SSE라 첫 바이트까지 십수 초가 걸린다. 전역 read-timeout(테스트 5s)이 그대로 걸리면
  * 응답이 시작되기도 전에 끊겨 사용자에게 "답변을 가져오지 못했습니다"만 남는다(운영 장애 재현).
- *
- * <p>전역보다 오래 걸리는 응답을 만들어, learning-ai-service 그룹에만 건 read-timeout 재정의가
- * 실제로 적용되는지 확인한다. 그룹 재정의가 풀리면 여기서 바로 깨진다.</p>
- *
- * <p>서버를 {@code ServerSocket}으로 직접 띄우는 이유는 커버리지 도구가 JDK의
- * {@code com.sun.net.httpserver}를 계측하지 못해서다.</p>
+ * 전역보다 오래 걸리는 응답을 만들어, learning-ai-service 그룹에만 건 read-timeout 재정의가 실제로 적용되는지 확인한다.
+ * 그룹 재정의가 풀리면 여기서 바로 깨진다.
  */
 @SpringBootTest
 @ActiveProfiles("test")
@@ -85,10 +81,17 @@ class AiChatReadTimeoutTest {
         serverThread.start();
     }
 
+    /**
+     * 서버 기동이 실패했을 때(포트를 못 잡는 환경 등) 여기서 NPE가 나면 원래 실패 원인이 가려진다.
+     */
     @AfterAll
     static void stopSlowServer() throws IOException {
-        serverSocket.close();
-        serverThread.interrupt();
+        if (serverSocket != null) {
+            serverSocket.close();
+        }
+        if (serverThread != null) {
+            serverThread.interrupt();
+        }
     }
 
     @DynamicPropertySource
@@ -126,7 +129,9 @@ class AiChatReadTimeoutTest {
                 .hasRootCauseInstanceOf(ReadTimeoutException.class);
     }
 
-    /** 요청 헤더 끝(빈 줄)까지 읽어 버린다. 본문 없는 GET이라 이걸로 충분하다. */
+    /**
+     * 요청 헤더 끝(빈 줄)까지 읽어 버린다. 본문 없는 GET이라 이걸로 충분하다.
+     */
     private static void drainRequest(InputStream in) throws IOException {
         int consecutiveNewlines = 0;
         int read;
