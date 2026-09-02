@@ -65,6 +65,24 @@ public class AttendanceBffService {
         return attendanceClient.checkOut(context.bearerToken(), context.cohortId());
     }
 
+    public Long moveLab(Long spaceId) {
+        AttendanceAccessContext.Resolved context = accessContext.resolve();
+        return attendanceClient.moveLab(
+                context.bearerToken(),
+                context.cohortId(),
+                spaceId
+        );
+    }
+
+    public Long moveStudySpace(Long spaceId) {
+        AttendanceAccessContext.Resolved context = accessContext.resolve();
+        return attendanceClient.moveStudySpace(
+                context.bearerToken(),
+                context.cohortId(),
+                spaceId
+        );
+    }
+
     private static LocalDate serviceDate(Instant instant) {
         ZonedDateTime localDateTime = instant.atZone(SERVICE_ZONE);
         return localDateTime.toLocalTime().isBefore(SERVICE_DAY_START)

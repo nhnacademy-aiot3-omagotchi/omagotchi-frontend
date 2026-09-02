@@ -106,15 +106,27 @@ test("lab tab appears before meeting and lists only the current cohort labs", as
 });
 
 test("library uses the shared current location and keeps its action under operational status", async () => {
+    const moves = [];
     const api = {
         attendance: {
             async getToday() {
                 return { checkedInAt: "2026-09-01T09:00:00Z", checkedOutAt: null };
+            },
+            async moveStudySpace(spaceId) {
+                moves.push(["study", spaceId]);
+                return {spaceId};
+            },
+            async moveLab(spaceId) {
+                moves.push(["lab", spaceId]);
+                return {spaceId};
             }
         },
         spaces: {
             async list() {
-                return [];
+                return [
+                    { spaceId: 101, name: "3기 실습실 A", type: "LAB", capacity: 30, operationalStatus: "ACTIVE", cohortId: 3 },
+                    { spaceId: 401, name: "도서관", type: "STUDY", capacity: 100, operationalStatus: "ACTIVE", cohortId: null }
+                ];
             },
             async getMyVacancyAlerts() {
                 return [];
@@ -129,7 +141,7 @@ test("library uses the shared current location and keeps its action under operat
 
         assert.match(root.innerHTML, /운영 상태/);
         assert.match(root.innerHTML, /정상 운영/);
-        assert.match(root.innerHTML, /data-space-library-toggle>[\s\S]*도서관 입장/);
+        assert.match(root.innerHTML, /data-space-library-enter="401">[\s\S]*도서관 입장/);
         assert.doesNotMatch(root.innerHTML, /현재 이용/);
         assert.doesNotMatch(root.innerHTML, /내 상태/);
 
@@ -138,14 +150,33 @@ test("library uses the shared current location and keeps its action under operat
                 return false;
             },
             closest(selector) {
-                return selector === "[data-space-library-toggle]" ? { dataset: {} } : null;
+                return selector === "[data-space-library-enter]"
+                    ? { dataset: {spaceLibraryEnter: "401"} }
+                    : null;
             }
         });
 
+        assert.deepEqual(moves, [["study", 401]]);
         assert.match(root.innerHTML, /data-location-state="library"/);
         assert.match(root.innerHTML, /현재 내 위치/);
         assert.match(root.innerHTML, /도서관 이용 중/);
-        assert.match(root.innerHTML, /도서관 나가기/);
+        assert.match(root.innerHTML, /현재 이용 중/);
+        assert.doesNotMatch(root.innerHTML, /도서관 나가기/);
+
+        await root.click({
+            matches() {
+                return false;
+            },
+            closest(selector) {
+                return selector === "[data-space-lab-move]"
+                    ? { dataset: {spaceLabMove: "101"} }
+                    : null;
+            }
+        });
+
+        assert.deepEqual(moves, [["study", 401], ["lab", 101]]);
+        assert.match(root.innerHTML, /data-location-state="lab"/);
+        assert.match(root.innerHTML, /3기 실습실 A/);
     }, { activeTab: "library" }, {
         approvedCohort: { cohortId: 3, name: "3기" }
     }, api);

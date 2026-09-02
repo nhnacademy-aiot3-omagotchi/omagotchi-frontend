@@ -540,6 +540,10 @@
     line-height: 1.6;
 }
 
+.space-room-lab-stage > button {
+    flex: 0 0 auto;
+}
+
 .space-room-master-detail {
     display: grid;
     grid-template-columns: minmax(340px, 0.95fr) minmax(0, 1.15fr);

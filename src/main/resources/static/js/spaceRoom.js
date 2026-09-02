@@ -45,6 +45,7 @@ import {
         partyDetailOpen: false,
         party: null,
         labs: [],
+        studySpaces: [],
         rooms: [],
         roomsLoading: true,
         roomsError: "",
@@ -118,6 +119,7 @@ import {
                 ...cloneInitialState(),
                 ...saved,
                 labs: [],
+                studySpaces: [],
                 rooms: [],
                 roomsLoading: true,
                 roomsError: "",
@@ -143,7 +145,15 @@ import {
     }
 
     function saveState() {
-        const { labs, rooms, roomsLoading, roomsError, vacancyAlerts, ...prototypeState } = state;
+        const {
+            labs,
+            studySpaces,
+            rooms,
+            roomsLoading,
+            roomsError,
+            vacancyAlerts,
+            ...prototypeState
+        } = state;
         sessionStorage.setItem(stateKey, JSON.stringify(prototypeState));
     }
 
@@ -191,10 +201,13 @@ import {
             };
         }
 
-        if (state.libraryInside) {
+        const currentStudySpace = state.studySpaces.find(
+            (space) => sameId(space.spaceId, currentAttendance?.spaceId)
+        );
+        if (currentStudySpace || state.libraryInside) {
             return {
                 state: "library",
-                name: "도서관",
+                name: currentStudySpace?.name || "도서관",
                 detail: "도서관 이용 중"
             };
         }
@@ -304,6 +317,7 @@ import {
                     (space) => space.type === "LAB"
                         && String(space.cohortId) === requesterCohortId
                 );
+            state.studySpaces = spaceList.filter((space) => space.type === "STUDY");
             const rooms = spaceList
                 .filter((space) => space.type === "MEETING")
                 .map(mapMeetingRoom);
@@ -314,6 +328,7 @@ import {
             state.roomsError = "";
         } catch (error) {
             state.labs = [];
+            state.studySpaces = [];
             state.rooms = [];
             state.selectedRoomId = "";
             state.roomsError = error?.message || "공간 정보를 불러오지 못했습니다.";
@@ -487,6 +502,7 @@ import {
 
     function renderLab() {
         const checkedIn = isCheckedIn();
+        const inMeeting = Boolean(getCurrentOccupancyRoom());
 
         if (state.roomsLoading) {
             return `
@@ -510,8 +526,15 @@ import {
 
         const assignedLabs = state.labs.map((lab) => {
             const active = lab.operationalStatus === "ACTIVE";
+            const current = sameId(lab.spaceId, currentAttendance?.spaceId)
+                && !state.libraryInside;
+            const selectable = active && checkedIn && !inMeeting && !current;
             const selectionStatus = active
-                ? (checkedIn ? "선택 가능" : "체크인 후 선택 가능")
+                ? current
+                    ? "현재 이용 중"
+                    : inMeeting
+                        ? "회의 종료 후 선택 가능"
+                        : (checkedIn ? "선택 가능" : "체크인 후 선택 가능")
                 : "선택 불가";
             return `
             <article class="space-room-lab-stage${active ? "" : " is-inactive"}">
@@ -524,6 +547,9 @@ import {
                 <p>${lab.capacity}인실${lab.inactiveReason
                     ? ` · ${escapeHtml(lab.inactiveReason)}`
                     : ""} · ${selectionStatus}</p>
+                <button type="button" data-space-lab-move="${lab.spaceId}"${selectable ? "" : " disabled"}>
+                    ${current ? "현재 이용 중" : "이 실습실로 이동"}
+                </button>
             </article>
         `;
         }).join("");
@@ -971,6 +997,33 @@ import {
 
     function renderLibrary() {
         const checkedIn = isCheckedIn();
+        const inMeeting = Boolean(getCurrentOccupancyRoom());
+        const currentStudySpaceId = currentAttendance?.spaceId;
+        const current = (state.studySpaces.some(
+            (space) => sameId(space.spaceId, currentStudySpaceId)
+        ) || state.libraryInside) && !inMeeting;
+        const activeCount = state.studySpaces.filter(
+            (space) => space.operationalStatus === "ACTIVE"
+        ).length;
+        const studyCards = state.studySpaces.map((library) => {
+            const active = library.operationalStatus === "ACTIVE";
+            const usingThis = sameId(library.spaceId, currentStudySpaceId) && !inMeeting;
+            const selectable = checkedIn && active && !inMeeting && !usingThis;
+            return `
+                <article class="space-room-library-action">
+                    <span>운영 상태</span>
+                    <strong>${escapeHtml(library.name)}</strong>
+                    <p>${active ? "정상 운영" : escapeHtml(library.inactiveReason || "운영 중지")} · 여러 기수가 함께 사용하는 조용한 학습 공간입니다.</p>
+                    <button type="button" data-space-library-enter="${library.spaceId}"${selectable ? "" : " disabled"}>
+                        ${usingThis
+                            ? "현재 이용 중"
+                            : inMeeting
+                                ? "회의 종료 후 입장"
+                                : checkedIn ? "도서관 입장" : "체크인 후 입장"}
+                    </button>
+                </article>
+            `;
+        }).join("");
         return `
             <section class="space-room-library" aria-labelledby="space-library-title">
                 <header class="space-room-section-head">
@@ -978,21 +1031,17 @@ import {
                         <span class="space-room-kicker">SHARED STUDY SPACE</span>
                         <h3 id="space-library-title">도서관</h3>
                     </div>
-                    <span class="space-room-status ${state.libraryInside ? "is-active" : ""}">
-                        ${state.libraryInside ? "이용 중" : "이용 가능"}
+                    <span class="space-room-status ${current ? "is-active" : ""}">
+                        ${current ? "이용 중" : activeCount ? `${activeCount}곳 이용 가능` : "이용 불가"}
                     </span>
                 </header>
                 <div class="space-room-library-grid">
-                    <article class="space-room-library-action">
-                        <span>운영 상태</span>
-                        <strong>정상 운영</strong>
-                        <p>여러 기수가 함께 사용하는 조용한 학습 공간입니다. 도서관은 좌석을 선점하거나 공실 알림을 신청하지 않습니다.</p>
-                        <button type="button" data-space-library-toggle${checkedIn ? "" : " disabled"}>
-                            ${state.libraryInside
-                                ? "도서관 나가기"
-                                : checkedIn ? "도서관 입장" : "체크인 후 입장"}
-                        </button>
-                    </article>
+                    ${studyCards || `
+                        <article class="space-room-empty-state">
+                            <strong>등록된 도서관이 없습니다</strong>
+                            <p>활성 STUDY 공간이 등록되면 이곳에서 입장할 수 있습니다.</p>
+                        </article>
+                    `}
                 </div>
             </section>
         `;
@@ -1096,6 +1145,26 @@ import {
         );
     }
 
+    async function movePresence(action, spaceId, library, successMessage) {
+        if (roomActionPending) {
+            return;
+        }
+        roomActionPending = true;
+        try {
+            const result = await action(spaceId);
+            currentAttendance = {
+                ...(currentAttendance || {}),
+                spaceId: result.spaceId
+            };
+            state.libraryInside = library;
+            renderAll(successMessage);
+        } catch (error) {
+            renderAll(error?.message || "공간 이동을 처리하지 못했습니다.");
+        } finally {
+            roomActionPending = false;
+        }
+    }
+
     async function addParticipant(roomId, participantId) {
         const room = state.rooms.find((item) => item.id === roomId);
         const candidate = state.participantCandidates.find(
@@ -1175,6 +1244,7 @@ import {
 
     async function handleAction(event, root) {
         const tab = event.target.closest("[data-space-tab]");
+        const labMove = event.target.closest("[data-space-lab-move]");
         const roomSelect = event.target.closest("[data-space-select-room]");
         const occupy = event.target.closest("[data-space-occupy]");
         const alert = event.target.closest("[data-space-alert]");
@@ -1189,7 +1259,7 @@ import {
             ? event.target
             : null;
         const participantCandidate = event.target.closest("[data-space-participant-candidate]");
-        const libraryToggle = event.target.closest("[data-space-library-toggle]");
+        const libraryEnter = event.target.closest("[data-space-library-enter]");
         const partyCandidate = event.target.closest("[data-space-party-candidate]");
         const openPartyCreate = event.target.closest("[data-party-open-create]");
         const cancelPartyCreate = event.target.closest("[data-party-cancel-create]");
@@ -1306,13 +1376,46 @@ import {
                     roomActionPending = false;
                 }
             }
-        } else if (libraryToggle) {
+        } else if (labMove) {
+            if (!isCheckedIn()) {
+                renderAll("실습실을 선택하려면 먼저 체크인해 주세요.");
+                return;
+            }
+            if (getCurrentOccupancyRoom()) {
+                renderAll("회의 참여를 종료한 뒤 실습실로 이동해 주세요.");
+                return;
+            }
+            const lab = state.labs.find(
+                (item) => sameId(item.spaceId, labMove.dataset.spaceLabMove)
+            );
+            if (lab?.operationalStatus === "ACTIVE") {
+                await movePresence(
+                    (spaceId) => window.OmagotchiApi.attendance.moveLab(spaceId),
+                    lab.spaceId,
+                    false,
+                    `${lab.name}으로 이동했습니다.`
+                );
+            }
+        } else if (libraryEnter) {
             if (!isCheckedIn()) {
                 renderAll("도서관에 입장하려면 먼저 체크인해 주세요.");
                 return;
             }
-            state.libraryInside = !state.libraryInside;
-            renderAll(state.libraryInside ? "도서관에 입장했습니다." : "도서관에서 나왔습니다.");
+            if (getCurrentOccupancyRoom()) {
+                renderAll("회의 참여를 종료한 뒤 도서관에 입장해 주세요.");
+                return;
+            }
+            const library = state.studySpaces.find(
+                (space) => sameId(space.spaceId, libraryEnter.dataset.spaceLibraryEnter)
+            );
+            if (library?.operationalStatus === "ACTIVE") {
+                await movePresence(
+                    (spaceId) => window.OmagotchiApi.attendance.moveStudySpace(spaceId),
+                    library.spaceId,
+                    true,
+                    `${library.name}에 입장했습니다.`
+                );
+            }
         } else if (roomSelect) {
             state.selectedRoomId = roomSelect.dataset.spaceSelectRoom;
             renderAll();

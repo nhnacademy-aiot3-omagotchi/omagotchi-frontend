@@ -5,7 +5,9 @@ import org.springframework.stereotype.Component;
 import site.omagotchi.frontend.attendance.application.port.AttendanceClient;
 import site.omagotchi.frontend.attendance.application.result.AttendancePageResult;
 import site.omagotchi.frontend.attendance.application.result.AttendanceRecordResult;
+import site.omagotchi.frontend.attendance.infrastructure.request.LearningAttendanceSpaceRequest;
 import site.omagotchi.frontend.attendance.infrastructure.response.LearningAttendanceRecordResponse;
+import site.omagotchi.frontend.attendance.infrastructure.response.LearningAttendanceSpaceMoveResponse;
 import site.omagotchi.frontend.global.application.result.PageMetadata;
 import site.omagotchi.frontend.global.exception.BusinessException;
 import site.omagotchi.frontend.global.exception.CommonErrorCode;
@@ -73,6 +75,38 @@ public class LearningRestAttendanceClient implements AttendanceClient {
         return toResult(callExecutor.execute(
                 () -> httpService.checkOut(bearerToken, cohortId)
         ));
+    }
+
+    @Override
+    public Long moveLab(String bearerToken, Long cohortId, Long spaceId) {
+        return requireMovedSpace(callExecutor.execute(
+                () -> httpService.moveLab(
+                        bearerToken,
+                        cohortId,
+                        new LearningAttendanceSpaceRequest(spaceId)
+                )
+        ));
+    }
+
+    @Override
+    public Long moveStudySpace(String bearerToken, Long cohortId, Long spaceId) {
+        return requireMovedSpace(callExecutor.execute(
+                () -> httpService.moveStudySpace(
+                        bearerToken,
+                        cohortId,
+                        new LearningAttendanceSpaceRequest(spaceId)
+                )
+        ));
+    }
+
+    private static Long requireMovedSpace(LearningAttendanceSpaceMoveResponse response) {
+        if (response == null || response.spaceId() == null || response.spaceId() <= 0L) {
+            throw new BusinessException(
+                    CommonErrorCode.DOWNSTREAM_INVALID_RESPONSE,
+                    "Learning 공간 이동 응답 누락"
+            );
+        }
+        return response.spaceId();
     }
 
     private static AttendanceRecordResult toResult(LearningAttendanceRecordResponse response) {
