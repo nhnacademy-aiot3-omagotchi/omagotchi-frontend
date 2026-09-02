@@ -27,6 +27,9 @@ spring:
       learning-service:
         base-url: ${LEARNING_SERVICE_BASE_URL}
       learning-ai-service:
+        # 읽기 타임아웃은 여기 두면 안 된다. Boot의 WebClientCustomizer 적용(order 0)이
+        # 그룹 프로퍼티 적용(order MIN_VALUE) 뒤에 돌면서 전역 커넥터로 덮어쓴다.
+        # AiChatHttpServiceConfig가 그 뒤 순서로 직접 건다 (clients.ai-chat.read-timeout)
         base-url: ${LEARNING_SERVICE_BASE_URL}
   data:
     redis:
@@ -78,6 +81,11 @@ clients:
   identity:
     username: ${FRONTEND_USERNAME}
     password: ${FRONTEND_PASSWORD}
+  ai-chat:
+    # AI 채팅만 SSE라 첫 바이트까지 십수 초가 걸린다(모델 1차 호출 → Tool 실행 → 모델 2차 호출).
+    # 그 동안 읽히는 바이트가 없어 전역 read-timeout(5s)으로는 응답이 시작되기 전에 끊긴다.
+    # 상한은 nginx proxy_read_timeout(기본 60s)이므로 그보다 여유를 두고 잡는다
+    read-timeout: ${AI_CHAT_READ_TIMEOUT:30s}
 
 auth:
   access-token-refresh:
