@@ -54,11 +54,11 @@ SPRING_PROFILES_ACTIVE=local ./mvnw spring-boot:run
 
 - Browser 저장 정보: Opaque Session Cookie만 허용
 - Token 저장 위치: Spring Session Redis
-- 가입 처리: Spring MVC Form Binding·Validation
+- 가입 처리: 이메일 OTP 기반 `/bff/v2/auth/signup/**` JSON BFF
 - 로그인 처리: Spring Security Form Login
 - 로그아웃 처리: CSRF Token을 포함한 `POST /logout`
 - 인증 사용자 화면: Spring Security의 서버 측 보호
-- Browser 전용 API: `/bff/v1/**`
+- Browser 전용 API: 기본 `/bff/v1/**`, 회원가입 `/bff/v2/auth/signup/**`
 - 내부 서비스 호출: 담당 Domain Service 직접 호출, Discovery·Client-side Load Balancing 사용
 - Access Token 갱신: 만료 임박 BFF 요청 진입 시 Redis Session 단위 single-flight Refresh
 - 요청 실행 기준: Refresh 성공 뒤에도 원래 Controller·downstream 요청은 최대 1회

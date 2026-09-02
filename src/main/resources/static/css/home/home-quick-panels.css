@@ -904,3 +904,23 @@
         animation: none !important;
     }
 }
+
+
+/* ── 독 오른쪽 끝 버튼(AI) 잘림 보정 ───────────────────────────────────
+   .home-action-dock 은 overflow-x:auto 라서 스크롤 컨테이너이자 클리핑 박스다.
+   여기에 flex-direction:row-reverse 가 겹치면, 내용이 트랙보다 조금이라도 넓어질 때
+   첫 flex 항목인 AI 버튼이 시작(오른쪽) 경계 밖으로 밀려 테두리가 잘린다.
+   컨테이너 padding 은 스크롤 영역에 포함되지 않아 padding·margin 으로는 못 막는다.
+   (170px 트랙으로 재현: AI 오른쪽이 독 오른쪽보다 22px 바깥)
+
+   Storybook 은 폭이 넉넉해 넘치지 않아 재현되지 않고, 실제 홈에서는
+   .home-bottom-hud 의 dock 트랙이 좁아 드러난다.
+
+   버튼이 4개뿐이고 크기가 고정(flex:0 0)이라 넓은 화면에서는 스크롤이 필요 없다.
+   그래서 좁은 화면에만 스크롤을 남기고, 그 위에서는 클리핑 박스를 만들지 않는다.
+   좁은 화면 대응은 아래 @media (max-width: 760px) 의 기존 규칙이 그대로 담당한다. */
+@media (min-width: 761px) {
+    .home-action-dock {
+        overflow: visible;
+    }
+}

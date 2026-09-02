@@ -1,5 +1,6 @@
 package site.omagotchi.frontend.auth.infrastructure;
 
+import com.sun.net.httpserver.HttpServer;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -10,15 +11,23 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.client.MockRestServiceServer;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.RestClient;
 import org.springframework.web.client.support.RestClientHttpServiceGroupConfigurer;
 import site.omagotchi.frontend.auth.infrastructure.request.IdentitySignupRequest;
 import site.omagotchi.frontend.auth.infrastructure.request.IdentityRefreshTokenRequest;
 
+import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicInteger;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.springframework.test.web.client.ExpectedCount.once;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.header;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.content;
@@ -32,6 +41,9 @@ class IdentityAuthHttpServiceConfigTest {
 
     @Autowired
     private IdentityAuthHttpService httpService;
+
+    @Autowired
+    private HttpComponentsClientHttpRequestFactory identityClientHttpRequestFactory;
 
     @Autowired
     private MockHttpServiceConfiguration mockHttpServiceConfiguration;
@@ -107,6 +119,36 @@ class IdentityAuthHttpServiceConfigTest {
 
         // Then: Basic 인증 Header와 Refresh 요청 Body
         server.verify();
+    }
+
+    @Test
+    @DisplayName("Identity 429 Retry-After 응답을 자동 재시도하지 않음")
+    void disablesAutomaticRetryForRateLimitResponse() throws IOException {
+        AtomicInteger requestCount = new AtomicInteger();
+        HttpServer server = HttpServer.create(new InetSocketAddress(0), 0);
+        server.createContext("/rate-limit", exchange -> {
+            requestCount.incrementAndGet();
+            exchange.getResponseHeaders().add(HttpHeaders.RETRY_AFTER, "0");
+            exchange.sendResponseHeaders(HttpStatus.TOO_MANY_REQUESTS.value(), -1);
+            exchange.close();
+        });
+        server.start();
+
+        try {
+            RestClient restClient = RestClient.builder()
+                    .requestFactory(identityClientHttpRequestFactory)
+                    .build();
+
+            assertThatThrownBy(() -> restClient.get()
+                    .uri("http://127.0.0.1:" + server.getAddress().getPort() + "/rate-limit")
+                    .retrieve()
+                    .toBodilessEntity())
+                    .isInstanceOf(HttpClientErrorException.TooManyRequests.class);
+
+            assertThat(requestCount).hasValue(1);
+        } finally {
+            server.stop(0);
+        }
     }
 
     // 실제 HTTP Service Group Builder에 Mock Server 연결

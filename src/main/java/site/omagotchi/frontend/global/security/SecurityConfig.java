@@ -4,6 +4,7 @@ import jakarta.servlet.DispatcherType;
 import org.springframework.boot.security.autoconfigure.web.servlet.PathRequest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -20,6 +21,7 @@ import org.springframework.security.web.servlet.util.matcher.PathPatternRequestM
 import org.springframework.security.web.util.matcher.AnyRequestMatcher;
 import org.springframework.security.web.util.matcher.RequestMatcher;
 import site.omagotchi.frontend.auth.application.AuthenticationService;
+import site.omagotchi.frontend.auth.presentation.bff.SignupBffPaths;
 import site.omagotchi.frontend.auth.presentation.security.AuthenticatedLoginRequestFilter;
 import site.omagotchi.frontend.auth.presentation.security.AuthenticatedLandingPage;
 import site.omagotchi.frontend.auth.presentation.security.BrowserTokenSessionAuthenticationStrategy;
@@ -73,6 +75,11 @@ public class SecurityConfig {
                                 "/actuator/health/**",
                                 "/actuator/info"
                         ).permitAll() // 배포 확인용 최소 Actuator endpoint
+                        .requestMatchers(
+                                HttpMethod.POST,
+                                SignupBffPaths.SIGNUP,
+                                SignupBffPaths.EMAIL_OTP
+                        ).permitAll() // 익명 Browser의 이메일 인증 기반 회원가입 BFF
                         .requestMatchers("/system-admin-dashboard").hasRole("SYSTEM_ADMIN")
                         // 인가가 Security 밖(ManagerDashboardPageController)에 있음.
                         // 기수 관리자는 Learning DB 사실이라 로그인 Authentication에 없어
