@@ -394,8 +394,18 @@ import {
         renderAll();
 
         try {
-            const spaces = await window.OmagotchiApi.spaces.list();
+            const selectableLabRequest = typeof window.OmagotchiApi.spaces.listLabs === "function"
+                ? window.OmagotchiApi.spaces.listLabs().catch(() => null)
+                : Promise.resolve(null);
+            const [spaces, selectableLabs] = await Promise.all([
+                window.OmagotchiApi.spaces.list(),
+                selectableLabRequest
+            ]);
             const spaceList = Array.isArray(spaces) ? spaces : [];
+            const selectableLabList = Array.isArray(selectableLabs) ? selectableLabs : [];
+            const labAvailabilityById = new Map(
+                selectableLabList.map((lab) => [String(lab.spaceId), lab])
+            );
             const requesterCohortId = currentUser.cohortId == null
                 ? null
                 : String(currentUser.cohortId);
@@ -404,7 +414,11 @@ import {
                 : spaceList.filter(
                     (space) => space.type === "LAB"
                         && String(space.cohortId) === requesterCohortId
-                );
+                ).map((space) => ({
+                    ...space,
+                    reservedCount: labAvailabilityById.get(String(space.spaceId))
+                        ?.reservedCount ?? null
+                }));
             state.studySpaces = spaceList.filter((space) => space.type === "STUDY");
             const rooms = spaceList
                 .filter((space) => space.type === "MEETING")
@@ -588,6 +602,21 @@ import {
         `).join("");
     }
 
+    function getLabReservedCount(lab) {
+        if (lab?.reservedCount == null) {
+            return null;
+        }
+        const reservedCount = Number(lab?.reservedCount);
+        return Number.isInteger(reservedCount) && reservedCount >= 0
+            ? reservedCount
+            : null;
+    }
+
+    function isLabFull(lab) {
+        const reservedCount = getLabReservedCount(lab);
+        return reservedCount != null && reservedCount >= lab.capacity;
+    }
+
     function renderLab() {
         const checkedIn = isCheckedIn();
         const inMeeting = isInMeeting();
@@ -615,14 +644,22 @@ import {
         const assignedLabs = state.labs.map((lab) => {
             const active = lab.operationalStatus === "ACTIVE";
             const current = sameId(lab.spaceId, currentPresence?.spaceId);
-            const selectable = active && checkedIn && !inMeeting && !current;
+            const reservedCount = getLabReservedCount(lab);
+            const capacityKnown = reservedCount != null;
+            const full = isLabFull(lab);
+            const selectable = active && checkedIn && !inMeeting && !current && !full;
             const selectionStatus = active
                 ? current
                     ? "현재 이용 중"
-                    : inMeeting
-                        ? "회의 종료 후 선택 가능"
-                        : (checkedIn ? "선택 가능" : "체크인 후 선택 가능")
+                    : full
+                        ? "정원 마감"
+                        : inMeeting
+                            ? "회의 종료 후 선택 가능"
+                            : (checkedIn ? "선택 가능" : "체크인 후 선택 가능")
                 : "선택 불가";
+            const capacityDetail = capacityKnown
+                ? `${reservedCount} / ${lab.capacity}명`
+                : `${lab.capacity}인실`;
             return `
             <article class="space-room-lab-stage${active ? "" : " is-inactive"}">
                 <div>
@@ -631,11 +668,11 @@ import {
                     </span>
                     <strong>${escapeHtml(lab.name)}</strong>
                 </div>
-                <p>${lab.capacity}인실${lab.inactiveReason
+                <p>${capacityDetail}${lab.inactiveReason
                     ? ` · ${escapeHtml(lab.inactiveReason)}`
                     : ""} · ${selectionStatus}</p>
                 <button type="button" data-space-lab-move="${lab.spaceId}"${selectable ? "" : " disabled"}>
-                    ${current ? "현재 이용 중" : "이 실습실로 이동"}
+                    ${current ? "현재 이용 중" : full ? "정원 마감" : "이 실습실로 이동"}
                 </button>
             </article>
         `;
@@ -1248,10 +1285,18 @@ import {
                 state: "PRESENT",
                 startedAt: new Date().toISOString()
             };
-            await refreshCurrentContextAfterMutation();
+            await Promise.all([
+                refreshCurrentContextAfterMutation(),
+                refreshSpaces()
+            ]);
             renderAll(successMessage);
         } catch (error) {
-            renderAll(error?.message || "공간 이동을 처리하지 못했습니다.");
+            if (error?.code === "LAB_CAPACITY_EXCEEDED") {
+                await refreshSpaces();
+                renderAll("실습실 정원이 가득 찼습니다.");
+            } else {
+                renderAll(error?.message || "공간 이동을 처리하지 못했습니다.");
+            }
         } finally {
             roomActionPending = false;
         }
@@ -1480,12 +1525,14 @@ import {
             const lab = state.labs.find(
                 (item) => sameId(item.spaceId, labMove.dataset.spaceLabMove)
             );
-            if (lab?.operationalStatus === "ACTIVE") {
+            if (lab?.operationalStatus === "ACTIVE" && !isLabFull(lab)) {
                 await movePresence(
                     (spaceId) => window.OmagotchiApi.attendance.moveLab(spaceId),
                     lab.spaceId,
                     `${lab.name}으로 이동했습니다.`
                 );
+            } else if (isLabFull(lab)) {
+                renderAll("실습실 정원이 가득 찼습니다.");
             }
         } else if (libraryEnter) {
             if (!isCheckedIn()) {

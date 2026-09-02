@@ -17,10 +17,12 @@ import org.springframework.web.service.invoker.HttpServiceProxyFactory;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 import site.omagotchi.frontend.cohort.infrastructure.response.UserAccessContextResponse;
+import site.omagotchi.frontend.learning.infrastructure.response.LearningSelectableLabResponse;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -83,6 +85,32 @@ class LearningHttpServiceContractTest {
         assertThat(response.isCohortManager()).isTrue();
         assertThat(response.managedCohorts()).extracting("cohortId").containsExactly(7L);
         assertThat(response.managedCohorts().getFirst().status()).isEqualTo("PREPARING");
+        server.verify();
+    }
+
+    @Test
+    @DisplayName("선택 가능 실습실 경로와 정원 응답 계약을 사용한다")
+    void getsSelectableLabs() {
+        server.expect(once(), requestTo(BASE_URL + "/api/v1/cohorts/7/spaces/labs"))
+                .andExpect(method(HttpMethod.GET))
+                .andExpect(header(HttpHeaders.AUTHORIZATION, BEARER))
+                .andRespond(withSuccess("""
+                        [{
+                          "spaceId": 11,
+                          "name": "3기 실습실",
+                          "capacity": 2,
+                          "reservedCount": 2
+                        }]
+                        """, MediaType.APPLICATION_JSON));
+
+        ResponseEntity<List<LearningSelectableLabResponse>> response =
+                service.getSelectableLabs(BEARER, 7L);
+
+        assertThat(response.getBody()).singleElement().satisfies(lab -> {
+            assertThat(lab.spaceId()).isEqualTo(11L);
+            assertThat(lab.capacity()).isEqualTo(2);
+            assertThat(lab.reservedCount()).isEqualTo(2L);
+        });
         server.verify();
     }
 

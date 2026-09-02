@@ -96,6 +96,7 @@ test("lab tab appears before meeting and lists only the current cohort labs", as
         assert.match(root.innerHTML, /3기 실습실 A/);
         assert.match(root.innerHTML, /3기 실습실 B/);
         assert.match(root.innerHTML, /2곳 배정/);
+        assert.match(root.innerHTML, /30인실/);
         assert.match(root.innerHTML, /운영 중지/);
         assert.match(root.innerHTML, /선택 가능/);
         assert.match(root.innerHTML, /선택 불가/);
@@ -103,6 +104,146 @@ test("lab tab appears before meeting and lists only the current cohort labs", as
         assert.doesNotMatch(root.innerHTML, /4기 실습실/);
         assert.match(root.innerHTML, /현재 내 위치/);
         assert.match(root.innerHTML, /실습실을 선택해 주세요/);
+    }, { activeTab: "lab" }, {
+        approvedCohort: { cohortId: 3, name: "3기" }
+    }, api);
+});
+
+test("a full lab shows its reserved capacity and disables movement", async () => {
+    const moves = [];
+    const api = {
+        attendance: {
+            async getToday() {
+                return { checkedInAt: "2026-09-01T09:00:00Z", checkedOutAt: null };
+            },
+            async getCurrentPresence() {
+                return null;
+            },
+            async moveLab(spaceId) {
+                moves.push(spaceId);
+                return { spaceId };
+            }
+        },
+        spaces: {
+            async list() {
+                return [{
+                    spaceId: 101,
+                    name: "3기 실습실 A",
+                    type: "LAB",
+                    capacity: 2,
+                    operationalStatus: "ACTIVE",
+                    cohortId: 3
+                }];
+            },
+            async listLabs() {
+                return [{
+                    spaceId: 101,
+                    name: "3기 실습실 A",
+                    capacity: 2,
+                    reservedCount: 2
+                }];
+            },
+            async getMyVacancyAlerts() {
+                return [];
+            }
+        }
+    };
+
+    await withSpaceRoom(async (spaceRoom) => {
+        const root = createRoot();
+        spaceRoom.mount(root);
+        await new Promise(setImmediate);
+
+        assert.match(root.innerHTML, /2 \/ 2명/);
+        assert.match(root.innerHTML, /정원 마감/);
+        assert.match(root.innerHTML, /data-space-lab-move="101" disabled/);
+
+        await root.click({
+            matches() {
+                return false;
+            },
+            closest(selector) {
+                return selector === "[data-space-lab-move]"
+                    ? { dataset: { spaceLabMove: "101" } }
+                    : null;
+            }
+        });
+
+        assert.deepEqual(moves, []);
+    }, { activeTab: "lab" }, {
+        approvedCohort: { cohortId: 3, name: "3기" }
+    }, api);
+});
+
+test("a capacity conflict refreshes the lab count and closes the stale last seat", async () => {
+    let reservedCount = 1;
+    let labListRequests = 0;
+    let moveRequests = 0;
+    const api = {
+        attendance: {
+            async getToday() {
+                return { checkedInAt: "2026-09-01T09:00:00Z", checkedOutAt: null };
+            },
+            async getCurrentPresence() {
+                return null;
+            },
+            async moveLab() {
+                moveRequests += 1;
+                reservedCount = 2;
+                const error = new Error("현재 상태에서는 요청을 처리할 수 없습니다.");
+                error.code = "LAB_CAPACITY_EXCEEDED";
+                throw error;
+            }
+        },
+        spaces: {
+            async list() {
+                return [{
+                    spaceId: 101,
+                    name: "3기 실습실 A",
+                    type: "LAB",
+                    capacity: 2,
+                    operationalStatus: "ACTIVE",
+                    cohortId: 3
+                }];
+            },
+            async listLabs() {
+                labListRequests += 1;
+                return [{
+                    spaceId: 101,
+                    name: "3기 실습실 A",
+                    capacity: 2,
+                    reservedCount
+                }];
+            },
+            async getMyVacancyAlerts() {
+                return [];
+            }
+        }
+    };
+
+    await withSpaceRoom(async (spaceRoom) => {
+        const root = createRoot();
+        spaceRoom.mount(root);
+        await new Promise(setImmediate);
+
+        assert.doesNotMatch(root.innerHTML, /data-space-lab-move="101" disabled/);
+
+        await root.click({
+            matches() {
+                return false;
+            },
+            closest(selector) {
+                return selector === "[data-space-lab-move]"
+                    ? { dataset: { spaceLabMove: "101" } }
+                    : null;
+            }
+        });
+        await new Promise(setImmediate);
+
+        assert.equal(moveRequests, 1);
+        assert.equal(labListRequests, 2);
+        assert.match(root.innerHTML, /2 \/ 2명/);
+        assert.match(root.innerHTML, /data-space-lab-move="101" disabled/);
     }, { activeTab: "lab" }, {
         approvedCohort: { cohortId: 3, name: "3기" }
     }, api);

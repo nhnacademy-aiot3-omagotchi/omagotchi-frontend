@@ -75,7 +75,9 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
             Map.entry("ATTENDANCE_ALREADY_CHECKED_IN", 409),
             Map.entry("ATTENDANCE_ALREADY_CHECKED_OUT", 409),
             Map.entry("ATTENDANCE_CHECK_IN_REQUIRED", 409),
+            Map.entry("ATTENDANCE_ACTIVE_MEETING_EXISTS", 409),
             Map.entry("ATTENDANCE_CHANGE_REASON_REQUIRED", 400),
+            Map.entry("PRESENCE_MEETING_EXIT_REQUIRED", 409),
             Map.entry("COMMUNITY_POST_NOT_FOUND", 404),
             Map.entry("COMMUNITY_INVALID_PAGE_REQUEST", 400),
             Map.entry("COMMUNITY_INVALID_POST_REQUEST", 400),
@@ -112,6 +114,9 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
             Map.entry("SPACE_ACTIVE_DELETE_NOT_ALLOWED", 409),
             Map.entry("SPACE_LAB_ALREADY_ASSIGNED", 409),
             Map.entry("SPACE_LAB_NOT_ASSIGNED", 409),
+            Map.entry("LAB_NOT_SELECTABLE", 409),
+            Map.entry("LAB_CAPACITY_EXCEEDED", 409),
+            Map.entry("STUDY_SPACE_NOT_SELECTABLE", 409),
             Map.entry("OCCUPANCY_NOT_MEETING_ROOM", 400),
             Map.entry("OCCUPANCY_SPACE_INACTIVE", 400),
             Map.entry("OCCUPANCY_DIFFERENT_COHORT", 400),
@@ -178,7 +183,7 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
         if (isPublicLearningDownstreamError(exception)) {
             ApiErrorResponse publicResponse = new ApiErrorResponse(
                     downstream.code(),
-                    publicLearningDownstreamMessage(exception.getStatusCode().value()),
+                    publicLearningDownstreamMessage(exception),
                     request.getRequestURI(),
                     downstream.requestId()
             );
@@ -214,7 +219,13 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
                 && approvedStatus == exception.getStatusCode().value();
     }
 
-    private String publicLearningDownstreamMessage(int status) {
+    private String publicLearningDownstreamMessage(
+            LearningDownstreamException exception
+    ) {
+        if ("LAB_CAPACITY_EXCEEDED".equals(exception.getErrorResponse().code())) {
+            return "실습실 정원이 가득 찼습니다.";
+        }
+        int status = exception.getStatusCode().value();
         return switch (status) {
             case 400 -> "요청값이 올바르지 않습니다.";
             case 401 -> "인증이 필요합니다.";

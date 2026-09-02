@@ -112,6 +112,21 @@ class ApiExceptionHandlerTest {
     }
 
     @Test
+    @DisplayName("실습실 정원 초과는 구체적인 공개 안내와 409를 반환")
+    void forwardsLabCapacityExceeded() throws Exception {
+        mockMvc.perform(post("/bff/v1/test/errors/lab-capacity-exceeded"))
+                .andExpectAll(
+                        status().isConflict(),
+                        content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON),
+                        jsonPath("$.code").value("LAB_CAPACITY_EXCEEDED"),
+                        jsonPath("$.message").value("실습실 정원이 가득 찼습니다."),
+                        jsonPath("$.path").value(
+                                "/bff/v1/test/errors/lab-capacity-exceeded"
+                        )
+                );
+    }
+
+    @Test
     @DisplayName("Learning Access JWT 401의 기존 인증 세션 폐기")
     void invalidatesStaleSessionForLearningAuthenticationFailure() throws Exception {
         assertAuthenticationFailureExpiresSession(
@@ -530,6 +545,20 @@ class ApiExceptionHandlerTest {
                             "learning-request-4xx"
                     ),
                     new IllegalStateException("approved downstream rejection")
+            );
+        }
+
+        @PostMapping("/bff/v1/test/errors/lab-capacity-exceeded")
+        void labCapacityExceeded() {
+            throw new LearningDownstreamException(
+                    HttpStatus.CONFLICT,
+                    new ApiErrorResponse(
+                            "LAB_CAPACITY_EXCEEDED",
+                            "internal capacity details",
+                            "/api/v1/cohorts/7/attendance-records/move-lab",
+                            "learning-lab-capacity-request"
+                    ),
+                    new IllegalStateException("lab capacity exceeded")
             );
         }
 
