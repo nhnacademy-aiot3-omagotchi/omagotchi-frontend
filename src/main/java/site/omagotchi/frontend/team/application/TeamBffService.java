@@ -58,7 +58,7 @@ public class TeamBffService {
                         authorization.bearerToken(request), teamId)
         );
         requireStatus(response, HttpStatus.OK, "팀 상세 조회");
-        return toDetailView(requireBody(response, "팀 상세 조회"));
+        return toDetailView(requireBody(response, "팀 상세 조회"), "팀 상세 조회");
     }
 
     public List<TeamMemberCandidateView> searchMemberCandidates(
@@ -133,7 +133,13 @@ public class TeamBffService {
         );
     }
 
-    private static TeamDetailView toDetailView(LearningTeamDetailResponse response) {
+    private static TeamDetailView toDetailView(
+            LearningTeamDetailResponse response,
+            String operation
+    ) {
+        List<LearningTeamMemberResponse> members = requireField(
+                response.members(), operation, "members");
+
         return new TeamDetailView(
                 response.teamId(),
                 response.cohortId(),
@@ -142,7 +148,7 @@ public class TeamBffService {
                 response.memberCount(),
                 response.myMemberId(),
                 response.myRole(),
-                response.members().stream()
+                members.stream()
                         .map(TeamBffService::toMemberView)
                         .toList()
         );
@@ -167,5 +173,9 @@ public class TeamBffService {
 
     private static <T> T requireBody(ResponseEntity<T> response, String operation) {
         return HttpResponseContractValidator.requireBody(response, operation);
+    }
+
+    private static <T> T requireField(T value, String operation, String fieldName) {
+        return HttpResponseContractValidator.requireField(value, operation, fieldName);
     }
 }
