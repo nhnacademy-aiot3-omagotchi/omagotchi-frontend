@@ -95,6 +95,19 @@ class AttendanceBffServiceTest {
         verify(attendanceClient).checkOut("Bearer access-token", 7L);
     }
 
+    @Test
+    @DisplayName("승인 기수 Context를 사용한 도서관 입장 처리")
+    void movesToStudySpaceThroughAttendancePort() {
+        when(attendanceClient.moveStudySpace("Bearer access-token", 7L, 301L))
+                .thenReturn(301L);
+
+        Long result = service.moveStudySpace(301L);
+
+        assertThat(result).isEqualTo(301L);
+        verify(accessContext).resolve();
+        verify(attendanceClient).moveStudySpace("Bearer access-token", 7L, 301L);
+    }
+
     private static AttendanceRecordResult attendanceRecord() {
         Instant timestamp = Instant.parse("2026-08-20T00:00:00Z");
         return new AttendanceRecordResult(

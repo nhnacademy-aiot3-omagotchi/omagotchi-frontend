@@ -19,4 +19,8 @@ public interface AttendanceClient {
     AttendanceRecordResult checkIn(String bearerToken, Long cohortId);
 
     AttendanceRecordResult checkOut(String bearerToken, Long cohortId);
+
+    Long moveLab(String bearerToken, Long cohortId, Long spaceId);
+
+    Long moveStudySpace(String bearerToken, Long cohortId, Long spaceId);
 }

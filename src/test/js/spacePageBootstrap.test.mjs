@@ -11,9 +11,14 @@ const SPACE_JS = readFileSync(
     "utf8"
 );
 
+// 캐시 버스팅 `?v=...`가 붙어도 깨지지 않게 쿼리스트링을 선택으로 둔다.
+// `src="` 바로 뒤에 경로가 오도록 강제해 `th:src="@{/js/...}"`와는 매칭되지 않는다.
+const scriptSrc = (path) =>
+    new RegExp(`src="${path.replace(/[/.]/g, "\\$&")}(\\?[^"]*)?"`);
+
 test("공간 페이지는 space.js보다 먼저 api.js를 로드한다", () => {
-    const apiIndex = SPACE_HTML.indexOf('src="/js/api.js"');
-    const spaceIndex = SPACE_HTML.indexOf('src="/js/space.js');
+    const apiIndex = SPACE_HTML.search(scriptSrc("/js/api.js"));
+    const spaceIndex = SPACE_HTML.search(scriptSrc("/js/space.js"));
 
     assert.ok(apiIndex !== -1, "space.html이 /js/api.js를 로드하지 않는다");
     assert.ok(spaceIndex !== -1, "space.html이 /js/space.js를 로드하지 않는다");
@@ -22,7 +27,7 @@ test("공간 페이지는 space.js보다 먼저 api.js를 로드한다", () => {
 
 test("공간 페이지는 캐릭터 자산 스크립트를 로드한다", () => {
     // spaceRoom.js가 window.OmagotchiCharacterAssets로 아바타 이미지를 만든다.
-    assert.ok(SPACE_HTML.includes('src="/js/characterAssets.js"'));
+    assert.match(SPACE_HTML, scriptSrc("/js/characterAssets.js"));
 });
 
 test("space.js는 spaceRoom을 정적 import하지 않는다", () => {
