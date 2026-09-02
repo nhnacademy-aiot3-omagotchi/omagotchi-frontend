@@ -61,6 +61,15 @@ export async function initializeSystemAdminDashboard(root = document, repository
         ...state.capabilities
     });
 
+    // 다이얼로그를 열 이유가 하나라도 있는지. 예전엔 기수 권한만 보고 판단해서
+    // Identity 만 열려 있는 상황에서 버튼이 잠기는 구멍이 있었다.
+    function canWritePermissions() {
+        const capability = capabilities();
+        return capability.managerWrite
+            || capability.identityWrite
+            || capability.accountStatusWrite;
+    }
+
     function showToast(message, isError = false) {
         const toast = find("[data-system-toast]");
         if (!toast) return;
@@ -131,8 +140,10 @@ export async function initializeSystemAdminDashboard(root = document, repository
             const globalRole = user.globalRole === "SYSTEM_ADMIN"
                 ? '<span class="system-chip is-system">SYSTEM_ADMIN</span>'
                 : '<span class="system-muted">일반 사용자</span>';
-            const managerWrite = capabilities().managerWrite;
-            return `<tr><th scope="row" data-label="사용자"><div class="system-user-cell"><b>${escapeHtml(user.name.slice(0, 1))}</b><span><strong>${escapeHtml(user.name)}</strong><small>${escapeHtml(user.email)}</small></span></div></th><td data-label="계정 상태"><span class="system-account-status is-${user.status.toLowerCase()}">${escapeHtml(ACCOUNT_STATUS_LABELS[user.status] || user.status)}</span></td><td data-label="전역 권한">${globalRole}</td><td data-label="기수 운영 권한"><div class="system-chip-list">${cohortBadges}</div></td><td data-label="가입일">${escapeHtml(user.joinedAt)}</td><td><button class="system-row-button" type="button" data-open-permission="${escapeHtml(user.id)}" ${managerWrite ? "" : "disabled"} title="${managerWrite ? "기수 운영 권한 관리" : "기수 권한 API 연동 대기"}">${managerWrite ? "기수 권한 관리" : "조회 전용"}</button></td></tr>`;
+            // 다이얼로그가 계정 상태·전역 권한·기수 권한을 모두 다룬다.
+            // 그래서 셋 중 하나라도 쓸 수 있으면 연다.
+            const permissionWrite = canWritePermissions();
+            return `<tr><th scope="row" data-label="사용자"><div class="system-user-cell"><b>${escapeHtml(user.name.slice(0, 1))}</b><span><strong>${escapeHtml(user.name)}</strong><small>${escapeHtml(user.email)}</small></span></div></th><td data-label="계정 상태"><span class="system-account-status is-${user.status.toLowerCase()}">${escapeHtml(ACCOUNT_STATUS_LABELS[user.status] || user.status)}</span></td><td data-label="전역 권한">${globalRole}</td><td data-label="기수 운영 권한"><div class="system-chip-list">${cohortBadges}</div></td><td data-label="가입일">${escapeHtml(user.joinedAt)}</td><td><button class="system-row-button" type="button" data-open-permission="${escapeHtml(user.id)}" ${permissionWrite ? "" : "disabled"} title="${permissionWrite ? "계정 상태·전역 권한·기수 운영 권한 관리" : "권한 변경 API 연동 대기"}">${permissionWrite ? "권한 관리" : "조회 전용"}</button></td></tr>`;
         }).join("");
         find("[data-user-page-range]").textContent = `${users.length}명`;
         find("[data-user-pagination-footer]").hidden = users.length === 0;
@@ -187,7 +198,7 @@ export async function initializeSystemAdminDashboard(root = document, repository
             options.disabled = !capabilities().identity;
         }
         const savePermission = find("[data-save-permission]");
-        if (savePermission) savePermission.disabled = !capabilities().managerWrite;
+        if (savePermission) savePermission.disabled = !canWritePermissions();
     }
 
     /**
@@ -222,7 +233,7 @@ export async function initializeSystemAdminDashboard(root = document, repository
     }
 
     function openPermissionDialog(userId) {
-        if (!capabilities().managerWrite) return;
+        if (!canWritePermissions()) return;
         const user = state.users.find((item) => item.id === userId);
         const dialog = find("[data-permission-dialog]");
         if (!user || !dialog) return;
@@ -260,6 +271,7 @@ export async function initializeSystemAdminDashboard(root = document, repository
         reasonRow.hidden = true;
 
         dialog.querySelector("[data-permission-error]").hidden = true;
+        // 기수 배정만 막힌 경우에도 나머지 항목은 쓸 수 있어야 한다.
         dialog.querySelector("[data-dialog-cohort-options]").innerHTML = state.cohorts.filter((cohort) => cohort.status !== "CLOSED").map((cohort) => `<label data-cohort-option="${escapeHtml(cohort.id)}"><input type="checkbox" value="${escapeHtml(cohort.id)}" ${user.managerCohortIds.includes(cohort.id) ? "checked" : ""}><span><strong>${escapeHtml(cohort.name)}</strong><small>${formatDate(cohort.startDate)} – ${formatDate(cohort.endDate)} · ${STATUS_LABELS[cohort.status]}</small><em data-cohort-conflict hidden>선택한 기수와 운영 기간 중복</em></span></label>`).join("");
         syncCohortAssignmentOptions(dialog);
         setDialogOpen(dialog, true);
