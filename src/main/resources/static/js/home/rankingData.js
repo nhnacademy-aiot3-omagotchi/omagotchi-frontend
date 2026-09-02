@@ -15,9 +15,11 @@ function normalizeOptionalText(value) {
     return typeof value === "string" ? value : undefined;
 }
 
-function normalizeEntry(entry) {
+function normalizeEntry(entry, rankedMemberCount) {
     if (!entry || typeof entry !== "object" || Array.isArray(entry)) return null;
-    if (!isPositiveInteger(entry.rank) || !isPositiveInteger(entry.studySeconds)) return null;
+    if (!isPositiveInteger(entry.rank)
+        || entry.rank > rankedMemberCount
+        || !isPositiveInteger(entry.studySeconds)) return null;
     if (entry.displayName !== null && typeof entry.displayName !== "string") return null;
     if (entry.timerRunning !== null
         && entry.timerRunning !== undefined
@@ -50,7 +52,7 @@ export function normalizeStudyRanking(payload, expectedPeriod = payload?.period)
         || payload.returnedEntryCount !== payload.entries.length
         || payload.rankedMemberCount < payload.entries.length) return null;
 
-    const entries = payload.entries.map(normalizeEntry);
+    const entries = payload.entries.map((entry) => normalizeEntry(entry, payload.rankedMemberCount));
     if (entries.some((entry) => entry === null)) return null;
     for (let index = 1; index < entries.length; index += 1) {
         if (entries[index].rank < entries[index - 1].rank
@@ -59,7 +61,9 @@ export function normalizeStudyRanking(payload, expectedPeriod = payload?.period)
 
     const mine = payload.myRanking;
     if (!mine || typeof mine !== "object" || typeof mine.ranked !== "boolean") return null;
-    const myEntry = mine.ranking === null ? null : normalizeEntry(mine.ranking);
+    const myEntry = mine.ranking === null
+        ? null
+        : normalizeEntry(mine.ranking, payload.rankedMemberCount);
     if ((mine.ranked && myEntry === null) || (!mine.ranked && mine.ranking !== null)) return null;
 
     return {

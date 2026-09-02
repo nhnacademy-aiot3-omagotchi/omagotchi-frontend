@@ -11,7 +11,7 @@ import {
     rankingCoverageLabel,
     rankingPeriodLabel,
     requestStudyRanking
-} from "./home/rankingData.js?v=20260902-3";
+} from "./home/rankingData.js?v=20260903-1";
 import { createStudyRecords } from "./home/studyRecords.js?v=20260825-5";
 import { createTimer } from "./home/timer.js?v=20260902-1";
 import { promptResumeTimer } from "./home/timerPrompt.js?v=20260902-1";

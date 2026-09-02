@@ -4,7 +4,7 @@ import {
     rankingCoverageLabel,
     rankingPeriodLabel,
     requestStudyRanking
-} from "./home/rankingData.js?v=20260902-3";
+} from "./home/rankingData.js?v=20260903-1";
 
 // 독립 진행 화면도 홈 오버레이와 동일한 BFF 데이터를 사용한다.
 const progressTabs = document.querySelectorAll("[data-progress-tab]");
@@ -151,9 +151,6 @@ function renderProgressFailure() {
     if (questList) {
         questList.innerHTML = '<article class="task-item quest-item"><div><h3>퀘스트를 불러오지 못했습니다.</h3><p>잠시 후 다시 시도해 주세요.</p></div></article>';
     }
-    if (rankingList) {
-        rankingList.innerHTML = '<li data-empty-ranking><strong>-</strong><span>랭킹을 불러오지 못했습니다.</span><em>다시 시도</em></li>';
-    }
     if (stats) {
         stats.innerHTML = '<article class="stat-card"><h3>학습 통계</h3><strong>불러오기 실패</strong><p>잠시 후 다시 시도해 주세요.</p></article>';
     }
@@ -165,17 +162,15 @@ async function loadProgress() {
         typeof api?.gamification?.getHome !== "function"
         || typeof api?.gamification?.getDailyQuests !== "function"
         || typeof api?.profile?.get !== "function"
-        || typeof api?.ranking?.getToday !== "function"
     ) {
         renderProgressFailure();
         return;
     }
 
-    const [homeResult, questResult, profileResult, rankingResult] = await Promise.allSettled([
+    const [homeResult, questResult, profileResult] = await Promise.allSettled([
         api.gamification.getHome(),
         api.gamification.getDailyQuests(),
-        api.profile.get(),
-        api.ranking.getToday()
+        api.profile.get()
     ]);
 
     if (questResult.status === "fulfilled") {
@@ -185,7 +180,6 @@ async function loadProgress() {
         updateClaimIndicator();
     }
 
-    renderRanking(rankingResult, "TODAY");
     renderStats(
         profileResult.status === "fulfilled" ? profileResult.value : null,
         homeResult.status === "fulfilled" ? homeResult.value : null
@@ -254,3 +248,4 @@ questList?.addEventListener("click", async (event) => {
 setActiveProgressTab(location.hash.slice(1) || "quests");
 updateClaimIndicator();
 loadProgress().catch(() => {});
+loadRankingPeriod("TODAY");

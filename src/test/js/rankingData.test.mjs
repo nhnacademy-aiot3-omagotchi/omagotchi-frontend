@@ -93,6 +93,16 @@ test("개수와 목록이 불일치하는 응답은 거부한다", () => {
     assert.equal(normalizeStudyRanking(todayPayload({returnedEntryCount: 2})), null);
 });
 
+test("참여 인원수보다 큰 목록과 내 순위는 거부한다", () => {
+    const invalidEntryPayload = todayPayload();
+    invalidEntryPayload.entries[0].rank = 2;
+    assert.equal(normalizeStudyRanking(invalidEntryPayload), null);
+
+    const invalidMyRankingPayload = todayPayload();
+    invalidMyRankingPayload.myRanking.ranking.rank = 2;
+    assert.equal(normalizeStudyRanking(invalidMyRankingPayload), null);
+});
+
 test("기간별 요청은 KST 04시 집계일 기준의 일·주·월을 계산한다", async () => {
     const calls = [];
     const api = {
@@ -160,6 +170,12 @@ test("홈과 진행 화면은 네이티브 날짜 선택으로 과거 일간 랭
         assert.match(source, /loadRankingPeriod\("DAILY", rankingDateInput\.value\)/);
     }
     assert.match(progressSource, /normalizeStudyRanking\(result\.value, period\)/);
+});
+
+test("진행 화면의 초기 오늘 랭킹도 최신 기간 요청 경로를 사용한다", () => {
+    assert.match(progressSource, /loadRankingPeriod\("TODAY"\);/);
+    assert.doesNotMatch(progressSource, /api\.ranking\.getToday\(\)/);
+    assert.doesNotMatch(progressSource, /renderRanking\(rankingResult,\s*"TODAY"\)/);
 });
 
 test("홈 랭킹의 비활성 기간과 목록 등수는 밝은 배경에서도 식별된다", () => {
