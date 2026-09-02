@@ -1,7 +1,7 @@
 import { resolveHomeEntry } from "./homeEntry.js";
 
 async function bootstrapHome() {
-    await import("./home-react/home-app.js?v=20260827-1");
+    await import("./home-react/home-app.js?v=20260902-1");
 
     let profile = null;
 
