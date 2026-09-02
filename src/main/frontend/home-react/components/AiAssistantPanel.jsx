@@ -1,6 +1,7 @@
 import React, {useEffect, useRef, useState} from "react";
 import PropTypes from "prop-types";
 import {streamAiChat} from "./aiAssistantClient.js";
+import {AI_ASSISTANT_TIPS, AI_ASSISTANT_TOOLS, AI_ASSISTANT_UPCOMING} from "./aiAssistantGuide.js";
 
 export function AiAssistantPanel({
                                      open = false,
@@ -17,8 +18,13 @@ export function AiAssistantPanel({
     const [draft, setDraft] = useState("");
     const [messages, setMessages] = useState([]);
     const [status, setStatus] = useState("ready");
+    const [guideOpen, setGuideOpen] = useState(false);
     const abortControllerRef = useRef(null);
     const conversationRef = useRef(null);
+    const guideRef = useRef(null);
+    const focusPromptOnGuideCloseRef = useRef(false);
+    const helpButtonRef = useRef(null);
+    const promptRef = useRef(null);
     const stickToBottomRef = useRef(true);
     const [model, setModel] = useState("GEMINI");
 
@@ -64,6 +70,24 @@ export function AiAssistantPanel({
     }, [open]);
 
     useEffect(() => () => abortControllerRef.current?.abort(), []);
+
+    // Drawer가 닫히면 사용법도 접어둔다. 다시 열었을 때 대화가 먼저 보여야 한다.
+    useEffect(() => {
+        if (!open) setGuideOpen(false);
+    }, [open]);
+
+    // 사용법을 열면 그 안으로 포커스를 옮겨야 Esc와 스크롤이 바로 먹는다.
+    // 예시를 눌러 닫힌 경우에는 이어서 고쳐 쓸 수 있게 입력창으로 넘긴다.
+    useEffect(() => {
+        if (guideOpen) {
+            guideRef.current?.focus();
+            return;
+        }
+        if (focusPromptOnGuideCloseRef.current) {
+            focusPromptOnGuideCloseRef.current = false;
+            promptRef.current?.focus();
+        }
+    }, [guideOpen]);
 
     useEffect(() => {
         const conversation = conversationRef.current;
@@ -123,6 +147,22 @@ export function AiAssistantPanel({
     };
 
     const isBusy = status === "submitting" || status === "streaming";
+
+    // 예시를 누르면 입력창에 채워만 두고 보내지는 않는다. 고쳐 쓸 여지를 남긴다.
+    const applyExample = (example) => {
+        setDraft(example);
+        focusPromptOnGuideCloseRef.current = !isBusy;
+        setGuideOpen(false);
+    };
+
+    const handleGuideKeyDown = (event) => {
+        if (event.key !== "Escape") return;
+        // Drawer 자체를 닫는 Esc까지 올라가지 않게 막는다. 사용법만 접힌다.
+        event.stopPropagation();
+        setGuideOpen(false);
+        helpButtonRef.current?.focus();
+    };
+
     const lastAssistantIndex = messages.reduce(
         (acc, message, idx) => (message.role === "assistant" ? idx : acc),
         -1
@@ -150,6 +190,17 @@ export function AiAssistantPanel({
             <small>학습을 돕는 오마고치 AI</small>
           </span>
                     <button
+                        ref={helpButtonRef}
+                        className={guideOpen ? "home-ai-panel-help is-active" : "home-ai-panel-help"}
+                        type="button"
+                        aria-label={guideOpen ? "AI 도우미 사용법 닫기" : "AI 도우미 사용법"}
+                        aria-expanded={guideOpen}
+                        aria-controls="home-ai-guide"
+                        onClick={() => setGuideOpen((current) => !current)}
+                    >
+                        ?
+                    </button>
+                    <button
                         className="home-ai-panel-close"
                         type="button"
                         aria-label="AI 도우미 닫기"
@@ -158,7 +209,13 @@ export function AiAssistantPanel({
                         ×
                     </button>
                 </header>
-                <div className="home-ai-conversation" ref={conversationRef} onScroll={handleConversationScroll}>
+                {/* 사용법이 덮고 있는 동안에는 아래 대화가 읽히거나 탭으로 잡히지 않게 한다. */}
+                <div
+                    className="home-ai-conversation"
+                    ref={conversationRef}
+                    onScroll={handleConversationScroll}
+                    inert={guideOpen}
+                >
                     {messages.length === 0 && (
                         <div className="home-ai-message-row is-assistant">
                             <span className="home-ai-message-avatar is-active" aria-hidden="true">
@@ -234,11 +291,80 @@ export function AiAssistantPanel({
                         </div>
                     )}
                 </div>
+                {guideOpen && (
+                    <div
+                        className="home-ai-guide"
+                        id="home-ai-guide"
+                        ref={guideRef}
+                        role="region"
+                        aria-labelledby="home-ai-guide-title"
+                        tabIndex={-1}
+                        onKeyDown={handleGuideKeyDown}
+                    >
+                        <div className="home-ai-guide-heading">
+                            <strong id="home-ai-guide-title">이렇게 물어보세요</strong>
+                            <button
+                                className="home-ai-guide-close"
+                                type="button"
+                                aria-label="사용법 닫기"
+                                onClick={() => {
+                                    setGuideOpen(false);
+                                    helpButtonRef.current?.focus();
+                                }}
+                            >
+                                ×
+                            </button>
+                        </div>
+                        <div className="home-ai-guide-scroll">
+                            <ul className="home-ai-guide-tools">
+                                {AI_ASSISTANT_TOOLS.map((tool) => (
+                                    <li className="home-ai-guide-tool" key={tool.id}>
+                                        <span className="home-ai-guide-tool-icon" aria-hidden="true">{tool.icon}</span>
+                                        <div className="home-ai-guide-tool-body">
+                                            <strong className="home-ai-guide-tool-title">{tool.title}</strong>
+                                            <p className="home-ai-guide-tool-summary">{tool.summary}</p>
+                                            <p className="home-ai-guide-tool-hint">{tool.hint}</p>
+                                            <div className="home-ai-guide-examples">
+                                                {tool.examples.map((example) => (
+                                                    <button
+                                                        className="home-ai-guide-example"
+                                                        key={example}
+                                                        type="button"
+                                                        onClick={() => applyExample(example)}
+                                                    >
+                                                        {example}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </li>
+                                ))}
+                            </ul>
+                            <section className="home-ai-guide-section">
+                                <strong className="home-ai-guide-section-title">구현 준비 중인 기능</strong>
+                                <ul className="home-ai-guide-notes is-upcoming">
+                                    {AI_ASSISTANT_UPCOMING.map((item) => (
+                                        <li key={item}>{item}</li>
+                                    ))}
+                                </ul>
+                            </section>
+                            <section className="home-ai-guide-section">
+                                <strong className="home-ai-guide-section-title">알아두면 좋아요</strong>
+                                <ul className="home-ai-guide-notes">
+                                    {AI_ASSISTANT_TIPS.map((tip) => (
+                                        <li key={tip}>{tip}</li>
+                                    ))}
+                                </ul>
+                            </section>
+                        </div>
+                    </div>
+                )}
                 <form className="home-ai-composer" onSubmit={handleSubmit}>
                     <label className="home-ai-composer-label" htmlFor="home-ai-prompt">
                         AI 도우미에게 질문하기
                     </label>
                     <textarea
+                        ref={promptRef}
                         id="home-ai-prompt"
                         rows="2"
                         placeholder="메시지를 입력하세요."

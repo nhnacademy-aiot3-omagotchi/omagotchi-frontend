@@ -32,6 +32,14 @@ export default meta;
 
 export const Closed = { render: () => <InteractiveAiAssistantPanel /> };
 export const Preparing = { render: () => <InteractiveAiAssistantPanel initialOpen /> };
+/** 헤더의 ? 를 눌러 사용법 시트를 펼쳐둔 상태. */
+export const Guide = {
+  render: () => <InteractiveAiAssistantPanel initialOpen />,
+  play: async ({ canvasElement }) => {
+    canvasElement.querySelector(".home-ai-panel-help")?.click();
+  }
+};
+
 export const Desktop = {
   render: () => <InteractiveAiAssistantPanel initialOpen />,
   parameters: {
