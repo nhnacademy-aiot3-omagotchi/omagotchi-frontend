@@ -211,6 +211,38 @@ class FrontendApplicationTests {
 	}
 
 	@Test
+	@DisplayName("시스템 관리자는 일반 사용자 Home에 접근할 수 없음")
+	void systemAdminCannotOpenHome() throws Exception {
+		securityMockMvc.perform(get("/home")
+				.with(authenticatedUser(
+						"22222222-2222-2222-2222-222222222222",
+						GlobalRole.SYSTEM_ADMIN
+				)))
+				.andExpect(status().isForbidden())
+				.andExpect(view().name("error/403"))
+				.andExpect(content().string(org.hamcrest.Matchers.containsString(
+						"관리자 계정은 사용자 홈에 접근할 수 없습니다."
+				)));
+	}
+
+	@Test
+	@DisplayName("기수 관리자는 일반 사용자 Home에 접근할 수 없음")
+	void cohortManagerCannotOpenHome() throws Exception {
+		given(accessContextService.getContext(any())).willReturn(managerContext());
+
+		securityMockMvc.perform(get("/home")
+				.with(authenticatedUser(
+						"11111111-1111-1111-1111-111111111111",
+						GlobalRole.USER
+				)))
+				.andExpect(status().isForbidden())
+				.andExpect(view().name("error/403"))
+				.andExpect(content().string(org.hamcrest.Matchers.containsString(
+						"관리자 계정은 사용자 홈에 접근할 수 없습니다."
+				)));
+	}
+
+	@Test
 	@DisplayName("Actuator Health 상태 UP")
 	void actuatorHealthIsUp() throws Exception {
 		mockMvc.perform(get("/actuator/health"))

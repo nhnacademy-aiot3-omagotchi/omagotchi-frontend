@@ -29,6 +29,7 @@ import site.omagotchi.frontend.learning.infrastructure.response.LearningSpaceRes
 import site.omagotchi.frontend.learning.infrastructure.response.LearningVacancyAlertResponse;
 import site.omagotchi.frontend.learning.infrastructure.response.LearningParticipantCandidateResponse;
 import site.omagotchi.frontend.learning.infrastructure.response.LearningOccupancyParticipantResponse;
+import site.omagotchi.frontend.learning.infrastructure.response.LearningSelectableLabResponse;
 import site.omagotchi.frontend.profile.infrastructure.request.UpdateNicknameRequest;
 import site.omagotchi.frontend.profile.infrastructure.response.UserNicknameResponse;
 import site.omagotchi.frontend.profile.infrastructure.response.UserProfileResponse;
@@ -448,6 +449,12 @@ public interface LearningHttpService {
     @GetExchange("/spaces")
     ResponseEntity<List<LearningSpaceResponse>> getSpaces(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization
+    );
+
+    @GetExchange("/cohorts/{cohort-id}/spaces/labs")
+    ResponseEntity<List<LearningSelectableLabResponse>> getSelectableLabs(
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
+            @PathVariable("cohort-id") Long cohortId
     );
 
     @PostExchange("/spaces/{spaceId}/occupancies")

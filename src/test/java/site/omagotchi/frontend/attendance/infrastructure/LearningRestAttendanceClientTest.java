@@ -148,6 +148,41 @@ class LearningRestAttendanceClientTest {
     }
 
     @Test
+    @DisplayName("Learning 현재 위치 응답의 Application 결과 변환")
+    void mapsCurrentPresenceToApplicationResult() {
+        server.expect(once(), requestTo(BASE_URL
+                        + "/api/v1/cohorts/7/attendance-records/current-presence"))
+                .andExpect(method(HttpMethod.GET))
+                .andRespond(withStatus(HttpStatus.OK)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .body("""
+                                {
+                                  "spaceId": 301,
+                                  "state": "PRESENT",
+                                  "startedAt": "2026-09-02T01:00:00Z"
+                                }
+                                """));
+
+        var result = client.getCurrentPresence(BEARER_TOKEN, 7L);
+
+        assertThat(result).hasValueSatisfying(presence -> {
+            assertThat(presence.spaceId()).isEqualTo(301L);
+            assertThat(presence.state()).isEqualTo("PRESENT");
+        });
+    }
+
+    @Test
+    @DisplayName("Learning에 열린 체류구간이 없으면 현재 위치가 없다")
+    void returnsEmptyCurrentPresenceForNoContent() {
+        server.expect(once(), requestTo(BASE_URL
+                        + "/api/v1/cohorts/7/attendance-records/current-presence"))
+                .andExpect(method(HttpMethod.GET))
+                .andRespond(withStatus(HttpStatus.NO_CONTENT));
+
+        assertThat(client.getCurrentPresence(BEARER_TOKEN, 7L)).isEmpty();
+    }
+
+    @Test
     @DisplayName("Learning 도서관 입장 결과의 확정 공간 ID 변환")
     void mapsStudySpaceMoveResult() {
         server.expect(once(), requestTo(BASE_URL
