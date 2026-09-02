@@ -3,7 +3,7 @@ import { createBgmPlayer } from "./home/bgm.js";
 import { createCharacter } from "./home/character.js";
 import { saveCommunityPost } from "./home/community.js?v=20260831-1";
 import { createLevel } from "./home/level.js";
-import { isAiRecommendedQuest, loadProgressResources, normalizeDailyQuests } from "./home/questData.js";
+import { isAiRecommendedQuest, loadProgressResources, normalizeDailyQuests } from "./home/questData.js?v=20260902-1";
 import { createStudyRecords } from "./home/studyRecords.js?v=20260825-5";
 import { createTimer } from "./home/timer.js?v=20260902-1";
 import { promptResumeTimer } from "./home/timerPrompt.js?v=20260902-1";
@@ -759,7 +759,10 @@ async function loadProgressOverlay() {
     const questList = homeOverlayRoot?.querySelector("[data-progress-quests]");
     const rankingList = homeOverlayRoot?.querySelector("[data-progress-ranking]");
     const aiSlot = homeOverlayRoot?.querySelector("[data-progress-ai-quest]");
-    if (!questList || !rankingList || !aiSlot) return;
+    // 진행 패널은 탭으로 그려지고, 탭 구현이 비활성 패널을 언마운트하면 그쪽 노드는 없다.
+    // 하나라도 없다고 전체를 포기하면 남은 영역까지 초기 문구로 굳어 조용한 미표시가 된다.
+    // 그래서 전부 없을 때만 중단하고, 이후에는 영역별로 각자 판정한다.
+    if (!questList && !rankingList && !aiSlot) return;
 
     // 랭킹 조회 기수는 서버가 Session 승인 기수에서 확보하므로 Browser가 지정하지 않는다.
     // 승인 기수가 없으면 서버가 업무 오류를 반환하므로, 빈 랭킹으로 표시하고 화면은 유지한다.
@@ -771,16 +774,19 @@ async function loadProgressOverlay() {
         : null;
     if (dailyQuests === null) {
         // 실패 시 AI 슬롯을 열어 두면 이전 퀘스트가 남아 오해를 준다. 목록 하나로만 알린다.
-        aiSlot.hidden = true;
-        aiSlot.innerHTML = "";
-        questList.innerHTML = `<li><div><strong>퀘스트를 불러오지 못했습니다.</strong><p>잠시 후 다시 시도해 주세요.</p></div><em>오류</em></li>`;
+        if (aiSlot) {
+            aiSlot.hidden = true;
+            aiSlot.innerHTML = "";
+        }
+        if (questList) questList.innerHTML = `<li><div><strong>퀘스트를 불러오지 못했습니다.</strong><p>잠시 후 다시 시도해 주세요.</p></div><em>오류</em></li>`;
     } else {
         // LLM 슬롯의 예측 기반 공부 시간 퀘스트는 서버 정렬과 무관하게 항상 맨 위 카드로 올린다.
         const aiQuests = dailyQuests.filter(isAiRecommendedQuest);
         const routineQuests = dailyQuests.filter((quest) => !isAiRecommendedQuest(quest));
 
-        aiSlot.hidden = aiQuests.length === 0;
-        aiSlot.innerHTML = aiQuests.map((quest) => `
+        if (aiSlot) {
+            aiSlot.hidden = aiQuests.length === 0;
+            aiSlot.innerHTML = aiQuests.map((quest) => `
             <article class="quest-ai-card${quest.status === "CLAIMED" ? " is-claimed" : ""}">
                 <span class="quest-ai-badge">AI 추천</span>
                 <div class="quest-ai-body">
@@ -790,17 +796,21 @@ async function loadProgressOverlay() {
                 <div class="quest-ai-action">${questActionHtml(quest)}</div>
             </article>
         `).join("");
+        }
 
         // 이미 받아온 결과를 그대로 쓴다. 배지 때문에 요청을 더 보내지 않는다.
+        // 배지는 DOM 유무와 무관한 정보라 슬롯이 없어도 갱신한다.
         publishMenuAlerts(questAlertOverlays(dailyQuests));
 
-        questList.innerHTML = routineQuests.length ? routineQuests.map((quest) => `
+        if (questList) questList.innerHTML = routineQuests.length ? routineQuests.map((quest) => `
             <li>
                 <div><strong>${escapeHtml(quest.title)}</strong><p>${questProgressText(quest)}</p></div>
                 ${questActionHtml(quest)}
             </li>`).join("")
             : `<li><div><strong>등록된 퀘스트가 없습니다.</strong><p>오늘 제공된 퀘스트가 없습니다.</p></div><em>대기</em></li>`;
     }
+
+    if (!rankingList) return;
 
     const entries = Array.isArray(rankings?.entries) ? rankings.entries : [];
     rankingList.innerHTML = entries.length ? entries.map((entry) => `
