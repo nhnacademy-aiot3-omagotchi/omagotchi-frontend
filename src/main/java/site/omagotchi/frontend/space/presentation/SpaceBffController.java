@@ -17,6 +17,7 @@ import site.omagotchi.frontend.global.web.BffApiPaths;
 import site.omagotchi.frontend.space.application.SpaceBffService;
 import site.omagotchi.frontend.space.presentation.response.OccupancyResponse;
 import site.omagotchi.frontend.space.presentation.response.SpaceResponse;
+import site.omagotchi.frontend.space.presentation.response.SelectableLabResponse;
 import site.omagotchi.frontend.space.presentation.request.AddParticipantRequest;
 import site.omagotchi.frontend.space.presentation.response.ParticipantCandidateResponse;
 import site.omagotchi.frontend.space.presentation.response.OccupancyParticipantResponse;
@@ -35,6 +36,13 @@ public class SpaceBffController {
     public List<SpaceResponse> findAll(HttpServletRequest request) {
         return spaceBffService.findAll(request).stream()
                 .map(SpaceResponse::from)
+                .toList();
+    }
+
+    @GetMapping("/labs")
+    public List<SelectableLabResponse> findSelectableLabs(HttpServletRequest request) {
+        return spaceBffService.findSelectableLabs(request).stream()
+                .map(SelectableLabResponse::from)
                 .toList();
     }
 

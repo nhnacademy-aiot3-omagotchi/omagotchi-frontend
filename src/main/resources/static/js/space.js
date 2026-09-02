@@ -3,7 +3,7 @@
 // 정적 import로는 프로필을 미리 채울 수 없다. 프로필을 확보한 뒤 동적으로 불러온다.
 import { renderServiceIntegrationPending } from "./serviceIntegrationState.js";
 
-const SPACE_ROOM_MODULE = "./spaceRoom.js?v=20260902-2";
+const SPACE_ROOM_MODULE = "./spaceRoom.js?v=20260902-5";
 
 function getRoot() {
     return document.querySelector("[data-space-room-app]");

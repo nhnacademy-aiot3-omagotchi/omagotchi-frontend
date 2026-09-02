@@ -14,6 +14,7 @@ import site.omagotchi.frontend.space.application.result.OccupancyView;
 import site.omagotchi.frontend.space.application.result.SpaceView;
 import site.omagotchi.frontend.space.application.result.ParticipantCandidateView;
 import site.omagotchi.frontend.space.application.result.OccupancyParticipantView;
+import site.omagotchi.frontend.space.application.result.SelectableLabView;
 
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -76,6 +77,26 @@ class SpaceBffControllerTest {
                 .andExpect(jsonPath("$[0].occupierUserId").doesNotExist());
 
         verify(spaceBffService).findAll(any(HttpServletRequest.class));
+    }
+
+    @Test
+    @DisplayName("선택 가능 실습실 BFF는 정원 예약 수를 반환")
+    void findsSelectableLabs() throws Exception {
+        when(spaceBffService.findSelectableLabs(any(HttpServletRequest.class)))
+                .thenReturn(List.of(new SelectableLabView(
+                        11L,
+                        "3기 실습실",
+                        2,
+                        2L
+                )));
+
+        mockMvc.perform(get("/bff/v1/spaces/labs"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].spaceId").value(11))
+                .andExpect(jsonPath("$[0].capacity").value(2))
+                .andExpect(jsonPath("$[0].reservedCount").value(2));
+
+        verify(spaceBffService).findSelectableLabs(any(HttpServletRequest.class));
     }
 
     @Test

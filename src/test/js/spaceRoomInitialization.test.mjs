@@ -65,6 +65,9 @@ test("lab tab appears before meeting and lists only the current cohort labs", as
         attendance: {
             async getToday() {
                 return { checkedInAt: "2026-09-01T09:00:00Z", checkedOutAt: null };
+            },
+            async getCurrentPresence() {
+                return null;
             }
         },
         spaces: {
@@ -93,6 +96,12 @@ test("lab tab appears before meeting and lists only the current cohort labs", as
         assert.match(root.innerHTML, /3기 실습실 A/);
         assert.match(root.innerHTML, /3기 실습실 B/);
         assert.match(root.innerHTML, /2곳 배정/);
+        assert.match(root.innerHTML, /실습실 목록/);
+        assert.match(root.innerHTML, /role="list"/);
+        assert.match(root.innerHTML, /role="listitem"/);
+        assert.match(root.innerHTML, /space-room-lab-stage__identity/);
+        assert.match(root.innerHTML, /space-room-lab-stage__meta/);
+        assert.match(root.innerHTML, /정원 30명/);
         assert.match(root.innerHTML, /운영 중지/);
         assert.match(root.innerHTML, /선택 가능/);
         assert.match(root.innerHTML, /선택 불가/);
@@ -105,19 +114,173 @@ test("lab tab appears before meeting and lists only the current cohort labs", as
     }, api);
 });
 
-test("library uses the shared current location and keeps its action under operational status", async () => {
+test("a full lab shows its reserved capacity and disables movement", async () => {
     const moves = [];
     const api = {
         attendance: {
             async getToday() {
                 return { checkedInAt: "2026-09-01T09:00:00Z", checkedOutAt: null };
             },
+            async getCurrentPresence() {
+                return null;
+            },
+            async moveLab(spaceId) {
+                moves.push(spaceId);
+                return { spaceId };
+            }
+        },
+        spaces: {
+            async list() {
+                return [{
+                    spaceId: 101,
+                    name: "3기 실습실 A",
+                    type: "LAB",
+                    capacity: 2,
+                    operationalStatus: "ACTIVE",
+                    cohortId: 3
+                }];
+            },
+            async listLabs() {
+                return [{
+                    spaceId: 101,
+                    name: "3기 실습실 A",
+                    capacity: 2,
+                    reservedCount: 2
+                }];
+            },
+            async getMyVacancyAlerts() {
+                return [];
+            }
+        }
+    };
+
+    await withSpaceRoom(async (spaceRoom) => {
+        const root = createRoot();
+        spaceRoom.mount(root);
+        await new Promise(setImmediate);
+
+        assert.match(root.innerHTML, /2 \/ 2명/);
+        assert.match(root.innerHTML, /정원 마감/);
+        assert.match(root.innerHTML, /data-space-lab-move="101" disabled/);
+
+        await root.click({
+            matches() {
+                return false;
+            },
+            closest(selector) {
+                return selector === "[data-space-lab-move]"
+                    ? { dataset: { spaceLabMove: "101" } }
+                    : null;
+            }
+        });
+
+        assert.deepEqual(moves, []);
+    }, { activeTab: "lab" }, {
+        approvedCohort: { cohortId: 3, name: "3기" }
+    }, api);
+});
+
+test("a capacity conflict refreshes the lab count and closes the stale last seat", async () => {
+    let reservedCount = 1;
+    let labListRequests = 0;
+    let moveRequests = 0;
+    const api = {
+        attendance: {
+            async getToday() {
+                return { checkedInAt: "2026-09-01T09:00:00Z", checkedOutAt: null };
+            },
+            async getCurrentPresence() {
+                return null;
+            },
+            async moveLab() {
+                moveRequests += 1;
+                reservedCount = 2;
+                const error = new Error("현재 상태에서는 요청을 처리할 수 없습니다.");
+                error.code = "LAB_CAPACITY_EXCEEDED";
+                throw error;
+            }
+        },
+        spaces: {
+            async list() {
+                return [{
+                    spaceId: 101,
+                    name: "3기 실습실 A",
+                    type: "LAB",
+                    capacity: 2,
+                    operationalStatus: "ACTIVE",
+                    cohortId: 3
+                }];
+            },
+            async listLabs() {
+                labListRequests += 1;
+                return [{
+                    spaceId: 101,
+                    name: "3기 실습실 A",
+                    capacity: 2,
+                    reservedCount
+                }];
+            },
+            async getMyVacancyAlerts() {
+                return [];
+            }
+        }
+    };
+
+    await withSpaceRoom(async (spaceRoom) => {
+        const root = createRoot();
+        spaceRoom.mount(root);
+        await new Promise(setImmediate);
+
+        assert.doesNotMatch(root.innerHTML, /data-space-lab-move="101" disabled/);
+
+        await root.click({
+            matches() {
+                return false;
+            },
+            closest(selector) {
+                return selector === "[data-space-lab-move]"
+                    ? { dataset: { spaceLabMove: "101" } }
+                    : null;
+            }
+        });
+        await new Promise(setImmediate);
+
+        assert.equal(moveRequests, 1);
+        assert.equal(labListRequests, 2);
+        assert.match(root.innerHTML, /2 \/ 2명/);
+        assert.match(root.innerHTML, /data-space-lab-move="101" disabled/);
+    }, { activeTab: "lab" }, {
+        approvedCohort: { cohortId: 3, name: "3기" }
+    }, api);
+});
+
+test("library uses the shared current location and keeps its action under operational status", async () => {
+    const moves = [];
+    let currentPresence = null;
+    const api = {
+        attendance: {
+            async getToday() {
+                return { checkedInAt: "2026-09-01T09:00:00Z", checkedOutAt: null };
+            },
+            async getCurrentPresence() {
+                return currentPresence;
+            },
             async moveStudySpace(spaceId) {
                 moves.push(["study", spaceId]);
+                currentPresence = {
+                    spaceId,
+                    state: "PRESENT",
+                    startedAt: "2026-09-01T10:00:00Z"
+                };
                 return {spaceId};
             },
             async moveLab(spaceId) {
                 moves.push(["lab", spaceId]);
+                currentPresence = {
+                    spaceId,
+                    state: "PRESENT",
+                    startedAt: "2026-09-01T11:00:00Z"
+                };
                 return {spaceId};
             }
         },
@@ -155,6 +318,7 @@ test("library uses the shared current location and keeps its action under operat
                     : null;
             }
         });
+        await new Promise(setImmediate);
 
         assert.deepEqual(moves, [["study", 401]]);
         assert.match(root.innerHTML, /data-location-state="library"/);
@@ -173,6 +337,7 @@ test("library uses the shared current location and keeps its action under operat
                     : null;
             }
         });
+        await new Promise(setImmediate);
 
         assert.deepEqual(moves, [["study", 401], ["lab", 101]]);
         assert.match(root.innerHTML, /data-location-state="lab"/);
@@ -182,7 +347,7 @@ test("library uses the shared current location and keeps its action under operat
     }, api);
 });
 
-test("stored libraryInside does not override the LAB reported by the server", async () => {
+test("server current presence restores the LAB after the space screen opens", async () => {
     // 이전 세션이 남긴 libraryInside: true가 서버가 알려준 LAB보다 먼저 판정되면
     // 실습실에 있는 사용자가 도서관 이용 중으로 보이고, 그 실습실이 다시 이동
     // 가능한 것으로 표시된다.
@@ -191,8 +356,14 @@ test("stored libraryInside does not override the LAB reported by the server", as
             async getToday() {
                 return {
                     checkedInAt: "2026-09-01T09:00:00Z",
-                    checkedOutAt: null,
-                    spaceId: 101
+                    checkedOutAt: null
+                };
+            },
+            async getCurrentPresence() {
+                return {
+                    spaceId: 101,
+                    state: "PRESENT",
+                    startedAt: "2026-09-01T09:05:00Z"
                 };
             }
         },
@@ -220,6 +391,297 @@ test("stored libraryInside does not override the LAB reported by the server", as
         // 이용 중인 실습실은 이동 대상으로 다시 제안되지 않는다.
         assert.match(root.innerHTML, /data-space-lab-move="101" disabled/);
     }, { activeTab: "lab", libraryInside: true }, {
+        approvedCohort: { cohortId: 3, name: "3기" }
+    }, api);
+});
+
+test("opening the space screen again refreshes a server-side location change", async () => {
+    let currentSpaceId = 101;
+    const api = {
+        attendance: {
+            async getToday() {
+                return { checkedInAt: "2026-09-01T09:00:00Z", checkedOutAt: null };
+            },
+            async getCurrentPresence() {
+                return {
+                    spaceId: currentSpaceId,
+                    state: "PRESENT",
+                    startedAt: "2026-09-01T09:05:00Z"
+                };
+            }
+        },
+        spaces: {
+            async list() {
+                return [
+                    { spaceId: 101, name: "3기 실습실 A", type: "LAB", capacity: 30, operationalStatus: "ACTIVE", cohortId: 3 },
+                    { spaceId: 401, name: "도서관", type: "STUDY", capacity: 100, operationalStatus: "ACTIVE", cohortId: null }
+                ];
+            },
+            async getMyVacancyAlerts() {
+                return [];
+            }
+        }
+    };
+
+    await withSpaceRoom(async (spaceRoom) => {
+        const root = createRoot();
+        spaceRoom.mount(root);
+        await new Promise(setImmediate);
+        assert.match(root.innerHTML, /data-location-state="lab"/);
+
+        currentSpaceId = 401;
+        spaceRoom.mount(root);
+        await new Promise(setImmediate);
+
+        assert.match(root.innerHTML, /data-location-state="library"/);
+        assert.match(root.innerHTML, /도서관 이용 중/);
+    }, { activeTab: "lab" }, {
+        approvedCohort: { cohortId: 3, name: "3기" }
+    }, api);
+});
+
+test("a server-side meeting participation is shown when the space screen opens", async () => {
+    const api = {
+        attendance: {
+            async getToday() {
+                return { checkedInAt: "2026-09-01T09:00:00Z", checkedOutAt: null };
+            },
+            async getCurrentPresence() {
+                return {
+                    spaceId: 501,
+                    state: "MEETING",
+                    startedAt: "2026-09-01T10:00:00Z"
+                };
+            }
+        },
+        spaces: {
+            async list() {
+                return [{
+                    spaceId: 501,
+                    name: "회의실 A",
+                    type: "MEETING",
+                    capacity: 8,
+                    operationalStatus: "ACTIVE",
+                    status: "OCCUPIED",
+                    occupiedBySameCohort: true,
+                    occupiedByRequester: false,
+                    participatingByRequester: true,
+                    participantCount: 2,
+                    remainingTimeSeconds: 3600
+                }];
+            },
+            async getOccupancyParticipants() {
+                return [];
+            },
+            async getMyVacancyAlerts() {
+                return [];
+            }
+        }
+    };
+
+    await withSpaceRoom(async (spaceRoom) => {
+        const root = createRoot();
+        spaceRoom.mount(root);
+        await new Promise(setImmediate);
+
+        assert.match(root.innerHTML, /data-location-state="meeting"/);
+        assert.match(root.innerHTML, /회의실 A/);
+        assert.match(root.innerHTML, /회의실 참여 중/);
+    }, { activeTab: "meeting" }, {
+        approvedCohort: { cohortId: 3, name: "3기" }
+    }, api);
+});
+
+test("server MEETING presence blocks lab and library movement even before occupancy catches up", async () => {
+    const moves = [];
+    const api = {
+        attendance: {
+            async getToday() {
+                return { checkedInAt: "2026-09-01T09:00:00Z", checkedOutAt: null };
+            },
+            async getCurrentPresence() {
+                return {
+                    spaceId: 501,
+                    state: "MEETING",
+                    startedAt: "2026-09-01T10:00:00Z"
+                };
+            },
+            async moveLab(spaceId) {
+                moves.push(["lab", spaceId]);
+                return { spaceId };
+            },
+            async moveStudySpace(spaceId) {
+                moves.push(["study", spaceId]);
+                return { spaceId };
+            }
+        },
+        spaces: {
+            async list() {
+                return [
+                    { spaceId: 101, name: "3기 실습실 A", type: "LAB", capacity: 30, operationalStatus: "ACTIVE", cohortId: 3 },
+                    { spaceId: 401, name: "도서관", type: "STUDY", capacity: 100, operationalStatus: "ACTIVE", cohortId: null },
+                    { spaceId: 501, name: "회의실 A", type: "MEETING", capacity: 8, operationalStatus: "ACTIVE", status: "OCCUPIED" }
+                ];
+            },
+            async getMyVacancyAlerts() {
+                return [];
+            }
+        }
+    };
+
+    await withSpaceRoom(async (spaceRoom) => {
+        const root = createRoot();
+        spaceRoom.mount(root);
+        await new Promise(setImmediate);
+
+        assert.match(root.innerHTML, /data-space-lab-move="101" disabled/);
+        assert.match(root.innerHTML, /회의 종료 후 선택 가능/);
+
+        await root.click({
+            closest(selector) {
+                return selector === "[data-space-tab]"
+                    ? { dataset: { spaceTab: "library" } }
+                    : null;
+            },
+            matches() {
+                return false;
+            }
+        });
+
+        assert.match(root.innerHTML, /data-space-library-enter="401" disabled/);
+        assert.match(root.innerHTML, /회의 종료 후 입장/);
+
+        await root.click({
+            matches() {
+                return false;
+            },
+            closest(selector) {
+                return selector === "[data-space-lab-move]"
+                    ? { dataset: { spaceLabMove: "101" } }
+                    : null;
+            }
+        });
+        await root.click({
+            matches() {
+                return false;
+            },
+            closest(selector) {
+                return selector === "[data-space-library-enter]"
+                    ? { dataset: { spaceLibraryEnter: "401" } }
+                    : null;
+            }
+        });
+
+        assert.deepEqual(moves, []);
+    }, { activeTab: "lab" }, {
+        approvedCohort: { cohortId: 3, name: "3기" }
+    }, api);
+});
+
+test("failed presence lookup drops the stale location instead of showing it as current", async () => {
+    // 한 번 성공해 위치를 들고 있는 상태에서 재조회가 실패해야 재현된다.
+    // 첫 조회부터 실패하면 currentPresence가 원래 null이라 폐기 여부를 구분할 수 없다.
+    let presenceFails = false;
+    const api = {
+        attendance: {
+            async getToday() {
+                return {
+                    checkedInAt: "2026-09-01T09:00:00Z",
+                    checkedOutAt: null
+                };
+            },
+            async getCurrentPresence() {
+                if (presenceFails) {
+                    throw new Error("체류 상태를 불러오지 못했습니다.");
+                }
+                return {
+                    spaceId: 101,
+                    state: "PRESENT",
+                    startedAt: "2026-09-01T09:05:00Z"
+                };
+            }
+        },
+        spaces: {
+            async list() {
+                return [
+                    { spaceId: 101, name: "3기 실습실 A", type: "LAB", capacity: 30, operationalStatus: "ACTIVE", cohortId: 3 }
+                ];
+            },
+            async getMyVacancyAlerts() {
+                return [];
+            }
+        }
+    };
+
+    await withSpaceRoom(async (spaceRoom) => {
+        const root = createRoot();
+        spaceRoom.mount(root);
+        await new Promise(setImmediate);
+        assert.match(root.innerHTML, /data-location-state="lab"/);
+
+        presenceFails = true;
+        spaceRoom.mount(root);
+        await new Promise(setImmediate);
+
+        assert.match(root.innerHTML, /data-location-state="unavailable"/);
+        assert.match(root.innerHTML, /현재 위치 확인 불가/);
+        assert.match(root.innerHTML, /체류 상태를 불러오지 못했습니다/);
+        // 떠났을 수도 있는 공간을 현재 위치로 계속 보여주면 안 된다.
+        assert.doesNotMatch(root.innerHTML, /실습실 이용 중/);
+        // 조회 실패를 "아직 안 골랐음"으로 표시하면 이미 자리에 있는 사용자를 헷갈리게 한다.
+        assert.doesNotMatch(root.innerHTML, /실습실을 선택해 주세요/);
+    }, { activeTab: "lab" }, {
+        approvedCohort: { cohortId: 3, name: "3기" }
+    }, api);
+});
+
+test("failed presence lookup still reports the meeting that occupancy data proves", async () => {
+    // 체류를 못 읽어도 점유 데이터는 실제로 가진 정보다. 확인 불가로 덮지 않는다.
+    const api = {
+        attendance: {
+            async getToday() {
+                return {
+                    checkedInAt: "2026-09-01T09:00:00Z",
+                    checkedOutAt: null
+                };
+            },
+            async getCurrentPresence() {
+                throw new Error("체류 상태를 불러오지 못했습니다.");
+            }
+        },
+        spaces: {
+            async list() {
+                return [{
+                    spaceId: 301,
+                    name: "3기 회의실 1",
+                    type: "MEETING",
+                    capacity: 8,
+                    operationalStatus: "ACTIVE",
+                    status: "OCCUPIED",
+                    occupiedBySameCohort: true,
+                    occupiedByRequester: true,
+                    participatingByRequester: true,
+                    participantCount: 1,
+                    remainingTimeSeconds: 3600
+                }];
+            },
+            async getOccupancyParticipants() {
+                return [];
+            },
+            async getMyVacancyAlerts() {
+                return [];
+            }
+        }
+    };
+
+    await withSpaceRoom(async (spaceRoom) => {
+        const root = createRoot();
+        spaceRoom.mount(root);
+        await new Promise(setImmediate);
+
+        assert.match(root.innerHTML, /data-location-state="meeting"/);
+        assert.doesNotMatch(root.innerHTML, /현재 위치 확인 불가/);
+    }, { activeTab: "meeting" }, {
         approvedCohort: { cohortId: 3, name: "3기" }
     }, api);
 });

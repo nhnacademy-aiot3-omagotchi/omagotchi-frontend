@@ -459,10 +459,64 @@
     line-height: 1.5;
 }
 
+.space-room-lab-list {
+    min-width: 0;
+    padding: 18px;
+    border: 1px solid var(--room-line);
+    border-radius: 19px;
+    background:
+        linear-gradient(rgba(23, 107, 74, 0.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(23, 107, 74, 0.035) 1px, transparent 1px),
+        #ffffff;
+    background-size: 28px 28px;
+}
+
+.space-room-lab-list > header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 16px;
+}
+
+.space-room-lab-list > header h4 {
+    margin: 0;
+    color: var(--room-ink);
+    font-size: 18px;
+}
+
+.space-room-lab-list > header span {
+    padding: 7px 10px;
+    border-radius: 999px;
+    background: #ffffff;
+    color: var(--room-accent-deep);
+    font-size: 12px;
+    font-weight: 900;
+}
+
 .space-room-lab-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    display: flex;
     gap: 16px;
+    padding: 0 2px 10px 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x proximity;
+    scrollbar-color: #8fc8aa #e5f1eb;
+    scrollbar-width: thin;
+}
+
+.space-room-lab-grid::-webkit-scrollbar {
+    height: 8px;
+}
+
+.space-room-lab-grid::-webkit-scrollbar-track {
+    border-radius: 999px;
+    background: #e5f1eb;
+}
+
+.space-room-lab-grid::-webkit-scrollbar-thumb {
+    border-radius: 999px;
+    background: #8fc8aa;
 }
 
 .space-room-sensors {
@@ -493,12 +547,15 @@
 }
 
 .space-room-lab-stage {
-    min-height: 220px;
-    display: flex;
-    align-items: flex-end;
-    justify-content: space-between;
-    gap: 24px;
-    padding: 26px;
+    flex: 0 0 calc((100% - 32px) / 3);
+    min-width: 0;
+    min-height: 190px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: minmax(0, 1fr) auto;
+    align-items: start;
+    gap: 18px;
+    padding: 20px;
     border: 1px solid #aed0bf;
     border-radius: 8px;
     background:
@@ -506,6 +563,7 @@
         linear-gradient(90deg, rgba(21, 155, 96, 0.05) 1px, transparent 1px),
         #eff8f3;
     background-size: 28px 28px;
+    scroll-snap-align: start;
 }
 
 .space-room-lab-stage.is-inactive {
@@ -516,32 +574,67 @@
         #f3f6f4;
 }
 
-.space-room-lab-stage div {
+.space-room-lab-stage__identity {
     display: grid;
-    gap: 5px;
+    justify-items: start;
+    align-content: start;
+    gap: 7px;
 }
 
-.space-room-lab-stage span,
+.space-room-lab-stage__identity > span,
 .space-room-library-grid article > span {
     color: var(--room-muted);
     font-size: 12px;
     font-weight: 700;
 }
 
-.space-room-lab-stage strong {
-    font-size: 28px;
+.space-room-lab-stage__identity > strong {
+    color: var(--room-ink);
+    font-size: 20px;
+    line-height: 1.25;
+    overflow-wrap: anywhere;
 }
 
-.space-room-lab-stage p {
-    max-width: 420px;
-    margin: 0;
+.space-room-lab-stage__identity > small {
+    color: var(--room-muted);
+    font-size: 11px;
+    line-height: 1.4;
+}
+
+.space-room-lab-stage__meta {
+    display: grid;
+    justify-items: end;
+    align-content: start;
+    gap: 5px;
+    text-align: right;
+}
+
+.space-room-lab-stage__meta > strong {
     color: #345447;
     font-size: 14px;
-    line-height: 1.6;
+    line-height: 1.2;
+    white-space: nowrap;
+}
+
+.space-room-lab-stage__meta > span {
+    color: var(--room-muted);
+    font-size: 12px;
+    font-weight: 800;
+    line-height: 1.35;
+}
+
+.space-room-lab-stage__meta > span.is-selectable {
+    color: var(--room-accent-deep);
+}
+
+.space-room-lab-stage__meta > span.is-full {
+    color: #a34747;
 }
 
 .space-room-lab-stage > button {
-    flex: 0 0 auto;
+    grid-column: 1 / -1;
+    justify-self: end;
+    align-self: end;
 }
 
 .space-room-master-detail {
@@ -1260,6 +1353,10 @@
         grid-template-columns: 1fr;
     }
 
+    .space-room-lab-stage {
+        flex-basis: calc((100% - 16px) / 2);
+    }
+
     .space-room-library-grid article {
         min-height: 150px;
     }
@@ -1288,7 +1385,6 @@
         flex-direction: column;
     }
 
-    .space-room-lab-grid,
     .space-room-list,
     .space-room-detail-sensors {
         grid-template-columns: 1fr;
@@ -1304,10 +1400,12 @@
     }
 
     .space-room-lab-stage {
-        min-height: 210px;
-        flex-direction: column;
-        align-items: flex-start;
-        justify-content: flex-end;
+        flex-basis: min(86vw, 280px);
+        min-height: 190px;
+    }
+
+    .space-room-lab-stage > button {
+        width: 100%;
     }
 
     .space-room-detail {

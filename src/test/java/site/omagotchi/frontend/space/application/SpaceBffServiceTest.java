@@ -24,6 +24,7 @@ import site.omagotchi.frontend.learning.infrastructure.response.LearningSpaceRes
 import site.omagotchi.frontend.learning.infrastructure.response.LearningVacancyAlertResponse;
 import site.omagotchi.frontend.learning.infrastructure.response.LearningParticipantCandidateResponse;
 import site.omagotchi.frontend.learning.infrastructure.response.LearningOccupancyParticipantResponse;
+import site.omagotchi.frontend.learning.infrastructure.response.LearningSelectableLabResponse;
 import site.omagotchi.frontend.learning.infrastructure.request.LearningAddParticipantRequest;
 import site.omagotchi.frontend.space.application.result.SpaceView;
 
@@ -103,6 +104,26 @@ class SpaceBffServiceTest {
             assertThat(space.participatingByRequester()).isTrue();
             assertThat(space.participantCount()).isEqualTo(1);
         });
+    }
+
+    @Test
+    @DisplayName("선택 가능 실습실 목록은 승인 기수와 정원 예약 수를 매핑")
+    void findsSelectableLabs() {
+        when(cohortContext.resolve(request))
+                .thenReturn(new LearningCohortContext.Resolved(BEARER, 7L));
+        when(learningHttpService.getSelectableLabs(BEARER, 7L))
+                .thenReturn(ResponseEntity.ok(List.of(
+                        new LearningSelectableLabResponse(11L, "3기 실습실", 2, 2L)
+                )));
+
+        assertThat(service.findSelectableLabs(request)).singleElement().satisfies(lab -> {
+            assertThat(lab.spaceId()).isEqualTo(11L);
+            assertThat(lab.name()).isEqualTo("3기 실습실");
+            assertThat(lab.capacity()).isEqualTo(2);
+            assertThat(lab.reservedCount()).isEqualTo(2L);
+        });
+
+        verify(learningHttpService).getSelectableLabs(BEARER, 7L);
     }
 
     @Test
