@@ -2290,6 +2290,44 @@
     color: #ffffff !important;
 }
 
+.home-overlay--progress .ranking-period-tabs button {
+    border-color: var(--overlay-list-line);
+    background: var(--overlay-list-soft);
+    color: var(--overlay-list-muted);
+}
+
+.home-overlay--progress .ranking-period-tabs button:hover,
+.home-overlay--progress .ranking-period-tabs button:focus-visible {
+    background: #dff2e8;
+    color: var(--overlay-list-ink);
+}
+
+.home-overlay--progress .ranking-period-tabs button.is-active {
+    border-color: #176b46;
+    background: #176b46;
+    color: #ffffff;
+}
+
+.home-overlay--progress .ranking-date-field {
+    color: var(--overlay-list-muted);
+}
+
+.home-overlay--progress .ranking-date-field input {
+    border-color: var(--overlay-list-line);
+    background: var(--overlay-list-soft);
+    color: var(--overlay-list-ink);
+    color-scheme: light;
+}
+
+.home-overlay--progress .ranking-date-field.is-active input {
+    border-color: #176b46;
+    box-shadow: 0 0 0 2px rgba(23, 107, 70, 0.14);
+}
+
+.home-overlay--progress .ranking-aggregation-note {
+    color: var(--overlay-list-muted);
+}
+
 .home-overlay--progress .overlay-section-label :is(strong, em) {
     color: var(--overlay-list-muted) !important;
 }
@@ -2299,7 +2337,6 @@
     display: grid;
     gap: 4px;
 }
-
 .overlay-metric-list > div {
     grid-template-columns: minmax(0, 1fr) auto;
 }
