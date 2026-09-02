@@ -75,4 +75,12 @@ public class GamificationBffController {
                         aggregationDate == null ? null : aggregationDate.toString()
                 ));
     }
+
+    // Learning은 POST지만 부수 효과가 없는 조회이므로 Browser에는 GET으로 노출한다.
+    // cohortId는 Browser에서 받지 않고 Session 기반 승인 기수에서 확보한다.
+    @GetMapping("/predictions/study-time")
+    public JsonNode getStudyTimePrediction(HttpServletRequest request) {
+        return proxy.executeWithCohort(request, (context, cohortId) -> context.service()
+                .predictStudyTime(context.bearerToken(), cohortId));
+    }
 }
