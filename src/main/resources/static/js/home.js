@@ -1,9 +1,10 @@
 import { createAttendance, hasApprovedCohort } from "./home/attendance.js";
 import { createBgmPlayer } from "./home/bgm.js";
-import { createCharacter } from "./home/character.js";
+import { createCharacter } from "./home/character.js?v=20260902-7";
 import { saveCommunityPost } from "./home/community.js?v=20260831-1";
 import { createLevel } from "./home/level.js";
 import { isAiRecommendedQuest, loadProgressResources, normalizeDailyQuests } from "./home/questData.js?v=20260902-1";
+import { renderRankingBoard } from "./home/rankingBoard.js?v=20260902-1";
 import { createStudyRecords } from "./home/studyRecords.js?v=20260825-5";
 import { createTimer } from "./home/timer.js?v=20260902-1";
 import { promptResumeTimer } from "./home/timerPrompt.js?v=20260902-1";
@@ -648,9 +649,9 @@ const overlayContent = {
         </section>
         <section class="overlay-tab-panel" role="tabpanel" data-overlay-panel="leaders" hidden>
             <div class="overlay-section-label"><strong>명예의 전당</strong><span></span><em>전체 학습 시간</em></div>
-            <ol class="overlay-list overlay-leader-list" aria-label="학습 시간 랭킹" data-progress-ranking>
-                <li data-empty-ranking><strong>-</strong><span>랭킹 데이터가 없습니다.</span><em>기록 없음</em></li>
-            </ol>
+            <div class="rank-board" aria-label="학습 시간 랭킹" data-progress-ranking>
+                <p class="rank-empty" data-empty-ranking>랭킹 데이터가 없습니다.</p>
+            </div>
         </section>
     `,
     personal: renderPersonalOverlay,
@@ -813,9 +814,7 @@ async function loadProgressOverlay() {
     if (!rankingList) return;
 
     const entries = Array.isArray(rankings?.entries) ? rankings.entries : [];
-    rankingList.innerHTML = entries.length ? entries.map((entry) => `
-        <li><strong>${entry.rank}</strong><span>${escapeHtml(entry.displayName || `수강생 (${entry.rank}위)`)}</span><em>${formatDuration(entry.studySeconds)}</em></li>
-    `).join("") : `<li data-empty-ranking><strong>-</strong><span>랭킹 데이터가 없습니다.</span><em>기록 없음</em></li>`;
+    rankingList.innerHTML = renderRankingBoard(entries);
 
 }
 

@@ -510,9 +510,20 @@ body:has(.home-page)::after {
     }
 
     .home-status-cluster,
-    .home-chat-bar,
-    .home-action-dock {
+    .home-chat-bar {
         width: var(--home-hud-control-width);
+        max-width: 100%;
+        justify-self: center;
+    }
+
+    /*
+     * 도크는 상태 카드나 챗바와 성격이 다르다. 배경이 버튼을 감싸는 알약이라
+     * 공용 폭(344px)을 따르면 버튼 양옆에 빈 초록 여백이 그대로 드러난다.
+     * 그래서 폭만 내용에 맞추고 가운데 정렬은 그대로 둔다.
+     * 화면이 좁아 버튼이 넘치면 max-width 와 overflow-x 가 받는다.
+     */
+    .home-action-dock {
+        width: max-content;
         max-width: 100%;
         justify-self: center;
     }
