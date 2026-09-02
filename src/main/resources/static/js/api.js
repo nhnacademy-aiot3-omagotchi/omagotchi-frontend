@@ -168,6 +168,38 @@
         access: {
             getContext: () => request("/cohorts/me/access-context")
         },
+        teams: {
+            create: (payload) => request("/teams", {
+                method: "POST",
+                body: payload
+            }),
+            mine: () => request("/teams/me"),
+            detail: (teamId) => request(`/teams/${encodeURIComponent(teamId)}`),
+            memberCandidates: (teamId, query) => request(withQuery(
+                `/teams/${encodeURIComponent(teamId)}/member-candidates`,
+                {query}
+            )),
+            addMember: (teamId, targetUserId) => request(
+                `/teams/${encodeURIComponent(teamId)}/members`,
+                {method: "POST", body: {targetUserId}}
+            ),
+            kickMember: (teamId, memberId) => request(
+                `/teams/${encodeURIComponent(teamId)}/members/${encodeURIComponent(memberId)}`,
+                {method: "DELETE"}
+            ),
+            leave: (teamId) => request(
+                `/teams/${encodeURIComponent(teamId)}/leave`,
+                {method: "POST"}
+            ),
+            delegate: (teamId, memberId) => request(
+                `/teams/${encodeURIComponent(teamId)}/members/${encodeURIComponent(memberId)}/delegate`,
+                {method: "POST"}
+            ),
+            disband: (teamId) => request(
+                `/teams/${encodeURIComponent(teamId)}`,
+                {method: "DELETE"}
+            )
+        },
         character: {
             list: () => request("/gamification/characters"),
             saveSelection: (payload) => request("/gamification/characters/representative", {

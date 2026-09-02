@@ -54,8 +54,9 @@ async function bootstrapHome() {
     }
 
     try {
-        await import("./spaceRoom.js?v=20260902-5");
-        await import("./home.js?v=20260902-7");
+        await import("./team.js?v=20260902-2");
+        await import("./spaceRoom.js?v=20260902-6");
+        await import("./home.js?v=20260902-8");
     } catch (error) {
         const toast = document.querySelector("[data-home-toast]");
         if (toast) {
