@@ -30,30 +30,38 @@ async function hydrateDashboard(
             }))
             : [];
         const applications = [];
+        // 게시판이 기수에 속하므로 공지도 기수마다 조회한다.
+        // 예전에는 전 기수 공지를 한 번에 100건만 받아 화면에서 걸렀고,
+        // 그 한도를 넘는 기수의 공지는 통째로 사라졌다.
+        const notices = [];
         let partialFailure = false;
         let attendanceFailure = null;
-        let notices = [];
-        try {
-            const noticePage = await api.community.listPosts({ page: 0, size: 100, type: "NOTICE" });
-            notices = Array.isArray(noticePage?.items) ? noticePage.items : [];
-        } catch (error) {
-            partialFailure = true;
-            console.error("관리자 공지 목록을 불러오지 못했습니다.", error);
-        }
         const hydratedCohorts = await Promise.all(source.map(async (cohort) => {
-            const [membersResult, applicationsResult, attendanceResult, joinCodeResult] = await Promise.allSettled([
+            const [
+                membersResult,
+                applicationsResult,
+                attendanceResult,
+                joinCodeResult,
+                noticesResult
+            ] = await Promise.allSettled([
                 api.manager.getMembers(cohort.id),
                 api.manager.getApplications(cohort.id),
                 api.manager.getAttendanceRecords(cohort.id, attendanceDate),
-                api.manager.getJoinCode(cohort.id)
+                api.manager.getJoinCode(cohort.id),
+                api.manager.getNotices(cohort.id, { page: 0, size: 100 })
             ]);
             const joinCodeMissing = joinCodeResult.status === "rejected"
                 && joinCodeResult.reason?.code === "JOIN_CODE_NOT_FOUND";
-            partialFailure ||= [membersResult, applicationsResult, attendanceResult]
+            partialFailure ||= [membersResult, applicationsResult, attendanceResult, noticesResult]
                 .some((result) => result.status === "rejected");
             partialFailure ||= joinCodeResult.status === "rejected" && !joinCodeMissing;
             if (attendanceResult.status === "rejected") {
                 attendanceFailure ??= attendanceResult.reason;
+            }
+            if (noticesResult.status === "rejected") {
+                console.error("관리자 공지 목록을 불러오지 못했습니다.", noticesResult.reason);
+            } else if (Array.isArray(noticesResult.value?.items)) {
+                notices.push(...noticesResult.value.items);
             }
 
             const members = membersResult.status === "fulfilled" && Array.isArray(membersResult.value)
