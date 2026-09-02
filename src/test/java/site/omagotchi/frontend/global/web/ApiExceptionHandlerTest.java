@@ -123,6 +123,10 @@ class ApiExceptionHandlerTest {
                         jsonPath("$.path").value(
                                 "/bff/v1/test/errors/lab-capacity-exceeded"
                         )
+                );
+    }
+
+    @Test
     @DisplayName("이미 실행 중인 Learning 타이머 오류는 Frontend 409 계약으로 전달")
     void forwardsTimerAlreadyRunning() throws Exception {
         mockMvc.perform(post("/bff/v1/test/errors/timer-already-running"))
@@ -570,6 +574,9 @@ class ApiExceptionHandlerTest {
                             "learning-lab-capacity-request"
                     ),
                     new IllegalStateException("lab capacity exceeded")
+            );
+        }
+
         @PostMapping("/bff/v1/test/errors/timer-already-running")
         void timerAlreadyRunning() {
             throw new LearningDownstreamException(
