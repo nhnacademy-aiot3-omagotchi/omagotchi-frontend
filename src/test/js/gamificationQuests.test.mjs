@@ -2,10 +2,7 @@ import assert from "node:assert/strict";
 import {readFile} from "node:fs/promises";
 import test from "node:test";
 import vm from "node:vm";
-import {
-    loadProgressResources,
-    normalizeDailyQuests
-} from "../../main/resources/static/js/home/questData.js";
+import { AI_QUEST_TYPE, isAiRecommendedQuest, loadProgressResources, normalizeDailyQuests } from "../../main/resources/static/js/home/questData.js";
 
 const apiSource = await readFile(
     new URL("../../main/resources/static/js/api.js", import.meta.url),
@@ -80,6 +77,7 @@ test("퀘스트 응답은 계약 필드와 타입이 모두 유효할 때만 렌
     assert.deepEqual(normalizeDailyQuests([{
         id: 17,
         type: "ROUTINE",
+        code: "ATTENDANCE",
         title: "60분 학습",
         targetCount: 60,
         progressCount: 20,
@@ -88,6 +86,7 @@ test("퀘스트 응답은 계약 필드와 타입이 모두 유효할 때만 렌
     }]), [{
         id: "17",
         type: "ROUTINE",
+        code: "ATTENDANCE",
         title: "60분 학습",
         targetCount: 60,
         progressCount: 20,
@@ -98,6 +97,7 @@ test("퀘스트 응답은 계약 필드와 타입이 모두 유효할 때만 렌
     assert.equal(normalizeDailyQuests([{
         id: "17\" onclick=\"alert(1)",
         type: "ROUTINE",
+        code: "ATTENDANCE",
         title: "악성 응답",
         targetCount: 1,
         progressCount: 1,
@@ -109,6 +109,7 @@ test("퀘스트 응답은 계약 필드와 타입이 모두 유효할 때만 렌
     // type 이 없거나 계약 밖 값이면 렌더링하지 않는다. AI 분기가 조용히 틀어지는 걸 막는다.
     assert.equal(normalizeDailyQuests([{
         id: 18,
+        code: "ATTENDANCE",
         title: "타입 없는 응답",
         targetCount: 1,
         progressCount: 0,
@@ -118,6 +119,7 @@ test("퀘스트 응답은 계약 필드와 타입이 모두 유효할 때만 렌
     assert.equal(normalizeDailyQuests([{
         id: 19,
         type: "UNKNOWN",
+        code: "ATTENDANCE",
         title: "계약 밖 타입",
         targetCount: 1,
         progressCount: 0,
@@ -128,9 +130,27 @@ test("퀘스트 응답은 계약 필드와 타입이 모두 유효할 때만 렌
 
 test("AI 추천 퀘스트는 일일 목록과 분리해 맨 위 카드로 그린다", () => {
     assert.match(questDataSource, /export const AI_QUEST_TYPE = "LLM"/);
-    assert.match(homeSource, /quest\.type === AI_QUEST_TYPE/);
-    assert.match(homeSource, /quest\.type !== AI_QUEST_TYPE/);
+    assert.match(homeSource, /dailyQuests\.filter\(isAiRecommendedQuest\)/);
+    assert.match(homeSource, /!isAiRecommendedQuest\(quest\)/);
     assert.match(homeSource, /quest-ai-card/);
+});
+
+test("LLM 슬롯의 공부 시간 퀘스트만 AI 추천 카드로 올리고 일반 퀘스트는 목록에 둔다", () => {
+    assert.equal(isAiRecommendedQuest({type: AI_QUEST_TYPE, code: "LLM_QUEST"}), true);
+    assert.equal(isAiRecommendedQuest({type: "ROUTINE", code: "STUDY_COMPLETED"}), false);
+    assert.equal(isAiRecommendedQuest({type: "ROUTINE", code: "ATTENDANCE"}), false);
+    assert.equal(isAiRecommendedQuest({type: "ROUTINE", code: "CHARACTER_CHECKED"}), false);
+
+    // code가 없으면 슬롯을 가를 수 없으므로 렌더링하지 않는다.
+    assert.equal(normalizeDailyQuests([{
+        id: 20,
+        type: "ROUTINE",
+        title: "code 없는 응답",
+        targetCount: 1,
+        progressCount: 0,
+        rewardXp: 10,
+        status: "IN_PROGRESS"
+    }]), null);
 });
 
 test("진행 오버레이 탭은 퀘스트와 랭킹만 남긴다", () => {

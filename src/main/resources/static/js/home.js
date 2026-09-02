@@ -3,7 +3,7 @@ import { createBgmPlayer } from "./home/bgm.js";
 import { createCharacter } from "./home/character.js";
 import { saveCommunityPost } from "./home/community.js?v=20260831-1";
 import { createLevel } from "./home/level.js";
-import { AI_QUEST_TYPE, loadProgressResources, normalizeDailyQuests } from "./home/questData.js";
+import { isAiRecommendedQuest, loadProgressResources, normalizeDailyQuests } from "./home/questData.js";
 import { createStudyRecords } from "./home/studyRecords.js?v=20260825-5";
 import { createTimer } from "./home/timer.js?v=20260902-1";
 import { promptResumeTimer } from "./home/timerPrompt.js?v=20260902-1";
@@ -775,9 +775,9 @@ async function loadProgressOverlay() {
         aiSlot.innerHTML = "";
         questList.innerHTML = `<li><div><strong>퀘스트를 불러오지 못했습니다.</strong><p>잠시 후 다시 시도해 주세요.</p></div><em>오류</em></li>`;
     } else {
-        // AI 추천 퀘스트는 서버 정렬과 무관하게 항상 맨 위 카드로 올린다.
-        const aiQuests = dailyQuests.filter((quest) => quest.type === AI_QUEST_TYPE);
-        const routineQuests = dailyQuests.filter((quest) => quest.type !== AI_QUEST_TYPE);
+        // LLM 슬롯의 예측 기반 공부 시간 퀘스트는 서버 정렬과 무관하게 항상 맨 위 카드로 올린다.
+        const aiQuests = dailyQuests.filter(isAiRecommendedQuest);
+        const routineQuests = dailyQuests.filter((quest) => !isAiRecommendedQuest(quest));
 
         aiSlot.hidden = aiQuests.length === 0;
         aiSlot.innerHTML = aiQuests.map((quest) => `
