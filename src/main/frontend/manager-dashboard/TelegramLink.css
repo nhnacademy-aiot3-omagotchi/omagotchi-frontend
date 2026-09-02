@@ -1,6 +1,5 @@
 /* managerDashboard.css 의 토큰과 같은 값을 쓴다. 섬으로 주입되므로 :root 를 다시 선언한다. */
 :root {
-  --telegram-green-700: #178a59;
   --telegram-green-800: #176044;
   --telegram-ink: #17221d;
   --telegram-muted: #66736c;
@@ -26,24 +25,8 @@
 .telegram-canvas.is-embedded { padding: 0; background: transparent; }
 
 .telegram-card { width: min(760px, 100%); }
-
-.telegram-card-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  min-height: 92px;
-  padding: 18px 24px;
-  border-radius: 16px;
-  background: var(--telegram-green-700);
-}
-.telegram-card-head h2 {
-  margin: 0;
-  color: #fff;
-  font-size: clamp(20px, 2.4vw, 26px);
-  font-weight: 800;
-}
-.telegram-card-head img { width: 64px; height: 64px; object-fit: contain; }
+/* 임베드에서는 패널 폭을 그대로 채운다. 760px 에서 잘리면 위 요약 카드 줄과 오른쪽 끝이 어긋난다. */
+.telegram-canvas.is-embedded .telegram-card { width: 100%; }
 
 .telegram-card-body {
   display: flex;
@@ -51,7 +34,6 @@
   align-items: center;
   gap: 18px;
   min-height: 240px;
-  margin-top: 18px;
   padding: 36px 24px;
   border: 1px solid var(--telegram-line);
   border-radius: 16px;
@@ -130,8 +112,6 @@
 .telegram-copy:hover { background: var(--telegram-canvas); }
 
 @media (max-width: 720px) {
-  .telegram-card-head { min-height: 76px; padding: 14px 16px; }
-  .telegram-card-head img { width: 48px; height: 48px; }
   .telegram-card-body { min-height: 200px; padding: 28px 16px; }
   .telegram-issued-actions { flex-direction: column; }
 }

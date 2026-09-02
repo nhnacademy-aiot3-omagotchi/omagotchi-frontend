@@ -288,7 +288,7 @@
 
 .home-ai-panel-heading {
     display: grid;
-    grid-template-columns: 44px minmax(0, 1fr) 38px;
+    grid-template-columns: 44px minmax(0, 1fr) 38px 38px;
     align-items: center;
     gap: 10px;
     padding: 14px;
@@ -334,6 +334,31 @@
     font: 700 11px/1.3 system-ui, sans-serif;
 }
 
+.home-ai-panel-help {
+    width: 38px;
+    height: 38px;
+    display: grid;
+    place-items: center;
+    padding: 0;
+    border: 1px solid rgba(16, 40, 31, 0.22);
+    border-radius: 10px;
+    background: #ffffff;
+    color: #17754f;
+    font: 900 18px/1 var(--game-font), system-ui, sans-serif;
+    cursor: pointer;
+}
+
+.home-ai-panel-help:hover,
+.home-ai-panel-help:focus-visible {
+    background: #e5f4eb;
+}
+
+.home-ai-panel-help.is-active {
+    border-color: #10281f;
+    background: #10281f;
+    color: #7ff0bd;
+}
+
 .home-ai-panel-close {
     width: 38px;
     height: 38px;
@@ -354,6 +379,9 @@
 }
 
 .home-ai-conversation {
+    /* 사용법 시트가 이 칸에 그대로 겹쳐 올라온다. 둘 다 같은 칸을 명시해 둔다. */
+    grid-row: 2;
+    grid-column: 1;
     min-height: 0;
     overflow-y: auto;
     padding: 18px 14px;
@@ -593,6 +621,197 @@
     font: 800 10px/1 system-ui, sans-serif;
 }
 
+/* AI 도우미 사용법 ------------------------------------------------------------
+   대화는 그대로 두고 그 위에 덮는다. 닫으면 하던 대화가 그 자리에 그대로 있다. */
+.home-ai-guide {
+    grid-row: 2;
+    grid-column: 1;
+    z-index: 2;
+    min-height: 0;
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+    outline: none;
+    background: #eef8f3;
+}
+
+.home-ai-guide-heading {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 28px;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 14px;
+    border-bottom: 1px solid #c9dfd4;
+    background: #ffffff;
+}
+
+.home-ai-guide-heading strong {
+    color: #10281f;
+    font-family: var(--game-font);
+    font-size: 12px;
+    line-height: 1.2;
+}
+
+.home-ai-guide-close {
+    width: 28px;
+    height: 28px;
+    display: grid;
+    place-items: center;
+    padding: 0;
+    border: 1px solid rgba(16, 40, 31, 0.22);
+    border-radius: 8px;
+    background: #ffffff;
+    color: #10281f;
+    font: 900 18px/1 system-ui, sans-serif;
+    cursor: pointer;
+}
+
+.home-ai-guide-close:hover,
+.home-ai-guide-close:focus-visible {
+    background: #e5f4eb;
+}
+
+.home-ai-guide-scroll {
+    min-height: 0;
+    overflow-y: auto;
+    padding: 14px;
+    scrollbar-color: #78b99b transparent;
+    scrollbar-width: thin;
+}
+
+.home-ai-guide-tools {
+    display: grid;
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.home-ai-guide-tool {
+    display: grid;
+    grid-template-columns: 30px minmax(0, 1fr);
+    gap: 10px;
+    padding: 11px 12px;
+    border: 1px solid #c9dfd4;
+    border-radius: 12px;
+    background: #ffffff;
+    box-shadow: 0 3px 0 rgba(16, 40, 31, 0.08);
+}
+
+.home-ai-guide-tool-icon {
+    width: 30px;
+    height: 30px;
+    display: grid;
+    place-items: center;
+    border-radius: 9px;
+    background: #e5f4eb;
+    font-size: 15px;
+    line-height: 1;
+}
+
+.home-ai-guide-tool-body {
+    min-width: 0;
+    display: grid;
+    gap: 5px;
+}
+
+.home-ai-guide-tool-title {
+    color: #17754f;
+    font-family: var(--game-font);
+    font-size: 10px;
+    line-height: 1.3;
+}
+
+.home-ai-guide-tool-summary {
+    margin: 0;
+    color: #274b3d;
+    font: 700 12px/1.5 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.home-ai-guide-tool-hint {
+    margin: 0;
+    /* 본문(#274b3d)보다 연하되 흰 배경에서 4.5:1 은 넘겨야 해서 #6c8279 보다 한 단계 진하다. */
+    color: #5b7268;
+    font: 700 11px/1.45 system-ui, sans-serif;
+}
+
+.home-ai-guide-examples {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-top: 2px;
+}
+
+.home-ai-guide-example {
+    max-width: 100%;
+    padding: 5px 9px;
+    border: 1px solid #b9d6c8;
+    border-radius: 999px;
+    background: #f7faf8;
+    color: #176b46;
+    font: 700 11px/1.35 system-ui, sans-serif;
+    text-align: left;
+    cursor: pointer;
+}
+
+.home-ai-guide-example:hover,
+.home-ai-guide-example:focus-visible {
+    border-color: #31c581;
+    background: #e5f4eb;
+}
+
+.home-ai-guide-section {
+    margin-top: 14px;
+    padding: 11px 12px;
+    border: 1px dashed #b9d6c8;
+    border-radius: 12px;
+    background: #ffffff;
+}
+
+.home-ai-guide-section-title {
+    display: block;
+    margin-bottom: 7px;
+    color: #17754f;
+    font-family: var(--game-font);
+    font-size: 10px;
+    line-height: 1.3;
+}
+
+.home-ai-guide-notes {
+    display: grid;
+    gap: 5px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.home-ai-guide-notes li {
+    position: relative;
+    padding-left: 13px;
+    color: #49675b;
+    font: 700 11px/1.5 system-ui, sans-serif;
+}
+
+.home-ai-guide-notes li::before {
+    content: "·";
+    position: absolute;
+    left: 3px;
+    color: #78b99b;
+    font-weight: 900;
+}
+
+.home-ai-guide-notes.is-upcoming li {
+    /* "…" 는 "·" 보다 넓어서 들여쓰기를 조금 더 준다. */
+    padding-left: 18px;
+    color: #7a6a55;
+}
+
+.home-ai-guide-notes.is-upcoming li::before {
+    content: "…";
+    left: 2px;
+    color: #c08a5b;
+    font-size: 11px;
+}
+
 @keyframes home-ai-character-float {
     0%,
     100% {
@@ -645,6 +864,25 @@
 
     .home-ai-composer-actions {
         grid-template-columns: minmax(0, 1fr) 38px;
+    }
+
+    .home-ai-panel-heading {
+        grid-template-columns: 44px minmax(0, 1fr) 34px 34px;
+        gap: 8px;
+    }
+
+    .home-ai-panel-help,
+    .home-ai-panel-close {
+        width: 34px;
+        height: 34px;
+    }
+
+    .home-ai-guide-scroll {
+        padding: 12px;
+    }
+
+    .home-ai-guide-tool {
+        padding: 10px;
     }
 
     .home-ai-panel-status {

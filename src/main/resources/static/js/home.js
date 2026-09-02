@@ -3,11 +3,11 @@ import { createBgmPlayer } from "./home/bgm.js";
 import { createCharacter } from "./home/character.js";
 import { saveCommunityPost } from "./home/community.js?v=20260831-1";
 import { createLevel } from "./home/level.js";
-import { loadProgressResources, normalizeDailyQuests } from "./home/questData.js";
+import { AI_QUEST_TYPE, loadProgressResources, normalizeDailyQuests } from "./home/questData.js";
 import { createStudyRecords } from "./home/studyRecords.js?v=20260825-5";
-import { createTimer } from "./home/timer.js";
+import { createTimer } from "./home/timer.js?v=20260902-1";
+import { promptResumeTimer } from "./home/timerPrompt.js?v=20260902-1";
 import { escapeHtml, formatDuration } from "./home/utils.js";
-import { renderServiceIntegrationPending } from "./serviceIntegrationState.js";
 
 const timerDisplay = document.querySelector("[data-timer-display]");
 const timerToggle = document.querySelector("[data-timer-toggle]");
@@ -22,10 +22,6 @@ const characterStage = document.querySelector("[data-character-stage]");
 const characterInteraction = document.querySelector("[data-character-interaction]");
 const characterBubble = document.querySelector("[data-character-bubble]");
 const characterName = document.querySelector("[data-character-name]");
-const characterLevel = document.querySelector("[data-character-level]");
-const xpFill = document.querySelector("[data-xp-fill]");
-const currentXpLabel = document.querySelector("[data-current-xp]");
-const nextLevelLabel = document.querySelector("[data-next-level]");
 const calendarGrid = document.querySelector(".calendar-grid");
 const calendarTitle = document.querySelector("[data-calendar-title]");
 const calendarPeriod = document.querySelector("[data-calendar-period]");
@@ -224,59 +220,11 @@ const bgmPlayer = createBgmPlayer({
 
 let studyRecordsController;
 
-function promptResumeTimer({ elapsedSeconds = 0 } = {}) {
-    return new Promise((resolve) => {
-        const backdrop = document.createElement("section");
-        backdrop.className = "home-confirm-backdrop";
-        backdrop.innerHTML = `
-            <article class="home-confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="home-timer-confirm-title">
-                <h2 id="home-timer-confirm-title">진행 중인 타이머가 있어요</h2>
-                <p>이전에 시작된 학습 타이머가 실행 중입니다.<br />이어서 계속 진행할까요, 아니면 기존 기록을 파기할까요?</p>
-                <div class="home-confirm-actions">
-                    <button type="button" data-timer-discard>파기하기</button>
-                    <button type="button" data-confirm-ok data-timer-resume>계속 진행</button>
-                </div>
-            </article>
-        `;
-
-        function close(action) {
-            document.removeEventListener("keydown", handleKeydown);
-            backdrop.remove();
-            resolve(action);
-        }
-
-        function handleKeydown(event) {
-            if (event.key === "Escape") {
-                close("resume");
-            }
-        }
-
-        backdrop.addEventListener("click", (event) => {
-            const target = event.target;
-            if (!(target instanceof Element)) return;
-
-            if (target.closest("[data-timer-discard]")) {
-                close("discard");
-                return;
-            }
-
-            if (target.closest("[data-timer-resume]")) {
-                close("resume");
-            }
-        });
-
-        document.addEventListener("keydown", handleKeydown);
-        document.body.append(backdrop);
-        backdrop.querySelector("[data-timer-resume]")?.focus();
-    });
-}
-
 const timerController = createTimer({
     display: timerDisplay,
     toggle: timerToggle,
     statusMessage: document.querySelector("[data-timer-status]"),
     api: api?.study,
-    warnOnLeave: true,
     onRunningTimerDetected: promptResumeTimer,
     onStart: ({ restored }) => {
         characterController.setStudyState(true);
@@ -307,12 +255,6 @@ studyRecordsController = createStudyRecords({
 });
 
 const levelController = createLevel({
-    levelElement: characterLevel,
-    xpFill,
-    currentXpLabel,
-    nextLevelLabel,
-    characterImage: homeCharacter,
-    characterStage,
     initialLevel: currentCharacter.level,
     initialCurrentXp: currentCharacter.currentExp,
     initialRequiredXp: currentCharacter.requiredExp
@@ -695,45 +637,20 @@ const overlayContent = {
     progress: `
         <div class="overlay-tabs" role="tablist" aria-label="진행 탭">
             <button class="is-active" type="button" role="tab" aria-selected="true" data-overlay-tab="quests"><span aria-hidden="true">▣</span>퀘스트</button>
-            <button type="button" role="tab" aria-selected="false" data-overlay-tab="achievements"><span aria-hidden="true">★</span>업적</button>
             <button type="button" role="tab" aria-selected="false" data-overlay-tab="leaders"><span aria-hidden="true">▥</span>랭킹</button>
-            <button type="button" role="tab" aria-selected="false" data-overlay-tab="timeline"><span aria-hidden="true">↶</span>타임라인</button>
-            <button type="button" role="tab" aria-selected="false" data-overlay-tab="stats"><span aria-hidden="true">▥</span>통계</button>
         </div>
         <section class="overlay-tab-panel is-active" role="tabpanel" data-overlay-panel="quests">
+            <div class="quest-ai-slot" data-progress-ai-quest hidden></div>
             <div class="overlay-section-label"><strong>일일</strong><span></span><em>익일 4시에 초기화</em></div>
             <ul class="overlay-state-list" aria-label="퀘스트 목록" data-progress-quests>
                 <li><div><strong>등록된 퀘스트가 없습니다.</strong><p>퀘스트가 제공되면 이 목록에 표시됩니다.</p></div><em>대기</em></li>
             </ul>
-        </section>
-        <section class="overlay-tab-panel" role="tabpanel" data-overlay-panel="achievements" hidden>
-            <div class="overlay-section-label"><strong>업적</strong><span></span><em>달성 기록</em></div>
-            ${renderServiceIntegrationPending({
-                title: "서비스 연동 대기",
-                description: "업적 API가 연결되면 실제 달성 기록을 표시합니다."
-            })}
         </section>
         <section class="overlay-tab-panel" role="tabpanel" data-overlay-panel="leaders" hidden>
             <div class="overlay-section-label"><strong>명예의 전당</strong><span></span><em>전체 학습 시간</em></div>
             <ol class="overlay-list overlay-leader-list" aria-label="학습 시간 랭킹" data-progress-ranking>
                 <li data-empty-ranking><strong>-</strong><span>랭킹 데이터가 없습니다.</span><em>기록 없음</em></li>
             </ol>
-        </section>
-        <section class="overlay-tab-panel" role="tabpanel" data-overlay-panel="timeline" hidden>
-            <div class="overlay-section-label"><strong>타임라인</strong><span></span><em>최근 활동</em></div>
-            ${renderServiceIntegrationPending({
-                title: "서비스 연동 대기",
-                description: "활동 이력 API가 연결되면 실제 출석과 학습 기록을 시간순으로 표시합니다."
-            })}
-        </section>
-        <section class="overlay-tab-panel" role="tabpanel" data-overlay-panel="stats" hidden>
-            <div class="overlay-section-label"><strong>학습 통계</strong><span></span><em>나의 기록</em></div>
-            <dl class="overlay-metric-list" data-progress-stats>
-                <div><dt>오늘 집중</dt><dd>0분</dd></div>
-                <div><dt>세션</dt><dd>0회</dd></div>
-                <div><dt>연속 출석</dt><dd>0일</dd></div>
-                <div><dt>이번 주</dt><dd>0분</dd></div>
-            </dl>
         </section>
     `,
     personal: renderPersonalOverlay,
@@ -786,6 +703,52 @@ const overlayContent = {
     `
 };
 
+/**
+ * 홈 메뉴 배지 상태를 React(TopMenu)로 넘긴다.
+ *
+ * React 마운트보다 이 호출이 먼저일 수 있어 전역에도 남긴다. TopMenu는 마운트 시
+ * 이 값을 한 번 읽으므로 초기 배지를 놓치지 않는다.
+ */
+function publishMenuAlerts(overlays) {
+    globalThis.OmagotchiHomeMenuAlerts = overlays;
+    window.dispatchEvent(new CustomEvent("omagotchi:home-menu-alert", {detail: {overlays}}));
+}
+
+/**
+ * 배지는 "수령 대기 중인 보상"만 알린다.
+ *
+ * 퀘스트 발급을 조건으로 삼으면 사용자가 없앨 방법이 없어 상시 표시가 된다.
+ * COMPLETED는 '보상 받기'를 누르면 CLAIMED가 되므로 배지가 스스로 꺼진다.
+ */
+function questAlertOverlays(quests) {
+    const hasClaimable = Array.isArray(quests)
+        && quests.some((quest) => quest.status === "COMPLETED");
+    return hasClaimable ? ["progress"] : [];
+}
+
+/** 홈 진입 시 한 번 부른다. 배지는 부가 정보라 실패하면 조용히 끈다. */
+async function refreshMenuAlerts() {
+    try {
+        publishMenuAlerts(questAlertOverlays(
+            normalizeDailyQuests(await api.gamification.getDailyQuests())
+        ));
+    } catch {
+        publishMenuAlerts([]);
+    }
+}
+
+/** 목록 한 줄. AI 카드와 일일 목록이 같은 표기를 쓰도록 한 곳에 둔다. */
+function questProgressText(quest) {
+    return `${quest.progressCount} / ${quest.targetCount} · ${quest.rewardXp} XP`;
+}
+
+function questActionHtml(quest) {
+    const statusLabel = questStatusLabel(quest);
+    return quest.status === "COMPLETED"
+        ? `<button type="button" data-home-claim="${escapeHtml(quest.id)}">${escapeHtml(statusLabel)}</button>`
+        : `<em>${escapeHtml(statusLabel)}</em>`;
+}
+
 function questStatusLabel(quest) {
     if (quest.status === "CLAIMED") return "수령 완료";
     if (quest.status === "COMPLETED") return "보상 받기";
@@ -795,31 +758,48 @@ function questStatusLabel(quest) {
 async function loadProgressOverlay() {
     const questList = homeOverlayRoot?.querySelector("[data-progress-quests]");
     const rankingList = homeOverlayRoot?.querySelector("[data-progress-ranking]");
-    const stats = homeOverlayRoot?.querySelector("[data-progress-stats]");
-    if (!questList || !rankingList || !stats) return;
+    const aiSlot = homeOverlayRoot?.querySelector("[data-progress-ai-quest]");
+    if (!questList || !rankingList || !aiSlot) return;
 
     // 랭킹 조회 기수는 서버가 Session 승인 기수에서 확보하므로 Browser가 지정하지 않는다.
     // 승인 기수가 없으면 서버가 업무 오류를 반환하므로, 빈 랭킹으로 표시하고 화면은 유지한다.
     const hasRankingCohort = Boolean(currentProfile.approvedCohort?.cohortId);
     const results = await loadProgressResources(api, hasRankingCohort);
-    const home = results.home.status === "fulfilled" ? results.home.value : null;
     const rankings = results.rankings.status === "fulfilled" ? results.rankings.value : null;
     const dailyQuests = results.quests.status === "fulfilled"
         ? normalizeDailyQuests(results.quests.value)
         : null;
     if (dailyQuests === null) {
+        // 실패 시 AI 슬롯을 열어 두면 이전 퀘스트가 남아 오해를 준다. 목록 하나로만 알린다.
+        aiSlot.hidden = true;
+        aiSlot.innerHTML = "";
         questList.innerHTML = `<li><div><strong>퀘스트를 불러오지 못했습니다.</strong><p>잠시 후 다시 시도해 주세요.</p></div><em>오류</em></li>`;
     } else {
-        questList.innerHTML = dailyQuests.length ? dailyQuests.map((quest) => {
-            const canClaim = quest.status === "COMPLETED";
-            const statusLabel = questStatusLabel(quest);
-            return `<li>
-                <div><strong>${escapeHtml(quest.title)}</strong><p>${quest.progressCount} / ${quest.targetCount} · ${quest.rewardXp} XP</p></div>
-                ${canClaim
-                    ? `<button type="button" data-home-claim="${escapeHtml(quest.id)}">${escapeHtml(statusLabel)}</button>`
-                    : `<em>${escapeHtml(statusLabel)}</em>`}
-            </li>`;
-        }).join("") : `<li><div><strong>등록된 퀘스트가 없습니다.</strong><p>오늘 제공된 퀘스트가 없습니다.</p></div><em>대기</em></li>`;
+        // AI 추천 퀘스트는 서버 정렬과 무관하게 항상 맨 위 카드로 올린다.
+        const aiQuests = dailyQuests.filter((quest) => quest.type === AI_QUEST_TYPE);
+        const routineQuests = dailyQuests.filter((quest) => quest.type !== AI_QUEST_TYPE);
+
+        aiSlot.hidden = aiQuests.length === 0;
+        aiSlot.innerHTML = aiQuests.map((quest) => `
+            <article class="quest-ai-card${quest.status === "CLAIMED" ? " is-claimed" : ""}">
+                <span class="quest-ai-badge">AI 추천</span>
+                <div class="quest-ai-body">
+                    <strong>${escapeHtml(quest.title)}</strong>
+                    <p>${questProgressText(quest)}</p>
+                </div>
+                <div class="quest-ai-action">${questActionHtml(quest)}</div>
+            </article>
+        `).join("");
+
+        // 이미 받아온 결과를 그대로 쓴다. 배지 때문에 요청을 더 보내지 않는다.
+        publishMenuAlerts(questAlertOverlays(dailyQuests));
+
+        questList.innerHTML = routineQuests.length ? routineQuests.map((quest) => `
+            <li>
+                <div><strong>${escapeHtml(quest.title)}</strong><p>${questProgressText(quest)}</p></div>
+                ${questActionHtml(quest)}
+            </li>`).join("")
+            : `<li><div><strong>등록된 퀘스트가 없습니다.</strong><p>오늘 제공된 퀘스트가 없습니다.</p></div><em>대기</em></li>`;
     }
 
     const entries = Array.isArray(rankings?.entries) ? rankings.entries : [];
@@ -827,13 +807,6 @@ async function loadProgressOverlay() {
         <li><strong>${entry.rank}</strong><span>${escapeHtml(entry.displayName || `수강생 (${entry.rank}위)`)}</span><em>${formatDuration(entry.studySeconds)}</em></li>
     `).join("") : `<li data-empty-ranking><strong>-</strong><span>랭킹 데이터가 없습니다.</span><em>기록 없음</em></li>`;
 
-    const growth = home?.growth || currentCharacter;
-    stats.innerHTML = `
-        <div><dt>총 학습 시간</dt><dd>${formatDuration(Number(currentProfile.totalStudySeconds) || 0)}</dd></div>
-        <div><dt>완료 세션</dt><dd>${Number(currentProfile.completedSessionCount) || 0}회</dd></div>
-        <div><dt>연속 출석</dt><dd>${Number(currentProfile.attendanceStreakDays) || 0}일</dd></div>
-        <div><dt>레벨</dt><dd>Lv ${Number(growth?.level) || 1}</dd></div>
-    `;
 }
 
 // 커뮤니티 검색, 필터, 페이지 이동 및 글쓰기 처리
@@ -1186,6 +1159,11 @@ homeOverlayRoot?.addEventListener("click", (event) => {
     }
 
     if (logoutButton) {
+        if (document.querySelector("[data-timer-resume-dialog]")) {
+            event.preventDefault();
+            event.stopPropagation();
+            return;
+        }
         logout(logoutButton);
     }
 });
@@ -1274,6 +1252,7 @@ timerController.init();
 levelController.render();
 attendanceController.init();
 bgmPlayer.init();
+void refreshMenuAlerts();
 
 const requestedOverlay = new URLSearchParams(window.location.search).get("overlay");
 if (requestedOverlay === "settings") {

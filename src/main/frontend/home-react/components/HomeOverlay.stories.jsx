@@ -1,7 +1,6 @@
 import { useEffect, useRef } from "react";
 import { expect, fireEvent, fn, userEvent, waitFor, within } from "storybook/test";
 import { createStudyRecords } from "../../../resources/static/js/home/studyRecords.js";
-import { renderServiceIntegrationPending } from "../../../resources/static/js/serviceIntegrationState.js";
 import { HomeOverlay } from "./HomeOverlay.jsx";
 
 function localDateKey(date) {
@@ -171,23 +170,18 @@ const meta = {
 export default meta;
 
 export const Help = {};
-export const Progress = {
+/** AI 추천 퀘스트가 아직 없을 때. 슬롯이 접혀 일일 목록이 맨 위로 올라온다. */
+export const ProgressWithoutAiQuest = {
   args: {
     type: "progress",
     meta: { icon: "/images/app/quest.png", title: "성장 현황", description: "현재 캐릭터의 성장 기록입니다." },
     content: `
       <section data-overlay-panel="quests">
+        <div class="quest-ai-slot" hidden></div>
         <div class="overlay-section-label"><strong>일일</strong><span></span><em>익일 4시에 초기화</em></div>
         <ul class="overlay-state-list" aria-label="퀘스트 목록">
-          <li><div><strong>등록된 퀘스트가 없습니다.</strong><p>퀘스트가 제공되면 이 목록에 표시됩니다.</p></div><em>대기</em></li>
+          <li><div><strong>등록된 퀘스트가 없습니다.</strong><p>오늘 제공된 퀘스트가 없습니다.</p></div><em>대기</em></li>
         </ul>
-      </section>
-      <section data-overlay-panel="achievements">
-        <div class="overlay-section-label"><strong>업적</strong><span></span><em>달성 기록</em></div>
-        ${renderServiceIntegrationPending({
-          title: "서비스 연동 대기",
-          description: "업적 API가 연결되면 실제 달성 기록을 표시합니다."
-        })}
       </section>
       <section data-overlay-panel="leaders">
         <div class="overlay-section-label"><strong>명예의 전당</strong><span></span><em>전체 학습 시간</em></div>
@@ -195,21 +189,38 @@ export const Progress = {
           <li data-empty-ranking><strong>-</strong><span>랭킹 데이터가 없습니다.</span><em>기록 없음</em></li>
         </ol>
       </section>
-      <section data-overlay-panel="timeline">
-        <div class="overlay-section-label"><strong>타임라인</strong><span></span><em>최근 활동</em></div>
-        ${renderServiceIntegrationPending({
-          title: "서비스 연동 대기",
-          description: "활동 이력 API가 연결되면 실제 출석과 학습 기록을 시간순으로 표시합니다."
-        })}
+    `
+  }
+};
+
+export const Progress = {
+  args: {
+    type: "progress",
+    meta: { icon: "/images/app/quest.png", title: "성장 현황", description: "현재 캐릭터의 성장 기록입니다." },
+    content: `
+      <section data-overlay-panel="quests">
+        <div class="quest-ai-slot">
+          <article class="quest-ai-card">
+            <span class="quest-ai-badge">AI 추천</span>
+            <div class="quest-ai-body">
+              <strong>오답 노트 3문항 다시 풀기</strong>
+              <p>0 / 1 · 40 XP</p>
+            </div>
+            <div class="quest-ai-action"><em>0/1</em></div>
+          </article>
+        </div>
+        <div class="overlay-section-label"><strong>일일</strong><span></span><em>익일 4시에 초기화</em></div>
+        <ul class="overlay-state-list" aria-label="퀘스트 목록">
+          <li><div><strong>출석하기</strong><p>1 / 1 · 20 XP</p></div><button type="button">보상 받기</button></li>
+          <li><div><strong>학습 세션 완료</strong><p>0 / 1 · 30 XP</p></div><em>0/1</em></li>
+          <li><div><strong>캐릭터 확인</strong><p>1 / 1 · 10 XP</p></div><em>수령 완료</em></li>
+        </ul>
       </section>
-      <section data-overlay-panel="stats">
-        <div class="overlay-section-label"><strong>학습 통계</strong><span></span><em>나의 기록</em></div>
-        <dl class="overlay-metric-list">
-          <div><dt>오늘 집중</dt><dd>0분</dd></div>
-          <div><dt>세션</dt><dd>0회</dd></div>
-          <div><dt>연속 출석</dt><dd>0일</dd></div>
-          <div><dt>이번 주</dt><dd>0분</dd></div>
-        </dl>
+      <section data-overlay-panel="leaders">
+        <div class="overlay-section-label"><strong>명예의 전당</strong><span></span><em>전체 학습 시간</em></div>
+        <ol class="overlay-list overlay-leader-list" aria-label="학습 시간 랭킹">
+          <li data-empty-ranking><strong>-</strong><span>랭킹 데이터가 없습니다.</span><em>기록 없음</em></li>
+        </ol>
       </section>
     `
   }

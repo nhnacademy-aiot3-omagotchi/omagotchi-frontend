@@ -38,6 +38,22 @@ class HttpResponseContractValidatorTest {
         assertInvalid(unexpected);
     }
 
+    @Test
+    @DisplayName("성공 응답 본문 반환과 누락 거부")
+    void returnsRequiredBodyAndRejectsMissingBody() {
+        ResponseEntity<String> response = ResponseEntity.ok("body");
+        ResponseEntity<String> missing = ResponseEntity.ok().build();
+
+        assertThat(HttpResponseContractValidator.requireBody(response, "테스트 조회"))
+                .isEqualTo("body");
+        assertThatThrownBy(() -> HttpResponseContractValidator.requireBody(
+                missing,
+                "테스트 조회"
+        )).isInstanceOfSatisfying(BusinessException.class, exception ->
+                assertThat(exception.getErrorCode())
+                        .isEqualTo(CommonErrorCode.DOWNSTREAM_INVALID_RESPONSE));
+    }
+
     private static void assertInvalid(ResponseEntity<?> response) {
         assertThatThrownBy(() -> HttpResponseContractValidator.requireStatus(
                 response,

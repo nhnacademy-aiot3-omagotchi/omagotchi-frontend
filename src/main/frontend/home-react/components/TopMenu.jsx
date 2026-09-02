@@ -2,7 +2,7 @@ import React from "react";
 
 export const HOME_MENU_ITEMS = [
   { overlay: "help", label: "도움말", icon: "/images/app/help.png" },
-  { overlay: "progress", label: "진행", icon: "/images/app/quest.png", alert: true },
+  { overlay: "progress", label: "진행", icon: "/images/app/quest.png" },
   { overlay: "personal", label: "내 정보", icon: "/images/app/userList.png" },
   { overlay: "cohort", label: "기수", icon: "/images/app/cohort.png" },
   { overlay: "write", label: "학습 기록", icon: "/images/app/studyrecord.png" },
@@ -19,7 +19,13 @@ function requestHomeOverlay(overlay) {
   }));
 }
 
-export function TopMenu({ title = "Omagotchi", items = HOME_MENU_ITEMS }) {
+/**
+ * @param alertOverlays 배지를 켤 overlay 키 목록. home.js가 계산해 넘긴다.
+ *   items[].alert 는 Storybook 에서 배지 모양만 볼 때 쓴다.
+ */
+export function TopMenu({ title = "Omagotchi", items = HOME_MENU_ITEMS, alertOverlays = [] }) {
+  const alerted = new Set(alertOverlays);
+
   return (
     <>
       <h1 id="home-title">{title}</h1>
@@ -28,7 +34,7 @@ export function TopMenu({ title = "Omagotchi", items = HOME_MENU_ITEMS }) {
           <button
             key={item.overlay}
             type="button"
-            className={item.alert ? "has-menu-alert" : undefined}
+            className={item.alert === true || alerted.has(item.overlay) ? "has-menu-alert" : undefined}
             aria-label={item.label}
             data-home-overlay={item.overlay}
             onClick={() => requestHomeOverlay(item.overlay)}

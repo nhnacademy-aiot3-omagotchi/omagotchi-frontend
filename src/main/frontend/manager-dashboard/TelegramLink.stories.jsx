@@ -1,10 +1,62 @@
+import React from "react";
 import { TelegramLink } from "./TelegramLink.jsx";
 import "./TelegramLink.css";
+
+/*
+ * 이 컴포넌트는 telegram-main.jsx 한 곳에서만, 항상 embedded 로 쓰인다.
+ * 그래서 모든 스토리를 임베드로 둔다 — 비임베드는 배포되지 않는 모습이라
+ * 폭·여백·배경이 실제 화면과 어긋나 보인다.
+ */
+
+const summaryCard = {
+  display: "grid",
+  gap: 7,
+  padding: 18,
+  border: "1px solid #d7e4dc",
+  borderRadius: 8,
+  background: "#fff"
+};
+
+/*
+ * 대시보드 패널(dashboard-panel--telegram-react)은 padding·border·배경을 0으로 두고
+ * 바탕(--canvas) 위에 그대로 얹힌다. 위에 얹은 요약 카드 줄은 실제 .summary-grid 를
+ * 흉내 낸 fixture 로, 텔레그램 카드가 같은 폭으로 끝나는지 보기 위한 것이다. 값은 의미 없다.
+ */
+// 실제 .summary-grid 는 980px 이하에서 2칸으로 접힌다. inline style 로는 표현할 수 없어
+// fixture 전용 class 로 같은 분기를 준다.
+const summaryGridCss = `
+.sb-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0 0 18px;
+}
+@media (max-width: 980px) {
+  .sb-summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+`;
+
+const dashboardCanvas = (Story) => (
+  <div style={{ padding: 24, background: "#eef6f1" }}>
+    <style>{summaryGridCss}</style>
+    <div className="sb-summary-grid">
+      {["활성 구성원", "승인 대기", "오늘 출석", "실습실 CO₂"].map((label) => (
+        <article key={label} style={summaryCard}>
+          <span style={{ color: "#66736c", fontSize: 11, fontWeight: 800 }}>{label}</span>
+          <strong style={{ fontSize: 26 }}>--</strong>
+        </article>
+      ))}
+    </div>
+    <Story />
+  </div>
+);
 
 const meta = {
   title: "TelegramLink",
   component: TelegramLink,
-  parameters: { layout: "fullscreen" }
+  parameters: { layout: "fullscreen" },
+  args: { embedded: true },
+  decorators: [dashboardCanvas]
 };
 
 export default meta;
@@ -35,34 +87,34 @@ const activeLink = {
   disconnectedAt: null
 };
 
-/** 목업 1 — 아직 발급하지 않았다. 빈 칸이 곧 링크가 들어갈 자리다. */
+/** 아직 발급하지 않았다. 빈 칸이 곧 링크가 들어갈 자리다. */
 export const NotLinked = {
-  name: "미연동 · 발급 전",
+  name: "발급 전",
   args: { link: null, token: null }
 };
 
 /** 발급 직후. 딥링크를 눌러 텔레그램으로 넘어가는 지점이다. */
 export const TokenIssued = {
-  name: "미연동 · 링크 발급됨",
+  name: "링크 발급됨",
   args: { link: null, token: issuedToken }
 };
 
 export const Issuing = {
-  name: "미연동 · 발급 중",
+  name: "발급 중",
   args: { link: null, token: null, issuing: true }
 };
 
-/** 목업 3 — TTL(기본 10분)이 지났다. 토큰은 일회용이라 재발급 외에 길이 없다. */
+/** TTL(기본 10분)이 지났다. 토큰은 일회용이라 재발급 외에 길이 없다. */
 export const TokenExpired = {
-  name: "미연동 · 링크 만료",
+  name: "링크 만료",
   args: { link: null, token: expiredToken }
 };
 
 /**
- * 목업 2 — 서버가 200을 준 경우다.
+ * 서버가 연동 정보를 준 경우다.
  *
- * 해제된 연동은 서버가 404를 주므로 여기까지 오지 않는다. 화면이 disconnectedAt 을
- * 다시 해석하지 않는 이유다.
+ * 미연동은 BFF 가 204 로 바꿔 주므로 link 가 null 로 들어온다. 여기까지 오지 않으니
+ * 화면이 disconnectedAt 을 다시 해석하지 않는다.
  */
 export const AlreadyLinked = {
   name: "연동 완료",
@@ -91,15 +143,10 @@ export const IssueError = {
   args: { link: null, token: null, error: "연동 링크를 발급하지 못했습니다." }
 };
 
+// max-width:720px 분기(카드 여백 축소, 발급 후 버튼 세로 배치)를 본다.
 // Storybook 9+ 는 viewport 를 globals 로 받는다. parameters.viewport.defaultViewport 는 무시된다.
 export const Mobile = {
   name: "모바일",
   args: { link: null, token: issuedToken },
   globals: { viewport: { value: "mobile1", isRotated: false } }
-};
-
-/** 대시보드 패널 안에 얹힌 모습. 여백과 배경을 패널이 갖는다. */
-export const Embedded = {
-  name: "대시보드 임베드",
-  args: { link: null, token: issuedToken, embedded: true }
 };

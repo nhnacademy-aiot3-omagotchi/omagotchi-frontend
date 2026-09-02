@@ -45,9 +45,20 @@ class SensorAdminHttpServiceContractTest {
     @DisplayName("공간 임계치 변경은 인증과 요청 식별자를 Learning 계약으로 전달")
     void mapsSpaceThresholdUpdateToLearningEndpoint() {
         // Given: 공간 임계치 요청과 Learning Endpoint 기대 계약
-        JsonNode request = JSON_MAPPER.createObjectNode()
-                .put("measurement", "co2")
-                .put("warningThreshold", 1000);
+        var request = JSON_MAPPER.createObjectNode();
+        var rules = request.putArray("rules");
+        rules.addObject()
+                .put("metric", "co2")
+                .put("operator", "GTE")
+                .put("threshold", 1000);
+        rules.addObject()
+                .put("metric", "temperature")
+                .put("operator", "GTE")
+                .put("threshold", 28);
+        rules.addObject()
+                .put("metric", "humidity")
+                .put("operator", "GTE")
+                .put("threshold", 70);
 
         server.expect(once(), requestTo(BASE_URL + "/api/v1/cohorts/3/threshold-rules/spaces/7"))
                 .andExpect(method(HttpMethod.PATCH))
@@ -61,6 +72,25 @@ class SensorAdminHttpServiceContractTest {
 
         // Then: 응답 역직렬화와 요청 계약 충족
         assertThat(response.get("spaceId").asLong()).isEqualTo(7L);
+        server.verify();
+    }
+
+    @Test
+    @DisplayName("센서 로그 페이지 번호와 크기를 Learning 계약으로 전달")
+    void mapsSensorEventPaginationToLearningEndpoint() {
+        server.expect(once(), requestTo(BASE_URL
+                        + "/api/v1/cohorts/3/sensor-events?type=RULE_HIT&deviceEui=device-1&page=1&size=8"))
+                .andExpect(method(HttpMethod.GET))
+                .andExpect(header(HttpHeaders.AUTHORIZATION, BEARER))
+                .andRespond(withSuccess(
+                        "{\"content\":[],\"page\":1,\"size\":8,\"totalElements\":13,\"totalPages\":2}",
+                        MediaType.APPLICATION_JSON));
+
+        JsonNode response = service.getSensorEvents(
+                BEARER, 3L, "RULE_HIT", "device-1", null, null, 1, 8);
+
+        assertThat(response.get("page").asInt()).isEqualTo(1);
+        assertThat(response.get("size").asInt()).isEqualTo(8);
         server.verify();
     }
 

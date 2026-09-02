@@ -18,7 +18,14 @@
     "test:space-room": "node --test src/test/js/spaceRoomInitialization.test.mjs",
     "test:admin-occupancies": "node --test src/test/js/adminOccupancies.test.mjs",
     "test:service-integration": "node --test src/test/js/serviceIntegrationState.test.mjs",
-    "test:timer": "node --test src/test/js/timer.test.mjs"
+    "test:timer": "node --test src/test/js/timer.test.mjs",
+    "test:home-character": "node --test src/test/js/homeCharacterState.test.mjs",
+    "test:admin-spaces": "node --test src/test/js/adminSpacesApi.test.mjs",
+    "test:attendance-eligibility": "node --test src/test/js/attendanceEligibility.test.mjs",
+    "test:gamification-quests": "node --test src/test/js/gamificationQuests.test.mjs",
+    "test:home-entry": "node --test src/test/js/homeEntry.test.mjs",
+    "test:space-page": "node --test src/test/js/spacePageBootstrap.test.mjs",
+    "test:js": "node --test src/test/js/*.test.mjs"
   },
   "dependencies": {
     "@vitejs/plugin-react": "^5.0.0",

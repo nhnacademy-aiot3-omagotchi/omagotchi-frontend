@@ -6,7 +6,12 @@ import org.springframework.web.service.registry.ImportHttpServices;
 @Configuration(proxyBeanMethods = false)
 @ImportHttpServices(
         group = AdminAccountHttpServiceConfig.IDENTITY_GROUP_NAME,
-        types = IdentityAdminAccountHttpService.class
+        types = {
+                IdentityAdminAccountHttpService.class,
+                IdentityAdminAccountStatusHttpService.class,
+                IdentityAdminAccountRoleHttpService.class,
+                IdentityAdminAuditHttpService.class
+        }
 )
 @ImportHttpServices(
         group = AdminAccountHttpServiceConfig.LEARNING_GROUP_NAME,

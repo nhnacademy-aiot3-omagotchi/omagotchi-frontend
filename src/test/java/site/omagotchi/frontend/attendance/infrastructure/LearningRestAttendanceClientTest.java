@@ -4,6 +4,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.client.MockRestServiceServer;
@@ -22,6 +23,8 @@ import java.time.LocalDate;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.springframework.test.web.client.ExpectedCount.once;
+import static org.springframework.test.web.client.match.MockRestRequestMatchers.content;
+import static org.springframework.test.web.client.match.MockRestRequestMatchers.method;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withStatus;
 
@@ -142,5 +145,21 @@ class LearningRestAttendanceClientTest {
         )).isInstanceOfSatisfying(BusinessException.class, exception ->
                 assertThat(exception.getErrorCode())
                         .isEqualTo(CommonErrorCode.DOWNSTREAM_INVALID_RESPONSE));
+    }
+
+    @Test
+    @DisplayName("Learning 도서관 입장 결과의 확정 공간 ID 변환")
+    void mapsStudySpaceMoveResult() {
+        server.expect(once(), requestTo(BASE_URL
+                        + "/api/v1/cohorts/7/attendance-records/move-study"))
+                .andExpect(method(HttpMethod.POST))
+                .andExpect(content().json("{\"spaceId\":301}"))
+                .andRespond(withStatus(HttpStatus.OK)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .body("{\"spaceId\":301}"));
+
+        Long result = client.moveStudySpace(BEARER_TOKEN, 7L, 301L);
+
+        assertThat(result).isEqualTo(301L);
     }
 }

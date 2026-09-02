@@ -46,9 +46,9 @@
 
 .space-room-tabs {
     justify-self: center;
-    width: min(440px, 100%);
+    width: min(560px, 100%);
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(3, 1fr);
     gap: 4px;
     padding: 5px;
     border: 1px solid rgba(16, 39, 29, 0.12);
@@ -70,6 +70,56 @@
     background: #ffffff;
     color: var(--room-ink);
     box-shadow: 0 2px 8px rgba(16, 39, 29, 0.12);
+}
+
+.space-room-current-location {
+    min-height: 54px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 9px 14px;
+    border: 1px solid var(--room-line);
+    border-left: 4px solid var(--room-accent);
+    border-radius: 8px;
+    background: #ffffff;
+}
+
+.space-room-current-location > span {
+    flex: 0 0 auto;
+    color: var(--room-muted);
+    font-size: 11px;
+    font-weight: 800;
+}
+
+.space-room-current-location > div {
+    min-width: 0;
+    display: flex;
+    align-items: baseline;
+    gap: 9px;
+}
+
+.space-room-current-location strong,
+.space-room-current-location small {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.space-room-current-location strong {
+    color: var(--room-ink);
+    font-size: 14px;
+}
+
+.space-room-current-location small {
+    color: var(--room-muted);
+    font-size: 11px;
+}
+
+.space-room-current-location[data-location-state="checked-out"],
+.space-room-current-location[data-location-state="unselected"],
+.space-room-current-location[data-location-state="loading"] {
+    border-left-color: #91a79d;
+    background: #f7faf8;
 }
 
 .space-room-content {
@@ -411,7 +461,7 @@
 
 .space-room-lab-grid {
     display: grid;
-    grid-template-columns: 180px minmax(0, 1fr);
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
     gap: 16px;
 }
 
@@ -443,7 +493,7 @@
 }
 
 .space-room-lab-stage {
-    min-height: 254px;
+    min-height: 220px;
     display: flex;
     align-items: flex-end;
     justify-content: space-between;
@@ -456,6 +506,14 @@
         linear-gradient(90deg, rgba(21, 155, 96, 0.05) 1px, transparent 1px),
         #eff8f3;
     background-size: 28px 28px;
+}
+
+.space-room-lab-stage.is-inactive {
+    border-color: #cfd8d3;
+    background:
+        linear-gradient(rgba(85, 112, 100, 0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(85, 112, 100, 0.04) 1px, transparent 1px),
+        #f3f6f4;
 }
 
 .space-room-lab-stage div {
@@ -480,6 +538,10 @@
     color: #345447;
     font-size: 14px;
     line-height: 1.6;
+}
+
+.space-room-lab-stage > button {
+    flex: 0 0 auto;
 }
 
 .space-room-master-detail {
@@ -1114,12 +1176,12 @@
 
 .space-room-library-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: minmax(0, 1fr);
     gap: 12px;
 }
 
 .space-room-library-grid article {
-    min-height: 210px;
+    min-height: 190px;
     display: grid;
     align-content: start;
     gap: 10px;
@@ -1204,6 +1266,19 @@
 }
 
 @media (max-width: 600px) {
+    .space-room-current-location {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .space-room-current-location > div {
+        width: 100%;
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 2px;
+    }
+
     .space-room-section-head {
         align-items: flex-start;
     }

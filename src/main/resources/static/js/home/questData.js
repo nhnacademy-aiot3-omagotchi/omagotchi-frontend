@@ -1,4 +1,7 @@
 const QUEST_STATUSES = new Set(["IN_PROGRESS", "COMPLETED", "CLAIMED", "EXPIRED"]);
+// 서버 QuestType 과 같은 값이다. AI 추천 퀘스트를 화면에서 따로 다루려면 이 값이 필요하다.
+const QUEST_TYPES = new Set(["ROUTINE", "LLM"]);
+export const AI_QUEST_TYPE = "LLM";
 
 function isNonNegativeSafeInteger(value) {
     return Number.isSafeInteger(value) && value >= 0;
@@ -13,9 +16,11 @@ function normalizeDailyQuest(quest) {
         || quest.progressCount > quest.targetCount) return null;
     if (!isNonNegativeSafeInteger(quest.rewardXp)) return null;
     if (!QUEST_STATUSES.has(quest.status)) return null;
+    if (!QUEST_TYPES.has(quest.type)) return null;
 
     return {
         id: String(quest.id),
+        type: quest.type,
         title: quest.title,
         targetCount: quest.targetCount,
         progressCount: quest.progressCount,

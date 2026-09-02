@@ -99,6 +99,22 @@ class AttendanceBffControllerTest {
         verify(service).checkIn();
     }
 
+    @Test
+    @DisplayName("도서관 입장 요청의 공간 ID를 전달하고 확정 위치를 반환한다")
+    void movesToStudySpace() throws Exception {
+        when(service.moveStudySpace(301L)).thenReturn(301L);
+
+        mockMvc.perform(post("/bff/v1/attendance/move-study")
+                        .contentType("application/json")
+                        .content("{\"spaceId\":301}"))
+                .andExpectAll(
+                        status().isOk(),
+                        jsonPath("$.spaceId").value(301)
+                );
+
+        verify(service).moveStudySpace(301L);
+    }
+
     private static AttendanceRecordResult attendanceRecord() {
         Instant timestamp = Instant.parse("2026-08-20T00:00:00Z");
         return new AttendanceRecordResult(

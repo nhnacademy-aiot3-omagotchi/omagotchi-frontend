@@ -3,6 +3,9 @@ function requireApi(api) {
         || !api?.manager?.getAttendancePolicy
         || !api?.manager?.updateAttendancePolicy
         || !api?.systemAdmin?.getUsers
+        || !api?.systemAdmin?.getAudits
+        || !api?.systemAdmin?.changeAccountStatus
+        || !api?.systemAdmin?.changeAccountRole
         || !api?.systemAdmin?.assignManager
         || !api?.systemAdmin?.removeManager) {
         throw new Error("System Admin API 클라이언트를 불러오지 못했습니다.");
@@ -68,6 +71,63 @@ function requireAccountPage(response, expectedPageNumber) {
         throw new Error("사용자 목록 응답 형식이 올바르지 않습니다.");
     }
     return response;
+}
+
+// 서버 action 값을 화면 문구로 옮긴다. 목록에 없는 값은 원문을 그대로 보여 준다.
+// 감사 로그에서 모르는 값을 "기타"로 뭉개면 새 action 이 추가된 사실이 감춰진다.
+const AUDIT_ACTION_LABELS = {
+    ACCOUNT_DISABLED: "계정 비활성화",
+    ACCOUNT_UNLOCKED: "계정 잠금 해제",
+    ACCOUNT_REACTIVATED: "계정 재활성화",
+    ROLE_GRANTED: "시스템 관리자 권한 부여",
+    ROLE_REVOKED: "시스템 관리자 권한 회수"
+};
+
+/** "2026-09-02 14:03" 형태의 지역 시각. Instant 문자열을 그대로 보여 주지 않는다. */
+export function formatAuditTime(value) {
+    const at = new Date(value);
+    if (Number.isNaN(at.getTime())) {
+        throw new Error("감사 로그 발생 시각이 올바르지 않습니다.");
+    }
+    const pad = (part) => String(part).padStart(2, "0");
+    return `${at.getFullYear()}-${pad(at.getMonth() + 1)}-${pad(at.getDate())}`
+        + ` ${pad(at.getHours())}:${pad(at.getMinutes())}`;
+}
+
+/**
+ * 감사 한 줄을 화면 모델로 옮긴다.
+ *
+ * 형식이 깨진 행은 버리지 않고 던진다. 감사 로그에서 행을 조용히 빼면 "기록이
+ * 없었다"와 "보여 주지 못했다"를 구분할 수 없게 되고, 그건 감사 로그의 존재 이유를
+ * 무너뜨린다. 차라리 패널 전체가 오류를 말하게 둔다.
+ */
+export function normalizeAudit(audit) {
+    if (!audit
+        || typeof audit.action !== "string" || !audit.action.trim()
+        || typeof audit.actorUserId !== "string" || !audit.actorUserId.trim()
+        || typeof audit.targetUserId !== "string" || !audit.targetUserId.trim()
+        || typeof audit.beforeValue !== "string" || !audit.beforeValue.trim()
+        || typeof audit.afterValue !== "string" || !audit.afterValue.trim()
+        || typeof audit.reason !== "string" || !audit.reason.trim()) {
+        throw new Error("감사 로그 응답 형식이 올바르지 않습니다.");
+    }
+    // 이름은 없을 수 있다. 계정이 지워졌거나 조회에 실패해도 누가 했는지는 UUID 가 남긴다.
+    const target = audit.targetName || audit.targetUserId;
+    const actor = audit.actorName || audit.actorUserId;
+    return {
+        time: formatAuditTime(audit.occurredAt),
+        action: AUDIT_ACTION_LABELS[audit.action] || audit.action,
+        detail: `${target} · ${audit.beforeValue} → ${audit.afterValue} · ${audit.reason}`,
+        actor
+    };
+}
+
+async function loadAudits(client) {
+    const response = await client.systemAdmin.getAudits({page: 0, size: 50});
+    if (!Array.isArray(response?.items)) {
+        throw new Error("감사 로그 응답 형식이 올바르지 않습니다.");
+    }
+    return response.items.map(normalizeAudit);
 }
 
 async function loadAllUsers(client) {
@@ -173,26 +233,96 @@ export function createSystemAdminApiRepository(api = window.OmagotchiApi) {
 
     return {
         async loadDashboard() {
-            const [users, cohorts] = await Promise.all([
+            // 감사 로그는 실패해도 대시보드 전체를 못 쓰게 만들 이유가 없다.
+            // 다만 실패를 "연동 대기"로 위장하지는 않는다. 아래에서 사유를 따로 들고 간다.
+            const [users, cohorts, auditResult] = await Promise.all([
                 loadAllUsers(client),
-                client.manager.getCohorts()
+                client.manager.getCohorts(),
+                loadAudits(client).then(
+                    (audits) => ({audits, error: null}),
+                    (error) => ({
+                        audits: [],
+                        error: error?.message || "감사 로그를 불러오지 못했습니다."
+                    })
+                )
             ]);
             return {
                 users,
                 cohorts: (Array.isArray(cohorts) ? cohorts : []).map(normalizeCohort),
-                audits: [],
+                audits: auditResult.audits,
+                auditError: auditResult.error,
                 capabilities: {
                     identity: true,
                     managerWrite: true,
-                    identityWrite: false,
-                    audit: false,
+                    // Identity 에 계정 상태 변경 API가 있어 열어 둔다.
+                    accountStatusWrite: true,
+                    // Identity 에 전역 역할 변경 API가 생겨 열어 둔다.
+                    identityWrite: true,
+                    // 조회에 성공했을 때만 연다. 실패하면 화면이 오류를 말한다.
+                    audit: auditResult.error === null,
                     cohortDelete: true,
                     cohortSummary: true
                 }
             };
         },
 
+        /**
+         * 계정 상태·전역 역할·기수 권한을 한 번에 반영한다.
+         *
+         * 순서가 중요하다.
+         * 1) Identity 는 ACTIVE·LOCKED 계정의 역할만 바꿔 준다. 그래서 활성화는 역할
+         *    변경 앞에, 비활성화는 역할 변경 뒤에 둔다. 한 방향으로 고정하면
+         *    "활성화하며 관리자 부여" 또는 "관리자 회수하며 비활성화" 중 하나가 반드시
+         *    깨진다.
+         * 2) Identity 작업이 모두 끝난 뒤에 Learning 의 기수 권한을 건드린다. 앞이
+         *    실패하면 기수 권한은 손대지 않아 아무것도 변하지 않는다.
+         *
+         * 서로 다른 서비스라 원자성은 없다. 그래서 어디까지 반영됐는지를 오류에 실어
+         * 올려 보내고(statusApplied·roleApplied), 화면이 그 사실을 숨기지 않는다.
+         */
         async updateUserPermissions(userId, payload) {
+            const activating = Boolean(payload.statusChanged) && payload.status === "ACTIVE";
+            const disabling = Boolean(payload.statusChanged) && payload.status !== "ACTIVE";
+            let statusApplied = false;
+            let roleApplied = false;
+
+            const changeStatus = async () => {
+                await client.systemAdmin.changeAccountStatus(
+                    userId,
+                    payload.status,
+                    payload.reason
+                );
+                statusApplied = true;
+            };
+
+            // 활성화가 먼저다. 비활성 계정에는 역할을 줄 수 없다.
+            if (activating) {
+                await changeStatus();
+            }
+            if (payload.roleChanged) {
+                try {
+                    await client.systemAdmin.changeAccountRole(
+                        userId,
+                        payload.globalRole,
+                        payload.reason
+                    );
+                    roleApplied = true;
+                } catch (roleError) {
+                    // 활성화만 반영된 채 멈춘 사실을 숨기지 않는다.
+                    roleError.statusApplied = statusApplied;
+                    throw roleError;
+                }
+            }
+            // 비활성화는 마지막이다. 먼저 하면 뒤따르는 역할 변경이 Identity 에서 막힌다.
+            if (disabling) {
+                try {
+                    await changeStatus();
+                } catch (statusError) {
+                    statusError.roleApplied = roleApplied;
+                    throw statusError;
+                }
+            }
+
             const previous = new Set((payload.previousManagerCohortIds || []).map(String));
             const next = new Set((payload.managerCohortIds || []).map(String));
             const removals = [...previous].filter((cohortId) => !next.has(cohortId));
@@ -232,8 +362,14 @@ export function createSystemAdminApiRepository(api = window.OmagotchiApi) {
                     );
                     partialFailure.code = "MANAGER_PERMISSION_UPDATE_PARTIAL_FAILURE";
                     partialFailure.rollbackErrors = rollbackErrors;
+                    partialFailure.statusApplied = statusApplied;
+                    partialFailure.roleApplied = roleApplied;
                     throw partialFailure;
                 }
+                // 계정 상태와 전역 역할은 되돌리지 않는다. 감사 기록이 남고 세션도 이미
+                // 폐기됐으므로 되돌리면 기록만 두 줄 늘고 결과는 제자리다.
+                operationError.statusApplied = statusApplied;
+                operationError.roleApplied = roleApplied;
                 throw operationError;
             }
         },

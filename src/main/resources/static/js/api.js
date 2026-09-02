@@ -179,7 +179,15 @@
             getHistory: (query = {}) => optional(withQuery("/attendance/history", query)),
             getToday: () => optional("/attendance/today"),
             checkIn: () => request("/attendance/check-in", { method: "POST" }),
-            checkOut: () => request("/attendance/check-out", { method: "POST" })
+            checkOut: () => request("/attendance/check-out", { method: "POST" }),
+            moveLab: (spaceId) => request("/attendance/move-lab", {
+                method: "POST",
+                body: {spaceId}
+            }),
+            moveStudySpace: (spaceId) => request("/attendance/move-study", {
+                method: "POST",
+                body: {spaceId}
+            })
         },
         spaces: {
             list: () => request("/spaces"),
@@ -276,6 +284,9 @@
         gamification: {
             getHome: () => request("/gamification/home"),
             getDailyQuests: () => request("/gamification/quests/daily"),
+            // 예측 공부 시간은 Quest 응답에 포함되지 않으므로 별도로 조회한다.
+            // cohortId는 서버가 Session에서 확보하므로 Browser가 보내지 않는다.
+            getStudyTimePrediction: () => request("/gamification/predictions/study-time"),
             // 서버 계약은 Quest 정의 ID가 아니라 사용자별 일일 Quest 인스턴스 ID를 받는다.
             claimQuest: (userDailyQuestId) => request(
                 `/gamification/quests/${encodeURIComponent(userDailyQuestId)}/claim`,
@@ -343,9 +354,18 @@
         },
         systemAdmin: {
             getUsers: (query = {}) => request(withQuery("/admin/users", query)),
+            getAudits: (query = {}) => request(withQuery("/admin/audits", query)),
             assignManager: (userId, cohortId) => request(
                 `/admin/users/${encodeURIComponent(userId)}/managed-cohorts/${encodeURIComponent(cohortId)}`,
                 {method: "PUT"}
+            ),
+            changeAccountStatus: (userId, status, reason) => request(
+                `/admin/users/${encodeURIComponent(userId)}/status`,
+                {method: "PATCH", body: {status, reason}}
+            ),
+            changeAccountRole: (userId, role, reason) => request(
+                `/admin/users/${encodeURIComponent(userId)}/role`,
+                {method: "PATCH", body: {role, reason}}
             ),
             removeManager: (userId, cohortId) => request(
                 `/admin/users/${encodeURIComponent(userId)}/managed-cohorts/${encodeURIComponent(cohortId)}`,

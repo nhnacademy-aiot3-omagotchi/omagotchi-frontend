@@ -79,6 +79,7 @@ test("일일 퀘스트 요청만 실패해도 홈과 랭킹 결과는 유지한�
 test("퀘스트 응답은 계약 필드와 타입이 모두 유효할 때만 렌더링 모델로 변환한다", () => {
     assert.deepEqual(normalizeDailyQuests([{
         id: 17,
+        type: "ROUTINE",
         title: "60분 학습",
         targetCount: 60,
         progressCount: 20,
@@ -86,6 +87,7 @@ test("퀘스트 응답은 계약 필드와 타입이 모두 유효할 때만 렌
         status: "IN_PROGRESS"
     }]), [{
         id: "17",
+        type: "ROUTINE",
         title: "60분 학습",
         targetCount: 60,
         progressCount: 20,
@@ -95,6 +97,7 @@ test("퀘스트 응답은 계약 필드와 타입이 모두 유효할 때만 렌
 
     assert.equal(normalizeDailyQuests([{
         id: "17\" onclick=\"alert(1)",
+        type: "ROUTINE",
         title: "악성 응답",
         targetCount: 1,
         progressCount: 1,
@@ -102,4 +105,38 @@ test("퀘스트 응답은 계약 필드와 타입이 모두 유효할 때만 렌
         status: "COMPLETED"
     }]), null);
     assert.match(homeSource, /data-home-claim="\$\{escapeHtml\(quest\.id\)\}"/);
+
+    // type 이 없거나 계약 밖 값이면 렌더링하지 않는다. AI 분기가 조용히 틀어지는 걸 막는다.
+    assert.equal(normalizeDailyQuests([{
+        id: 18,
+        title: "타입 없는 응답",
+        targetCount: 1,
+        progressCount: 0,
+        rewardXp: 10,
+        status: "IN_PROGRESS"
+    }]), null);
+    assert.equal(normalizeDailyQuests([{
+        id: 19,
+        type: "UNKNOWN",
+        title: "계약 밖 타입",
+        targetCount: 1,
+        progressCount: 0,
+        rewardXp: 10,
+        status: "IN_PROGRESS"
+    }]), null);
+});
+
+test("AI 추천 퀘스트는 일일 목록과 분리해 맨 위 카드로 그린다", () => {
+    assert.match(questDataSource, /export const AI_QUEST_TYPE = "LLM"/);
+    assert.match(homeSource, /quest\.type === AI_QUEST_TYPE/);
+    assert.match(homeSource, /quest\.type !== AI_QUEST_TYPE/);
+    assert.match(homeSource, /quest-ai-card/);
+});
+
+test("진행 오버레이 탭은 퀘스트와 랭킹만 남긴다", () => {
+    for (const removed of ["achievements", "timeline", "data-progress-stats"]) {
+        assert.equal(homeSource.includes(removed), false, `${removed} 잔재가 남아 있습니다.`);
+    }
+    assert.match(homeSource, /data-overlay-tab="quests"/);
+    assert.match(homeSource, /data-overlay-tab="leaders"/);
 });

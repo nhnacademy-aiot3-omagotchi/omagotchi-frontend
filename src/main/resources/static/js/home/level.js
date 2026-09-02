@@ -1,10 +1,11 @@
+/**
+ * 성장 상태를 계산하고 React(StatusHud, CharacterStage)로 넘긴다.
+ *
+ * 예전에는 XP 바와 레벨 숫자를 querySelector 로 잡아 직접 고쳤다. 그 노드는 React 가
+ * 소유하므로 리렌더에 덮이거나 교체되어, 보상을 받아도 바가 움직이지 않았다.
+ * 이제 DOM 참조를 받지 않는다.
+ */
 export function createLevel({
-    levelElement,
-    xpFill,
-    currentXpLabel,
-    nextLevelLabel,
-    characterImage,
-    characterStage,
     initialLevel = 1,
     initialCurrentXp = 0,
     initialRequiredXp = 1
@@ -53,30 +54,41 @@ export function createLevel({
         window.setTimeout(() => celebration.remove(), 1750);
     }
 
-    // 실제 레벨이 증가했을 때만 캐릭터와 화면 효과를 함께 실행한다.
+    /**
+     * 레벨업 연출.
+     *
+     * 캐릭터·레벨 배지의 `is-level-up` 클래스는 React 가 소유하는 노드라서 여기서
+     * 붙여도 다음 리렌더에 지워진다. 그래서 클래스는 publish() 로 React 에 맡기고,
+     * 여기서는 document.body 에 직접 붙이는 축포만 담당한다.
+     */
     function playLevelUpEffect(level) {
-        const effectTargets = [levelElement, characterImage, characterStage].filter(Boolean);
-
-        effectTargets.forEach((target) => target.classList.remove("is-level-up"));
-
-        window.requestAnimationFrame(() => {
-            effectTargets.forEach((target) => target.classList.add("is-level-up"));
-        });
-
-        window.setTimeout(() => {
-            effectTargets.forEach((target) => target.classList.remove("is-level-up"));
-        }, 1100);
-
         showLevelUpCelebration(level);
     }
 
-    function render() {
-        const progress = Math.min(100, Math.round((currentXp / requiredXp) * 100));
+    /**
+     * 성장 상태를 React(StatusHud)로 넘긴다.
+     *
+     * XP 바와 레벨 숫자는 React 가 그린다. 여기서 querySelector 로 잡아 둔 노드를
+     * 직접 고치면 두 가지가 어긋난다. 캐시한 노드가 리렌더로 교체되면 화면에 붙어
+     * 있지 않은 노드를 고치게 되고, 같은 노드라도 style 을 props 로 관리하므로
+     * 다음 리렌더에 되돌아간다. 그래서 값만 넘기고 그리기는 React 에 맡긴다.
+     *
+     * React 마운트보다 이 호출이 먼저일 수 있어 전역에도 남긴다.
+     */
+    function publish(levelUp) {
+        const snapshot = {
+            level,
+            currentExp: currentXp,
+            requiredExp: requiredXp,
+            progress: Math.min(100, Math.round((currentXp / requiredXp) * 100)),
+            levelUp: Boolean(levelUp)
+        };
+        globalThis.OmagotchiHomeCharacter = snapshot;
+        window.dispatchEvent(new CustomEvent("omagotchi:home-character-update", {detail: snapshot}));
+    }
 
-        if (levelElement) levelElement.textContent = String(level);
-        if (xpFill) xpFill.style.width = `${progress}%`;
-        if (currentXpLabel) currentXpLabel.textContent = `${currentXp}xp`;
-        if (nextLevelLabel) nextLevelLabel.textContent = `${currentXp}  /  ${requiredXp}`;
+    function render() {
+        publish(false);
     }
 
     function update(next = {}) {
@@ -84,8 +96,10 @@ export function createLevel({
         level = Number(next.level) || level;
         currentXp = Number(next.currentExp) || 0;
         requiredXp = Math.max(1, Number(next.requiredExp) || requiredXp);
-        render();
-        if (level > previousLevel) {
+
+        const leveledUp = level > previousLevel;
+        publish(leveledUp);
+        if (leveledUp) {
             playLevelUpEffect(level);
         }
     }

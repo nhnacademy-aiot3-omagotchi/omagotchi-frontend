@@ -11,13 +11,16 @@ import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.support.RestClientAdapter;
 import org.springframework.web.service.invoker.HttpServiceProxyFactory;
+import site.omagotchi.frontend.attendance.infrastructure.request.LearningAttendanceSpaceRequest;
 import site.omagotchi.frontend.attendance.infrastructure.response.LearningAttendanceRecordResponse;
+import site.omagotchi.frontend.attendance.infrastructure.response.LearningAttendanceSpaceMoveResponse;
 import site.omagotchi.frontend.global.http.response.PageResponse;
 
 import java.time.LocalDate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.client.ExpectedCount.once;
+import static org.springframework.test.web.client.match.MockRestRequestMatchers.content;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.header;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.method;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
@@ -96,5 +99,24 @@ class AttendanceHttpServiceContractTest {
 
         // Then: 합의된 Endpoint 호출과 응답 역직렬화
         assertThat(response.attendanceDate()).isEqualTo(LocalDate.of(2026, 8, 24));
+    }
+
+    @Test
+    @DisplayName("도서관 입장 HTTP 계약")
+    void mapsStudySpaceMoveToAttendanceEndpoint() {
+        server.expect(once(), requestTo(BASE_URL
+                        + "/api/v1/cohorts/7/attendance-records/move-study"))
+                .andExpect(method(HttpMethod.POST))
+                .andExpect(header(HttpHeaders.AUTHORIZATION, BEARER))
+                .andExpect(content().json("{\"spaceId\":301}"))
+                .andRespond(withSuccess("{\"spaceId\":301}", MediaType.APPLICATION_JSON));
+
+        LearningAttendanceSpaceMoveResponse response = service.moveStudySpace(
+                BEARER,
+                7L,
+                new LearningAttendanceSpaceRequest(301L)
+        );
+
+        assertThat(response.spaceId()).isEqualTo(301L);
     }
 }
