@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-async function withSpaceRoom(callback, savedState = null) {
+async function withSpaceRoom(callback, savedState = null, profile = {}, api = null) {
     const originalWindow = globalThis.window;
     const originalSessionStorage = globalThis.sessionStorage;
 
@@ -10,8 +10,9 @@ async function withSpaceRoom(callback, savedState = null) {
         setInterval() {
             return 1;
         },
-        OmagotchiProfile: {},
-        OmagotchiCharacterAssets: null
+        OmagotchiProfile: profile,
+        OmagotchiCharacterAssets: null,
+        OmagotchiApi: api
     };
     globalThis.sessionStorage = {
         getItem() {
@@ -38,6 +39,9 @@ function createRoot() {
         async click(target) {
             await listeners.click?.({ target });
         },
+        querySelector() {
+            return null;
+        },
         dataset: {},
         innerHTML: "",
         isConnected: true
@@ -54,6 +58,97 @@ test("spaceRoom initializes and exposes updateData", async () => {
         assert.ok(spaceRoom);
         assert.equal(typeof spaceRoom.updateData, "function");
     });
+});
+
+test("lab tab appears before meeting and lists only the current cohort labs", async () => {
+    const api = {
+        attendance: {
+            async getToday() {
+                return { checkedInAt: "2026-09-01T09:00:00Z", checkedOutAt: null };
+            }
+        },
+        spaces: {
+            async list() {
+                return [
+                    { spaceId: 101, name: "3기 실습실 A", type: "LAB", capacity: 30, operationalStatus: "ACTIVE", cohortId: 3 },
+                    { spaceId: 102, name: "3기 실습실 B", type: "LAB", capacity: 20, operationalStatus: "INACTIVE", inactiveReason: "정비 중", cohortId: 3 },
+                    { spaceId: 201, name: "4기 실습실", type: "LAB", capacity: 25, operationalStatus: "ACTIVE", cohortId: 4 },
+                    { spaceId: 301, name: "공용 회의실", type: "MEETING", capacity: 8, operationalStatus: "ACTIVE", status: "AVAILABLE" }
+                ];
+            },
+            async getMyVacancyAlerts() {
+                return [];
+            }
+        }
+    };
+
+    await withSpaceRoom(async (spaceRoom) => {
+        const root = createRoot();
+        spaceRoom.mount(root);
+        await new Promise(setImmediate);
+
+        const labTabIndex = root.innerHTML.indexOf(">실습실</button>");
+        const meetingTabIndex = root.innerHTML.indexOf(">회의실</button>");
+        assert.ok(labTabIndex >= 0 && labTabIndex < meetingTabIndex);
+        assert.match(root.innerHTML, /3기 실습실 A/);
+        assert.match(root.innerHTML, /3기 실습실 B/);
+        assert.match(root.innerHTML, /2곳 배정/);
+        assert.match(root.innerHTML, /운영 중지/);
+        assert.match(root.innerHTML, /선택 가능/);
+        assert.match(root.innerHTML, /선택 불가/);
+        assert.doesNotMatch(root.innerHTML, /입실 중/);
+        assert.doesNotMatch(root.innerHTML, /4기 실습실/);
+        assert.match(root.innerHTML, /현재 내 위치/);
+        assert.match(root.innerHTML, /실습실을 선택해 주세요/);
+    }, { activeTab: "lab" }, {
+        approvedCohort: { cohortId: 3, name: "3기" }
+    }, api);
+});
+
+test("library uses the shared current location and keeps its action under operational status", async () => {
+    const api = {
+        attendance: {
+            async getToday() {
+                return { checkedInAt: "2026-09-01T09:00:00Z", checkedOutAt: null };
+            }
+        },
+        spaces: {
+            async list() {
+                return [];
+            },
+            async getMyVacancyAlerts() {
+                return [];
+            }
+        }
+    };
+
+    await withSpaceRoom(async (spaceRoom) => {
+        const root = createRoot();
+        spaceRoom.mount(root);
+        await new Promise(setImmediate);
+
+        assert.match(root.innerHTML, /운영 상태/);
+        assert.match(root.innerHTML, /정상 운영/);
+        assert.match(root.innerHTML, /data-space-library-toggle>[\s\S]*도서관 입장/);
+        assert.doesNotMatch(root.innerHTML, /현재 이용/);
+        assert.doesNotMatch(root.innerHTML, /내 상태/);
+
+        await root.click({
+            matches() {
+                return false;
+            },
+            closest(selector) {
+                return selector === "[data-space-library-toggle]" ? { dataset: {} } : null;
+            }
+        });
+
+        assert.match(root.innerHTML, /data-location-state="library"/);
+        assert.match(root.innerHTML, /현재 내 위치/);
+        assert.match(root.innerHTML, /도서관 이용 중/);
+        assert.match(root.innerHTML, /도서관 나가기/);
+    }, { activeTab: "library" }, {
+        approvedCohort: { cohortId: 3, name: "3기" }
+    }, api);
 });
 
 test("updateData renders external rooms instead of stale loading or error state", async () => {
