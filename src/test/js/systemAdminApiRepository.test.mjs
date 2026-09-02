@@ -3,8 +3,9 @@ import test from "node:test";
 import {createSystemAdminApiRepository} from "../../main/resources/static/js/system-admin/dashboard/data/systemAdminApiRepository.js";
 import {mergeManagerCohortSelection} from "../../main/resources/static/js/system-admin/dashboard/dashboardController.js";
 
-function apiFixture() {
+function apiFixture({missingPolicyFor = [], failPolicySave = false} = {}) {
     const calls = [];
+    const missingPolicyCohortIds = new Set(missingPolicyFor.map(String));
     return {
         calls,
         api: {
@@ -38,6 +39,31 @@ function apiFixture() {
                 }
             },
             manager: {
+                async getAttendancePolicy(cohortId) {
+                    calls.push(["getAttendancePolicy", cohortId]);
+                    if (missingPolicyCohortIds.has(String(cohortId))) {
+                        const error = new Error("요청한 정보를 찾을 수 없습니다.");
+                        error.code = "ATTENDANCE_POLICY_NOT_FOUND";
+                        throw error;
+                    }
+                    return {
+                        cohortId,
+                        timezone: "Asia/Seoul",
+                        scheduledStartTime: "09:00:00",
+                        scheduledEndTime: "18:00:00",
+                        absenceCutoffTime: "10:00:00",
+                        allowedAwayMinutes: 30
+                    };
+                },
+                async updateAttendancePolicy(cohortId, payload) {
+                    calls.push(["updateAttendancePolicy", cohortId, payload]);
+                    if (failPolicySave) {
+                        const error = new Error("출결 정책을 저장하지 못했습니다.");
+                        error.code = "COHORT_MANAGER_REQUIRED";
+                        throw error;
+                    }
+                    return {cohortId, ...payload};
+                },
                 async getCohorts() {
                     calls.push(["getCohorts"]);
                     return [{
@@ -409,4 +435,144 @@ test("기수 상태 변경은 Admin Learning BFF 클라이언트로 위임한다
     // Then
     assert.deepEqual(fixture.calls, [["updateCohortStatus", "4", "ACTIVE"]]);
     assert.equal(changed.status, "ACTIVE");
+});
+
+test("출결 정책 조회는 시각을 input[type=time] 형식으로 눕힌다", async () => {
+    // Given
+    const fixture = apiFixture();
+    const repository = createSystemAdminApiRepository(fixture.api);
+
+    // When
+    const loaded = await repository.loadAttendancePolicy("3");
+
+    // Then
+    assert.equal(loaded.configured, true);
+    assert.equal(loaded.policy.scheduledStartTime, "09:00");
+    assert.equal(loaded.policy.scheduledEndTime, "18:00");
+    assert.equal(loaded.policy.absenceCutoffTime, "10:00");
+    assert.equal(loaded.policy.allowedAwayMinutes, 30);
+});
+
+test("정책이 없는 기수는 오류가 아니라 미설정 기본값으로 돌려준다", async () => {
+    // Given
+    const fixture = apiFixture({missingPolicyFor: ["4"]});
+    const repository = createSystemAdminApiRepository(fixture.api);
+
+    // When
+    const loaded = await repository.loadAttendancePolicy("4");
+
+    // Then
+    assert.equal(loaded.configured, false);
+    assert.equal(loaded.policy.timezone, "Asia/Seoul");
+    assert.equal(loaded.policy.scheduledStartTime, "09:00");
+});
+
+test("정책 조회의 다른 실패는 미설정으로 흡수하지 않는다", async () => {
+    // Given
+    const fixture = apiFixture();
+    fixture.api.manager.getAttendancePolicy = async () => {
+        const error = new Error("권한이 없습니다.");
+        error.code = "COHORT_MANAGER_REQUIRED";
+        throw error;
+    };
+    const repository = createSystemAdminApiRepository(fixture.api);
+
+    // When / Then
+    await assert.rejects(
+        () => repository.loadAttendancePolicy("3"),
+        (error) => error.code === "COHORT_MANAGER_REQUIRED"
+    );
+});
+
+test("시작 시각이 종료 시각보다 늦으면 서버로 보내지 않는다", async () => {
+    // Given
+    const fixture = apiFixture();
+    const repository = createSystemAdminApiRepository(fixture.api);
+
+    // When / Then
+    await assert.rejects(
+        () => repository.saveAttendancePolicy("3", {
+            timezone: "Asia/Seoul",
+            scheduledStartTime: "18:00",
+            scheduledEndTime: "09:00",
+            absenceCutoffTime: "",
+            allowedAwayMinutes: 30
+        }),
+        (error) => error.code === "ATTENDANCE_POLICY_INVALID_INPUT"
+    );
+    assert.deepEqual(fixture.calls, []);
+});
+
+test("비어 있는 결석 기준 시각은 null로 보낸다", async () => {
+    // Given
+    const fixture = apiFixture();
+    const repository = createSystemAdminApiRepository(fixture.api);
+
+    // When
+    await repository.saveAttendancePolicy("3", {
+        timezone: "Asia/Seoul",
+        scheduledStartTime: "09:00",
+        scheduledEndTime: "18:00",
+        absenceCutoffTime: "",
+        allowedAwayMinutes: "30"
+    });
+
+    // Then
+    assert.deepEqual(fixture.calls, [["updateAttendancePolicy", "3", {
+        timezone: "Asia/Seoul",
+        scheduledStartTime: "09:00",
+        scheduledEndTime: "18:00",
+        absenceCutoffTime: null,
+        allowedAwayMinutes: 30
+    }]]);
+});
+
+test("기수 생성은 출결 정책까지 저장한다", async () => {
+    // Given
+    const fixture = apiFixture();
+    const repository = createSystemAdminApiRepository(fixture.api);
+
+    // When
+    await repository.createCohort({
+        name: "AIoT 5기",
+        description: "설명",
+        startDate: "2027-01-01",
+        endDate: "2027-06-30",
+        attendancePolicy: {
+            timezone: "Asia/Seoul",
+            scheduledStartTime: "09:00",
+            scheduledEndTime: "18:00",
+            absenceCutoffTime: "10:00",
+            allowedAwayMinutes: 30
+        }
+    });
+
+    // Then
+    assert.deepEqual(fixture.calls.map((call) => call[0]), ["createCohort", "updateAttendancePolicy"]);
+});
+
+test("출결 정책 저장이 실패하면 방금 만든 기수를 되돌린다", async () => {
+    // Given
+    const fixture = apiFixture({failPolicySave: true});
+    const repository = createSystemAdminApiRepository(fixture.api);
+
+    // When / Then
+    await assert.rejects(() => repository.createCohort({
+        name: "AIoT 5기",
+        startDate: "2027-01-01",
+        endDate: "2027-06-30",
+        attendancePolicy: {
+            timezone: "Asia/Seoul",
+            scheduledStartTime: "09:00",
+            scheduledEndTime: "18:00",
+            absenceCutoffTime: "10:00",
+            allowedAwayMinutes: 30
+        }
+    }));
+
+    // 정책 없는 기수가 남으면 그 기수 학생 전원이 체크인에 실패한다.
+    assert.deepEqual(
+        fixture.calls.map((call) => call[0]),
+        ["createCohort", "updateAttendancePolicy", "deleteCohort"]
+    );
 });

@@ -1,3 +1,5 @@
+import { resolveHomeEntry } from "./homeEntry.js";
+
 async function bootstrapHome() {
     await import("./home-react/home-app.js?v=20260827-1");
 
@@ -21,12 +23,32 @@ async function bootstrapHome() {
     globalThis.OmagotchiProfile = profile || {};
 
     if (profile) {
-        if (!profile.currentCharacter) {
-            globalThis.location.replace("/character-selector");
+        const initialDestination = resolveHomeEntry(profile, null);
+        if (initialDestination === "/character-selector") {
+            globalThis.location.replace(initialDestination);
             return;
         }
 
-        if (!profile.approvedCohort && !globalThis.OmagotchiInitialOverlay) {
+        if (profile.approvedCohort?.cohortId) {
+            try {
+                const todayAttendance = await globalThis.OmagotchiApi.attendance.getToday();
+                const attendanceDestination = resolveHomeEntry(profile, todayAttendance);
+                if (attendanceDestination === "/check-in") {
+                    globalThis.location.replace(attendanceDestination);
+                    return;
+                }
+            } catch (error) {
+                if (error?.status === 401) {
+                    return;
+                }
+
+                const toast = document.querySelector("[data-home-toast]");
+                if (toast) {
+                    toast.textContent = "오늘 출석 상태를 확인하지 못했습니다.";
+                    toast.classList.add("is-visible");
+                }
+            }
+        } else if (!globalThis.OmagotchiInitialOverlay) {
             globalThis.OmagotchiInitialOverlay = "cohort";
         }
     }

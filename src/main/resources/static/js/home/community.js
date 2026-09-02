@@ -44,7 +44,8 @@ export async function saveCommunityPost({form, api, cohortId}) {
         }
 
         const post = {
-            type: formData.get("type") === "notice" ? "NOTICE" : "FREE",
+            // 새 글은 사용자 홈의 자유 게시판에만 작성한다. 기존 공지 수정 시에는 유형을 보존한다.
+            type: form.dataset.communityPostType === "NOTICE" ? "NOTICE" : "FREE",
             title,
             content,
             scope: "COHORT",

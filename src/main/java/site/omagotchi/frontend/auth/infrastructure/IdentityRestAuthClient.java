@@ -28,6 +28,10 @@ public class IdentityRestAuthClient implements IdentityAuthClient {
     private final RestClientCallExecutor callExecutor;
     private final IdentityAuthErrorResolver errorResolver;
 
+    /**
+     * @deprecated Identity v1의 OTP 없는 가입 Adapter다. v2 종단 검증 완료 후 제거한다.
+     */
+    @Deprecated(forRemoval = true)
     @Override
     public SignupResult signUp(String email, String password, String name) {
         // 회원가입 화면 복구에 필요한 4xx 결과 변환

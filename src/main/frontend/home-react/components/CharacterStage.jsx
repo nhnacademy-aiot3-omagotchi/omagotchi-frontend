@@ -5,11 +5,12 @@ export function CharacterStage({
   characterAlt = "오마고치 캐릭터",
   interactionLabel = "오마고치와 놀아주기",
   wingSrc = "",
-  message = ""
+  message = "",
+  levelUp = false
 }) {
   return (
     <section className="companion-panel" aria-label="캐릭터 상태">
-      <div className="home-character-stage" data-character-stage>
+      <div className={`home-character-stage${levelUp ? " is-level-up" : ""}`} data-character-stage>
         <img
           className="home-character-wing"
           data-character-wing
@@ -23,7 +24,7 @@ export function CharacterStage({
             {message}
           </p>
           <button className="home-character-button" type="button" data-character-interaction aria-label={interactionLabel}>
-            <img className="home-character" data-home-character src={characterSrc} alt={characterAlt} />
+            <img className={`home-character${levelUp ? " is-level-up" : ""}`} data-home-character src={characterSrc} alt={characterAlt} />
           </button>
         </div>
       </div>

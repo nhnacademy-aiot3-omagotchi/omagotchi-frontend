@@ -30,6 +30,8 @@ import org.springframework.web.context.request.ServletWebRequest;
 import site.omagotchi.frontend.global.exception.ApiErrorResponse;
 import site.omagotchi.frontend.global.exception.BusinessException;
 import site.omagotchi.frontend.global.exception.CommonErrorCode;
+import site.omagotchi.frontend.global.exception.RetryAfterMetadata;
+import site.omagotchi.frontend.global.exception.RetryAfterSeconds;
 import site.omagotchi.frontend.global.learning.infrastructure.LearningDownstreamException;
 import site.omagotchi.frontend.global.security.BrowserSessionInvalidator;
 import site.omagotchi.frontend.global.security.SecurityErrorCode;
@@ -74,6 +76,18 @@ class ApiExceptionHandlerTest {
                         header().string(HttpHeaders.CACHE_CONTROL, "no-store"),
                         jsonPath("$.code").value("COMMON_INVALID_REQUEST"),
                         jsonPath("$.path").value("/bff/v1/test/errors/invalid-request")
+                );
+    }
+
+    @Test
+    @DisplayName("공통 Retry-After 메타데이터를 Business 오류 응답 Header로 변환")
+    void handlesRetryAfterMetadataFromBusinessException() throws Exception {
+        mockMvc.perform(get("/bff/v1/test/errors/retry-after"))
+                .andExpectAll(
+                        status().isServiceUnavailable(),
+                        header().string(HttpHeaders.RETRY_AFTER, "23"),
+                        header().string(HttpHeaders.CACHE_CONTROL, "no-store"),
+                        jsonPath("$.code").value("COMMON_SERVICE_UNAVAILABLE")
                 );
     }
 
@@ -450,6 +464,11 @@ class ApiExceptionHandlerTest {
             throw new BusinessException(CommonErrorCode.INVALID_REQUEST);
         }
 
+        @GetMapping("/bff/v1/test/errors/retry-after")
+        void retryAfter() {
+            throw new RetryAfterBusinessException(23);
+        }
+
         @PostMapping(
                 value = "/bff/v1/test/errors/request-body",
                 consumes = MediaType.APPLICATION_JSON_VALUE
@@ -589,5 +608,22 @@ class ApiExceptionHandlerTest {
     public record TestRequest(
             @NotBlank(message = "name은 필수입니다.") String name
     ) {
+    }
+
+    private static final class RetryAfterBusinessException
+            extends BusinessException
+            implements RetryAfterMetadata {
+
+        private final RetryAfterSeconds retryAfter;
+
+        private RetryAfterBusinessException(long retryAfterSeconds) {
+            super(CommonErrorCode.SERVICE_UNAVAILABLE);
+            this.retryAfter = new RetryAfterSeconds(retryAfterSeconds);
+        }
+
+        @Override
+        public RetryAfterSeconds retryAfter() {
+            return retryAfter;
+        }
     }
 }
