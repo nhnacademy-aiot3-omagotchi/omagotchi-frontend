@@ -26,6 +26,9 @@
 .home-overlay {
     width: min(1060px, calc(100vw - 32px));
     max-height: calc(100dvh - 32px);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
     padding: 0 clamp(18px, 3vw, 34px) clamp(20px, 3vw, 34px);
     border: 2px solid rgba(236, 255, 246, 0.88);
     border-radius: clamp(18px, 2.4vw, 26px);
@@ -47,6 +50,7 @@
 }
 
 .home-overlay > .home-overlay-header {
+    flex-shrink: 0;
     position: sticky;
     top: 0;
     z-index: 6;
@@ -122,6 +126,12 @@
 }
 
 .home-overlay-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
     gap: clamp(14px, 2vw, 20px);
 }
 
@@ -1972,6 +1982,7 @@
 .ui-menu-live-panel.home-overlay--progress,
 .ui-menu-live-panel.home-overlay--personal,
 .ui-menu-live-panel.home-overlay--cohort,
+.ui-menu-live-panel.home-overlay--write,
 .ui-menu-live-panel.home-overlay--community,
 .ui-menu-live-panel.home-overlay--settings {
     --overlay-list-surface: #f7fcf9;
@@ -1985,18 +1996,18 @@
     color: var(--overlay-list-ink);
 }
 
-.ui-menu-live-panel:is(.home-overlay--progress, .home-overlay--personal, .home-overlay--cohort, .home-overlay--community, .home-overlay--settings) .ui-menu-live-header {
+.ui-menu-live-panel:is(.home-overlay--progress, .home-overlay--personal, .home-overlay--cohort, .home-overlay--write, .home-overlay--community, .home-overlay--settings) .ui-menu-live-header {
     border-bottom-color: rgba(18, 56, 42, 0.18);
     background: #2fc47c;
     color: #0c3022;
 }
 
-.ui-menu-live-panel:is(.home-overlay--progress, .home-overlay--personal, .home-overlay--cohort, .home-overlay--community, .home-overlay--settings) .ui-menu-live-header :is(h2, p),
-.ui-menu-live-panel:is(.home-overlay--progress, .home-overlay--personal, .home-overlay--cohort, .home-overlay--community, .home-overlay--settings) > .home-overlay-close {
+.ui-menu-live-panel:is(.home-overlay--progress, .home-overlay--personal, .home-overlay--cohort, .home-overlay--write, .home-overlay--community, .home-overlay--settings) .ui-menu-live-header :is(h2, p),
+.ui-menu-live-panel:is(.home-overlay--progress, .home-overlay--personal, .home-overlay--cohort, .home-overlay--write, .home-overlay--community, .home-overlay--settings) > .home-overlay-close {
     color: #0c3022 !important;
 }
 
-.ui-menu-live-panel:is(.home-overlay--progress, .home-overlay--personal, .home-overlay--cohort, .home-overlay--community, .home-overlay--settings) .ui-menu-live-body {
+.ui-menu-live-panel:is(.home-overlay--progress, .home-overlay--personal, .home-overlay--cohort, .home-overlay--write, .home-overlay--community, .home-overlay--settings) .ui-menu-live-body {
     background: var(--overlay-list-surface);
 }
 

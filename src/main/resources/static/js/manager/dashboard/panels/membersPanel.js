@@ -5,7 +5,7 @@
         const statusButton = row.querySelector("[data-member-status]");
         const endButton = row.querySelector("[data-member-end]");
 
-        row.querySelector("[data-member-name]").textContent = member.name ?? "";
+        row.querySelector("[data-member-name]").textContent = member.nickname || "";
         row.querySelector("[data-member-email]").textContent = member.email ?? "";
         row.querySelector("[data-member-role]").textContent = statusLabel(member.role);
         row.querySelector("[data-member-status-label]").textContent = statusLabel(member.status);
