@@ -21,10 +21,6 @@ const characterStage = document.querySelector("[data-character-stage]");
 const characterInteraction = document.querySelector("[data-character-interaction]");
 const characterBubble = document.querySelector("[data-character-bubble]");
 const characterName = document.querySelector("[data-character-name]");
-const characterLevel = document.querySelector("[data-character-level]");
-const xpFill = document.querySelector("[data-xp-fill]");
-const currentXpLabel = document.querySelector("[data-current-xp]");
-const nextLevelLabel = document.querySelector("[data-next-level]");
 const calendarGrid = document.querySelector(".calendar-grid");
 const calendarTitle = document.querySelector("[data-calendar-title]");
 const calendarPeriod = document.querySelector("[data-calendar-period]");
@@ -306,12 +302,6 @@ studyRecordsController = createStudyRecords({
 });
 
 const levelController = createLevel({
-    levelElement: characterLevel,
-    xpFill,
-    currentXpLabel,
-    nextLevelLabel,
-    characterImage: homeCharacter,
-    characterStage,
     initialLevel: currentCharacter.level,
     initialCurrentXp: currentCharacter.currentExp,
     initialRequiredXp: currentCharacter.requiredExp

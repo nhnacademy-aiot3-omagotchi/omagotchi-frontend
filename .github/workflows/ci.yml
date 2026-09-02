@@ -41,3 +41,8 @@ jobs:
         run: |
           find src/main/resources/static/js -type f -name '*.js' -print0 \
             | xargs -0 -n1 node --check
+
+      # 문법 검사만으로는 동작 회귀를 못 잡는다.
+      # src/test/js 의 회귀 테스트를 함께 돌린다.
+      - name: Run JavaScript tests
+        run: npm run test:js

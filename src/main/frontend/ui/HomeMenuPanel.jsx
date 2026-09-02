@@ -51,16 +51,22 @@ function ProgressPanel() {
   return <GameTabs items={progressItems} defaultValue="quest" ariaLabel="진행 항목" />;
 }
 
+/**
+ * 내 정보 패널의 표현 구조만 보여 준다.
+ *
+ * 실제 화면은 home.js 가 /me/profile 응답으로 그린다. 여기에 그럴듯한 숫자와 이메일을
+ * 적어 두면 실제로 그 값이 나오는 것처럼 오해를 부르므로 자리 표시만 남긴다.
+ */
 function PersonalPanel() {
   return (
     <>
       <section className="ui-profile-hero">
         <div className="ui-profile-avatar"><img src="/images/characters/default/omagotchi_eye.gif" alt="나의 오마고치 캐릭터" /></div>
-        <div><span className="ui-menu-eyebrow">학습자</span><h3>오마고치</h3><p>오늘도 차근차근 성장하고 있어요.</p></div>
-        <strong>Lv. 7</strong>
+        <div><span className="ui-menu-eyebrow">학습자</span><h3>—</h3><p>프로필을 불러오면 닉네임과 소개가 표시됩니다.</p></div>
+        <strong>Lv. —</strong>
       </section>
-      <div className="ui-menu-stats"><Stat label="총 학습" value="42시간" /><Stat label="출석" value="12일" /><Stat label="완료 퀘스트" value="18개" /></div>
-      <dl className="ui-menu-list"><div><dt>이메일</dt><dd>learner@example.com</dd></div><div><dt>참여 기수</dt><dd>NHN Academy 7기</dd></div><div><dt>대표 캐릭터</dt><dd>새싹 오마고치</dd></div></dl>
+      <div className="ui-menu-stats"><Stat label="총 학습" value="—" /><Stat label="출석" value="—" /><Stat label="완료 퀘스트" value="—" /></div>
+      <dl className="ui-menu-list"><div><dt>이메일</dt><dd>—</dd></div><div><dt>참여 기수</dt><dd>—</dd></div><div><dt>대표 캐릭터</dt><dd>—</dd></div></dl>
     </>
   );
 }
