@@ -11,6 +11,7 @@ import org.springframework.web.service.annotation.PostExchange;
 import site.omagotchi.frontend.attendance.infrastructure.request.LearningAttendanceSpaceRequest;
 import site.omagotchi.frontend.attendance.infrastructure.response.LearningAttendanceRecordResponse;
 import site.omagotchi.frontend.attendance.infrastructure.response.LearningAttendanceSpaceMoveResponse;
+import site.omagotchi.frontend.attendance.infrastructure.response.LearningCurrentPresenceResponse;
 import site.omagotchi.frontend.global.http.response.PageResponse;
 
 @HttpExchange("/api/v1")
@@ -34,6 +35,12 @@ public interface AttendanceHttpService {
 
     @PostExchange("/cohorts/{cohort-id}/attendance-records/check-out")
     LearningAttendanceRecordResponse checkOut(
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
+            @PathVariable("cohort-id") Long cohortId
+    );
+
+    @GetExchange("/cohorts/{cohort-id}/attendance-records/current-presence")
+    LearningCurrentPresenceResponse getCurrentPresence(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
             @PathVariable("cohort-id") Long cohortId
     );

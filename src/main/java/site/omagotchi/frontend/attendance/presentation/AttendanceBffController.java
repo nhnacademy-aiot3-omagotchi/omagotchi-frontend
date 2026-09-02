@@ -14,6 +14,7 @@ import site.omagotchi.frontend.attendance.application.result.AttendancePageResul
 import site.omagotchi.frontend.attendance.presentation.request.AttendanceSpaceRequest;
 import site.omagotchi.frontend.attendance.presentation.response.AttendanceRecordResponse;
 import site.omagotchi.frontend.attendance.presentation.response.AttendanceSpaceMoveResponse;
+import site.omagotchi.frontend.attendance.presentation.response.CurrentPresenceResponse;
 import site.omagotchi.frontend.global.application.result.PageMetadata;
 import site.omagotchi.frontend.global.http.response.PageInfo;
 import site.omagotchi.frontend.global.http.response.PageResponse;
@@ -56,6 +57,14 @@ public class AttendanceBffController {
     public ResponseEntity<AttendanceRecordResponse> getToday() {
         return attendanceBffService.getToday()
                 .map(AttendanceRecordResponse::from)
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.noContent().build());
+    }
+
+    @GetMapping("/current-presence")
+    public ResponseEntity<CurrentPresenceResponse> getCurrentPresence() {
+        return attendanceBffService.getCurrentPresence()
+                .map(CurrentPresenceResponse::from)
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.noContent().build());
     }

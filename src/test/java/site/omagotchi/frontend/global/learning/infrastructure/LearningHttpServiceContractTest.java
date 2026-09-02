@@ -16,6 +16,7 @@ import org.springframework.web.client.support.RestClientAdapter;
 import org.springframework.web.service.invoker.HttpServiceProxyFactory;
 import tools.jackson.databind.JsonNode;
 import site.omagotchi.frontend.cohort.infrastructure.response.UserAccessContextResponse;
+import site.omagotchi.frontend.learning.infrastructure.response.LearningSelectableLabResponse;
 import site.omagotchi.frontend.study.infrastructure.request.LearningCreateStudyRecordRequest;
 import site.omagotchi.frontend.study.infrastructure.request.LearningUpdateStudyRecordRequest;
 import site.omagotchi.frontend.study.infrastructure.response.LearningCurrentTimerResponse;
@@ -28,6 +29,7 @@ import site.omagotchi.frontend.study.infrastructure.response.LearningTimerState;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
+import java.util.List;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.util.UUID;
@@ -93,6 +95,32 @@ class LearningHttpServiceContractTest {
         server.verify();
     }
 
+    @Test
+    @DisplayName("선택 가능 실습실 경로와 정원 응답 계약을 사용한다")
+    void getsSelectableLabs() {
+        server.expect(once(), requestTo(BASE_URL + "/api/v1/cohorts/7/spaces/labs"))
+                .andExpect(method(HttpMethod.GET))
+                .andExpect(header(HttpHeaders.AUTHORIZATION, BEARER))
+                .andRespond(withSuccess("""
+                        [{
+                          "spaceId": 11,
+                          "name": "3기 실습실",
+                          "capacity": 2,
+                          "reservedCount": 2
+                        }]
+                        """, MediaType.APPLICATION_JSON));
+
+        ResponseEntity<List<LearningSelectableLabResponse>> response =
+                service.getSelectableLabs(BEARER, 7L);
+
+        assertThat(response.getBody()).singleElement().satisfies(lab -> {
+            assertThat(lab.spaceId()).isEqualTo(11L);
+            assertThat(lab.capacity()).isEqualTo(2);
+            assertThat(lab.reservedCount()).isEqualTo(2L);
+        });
+        server.verify();
+    }
+
     @Nested
     @DisplayName("커뮤니티 계약")
     class CommunityContract {
@@ -133,6 +161,8 @@ class LearningHttpServiceContractTest {
                     .andRespond(withSuccess("""
                             [{
                               "id": 42,
+                              "type": "ROUTINE",
+                              "code": "ATTENDANCE",
                               "title": "출석하기",
                               "targetCount": 1,
                               "progressCount": 1,

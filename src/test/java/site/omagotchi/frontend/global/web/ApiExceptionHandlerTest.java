@@ -112,6 +112,21 @@ class ApiExceptionHandlerTest {
     }
 
     @Test
+    @DisplayName("실습실 정원 초과는 구체적인 공개 안내와 409를 반환")
+    void forwardsLabCapacityExceeded() throws Exception {
+        mockMvc.perform(post("/bff/v1/test/errors/lab-capacity-exceeded"))
+                .andExpectAll(
+                        status().isConflict(),
+                        content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON),
+                        jsonPath("$.code").value("LAB_CAPACITY_EXCEEDED"),
+                        jsonPath("$.message").value("실습실 정원이 가득 찼습니다."),
+                        jsonPath("$.path").value(
+                                "/bff/v1/test/errors/lab-capacity-exceeded"
+                        )
+                );
+    }
+
+    @Test
     @DisplayName("이미 실행 중인 Learning 타이머 오류는 Frontend 409 계약으로 전달")
     void forwardsTimerAlreadyRunning() throws Exception {
         mockMvc.perform(post("/bff/v1/test/errors/timer-already-running"))
@@ -545,6 +560,20 @@ class ApiExceptionHandlerTest {
                             "learning-request-4xx"
                     ),
                     new IllegalStateException("approved downstream rejection")
+            );
+        }
+
+        @PostMapping("/bff/v1/test/errors/lab-capacity-exceeded")
+        void labCapacityExceeded() {
+            throw new LearningDownstreamException(
+                    HttpStatus.CONFLICT,
+                    new ApiErrorResponse(
+                            "LAB_CAPACITY_EXCEEDED",
+                            "internal capacity details",
+                            "/api/v1/cohorts/7/attendance-records/move-lab",
+                            "learning-lab-capacity-request"
+                    ),
+                    new IllegalStateException("lab capacity exceeded")
             );
         }
 

@@ -60,6 +60,9 @@ import {
     let cohortMembers = normalizeCohortMembers(profile.approvedCohort?.members);
     let telegramOverride = null;
     let currentAttendance = null;
+    let currentPresence = null;
+    let currentContextLoading = false;
+    let currentContextError = "";
 
     const memberStatusLabels = {
         present: "재실",
@@ -73,21 +76,16 @@ import {
     let state = loadState();
     let ticker = null;
     let spaceLoadPromise = null;
+    let currentContextLoadPromise = null;
     let vacancyAlertLoadPromise = null;
     let refreshingExpiredRoom = false;
     let roomActionPending = false;
 
-    window.OmagotchiApi?.attendance?.getToday?.()
-        .then((attendance) => {
-            currentAttendance = attendance;
-            renderAll();
-        })
-        .catch(() => {
-            currentAttendance = null;
-            renderAll();
-        });
     window.addEventListener("omagotchi:attendance", (event) => {
         currentAttendance = event.detail || null;
+        if (!isCheckedIn()) {
+            currentPresence = null;
+        }
         renderAll();
     });
     window.addEventListener("omagotchi:space-data", (event) => {
@@ -161,18 +159,107 @@ import {
         return Boolean(currentAttendance?.checkedInAt) && !currentAttendance?.checkedOutAt;
     }
 
+    async function loadCurrentContext(showLoading) {
+        const attendanceApi = window.OmagotchiApi?.attendance;
+        const getToday = attendanceApi?.getToday;
+        const getCurrentPresence = attendanceApi?.getCurrentPresence;
+        if (typeof getToday !== "function" && typeof getCurrentPresence !== "function") {
+            currentContextLoading = false;
+            currentContextError = "";
+            renderAll();
+            return;
+        }
+
+        if (showLoading) {
+            currentContextLoading = true;
+            currentContextError = "";
+            renderAll();
+        }
+
+        const [attendanceResult, presenceResult] = await Promise.allSettled([
+            typeof getToday === "function"
+                ? getToday.call(attendanceApi)
+                : Promise.resolve(currentAttendance),
+            typeof getCurrentPresence === "function"
+                ? getCurrentPresence.call(attendanceApi)
+                : Promise.resolve(currentPresence)
+        ]);
+
+        const errors = [];
+        if (attendanceResult.status === "fulfilled") {
+            currentAttendance = attendanceResult.value || null;
+        } else {
+            errors.push(attendanceResult.reason);
+        }
+        if (presenceResult.status === "fulfilled") {
+            currentPresence = presenceResult.value || null;
+        } else {
+            // 실패한 조회의 이전 값을 남기면 끝난 회의가 MEETING으로 남고, 떠난 공간이
+            // "현재 이용 중"으로 잠긴다. 모르는 것은 모른다고 둔다.
+            currentPresence = null;
+            errors.push(presenceResult.reason);
+        }
+
+        currentContextLoading = false;
+        currentContextError = errors[0]?.message || "";
+        renderAll();
+    }
+
+    function refreshCurrentContext(showLoading = true) {
+        if (currentContextLoadPromise) {
+            return currentContextLoadPromise;
+        }
+        currentContextLoadPromise = loadCurrentContext(showLoading).finally(() => {
+            currentContextLoadPromise = null;
+        });
+        return currentContextLoadPromise;
+    }
+
+    async function refreshCurrentContextAfterMutation() {
+        if (currentContextLoadPromise) {
+            await currentContextLoadPromise;
+        }
+        return refreshCurrentContext(false);
+    }
+
     function getCurrentOccupancyRoom() {
         return state.rooms.find((room) => room.occupancy?.ownedByRequester
             || room.occupancy?.participatingByRequester);
     }
 
+    function isInMeeting() {
+        return currentPresence?.state === "MEETING" || Boolean(getCurrentOccupancyRoom());
+    }
+
     /**
-     * 현재 위치는 서버의 `currentAttendance.spaceId`에서만 계산한다.
-     * 도서관 입장 여부를 로컬 상태로도 들고 있으면 sessionStorage에 남은 값이
-     * 서버가 알려준 LAB보다 먼저 판정되어, 실습실에 있는 사용자가 도서관 이용 중으로
-     * 표시되고 그 실습실이 다시 이동 가능한 것으로 보인다.
+     * 현재 위치는 서버의 열린 체류구간에서 계산한다. 브라우저 저장 상태를 위치 근거로
+     * 사용하면 다른 사용자가 회의 참여자로 추가했거나 회의가 만료된 뒤의 복귀를 놓친다.
      */
     function getCurrentLocation() {
+        if (currentContextLoading && currentAttendance == null) {
+            return {
+                state: "loading",
+                name: "현재 위치 확인 중",
+                detail: "출석과 체류 상태를 불러오고 있습니다."
+            };
+        }
+
+        // 조회에 실패해 위치를 모르는 상태와, 아직 공간을 고르지 않은 상태는 다르다.
+        // 후자는 "실습실을 선택해 주세요"가 맞지만 전자에 같은 문구를 쓰면 이미 자리에
+        // 있는 사용자에게 불필요한 이동을 시킨다.
+        //
+        // 다만 점유 데이터로 회의 중임을 알 수 있으면 그것은 실제로 가진 정보이므로
+        // 확인 불가로 덮지 않고 아래 회의 분기에 맡긴다.
+        if (currentContextError
+                && (currentAttendance == null || currentPresence == null)
+                && !getCurrentOccupancyRoom()) {
+            return {
+                state: "unavailable",
+                name: "현재 위치 확인 불가",
+                detail: currentContextError
+            };
+        }
+
         if (!isCheckedIn()) {
             return {
                 state: "checked-out",
@@ -189,19 +276,32 @@ import {
             };
         }
 
-        const meetingRoom = getCurrentOccupancyRoom();
-        if (meetingRoom) {
+        const currentSpaceId = currentPresence?.spaceId;
+        const presenceState = currentPresence?.state;
+        const occupancyRoom = getCurrentOccupancyRoom();
+        const meetingRoom = presenceState === "MEETING"
+            ? state.rooms.find((room) => sameId(room.id, currentSpaceId)) || occupancyRoom
+            : currentPresence == null ? occupancyRoom : null;
+        if (presenceState === "MEETING" || meetingRoom) {
             return {
                 state: "meeting",
-                name: meetingRoom.name,
-                detail: meetingRoom.occupancy?.ownedByRequester
+                name: meetingRoom?.name || "회의실",
+                detail: meetingRoom?.occupancy?.ownedByRequester
                     ? "회의실 이용 중"
                     : "회의실 참여 중"
             };
         }
 
+        if (presenceState === "AWAY") {
+            return {
+                state: "away",
+                name: "자리 비움",
+                detail: "현재 공간에서 잠시 자리를 비운 상태입니다."
+            };
+        }
+
         const currentStudySpace = state.studySpaces.find(
-            (space) => sameId(space.spaceId, currentAttendance?.spaceId)
+            (space) => sameId(space.spaceId, currentSpaceId)
         );
         if (currentStudySpace) {
             return {
@@ -212,7 +312,7 @@ import {
         }
 
         const currentLab = state.labs.find(
-            (lab) => sameId(lab.spaceId, currentAttendance?.spaceId)
+            (lab) => sameId(lab.spaceId, currentSpaceId)
         );
         if (currentLab) {
             return {
@@ -305,8 +405,18 @@ import {
         renderAll();
 
         try {
-            const spaces = await window.OmagotchiApi.spaces.list();
+            const selectableLabRequest = typeof window.OmagotchiApi.spaces.listLabs === "function"
+                ? window.OmagotchiApi.spaces.listLabs().catch(() => null)
+                : Promise.resolve(null);
+            const [spaces, selectableLabs] = await Promise.all([
+                window.OmagotchiApi.spaces.list(),
+                selectableLabRequest
+            ]);
             const spaceList = Array.isArray(spaces) ? spaces : [];
+            const selectableLabList = Array.isArray(selectableLabs) ? selectableLabs : [];
+            const labAvailabilityById = new Map(
+                selectableLabList.map((lab) => [String(lab.spaceId), lab])
+            );
             const requesterCohortId = currentUser.cohortId == null
                 ? null
                 : String(currentUser.cohortId);
@@ -315,7 +425,11 @@ import {
                 : spaceList.filter(
                     (space) => space.type === "LAB"
                         && String(space.cohortId) === requesterCohortId
-                );
+                ).map((space) => ({
+                    ...space,
+                    reservedCount: labAvailabilityById.get(String(space.spaceId))
+                        ?.reservedCount ?? null
+                }));
             state.studySpaces = spaceList.filter((space) => space.type === "STUDY");
             const rooms = spaceList
                 .filter((space) => space.type === "MEETING")
@@ -499,9 +613,24 @@ import {
         `).join("");
     }
 
+    function getLabReservedCount(lab) {
+        if (lab?.reservedCount == null) {
+            return null;
+        }
+        const reservedCount = Number(lab?.reservedCount);
+        return Number.isInteger(reservedCount) && reservedCount >= 0
+            ? reservedCount
+            : null;
+    }
+
+    function isLabFull(lab) {
+        const reservedCount = getLabReservedCount(lab);
+        return reservedCount != null && reservedCount >= lab.capacity;
+    }
+
     function renderLab() {
         const checkedIn = isCheckedIn();
-        const inMeeting = Boolean(getCurrentOccupancyRoom());
+        const inMeeting = isInMeeting();
 
         if (state.roomsLoading) {
             return `
@@ -525,28 +654,42 @@ import {
 
         const assignedLabs = state.labs.map((lab) => {
             const active = lab.operationalStatus === "ACTIVE";
-            const current = sameId(lab.spaceId, currentAttendance?.spaceId);
-            const selectable = active && checkedIn && !inMeeting && !current;
+            const current = sameId(lab.spaceId, currentPresence?.spaceId);
+            const reservedCount = getLabReservedCount(lab);
+            const capacityKnown = reservedCount != null;
+            const full = isLabFull(lab);
+            const selectable = active && checkedIn && !inMeeting && !current && !full;
             const selectionStatus = active
                 ? current
                     ? "현재 이용 중"
-                    : inMeeting
-                        ? "회의 종료 후 선택 가능"
-                        : (checkedIn ? "선택 가능" : "체크인 후 선택 가능")
+                    : full
+                        ? "정원 마감"
+                        : inMeeting
+                            ? "회의 종료 후 선택 가능"
+                            : (checkedIn ? "선택 가능" : "체크인 후 선택 가능")
                 : "선택 불가";
+            const capacityDetail = capacityKnown
+                ? `${reservedCount} / ${lab.capacity}명`
+                : `정원 ${lab.capacity}명`;
             return `
-            <article class="space-room-lab-stage${active ? "" : " is-inactive"}">
-                <div>
+            <article class="space-room-lab-stage${active ? "" : " is-inactive"}" role="listitem">
+                <div class="space-room-lab-stage__identity">
                     <span class="space-room-status ${active ? "is-active" : "is-inactive"}">
                         ${active ? "운영 중" : "운영 중지"}
                     </span>
                     <strong>${escapeHtml(lab.name)}</strong>
+                    ${lab.inactiveReason
+                        ? `<small>${escapeHtml(lab.inactiveReason)}</small>`
+                        : ""}
                 </div>
-                <p>${lab.capacity}인실${lab.inactiveReason
-                    ? ` · ${escapeHtml(lab.inactiveReason)}`
-                    : ""} · ${selectionStatus}</p>
+                <div class="space-room-lab-stage__meta">
+                    <strong>${capacityDetail}</strong>
+                    <span class="${full ? "is-full" : selectable ? "is-selectable" : ""}">
+                        ${selectionStatus}
+                    </span>
+                </div>
                 <button type="button" data-space-lab-move="${lab.spaceId}"${selectable ? "" : " disabled"}>
-                    ${current ? "현재 이용 중" : "이 실습실로 이동"}
+                    ${current ? "현재 이용 중" : full ? "정원 마감" : "이 실습실로 이동"}
                 </button>
             </article>
         `;
@@ -570,7 +713,17 @@ import {
                         ${state.labs.length ? `${state.labs.length}곳 배정` : "미배정"}
                     </span>
                 </header>
-                ${state.labs.length ? `<div class="space-room-lab-grid">${assignedLabs}</div>` : `
+                ${state.labs.length ? `
+                    <section class="space-room-lab-list" aria-labelledby="space-lab-list-title">
+                        <header>
+                            <h4 id="space-lab-list-title">실습실 목록</h4>
+                            <span>${state.labs.length}개</span>
+                        </header>
+                        <div class="space-room-lab-grid" role="list" aria-label="실습실 목록" tabindex="0">
+                            ${assignedLabs}
+                        </div>
+                    </section>
+                ` : `
                     <div class="space-room-empty-state">
                         <h4>${emptyTitle}</h4>
                         <p>${emptyDescription}</p>
@@ -995,8 +1148,8 @@ import {
 
     function renderLibrary() {
         const checkedIn = isCheckedIn();
-        const inMeeting = Boolean(getCurrentOccupancyRoom());
-        const currentStudySpaceId = currentAttendance?.spaceId;
+        const inMeeting = isInMeeting();
+        const currentStudySpaceId = currentPresence?.spaceId;
         const current = state.studySpaces.some(
             (space) => sameId(space.spaceId, currentStudySpaceId)
         ) && !inMeeting;
@@ -1123,7 +1276,11 @@ import {
         roomActionPending = true;
         try {
             await action();
-            await refreshSpaces(successMessage);
+            await Promise.all([
+                refreshSpaces(),
+                refreshCurrentContextAfterMutation()
+            ]);
+            renderAll(successMessage);
         } catch (error) {
             renderAll(error?.message || "회의실 요청을 처리하지 못했습니다.");
         } finally {
@@ -1150,13 +1307,23 @@ import {
         roomActionPending = true;
         try {
             const result = await action(spaceId);
-            currentAttendance = {
-                ...(currentAttendance || {}),
-                spaceId: result.spaceId
+            currentPresence = {
+                spaceId: result.spaceId,
+                state: "PRESENT",
+                startedAt: new Date().toISOString()
             };
+            await Promise.all([
+                refreshCurrentContextAfterMutation(),
+                refreshSpaces()
+            ]);
             renderAll(successMessage);
         } catch (error) {
-            renderAll(error?.message || "공간 이동을 처리하지 못했습니다.");
+            if (error?.code === "LAB_CAPACITY_EXCEEDED") {
+                await refreshSpaces();
+                renderAll("실습실 정원이 가득 찼습니다.");
+            } else {
+                renderAll(error?.message || "공간 이동을 처리하지 못했습니다.");
+            }
         } finally {
             roomActionPending = false;
         }
@@ -1378,26 +1545,28 @@ import {
                 renderAll("실습실을 선택하려면 먼저 체크인해 주세요.");
                 return;
             }
-            if (getCurrentOccupancyRoom()) {
+            if (isInMeeting()) {
                 renderAll("회의 참여를 종료한 뒤 실습실로 이동해 주세요.");
                 return;
             }
             const lab = state.labs.find(
                 (item) => sameId(item.spaceId, labMove.dataset.spaceLabMove)
             );
-            if (lab?.operationalStatus === "ACTIVE") {
+            if (lab?.operationalStatus === "ACTIVE" && !isLabFull(lab)) {
                 await movePresence(
                     (spaceId) => window.OmagotchiApi.attendance.moveLab(spaceId),
                     lab.spaceId,
                     `${lab.name}으로 이동했습니다.`
                 );
+            } else if (isLabFull(lab)) {
+                renderAll("실습실 정원이 가득 찼습니다.");
             }
         } else if (libraryEnter) {
             if (!isCheckedIn()) {
                 renderAll("도서관에 입장하려면 먼저 체크인해 주세요.");
                 return;
             }
-            if (getCurrentOccupancyRoom()) {
+            if (isInMeeting()) {
                 renderAll("회의 참여를 종료한 뒤 도서관에 입장해 주세요.");
                 return;
             }
@@ -1543,7 +1712,11 @@ import {
 
         if (expiredRoom && !refreshingExpiredRoom) {
             refreshingExpiredRoom = true;
-            refreshSpaces(`${expiredRoom.name} 사용 상태를 갱신했습니다.`)
+            Promise.all([
+                refreshSpaces(),
+                refreshCurrentContextAfterMutation()
+            ])
+                .then(() => renderAll(`${expiredRoom.name} 사용 상태를 갱신했습니다.`))
                 .finally(() => {
                     refreshingExpiredRoom = false;
                 });
@@ -1594,7 +1767,8 @@ import {
         }
         render(root);
 
-        if (!spaceLoadPromise && state.roomsLoading) {
+        void refreshCurrentContext();
+        if (!spaceLoadPromise) {
             void refreshSpaces();
         }
         if (!vacancyAlertLoadPromise) {
