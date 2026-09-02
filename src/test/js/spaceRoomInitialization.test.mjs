@@ -182,6 +182,48 @@ test("library uses the shared current location and keeps its action under operat
     }, api);
 });
 
+test("stored libraryInside does not override the LAB reported by the server", async () => {
+    // 이전 세션이 남긴 libraryInside: true가 서버가 알려준 LAB보다 먼저 판정되면
+    // 실습실에 있는 사용자가 도서관 이용 중으로 보이고, 그 실습실이 다시 이동
+    // 가능한 것으로 표시된다.
+    const api = {
+        attendance: {
+            async getToday() {
+                return {
+                    checkedInAt: "2026-09-01T09:00:00Z",
+                    checkedOutAt: null,
+                    spaceId: 101
+                };
+            }
+        },
+        spaces: {
+            async list() {
+                return [
+                    { spaceId: 101, name: "3기 실습실 A", type: "LAB", capacity: 30, operationalStatus: "ACTIVE", cohortId: 3 },
+                    { spaceId: 401, name: "도서관", type: "STUDY", capacity: 100, operationalStatus: "ACTIVE", cohortId: null }
+                ];
+            },
+            async getMyVacancyAlerts() {
+                return [];
+            }
+        }
+    };
+
+    await withSpaceRoom(async (spaceRoom) => {
+        const root = createRoot();
+        spaceRoom.mount(root);
+        await new Promise(setImmediate);
+
+        assert.match(root.innerHTML, /data-location-state="lab"/);
+        assert.match(root.innerHTML, /실습실 이용 중/);
+        assert.doesNotMatch(root.innerHTML, /도서관 이용 중/);
+        // 이용 중인 실습실은 이동 대상으로 다시 제안되지 않는다.
+        assert.match(root.innerHTML, /data-space-lab-move="101" disabled/);
+    }, { activeTab: "lab", libraryInside: true }, {
+        approvedCohort: { cohortId: 3, name: "3기" }
+    }, api);
+});
+
 test("updateData renders external rooms instead of stale loading or error state", async () => {
     await withSpaceRoom(async (spaceRoom) => {
         const root = createRoot();

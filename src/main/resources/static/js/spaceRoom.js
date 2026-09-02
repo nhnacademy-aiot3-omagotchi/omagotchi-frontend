@@ -39,7 +39,6 @@ import {
         activeTab: "meeting",
         selectedRoomId: "",
         vacancyAlerts: [],
-        libraryInside: false,
         roomPage: 0,
         partyCreateOpen: false,
         partyDetailOpen: false,
@@ -81,9 +80,6 @@ import {
     window.OmagotchiApi?.attendance?.getToday?.()
         .then((attendance) => {
             currentAttendance = attendance;
-            if (!isCheckedIn()) {
-                state.libraryInside = false;
-            }
             renderAll();
         })
         .catch(() => {
@@ -92,9 +88,6 @@ import {
         });
     window.addEventListener("omagotchi:attendance", (event) => {
         currentAttendance = event.detail || null;
-        if (!isCheckedIn()) {
-            state.libraryInside = false;
-        }
         renderAll();
     });
     window.addEventListener("omagotchi:space-data", (event) => {
@@ -173,6 +166,12 @@ import {
             || room.occupancy?.participatingByRequester);
     }
 
+    /**
+     * 현재 위치는 서버의 `currentAttendance.spaceId`에서만 계산한다.
+     * 도서관 입장 여부를 로컬 상태로도 들고 있으면 sessionStorage에 남은 값이
+     * 서버가 알려준 LAB보다 먼저 판정되어, 실습실에 있는 사용자가 도서관 이용 중으로
+     * 표시되고 그 실습실이 다시 이동 가능한 것으로 보인다.
+     */
     function getCurrentLocation() {
         if (!isCheckedIn()) {
             return {
@@ -204,7 +203,7 @@ import {
         const currentStudySpace = state.studySpaces.find(
             (space) => sameId(space.spaceId, currentAttendance?.spaceId)
         );
-        if (currentStudySpace || state.libraryInside) {
+        if (currentStudySpace) {
             return {
                 state: "library",
                 name: currentStudySpace?.name || "도서관",
@@ -526,8 +525,7 @@ import {
 
         const assignedLabs = state.labs.map((lab) => {
             const active = lab.operationalStatus === "ACTIVE";
-            const current = sameId(lab.spaceId, currentAttendance?.spaceId)
-                && !state.libraryInside;
+            const current = sameId(lab.spaceId, currentAttendance?.spaceId);
             const selectable = active && checkedIn && !inMeeting && !current;
             const selectionStatus = active
                 ? current
@@ -999,9 +997,9 @@ import {
         const checkedIn = isCheckedIn();
         const inMeeting = Boolean(getCurrentOccupancyRoom());
         const currentStudySpaceId = currentAttendance?.spaceId;
-        const current = (state.studySpaces.some(
+        const current = state.studySpaces.some(
             (space) => sameId(space.spaceId, currentStudySpaceId)
-        ) || state.libraryInside) && !inMeeting;
+        ) && !inMeeting;
         const activeCount = state.studySpaces.filter(
             (space) => space.operationalStatus === "ACTIVE"
         ).length;
@@ -1145,7 +1143,7 @@ import {
         );
     }
 
-    async function movePresence(action, spaceId, library, successMessage) {
+    async function movePresence(action, spaceId, successMessage) {
         if (roomActionPending) {
             return;
         }
@@ -1156,7 +1154,6 @@ import {
                 ...(currentAttendance || {}),
                 spaceId: result.spaceId
             };
-            state.libraryInside = library;
             renderAll(successMessage);
         } catch (error) {
             renderAll(error?.message || "공간 이동을 처리하지 못했습니다.");
@@ -1392,7 +1389,6 @@ import {
                 await movePresence(
                     (spaceId) => window.OmagotchiApi.attendance.moveLab(spaceId),
                     lab.spaceId,
-                    false,
                     `${lab.name}으로 이동했습니다.`
                 );
             }
@@ -1412,7 +1408,6 @@ import {
                 await movePresence(
                     (spaceId) => window.OmagotchiApi.attendance.moveStudySpace(spaceId),
                     library.spaceId,
-                    true,
                     `${library.name}에 입장했습니다.`
                 );
             }
