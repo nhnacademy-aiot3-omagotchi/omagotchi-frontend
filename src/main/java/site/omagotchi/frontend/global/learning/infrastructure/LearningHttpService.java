@@ -209,59 +209,67 @@ public interface LearningHttpService {
             @PathVariable("timer-run-id") UUID timerRunId
     );
 
-    @GetExchange("/community/posts")
+    @GetExchange("/cohorts/{cohort-id}/community/posts")
     JsonNode getCommunityPosts(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
+            @PathVariable("cohort-id") Long cohortId,
             @RequestParam int page,
             @RequestParam int size,
             @RequestParam(required = false) String type,
             @RequestParam(required = false) String search
     );
 
-    @GetExchange("/community/posts/{post-id}")
+    @GetExchange("/cohorts/{cohort-id}/community/posts/{post-id}")
     JsonNode getCommunityPost(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
+            @PathVariable("cohort-id") Long cohortId,
             @PathVariable("post-id") Long postId
     );
 
-    @GetExchange("/community/posts/{post-id}/attachments/{attachment-id}")
+    @GetExchange("/cohorts/{cohort-id}/community/posts/{post-id}/attachments/{attachment-id}")
     ResponseEntity<Resource> downloadCommunityAttachment(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
+            @PathVariable("cohort-id") Long cohortId,
             @PathVariable("post-id") Long postId,
             @PathVariable("attachment-id") Long attachmentId
     );
 
-    @PostExchange(value = "/community/posts", contentType = MediaType.APPLICATION_JSON_VALUE)
+    @PostExchange(value = "/cohorts/{cohort-id}/community/posts", contentType = MediaType.APPLICATION_JSON_VALUE)
     JsonNode createCommunityPost(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
+            @PathVariable("cohort-id") Long cohortId,
             @RequestBody JsonNode request
     );
 
-    @PostExchange(value = "/community/posts", contentType = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostExchange(value = "/cohorts/{cohort-id}/community/posts", contentType = MediaType.MULTIPART_FORM_DATA_VALUE)
     JsonNode createCommunityPostMultipart(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
+            @PathVariable("cohort-id") Long cohortId,
             @RequestPart("post") JsonNode post,
             @RequestPart(value = "attachments", required = false) List<HttpEntity<Resource>> attachments
     );
 
-    @PatchExchange(value = "/community/posts/{post-id}", contentType = MediaType.APPLICATION_JSON_VALUE)
+    @PatchExchange(value = "/cohorts/{cohort-id}/community/posts/{post-id}", contentType = MediaType.APPLICATION_JSON_VALUE)
     JsonNode updateCommunityPost(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
+            @PathVariable("cohort-id") Long cohortId,
             @PathVariable("post-id") Long postId,
             @RequestBody JsonNode request
     );
 
-    @PatchExchange(value = "/community/posts/{post-id}", contentType = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PatchExchange(value = "/cohorts/{cohort-id}/community/posts/{post-id}", contentType = MediaType.MULTIPART_FORM_DATA_VALUE)
     JsonNode updateCommunityPostMultipart(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
+            @PathVariable("cohort-id") Long cohortId,
             @PathVariable("post-id") Long postId,
             @RequestPart("post") JsonNode post,
             @RequestPart(value = "attachments", required = false) List<HttpEntity<Resource>> attachments
     );
 
-    @DeleteExchange("/community/posts/{post-id}")
+    @DeleteExchange("/cohorts/{cohort-id}/community/posts/{post-id}")
     ResponseEntity<Void> deleteCommunityPost(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
+            @PathVariable("cohort-id") Long cohortId,
             @PathVariable("post-id") Long postId
     );
 
@@ -386,9 +394,10 @@ public interface LearningHttpService {
             @RequestBody JsonNode request
     );
 
-    @PatchExchange("/community/posts/{post-id}/pin")
+    @PatchExchange("/cohorts/{cohort-id}/community/posts/{post-id}/pin")
     JsonNode updateCommunityPostPin(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
+            @PathVariable("cohort-id") Long cohortId,
             @PathVariable("post-id") Long postId,
             @RequestBody JsonNode request
     );
