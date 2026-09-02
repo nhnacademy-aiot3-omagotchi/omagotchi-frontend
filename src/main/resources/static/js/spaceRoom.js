@@ -60,6 +60,9 @@ import {
     let cohortMembers = normalizeCohortMembers(profile.approvedCohort?.members);
     let telegramOverride = null;
     let currentAttendance = null;
+    let currentPresence = null;
+    let currentContextLoading = false;
+    let currentContextError = "";
 
     const memberStatusLabels = {
         present: "재실",
@@ -73,21 +76,16 @@ import {
     let state = loadState();
     let ticker = null;
     let spaceLoadPromise = null;
+    let currentContextLoadPromise = null;
     let vacancyAlertLoadPromise = null;
     let refreshingExpiredRoom = false;
     let roomActionPending = false;
 
-    window.OmagotchiApi?.attendance?.getToday?.()
-        .then((attendance) => {
-            currentAttendance = attendance;
-            renderAll();
-        })
-        .catch(() => {
-            currentAttendance = null;
-            renderAll();
-        });
     window.addEventListener("omagotchi:attendance", (event) => {
         currentAttendance = event.detail || null;
+        if (!isCheckedIn()) {
+            currentPresence = null;
+        }
         renderAll();
     });
     window.addEventListener("omagotchi:space-data", (event) => {
@@ -161,18 +159,96 @@ import {
         return Boolean(currentAttendance?.checkedInAt) && !currentAttendance?.checkedOutAt;
     }
 
+    async function loadCurrentContext(showLoading) {
+        const attendanceApi = window.OmagotchiApi?.attendance;
+        const getToday = attendanceApi?.getToday;
+        const getCurrentPresence = attendanceApi?.getCurrentPresence;
+        if (typeof getToday !== "function" && typeof getCurrentPresence !== "function") {
+            currentContextLoading = false;
+            currentContextError = "";
+            renderAll();
+            return;
+        }
+
+        if (showLoading) {
+            currentContextLoading = true;
+            currentContextError = "";
+            renderAll();
+        }
+
+        const [attendanceResult, presenceResult] = await Promise.allSettled([
+            typeof getToday === "function"
+                ? getToday.call(attendanceApi)
+                : Promise.resolve(currentAttendance),
+            typeof getCurrentPresence === "function"
+                ? getCurrentPresence.call(attendanceApi)
+                : Promise.resolve(currentPresence)
+        ]);
+
+        const errors = [];
+        if (attendanceResult.status === "fulfilled") {
+            currentAttendance = attendanceResult.value || null;
+        } else {
+            errors.push(attendanceResult.reason);
+        }
+        if (presenceResult.status === "fulfilled") {
+            currentPresence = presenceResult.value || null;
+        } else {
+            errors.push(presenceResult.reason);
+        }
+
+        currentContextLoading = false;
+        currentContextError = errors[0]?.message || "";
+        renderAll();
+    }
+
+    function refreshCurrentContext(showLoading = true) {
+        if (currentContextLoadPromise) {
+            return currentContextLoadPromise;
+        }
+        currentContextLoadPromise = loadCurrentContext(showLoading).finally(() => {
+            currentContextLoadPromise = null;
+        });
+        return currentContextLoadPromise;
+    }
+
+    async function refreshCurrentContextAfterMutation() {
+        if (currentContextLoadPromise) {
+            await currentContextLoadPromise;
+        }
+        return refreshCurrentContext(false);
+    }
+
     function getCurrentOccupancyRoom() {
         return state.rooms.find((room) => room.occupancy?.ownedByRequester
             || room.occupancy?.participatingByRequester);
     }
 
+    function isInMeeting() {
+        return currentPresence?.state === "MEETING" || Boolean(getCurrentOccupancyRoom());
+    }
+
     /**
-     * 현재 위치는 서버의 `currentAttendance.spaceId`에서만 계산한다.
-     * 도서관 입장 여부를 로컬 상태로도 들고 있으면 sessionStorage에 남은 값이
-     * 서버가 알려준 LAB보다 먼저 판정되어, 실습실에 있는 사용자가 도서관 이용 중으로
-     * 표시되고 그 실습실이 다시 이동 가능한 것으로 보인다.
+     * 현재 위치는 서버의 열린 체류구간에서 계산한다. 브라우저 저장 상태를 위치 근거로
+     * 사용하면 다른 사용자가 회의 참여자로 추가했거나 회의가 만료된 뒤의 복귀를 놓친다.
      */
     function getCurrentLocation() {
+        if (currentContextLoading && currentAttendance == null) {
+            return {
+                state: "loading",
+                name: "현재 위치 확인 중",
+                detail: "출석과 체류 상태를 불러오고 있습니다."
+            };
+        }
+
+        if (currentContextError && currentAttendance == null) {
+            return {
+                state: "unavailable",
+                name: "현재 위치 확인 불가",
+                detail: currentContextError
+            };
+        }
+
         if (!isCheckedIn()) {
             return {
                 state: "checked-out",
@@ -189,19 +265,32 @@ import {
             };
         }
 
-        const meetingRoom = getCurrentOccupancyRoom();
-        if (meetingRoom) {
+        const currentSpaceId = currentPresence?.spaceId;
+        const presenceState = currentPresence?.state;
+        const occupancyRoom = getCurrentOccupancyRoom();
+        const meetingRoom = presenceState === "MEETING"
+            ? state.rooms.find((room) => sameId(room.id, currentSpaceId)) || occupancyRoom
+            : currentPresence == null ? occupancyRoom : null;
+        if (presenceState === "MEETING" || meetingRoom) {
             return {
                 state: "meeting",
-                name: meetingRoom.name,
-                detail: meetingRoom.occupancy?.ownedByRequester
+                name: meetingRoom?.name || "회의실",
+                detail: meetingRoom?.occupancy?.ownedByRequester
                     ? "회의실 이용 중"
                     : "회의실 참여 중"
             };
         }
 
+        if (presenceState === "AWAY") {
+            return {
+                state: "away",
+                name: "자리 비움",
+                detail: "현재 공간에서 잠시 자리를 비운 상태입니다."
+            };
+        }
+
         const currentStudySpace = state.studySpaces.find(
-            (space) => sameId(space.spaceId, currentAttendance?.spaceId)
+            (space) => sameId(space.spaceId, currentSpaceId)
         );
         if (currentStudySpace) {
             return {
@@ -212,7 +301,7 @@ import {
         }
 
         const currentLab = state.labs.find(
-            (lab) => sameId(lab.spaceId, currentAttendance?.spaceId)
+            (lab) => sameId(lab.spaceId, currentSpaceId)
         );
         if (currentLab) {
             return {
@@ -501,7 +590,7 @@ import {
 
     function renderLab() {
         const checkedIn = isCheckedIn();
-        const inMeeting = Boolean(getCurrentOccupancyRoom());
+        const inMeeting = isInMeeting();
 
         if (state.roomsLoading) {
             return `
@@ -525,7 +614,7 @@ import {
 
         const assignedLabs = state.labs.map((lab) => {
             const active = lab.operationalStatus === "ACTIVE";
-            const current = sameId(lab.spaceId, currentAttendance?.spaceId);
+            const current = sameId(lab.spaceId, currentPresence?.spaceId);
             const selectable = active && checkedIn && !inMeeting && !current;
             const selectionStatus = active
                 ? current
@@ -995,8 +1084,8 @@ import {
 
     function renderLibrary() {
         const checkedIn = isCheckedIn();
-        const inMeeting = Boolean(getCurrentOccupancyRoom());
-        const currentStudySpaceId = currentAttendance?.spaceId;
+        const inMeeting = isInMeeting();
+        const currentStudySpaceId = currentPresence?.spaceId;
         const current = state.studySpaces.some(
             (space) => sameId(space.spaceId, currentStudySpaceId)
         ) && !inMeeting;
@@ -1123,7 +1212,11 @@ import {
         roomActionPending = true;
         try {
             await action();
-            await refreshSpaces(successMessage);
+            await Promise.all([
+                refreshSpaces(),
+                refreshCurrentContextAfterMutation()
+            ]);
+            renderAll(successMessage);
         } catch (error) {
             renderAll(error?.message || "회의실 요청을 처리하지 못했습니다.");
         } finally {
@@ -1150,10 +1243,12 @@ import {
         roomActionPending = true;
         try {
             const result = await action(spaceId);
-            currentAttendance = {
-                ...(currentAttendance || {}),
-                spaceId: result.spaceId
+            currentPresence = {
+                spaceId: result.spaceId,
+                state: "PRESENT",
+                startedAt: new Date().toISOString()
             };
+            await refreshCurrentContextAfterMutation();
             renderAll(successMessage);
         } catch (error) {
             renderAll(error?.message || "공간 이동을 처리하지 못했습니다.");
@@ -1378,7 +1473,7 @@ import {
                 renderAll("실습실을 선택하려면 먼저 체크인해 주세요.");
                 return;
             }
-            if (getCurrentOccupancyRoom()) {
+            if (isInMeeting()) {
                 renderAll("회의 참여를 종료한 뒤 실습실로 이동해 주세요.");
                 return;
             }
@@ -1397,7 +1492,7 @@ import {
                 renderAll("도서관에 입장하려면 먼저 체크인해 주세요.");
                 return;
             }
-            if (getCurrentOccupancyRoom()) {
+            if (isInMeeting()) {
                 renderAll("회의 참여를 종료한 뒤 도서관에 입장해 주세요.");
                 return;
             }
@@ -1543,7 +1638,11 @@ import {
 
         if (expiredRoom && !refreshingExpiredRoom) {
             refreshingExpiredRoom = true;
-            refreshSpaces(`${expiredRoom.name} 사용 상태를 갱신했습니다.`)
+            Promise.all([
+                refreshSpaces(),
+                refreshCurrentContextAfterMutation()
+            ])
+                .then(() => renderAll(`${expiredRoom.name} 사용 상태를 갱신했습니다.`))
                 .finally(() => {
                     refreshingExpiredRoom = false;
                 });
@@ -1594,7 +1693,8 @@ import {
         }
         render(root);
 
-        if (!spaceLoadPromise && state.roomsLoading) {
+        void refreshCurrentContext();
+        if (!spaceLoadPromise) {
             void refreshSpaces();
         }
         if (!vacancyAlertLoadPromise) {

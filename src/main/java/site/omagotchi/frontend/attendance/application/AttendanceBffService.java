@@ -6,6 +6,7 @@ import site.omagotchi.frontend.attendance.application.port.AttendanceAccessConte
 import site.omagotchi.frontend.attendance.application.port.AttendanceClient;
 import site.omagotchi.frontend.attendance.application.result.AttendancePageResult;
 import site.omagotchi.frontend.attendance.application.result.AttendanceRecordResult;
+import site.omagotchi.frontend.attendance.application.result.CurrentPresenceResult;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -63,6 +64,14 @@ public class AttendanceBffService {
     public AttendanceRecordResult checkOut() {
         AttendanceAccessContext.Resolved context = accessContext.resolve();
         return attendanceClient.checkOut(context.bearerToken(), context.cohortId());
+    }
+
+    public Optional<CurrentPresenceResult> getCurrentPresence() {
+        AttendanceAccessContext.Resolved context = accessContext.resolve();
+        return attendanceClient.getCurrentPresence(
+                context.bearerToken(),
+                context.cohortId()
+        );
     }
 
     public Long moveLab(Long spaceId) {

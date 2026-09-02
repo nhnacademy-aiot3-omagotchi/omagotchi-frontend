@@ -14,6 +14,7 @@ import org.springframework.web.service.invoker.HttpServiceProxyFactory;
 import site.omagotchi.frontend.attendance.infrastructure.request.LearningAttendanceSpaceRequest;
 import site.omagotchi.frontend.attendance.infrastructure.response.LearningAttendanceRecordResponse;
 import site.omagotchi.frontend.attendance.infrastructure.response.LearningAttendanceSpaceMoveResponse;
+import site.omagotchi.frontend.attendance.infrastructure.response.LearningCurrentPresenceResponse;
 import site.omagotchi.frontend.global.http.response.PageResponse;
 
 import java.time.LocalDate;
@@ -99,6 +100,27 @@ class AttendanceHttpServiceContractTest {
 
         // Then: 합의된 Endpoint 호출과 응답 역직렬화
         assertThat(response.attendanceDate()).isEqualTo(LocalDate.of(2026, 8, 24));
+    }
+
+    @Test
+    @DisplayName("현재 위치 조회 HTTP 계약")
+    void mapsCurrentPresenceEndpoint() {
+        server.expect(once(), requestTo(BASE_URL
+                        + "/api/v1/cohorts/7/attendance-records/current-presence"))
+                .andExpect(method(HttpMethod.GET))
+                .andExpect(header(HttpHeaders.AUTHORIZATION, BEARER))
+                .andRespond(withSuccess("""
+                        {
+                          "spaceId": 301,
+                          "state": "PRESENT",
+                          "startedAt": "2026-09-02T01:00:00Z"
+                        }
+                        """, MediaType.APPLICATION_JSON));
+
+        LearningCurrentPresenceResponse response = service.getCurrentPresence(BEARER, 7L);
+
+        assertThat(response.spaceId()).isEqualTo(301L);
+        assertThat(response.state()).isEqualTo("PRESENT");
     }
 
     @Test
