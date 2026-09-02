@@ -76,7 +76,7 @@ const api = window.OmagotchiApi;
 let communityFilter = "all";
 let communityKeyword = "";
 let communityPage = 1;
-const communityPageSize = 3;
+const communityPageSize = 10;
 
 function renderHomeCohortOverlay() {
     const cohort = currentProfile.approvedCohort;
@@ -857,6 +857,11 @@ async function loadProgressOverlay() {
 }
 
 // 커뮤니티 검색, 필터, 페이지 이동 및 글쓰기 처리
+// 작성자는 대표 캐릭터 닉네임이다. 아직 캐릭터를 고르지 않은 사용자는 서버가 null을 준다.
+function communityAuthorLabel(post) {
+    return escapeHtml(post?.authorNickname || "알 수 없음");
+}
+
 async function loadCommunity() {
     const result = await api.community.listPosts({
         page: communityPage - 1,
@@ -866,6 +871,14 @@ async function loadCommunity() {
     });
     communityPosts = Array.isArray(result?.items) ? result.items : [];
     communityPageCount = Math.max(1, Number(result?.page?.totalPages) || 1);
+
+    // 마지막 페이지의 마지막 글을 지우면 사라진 페이지를 조회하게 된다.
+    // 되짚은 뒤에는 communityPage <= communityPageCount라 다시 들어오지 않는다.
+    if (communityPage > communityPageCount) {
+        communityPage = communityPageCount;
+        return loadCommunity();
+    }
+
     renderCommunity();
 }
 
@@ -902,7 +915,7 @@ function renderCommunity() {
                 </span>
                 <div>
                     <h3>${escapeHtml(post.title)}</h3>
-                    <p>${escapeHtml(new Date(post.createdAt).toLocaleString("ko-KR"))}</p>
+                    <p>${communityAuthorLabel(post)} · ${escapeHtml(new Date(post.createdAt).toLocaleString("ko-KR"))}</p>
                 </div>
                 <footer>
                     ${post.pinned ? "<span>고정</span>" : ""}
@@ -925,6 +938,14 @@ function renderCommunity() {
         button.classList.toggle("is-active", isActive);
         button.setAttribute("aria-pressed", String(isActive));
     });
+
+    // 상세에서 목록으로 돌아오면 템플릿이 빈 검색창으로 다시 그려진다.
+    // 검색어는 모듈 상태에 남아 결과에 계속 반영되므로 입력값도 맞춰 준다.
+    // 입력 중에는 두 값이 같아 건드리지 않는다.
+    const searchInput = homeOverlayRoot.querySelector("[data-community-search]");
+    if (searchInput && searchInput.value !== communityKeyword) {
+        searchInput.value = communityKeyword;
+    }
 }
 
 function openCommunityComposer(post = null) {
@@ -949,7 +970,7 @@ function openCommunityComposer(post = null) {
             </label>
             <label class="overlay-community-form-field">
                 <span>내용</span>
-                <textarea name="content" maxlength="1000" placeholder="기수 구성원과 공유할 내용을 입력하세요" required>${escapeHtml(post?.content || "")}</textarea>
+                <textarea name="content" maxlength="10000" placeholder="기수 구성원과 공유할 내용을 입력하세요" required>${escapeHtml(post?.content || "")}</textarea>
             </label>
             <section class="overlay-community-form-field">
                 <span>이미지 첨부</span>
@@ -1008,7 +1029,7 @@ async function openCommunityDetail(postId) {
             <div class="overlay-community-form-field">
                 <span>제목</span>
                 <div class="overlay-community-readonly">${escapeHtml(post.title)}</div>
-                <p class="overlay-community-date">${escapeHtml(new Date(post.createdAt).toLocaleString("ko-KR"))}</p>
+                <p class="overlay-community-date">${communityAuthorLabel(post)} · ${escapeHtml(new Date(post.createdAt).toLocaleString("ko-KR"))}</p>
             </div>
             <div class="overlay-community-form-field">
                 <span>내용</span>
@@ -1020,8 +1041,10 @@ async function openCommunityDetail(postId) {
             </section>
             <footer>
                 <button type="button" data-community-list>목록</button>
+                ${post.canManage ? `
                 <button type="button" data-community-edit>수정</button>
                 <button type="button" data-community-delete>삭제</button>
+                ` : ""}
             </footer>
         </article>
     `;
