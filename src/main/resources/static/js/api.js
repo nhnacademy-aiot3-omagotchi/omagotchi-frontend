@@ -343,6 +343,7 @@
         },
         systemAdmin: {
             getUsers: (query = {}) => request(withQuery("/admin/users", query)),
+            getAudits: (query = {}) => request(withQuery("/admin/audits", query)),
             assignManager: (userId, cohortId) => request(
                 `/admin/users/${encodeURIComponent(userId)}/managed-cohorts/${encodeURIComponent(cohortId)}`,
                 {method: "PUT"}

@@ -9,7 +9,8 @@ import org.springframework.web.service.registry.ImportHttpServices;
         types = {
                 IdentityAdminAccountHttpService.class,
                 IdentityAdminAccountStatusHttpService.class,
-                IdentityAdminAccountRoleHttpService.class
+                IdentityAdminAccountRoleHttpService.class,
+                IdentityAdminAuditHttpService.class
         }
 )
 @ImportHttpServices(

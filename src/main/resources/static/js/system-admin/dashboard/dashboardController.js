@@ -63,6 +63,22 @@ export async function initializeSystemAdminDashboard(root = document, repository
 
     // 다이얼로그를 열 이유가 하나라도 있는지. 예전엔 기수 권한만 보고 판단해서
     // Identity 만 열려 있는 상황에서 버튼이 잠기는 구멍이 있었다.
+    /**
+     * 감사 패널이 목록 대신 보여 줄 문구.
+     *
+     * "연동 대기", "불러오기 실패", "기록 없음"은 서로 다른 상황이다. 셋을 한 문구로
+     * 뭉개면 감사 로그가 비어 보일 때 그게 정상인지 장애인지 알 수 없다.
+     */
+    function auditPlaceholder() {
+        if (state.auditError) {
+            return `감사 로그를 불러오지 못했습니다. ${state.auditError}`;
+        }
+        if (!capabilities().audit) {
+            return "감사 로그 API 연동 후 서버 기록을 표시합니다.";
+        }
+        return "아직 기록된 권한 변경이 없습니다.";
+    }
+
     function canWritePermissions() {
         const capability = capabilities();
         return capability.managerWrite
@@ -104,9 +120,9 @@ export async function initializeSystemAdminDashboard(root = document, repository
             <li><b>${escapeHtml(user.name.slice(0, 1))}</b><div><strong>${escapeHtml(user.name)}</strong><small>${escapeHtml(user.email)}</small></div>
             <span class="system-chip ${user.globalRole === "SYSTEM_ADMIN" ? "is-system" : ""}">${user.globalRole === "SYSTEM_ADMIN" ? "SYSTEM_ADMIN" : `${user.managerCohortIds.length}개 기수 관리`}</span></li>
         `).join("") : '<li class="system-integration-message">Identity 관리자 API 연동 후 표시됩니다.</li>';
-        find("[data-recent-audit-list]").innerHTML = capabilities().audit ? state.audits.slice(0, 4).map((audit) => `
-            <li><time>${escapeHtml(audit.time)}</time><div><strong>${escapeHtml(audit.action)}</strong><p>${escapeHtml(audit.detail)}</p><small>${escapeHtml(audit.actor)}</small></div></li>
-        `).join("") : '<li class="system-integration-message">감사 로그 API 연동 후 표시됩니다.</li>';
+        find("[data-recent-audit-list]").innerHTML = state.audits.length ? state.audits.slice(0, 4).map((audit) => `
+            <li><time>${escapeHtml(audit.time)}</time><div><strong>${escapeHtml(audit.action)}</strong><p>${escapeHtml(audit.detail)}</p><small>실행자 · ${escapeHtml(audit.actor)}</small></div></li>
+        `).join("") : `<li class="system-integration-message">${escapeHtml(auditPlaceholder())}</li>`;
     }
 
     function userRole(user) {
@@ -183,9 +199,9 @@ export async function initializeSystemAdminDashboard(root = document, repository
     }
 
     function renderAudits() {
-        find("[data-system-audit-list]").innerHTML = capabilities().audit
+        find("[data-system-audit-list]").innerHTML = state.audits.length
             ? state.audits.map((audit) => `<li><time>${escapeHtml(audit.time)}</time><i aria-hidden="true"></i><div><span>${escapeHtml(audit.action)}</span><strong>${escapeHtml(audit.detail)}</strong><small>실행자 · ${escapeHtml(audit.actor)}</small></div></li>`).join("")
-            : '<li class="system-integration-message">감사 로그 API 연동 후 서버 기록을 표시합니다.</li>';
+            : `<li class="system-integration-message">${escapeHtml(auditPlaceholder())}</li>`;
     }
 
     function renderAll() {
