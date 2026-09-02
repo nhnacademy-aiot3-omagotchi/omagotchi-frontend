@@ -773,11 +773,6 @@ td small {
     border-radius: 7px;
 }
 
-.community-item.is-reported {
-    border-color: #e7b35e;
-    background: #fffaf0;
-}
-
 .community-item h3 {
     margin: 0 0 4px;
     font-size: 14px;

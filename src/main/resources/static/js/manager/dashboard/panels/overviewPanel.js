@@ -9,7 +9,6 @@
             capacity: root.querySelector("[data-cohort-capacity]"),
             pending: root.querySelector("[data-todo-applications]"),
             late: root.querySelector("[data-todo-late]"),
-            reported: root.querySelector("[data-todo-community]"),
             edit: root.querySelector("[data-edit-cohort]"),
             form: root.querySelector("[data-cohort-edit-form]"),
             cancel: root.querySelector("[data-cancel-cohort-edit]")
@@ -26,9 +25,6 @@
                 ).length,
                 lateCount: cohort.attendance.filter(
                     (item) => item.date === state.today && ["LATE", "PENDING", "ABSENT"].includes(item.finalStatus)
-                ).length,
-                reportedCount: state.notices.filter(
-                    (item) => item.cohortId === cohort.id && item.reports > 0
                 ).length
             };
         }
@@ -46,7 +42,6 @@
             elements.capacity.textContent = "API 계약 미제공";
             elements.pending.textContent = `${model.pendingCount}건`;
             elements.late.textContent = `${model.lateCount}명`;
-            elements.reported.textContent = `${model.reportedCount}건`;
             elements.form.elements.namedItem("description").value = cohort.description;
         }
 

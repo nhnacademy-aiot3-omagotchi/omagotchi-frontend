@@ -2,7 +2,6 @@
     function createCommunityItem(template, item) {
         const article = template.content.firstElementChild.cloneNode(true);
         const action = article.querySelector("[data-community-action]");
-        article.classList.toggle("is-reported", Boolean(item.reports));
         article.querySelector("[data-community-type]").textContent = item.type === "NOTICE" ? "공지" : "자유";
         article.querySelector("[data-community-title]").textContent = `${item.pinned ? "고정 · " : ""}${item.title ?? ""}`;
         article.querySelector("[data-community-content]").textContent = new Date(item.createdAt).toLocaleString("ko-KR");
