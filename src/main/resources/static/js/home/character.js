@@ -1,3 +1,5 @@
+import { streakWingSrc } from "./characterWing.js";
+
 export function createCharacter({
     image,
     wing,
@@ -13,13 +15,6 @@ export function createCharacter({
     let clickCount = 0;
     let clickResetTimer = null;
     let studying = false;
-
-    const streakWings = [
-        null,
-        "/images/wing/dia/셀렌.gif",
-        "/images/wing/mas/이트.gif",
-        "/images/wing/grand/세슘.gif"
-    ];
 
     function showMessage(message, resetDelay = 3000) {
         if (!bubble) {
@@ -49,8 +44,7 @@ export function createCharacter({
     function setAttendanceStreak(count = 0) {
         if (!wing) return;
 
-        const tier = Math.min(Math.max(Number(count) || 0, 0), 3);
-        const nextWing = streakWings[tier];
+        const nextWing = streakWingSrc(count);
 
         if (!nextWing) {
             wing.hidden = true;
