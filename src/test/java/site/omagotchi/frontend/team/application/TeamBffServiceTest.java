@@ -214,6 +214,28 @@ class TeamBffServiceTest {
     }
 
     @Test
+    @DisplayName("팀 상세 응답의 members가 null이면 매핑하지 않고 502 오류로 변환한다")
+    void rejectsTeamDetailWithoutMembers() {
+        when(learningHttpService.getTeam(BEARER, 10L)).thenReturn(ResponseEntity.ok(
+                new LearningTeamDetailResponse(
+                        10L,
+                        3L,
+                        "백엔드 팀",
+                        CREATED_AT,
+                        1,
+                        101L,
+                        "MASTER",
+                        null
+                )
+        ));
+
+        assertThatThrownBy(() -> service.getTeam(10L, request))
+                .isInstanceOfSatisfying(BusinessException.class, exception ->
+                        assertThat(exception.getErrorCode())
+                                .isEqualTo(CommonErrorCode.DOWNSTREAM_INVALID_RESPONSE));
+    }
+
+    @Test
     @DisplayName("Learning 팀 4xx의 Status와 오류 Code를 보존한다")
     void preservesLearningTeamError() {
         RestClientResponseException failure = new RestClientResponseException(
