@@ -1,9 +1,20 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import {createSystemAdminApiRepository} from "../../main/resources/static/js/system-admin/dashboard/data/systemAdminApiRepository.js";
+import {
+    createSystemAdminApiRepository,
+    formatAuditTime,
+    normalizeAudit
+} from "../../main/resources/static/js/system-admin/dashboard/data/systemAdminApiRepository.js";
 import {mergeManagerCohortSelection} from "../../main/resources/static/js/system-admin/dashboard/dashboardController.js";
 
-function apiFixture({missingPolicyFor = [], failPolicySave = false} = {}) {
+function apiFixture({
+    missingPolicyFor = [],
+    failPolicySave = false,
+    failStatusChange = false,
+    failRoleChange = false,
+    failAuditLoad = false,
+    audits = null
+} = {}) {
     const calls = [];
     const missingPolicyCohortIds = new Set(missingPolicyFor.map(String));
     return {
@@ -30,6 +41,43 @@ function apiFixture({missingPolicyFor = [], failPolicySave = false} = {}) {
                             totalPages: 1
                         }
                     };
+                },
+                async changeAccountStatus(userId, status, reason) {
+                    calls.push(["changeAccountStatus", userId, status, reason]);
+                    if (failStatusChange) {
+                        const error = new Error("계정 상태를 변경하지 못했습니다.");
+                        error.code = "ACCOUNT_LAST_SYSTEM_ADMIN";
+                        throw error;
+                    }
+                },
+                async getAudits(query) {
+                    calls.push(["getAudits", query]);
+                    if (failAuditLoad) {
+                        throw new Error("감사 로그 서비스를 사용할 수 없습니다.");
+                    }
+                    return {
+                        items: audits ?? [{
+                            auditType: "ACCOUNT_ROLE",
+                            action: "ROLE_GRANTED",
+                            actorUserId: "00000000-0000-0000-0000-000000000001",
+                            actorName: "시스템 관리자",
+                            targetUserId: "00000000-0000-0000-0000-000000000002",
+                            targetName: "문재민",
+                            beforeValue: "USER",
+                            afterValue: "SYSTEM_ADMIN",
+                            reason: "운영 인수인계",
+                            occurredAt: "2026-09-02T05:03:00Z"
+                        }],
+                        page: {number: 0, size: 50, totalElements: 1, totalPages: 1}
+                    };
+                },
+                async changeAccountRole(userId, role, reason) {
+                    calls.push(["changeAccountRole", userId, role, reason]);
+                    if (failRoleChange) {
+                        const error = new Error("전역 역할을 변경하지 못했습니다.");
+                        error.code = "ACCOUNT_SELF_ROLE_CHANGE_NOT_ALLOWED";
+                        throw error;
+                    }
                 },
                 async assignManager(userId, cohortId) {
                     calls.push(["assignManager", userId, cohortId]);
@@ -118,7 +166,8 @@ test("Identity 계정과 Learning 기수 운영 권한을 정규화하고 생략
     // Then
     assert.deepEqual(fixture.calls, [
         ["getUsers", {page: 0, size: 100, sort: "CREATED_AT_DESC"}],
-        ["getCohorts"]
+        ["getCohorts"],
+        ["getAudits", {page: 0, size: 50}]
     ]);
     assert.deepEqual(dashboard.users, [{
         id: "019d2a48-80c0-4d6a-9a15-0b16d2dd74f1",
@@ -134,7 +183,7 @@ test("Identity 계정과 Learning 기수 운영 권한을 정규화하고 생략
     }]);
     assert.equal(dashboard.capabilities.identity, true);
     assert.equal(dashboard.capabilities.managerWrite, true);
-    assert.equal(dashboard.capabilities.identityWrite, false);
+    assert.equal(dashboard.capabilities.identityWrite, true);
     assert.equal(dashboard.cohorts[0].memberCount, 34);
     assert.equal(dashboard.cohorts[0].id, "3");
     assert.equal(dashboard.cohorts[0].managerAssignmentKnown, true);
@@ -575,4 +624,292 @@ test("출결 정책 저장이 실패하면 방금 만든 기수를 되돌린다"
         fixture.calls.map((call) => call[0]),
         ["createCohort", "updateAttendancePolicy", "deleteCohort"]
     );
+});
+
+test("계정 상태를 바꿀 때만 상태 변경 API를 부른다", async () => {
+    // Given
+    const fixture = apiFixture();
+    const repository = createSystemAdminApiRepository(fixture.api);
+
+    // When
+    await repository.updateUserPermissions("019d2a48-80c0-4d6a-9a15-0b16d2dd74f1", {
+        statusChanged: false,
+        managerCohortIds: [],
+        previousManagerCohortIds: []
+    });
+
+    // Then
+    assert.deepEqual(fixture.calls, []);
+});
+
+test("계정 상태 변경은 기수 권한 변경보다 먼저 실행한다", async () => {
+    // Given
+    const fixture = apiFixture();
+    const repository = createSystemAdminApiRepository(fixture.api);
+
+    // When
+    await repository.updateUserPermissions("user-1", {
+        statusChanged: true,
+        status: "DISABLED",
+        reason: "부정 사용 신고",
+        managerCohortIds: ["3"],
+        previousManagerCohortIds: []
+    });
+
+    // Then
+    assert.deepEqual(fixture.calls, [
+        ["changeAccountStatus", "user-1", "DISABLED", "부정 사용 신고"],
+        ["assignManager", "user-1", "3"]
+    ]);
+});
+
+test("계정 상태 변경이 실패하면 기수 권한은 손대지 않는다", async () => {
+    // Given
+    const fixture = apiFixture({failStatusChange: true});
+    const repository = createSystemAdminApiRepository(fixture.api);
+
+    // When / Then
+    await assert.rejects(
+        () => repository.updateUserPermissions("user-1", {
+            statusChanged: true,
+            status: "DISABLED",
+            reason: "부정 사용 신고",
+            managerCohortIds: ["3"],
+            previousManagerCohortIds: []
+        }),
+        (error) => error.code === "ACCOUNT_LAST_SYSTEM_ADMIN"
+    );
+
+    // 상태만 시도하고 멈춘다. 반대 순서였다면 기수 권한만 바뀐 상태가 남는다.
+    assert.deepEqual(fixture.calls.map((call) => call[0]), ["changeAccountStatus"]);
+});
+
+test("기수 권한이 실패하면 이미 반영된 계정 상태를 오류에 표시한다", async () => {
+    // Given
+    const fixture = apiFixture();
+    fixture.api.systemAdmin.assignManager = async () => {
+        throw new Error("기수 권한 배정 실패");
+    };
+    const repository = createSystemAdminApiRepository(fixture.api);
+
+    // When / Then
+    await assert.rejects(
+        () => repository.updateUserPermissions("user-1", {
+            statusChanged: true,
+            status: "DISABLED",
+            reason: "부정 사용 신고",
+            managerCohortIds: ["3"],
+            previousManagerCohortIds: []
+        }),
+        // 상태는 되돌리지 않는다. 감사 기록이 남고 세션도 폐기됐기 때문이다.
+        (error) => error.statusApplied === true
+    );
+});
+
+
+test("활성화는 역할 변경보다 먼저, 비활성화는 역할 변경보다 나중에 실행한다", async () => {
+    // Given: 비활성 계정을 다시 열면서 관리자 권한을 준다
+    const activating = apiFixture();
+    const activatingRepository = createSystemAdminApiRepository(activating.api);
+
+    // When
+    await activatingRepository.updateUserPermissions("user-1", {
+        statusChanged: true,
+        status: "ACTIVE",
+        roleChanged: true,
+        globalRole: "SYSTEM_ADMIN",
+        reason: "복직 처리",
+        managerCohortIds: [],
+        previousManagerCohortIds: []
+    });
+
+    // Then: 상태를 먼저 열지 않으면 Identity 가 역할 변경을 거부한다
+    assert.deepEqual(activating.calls, [
+        ["changeAccountStatus", "user-1", "ACTIVE", "복직 처리"],
+        ["changeAccountRole", "user-1", "SYSTEM_ADMIN", "복직 처리"]
+    ]);
+
+    // Given: 관리자 권한을 회수하면서 계정을 닫는다
+    const disabling = apiFixture();
+    const disablingRepository = createSystemAdminApiRepository(disabling.api);
+
+    // When
+    await disablingRepository.updateUserPermissions("user-1", {
+        statusChanged: true,
+        status: "DISABLED",
+        roleChanged: true,
+        globalRole: "USER",
+        reason: "퇴사 처리",
+        managerCohortIds: [],
+        previousManagerCohortIds: []
+    });
+
+    // Then: 먼저 닫으면 뒤따르는 역할 변경이 Identity 에서 막힌다
+    assert.deepEqual(disabling.calls, [
+        ["changeAccountRole", "user-1", "USER", "퇴사 처리"],
+        ["changeAccountStatus", "user-1", "DISABLED", "퇴사 처리"]
+    ]);
+});
+
+test("역할 변경이 실패하면 기수 권한과 비활성화는 실행하지 않는다", async () => {
+    // Given
+    const fixture = apiFixture({failRoleChange: true});
+    const repository = createSystemAdminApiRepository(fixture.api);
+
+    // When / Then
+    await assert.rejects(
+        () => repository.updateUserPermissions("user-1", {
+            statusChanged: true,
+            status: "DISABLED",
+            roleChanged: true,
+            globalRole: "USER",
+            reason: "퇴사 처리",
+            managerCohortIds: ["3"],
+            previousManagerCohortIds: []
+        }),
+        (error) => error.code === "ACCOUNT_SELF_ROLE_CHANGE_NOT_ALLOWED"
+            && error.statusApplied === false
+    );
+
+    assert.deepEqual(fixture.calls.map((call) => call[0]), ["changeAccountRole"]);
+});
+
+test("기수 권한이 실패하면 이미 반영된 전역 역할을 오류에 표시한다", async () => {
+    // Given
+    const fixture = apiFixture();
+    fixture.api.systemAdmin.assignManager = async () => {
+        throw new Error("기수 권한 배정 실패");
+    };
+    const repository = createSystemAdminApiRepository(fixture.api);
+
+    // When / Then
+    await assert.rejects(
+        () => repository.updateUserPermissions("user-1", {
+            statusChanged: false,
+            roleChanged: true,
+            globalRole: "SYSTEM_ADMIN",
+            reason: "운영 인수인계",
+            managerCohortIds: ["3"],
+            previousManagerCohortIds: []
+        }),
+        // 역할은 되돌리지 않는다. 감사 기록이 남기 때문이다.
+        (error) => error.roleApplied === true && error.statusApplied === false
+    );
+});
+
+test("상태·역할을 모두 그대로 두면 Identity 를 호출하지 않는다", async () => {
+    // Given
+    const fixture = apiFixture();
+    const repository = createSystemAdminApiRepository(fixture.api);
+
+    // When
+    await repository.updateUserPermissions("user-1", {
+        statusChanged: false,
+        roleChanged: false,
+        reason: "",
+        managerCohortIds: ["3"],
+        previousManagerCohortIds: []
+    });
+
+    // Then
+    assert.deepEqual(fixture.calls, [["assignManager", "user-1", "3"]]);
+});
+
+
+test("감사 로그를 불러오면 audit 기능을 열고 화면 모델로 옮긴다", async () => {
+    // Given
+    const fixture = apiFixture();
+    const repository = createSystemAdminApiRepository(fixture.api);
+
+    // When
+    const dashboard = await repository.loadDashboard();
+
+    // Then
+    assert.equal(dashboard.capabilities.audit, true);
+    assert.equal(dashboard.auditError, null);
+    assert.equal(dashboard.audits.length, 1);
+    assert.equal(dashboard.audits[0].action, "시스템 관리자 권한 부여");
+    assert.match(dashboard.audits[0].detail, /^문재민 · USER → SYSTEM_ADMIN · 운영 인수인계$/);
+    assert.equal(dashboard.audits[0].actor, "시스템 관리자");
+});
+
+test("감사 로그 조회가 실패해도 대시보드는 살아 있고 실패 사유를 남긴다", async () => {
+    // Given
+    const fixture = apiFixture({failAuditLoad: true});
+    const repository = createSystemAdminApiRepository(fixture.api);
+
+    // When
+    const dashboard = await repository.loadDashboard();
+
+    // Then: 사용자·기수는 그대로 쓰고, 감사만 닫는다
+    assert.equal(dashboard.users.length, 1);
+    // 실패를 "연동 대기"로 위장하지 않는다
+    assert.equal(dashboard.capabilities.audit, false);
+    assert.match(dashboard.auditError, /감사 로그 서비스를 사용할 수 없습니다/);
+    assert.deepEqual(dashboard.audits, []);
+});
+
+test("형식이 깨진 감사 한 줄은 버리지 않고 패널 전체를 실패로 만든다", async () => {
+    // Given: 사유가 빠진 행
+    const fixture = apiFixture({
+        audits: [{
+            auditType: "ACCOUNT_STATUS",
+            action: "ACCOUNT_DISABLED",
+            actorUserId: "00000000-0000-0000-0000-000000000001",
+            targetUserId: "00000000-0000-0000-0000-000000000002",
+            beforeValue: "ACTIVE",
+            afterValue: "DISABLED",
+            reason: "   ",
+            occurredAt: "2026-09-02T05:03:00Z"
+        }]
+    });
+    const repository = createSystemAdminApiRepository(fixture.api);
+
+    // When
+    const dashboard = await repository.loadDashboard();
+
+    // Then: 조용히 한 줄만 사라지면 "기록이 없었다"와 구분할 수 없다
+    assert.equal(dashboard.capabilities.audit, false);
+    assert.match(dashboard.auditError, /형식이 올바르지 않습니다/);
+});
+
+test("이름이 없는 감사는 UUID 로 대체하고 행을 유지한다", () => {
+    // Given: 계정 조회에 실패해 이름이 비어 온 행
+    const audit = normalizeAudit({
+        auditType: "ACCOUNT_ROLE",
+        action: "ROLE_REVOKED",
+        actorUserId: "00000000-0000-0000-0000-000000000001",
+        actorName: null,
+        targetUserId: "00000000-0000-0000-0000-000000000002",
+        targetName: null,
+        beforeValue: "SYSTEM_ADMIN",
+        afterValue: "USER",
+        reason: "퇴사 처리",
+        occurredAt: "2026-09-02T05:03:00Z"
+    });
+
+    // Then: 누가 했는지는 UUID 가 보장한다
+    assert.equal(audit.actor, "00000000-0000-0000-0000-000000000001");
+    assert.match(audit.detail, /^00000000-0000-0000-0000-000000000002 · SYSTEM_ADMIN → USER/);
+});
+
+test("모르는 action 은 뭉개지 않고 원문을 보여 준다", () => {
+    // Given: 서버에 새 action 이 추가된 상황
+    const audit = normalizeAudit({
+        auditType: "ACCOUNT_ROLE",
+        action: "ROLE_SUSPENDED",
+        actorUserId: "00000000-0000-0000-0000-000000000001",
+        targetUserId: "00000000-0000-0000-0000-000000000002",
+        beforeValue: "SYSTEM_ADMIN",
+        afterValue: "USER",
+        reason: "확인",
+        occurredAt: "2026-09-02T05:03:00Z"
+    });
+
+    // Then: "기타"로 덮으면 새 action 이 생긴 사실이 감춰진다
+    assert.equal(audit.action, "ROLE_SUSPENDED");
+});
+
+test("발생 시각이 깨진 감사는 거부한다", () => {
+    assert.throws(() => formatAuditTime("not-a-date"), /발생 시각이 올바르지 않습니다/);
 });

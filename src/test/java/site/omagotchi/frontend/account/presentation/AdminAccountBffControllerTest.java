@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import site.omagotchi.frontend.account.application.AdminAccountBffService;
@@ -19,11 +20,15 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -41,7 +46,7 @@ class AdminAccountBffControllerTest {
 
     @BeforeEach
     void setUp() {
-        when(authorization.accessToken(any())).thenReturn("admin-token");
+        lenient().when(authorization.accessToken(any())).thenReturn("admin-token");
         mockMvc = MockMvcBuilders.standaloneSetup(
                 new AdminAccountBffController(service, authorization)
         ).build();
@@ -104,6 +109,80 @@ class AdminAccountBffControllerTest {
                 eq(0),
                 eq(20),
                 eq("NAME_ASC"));
+    }
+
+    @Test
+    @DisplayName("계정 상태 변경 요청의 Application Service 위임")
+    void changesAccountStatus() throws Exception {
+        // Given: 비활성화 대상 사용자
+        UUID userId = UUID.randomUUID();
+
+        // When: 계정 상태 변경 BFF 요청
+        mockMvc.perform(patch("/bff/v1/admin/users/{user-id}/status", userId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"status": "DISABLED", "reason": "부정 사용 신고"}
+                                """))
+                .andExpect(status().isNoContent());
+
+        // Then: Session Access Token과 요청 값을 Application Service에 전달
+        verify(service).changeAccountStatus(
+                eq("admin-token"), eq(userId), eq("DISABLED"), eq("부정 사용 신고"));
+    }
+
+    @Test
+    @DisplayName("전역 역할 변경 요청의 Application Service 위임")
+    void changesAccountRole() throws Exception {
+        // Given: 관리자 권한 부여 대상 사용자
+        UUID userId = UUID.randomUUID();
+
+        // When: 전역 역할 변경 BFF 요청
+        mockMvc.perform(patch("/bff/v1/admin/users/{user-id}/role", userId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"role": "SYSTEM_ADMIN", "reason": "운영 인수인계"}
+                                """))
+                .andExpect(status().isNoContent());
+
+        // Then: Session Access Token과 요청 값을 Application Service에 전달
+        verify(service).changeAccountRole(
+                eq("admin-token"), eq(userId), eq("SYSTEM_ADMIN"), eq("운영 인수인계"));
+    }
+
+    @Test
+    @DisplayName("Identity 가 받지 않는 역할 값의 요청 단계 거부")
+    void rejectsUnsupportedGlobalRole() throws Exception {
+        // Given: 전역 역할이 아닌 기수 관리자 값
+        UUID userId = UUID.randomUUID();
+
+        // When & Then: Identity 에 닿기 전에 400으로 끊는다
+        mockMvc.perform(patch("/bff/v1/admin/users/{user-id}/role", userId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"role": "COHORT_MANAGER", "reason": "기수 배정"}
+                                """))
+                .andExpect(status().isBadRequest());
+
+        verify(service, never()).changeAccountRole(
+                anyString(), any(), anyString(), anyString());
+    }
+
+    @Test
+    @DisplayName("사유 없는 역할 변경 요청의 거부")
+    void rejectsRoleChangeWithoutReason() throws Exception {
+        // Given: 사유가 비어 있는 요청
+        UUID userId = UUID.randomUUID();
+
+        // When & Then: 감사 기록에 남길 사유가 없으므로 400으로 끊는다
+        mockMvc.perform(patch("/bff/v1/admin/users/{user-id}/role", userId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"role": "SYSTEM_ADMIN", "reason": "   "}
+                                """))
+                .andExpect(status().isBadRequest());
+
+        verify(service, never()).changeAccountRole(
+                anyString(), any(), anyString(), anyString());
     }
 
     @Test
