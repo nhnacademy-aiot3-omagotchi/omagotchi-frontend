@@ -23,6 +23,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.ToLongFunction;
 
 final class StudyResponseContracts {
 
@@ -88,9 +89,12 @@ final class StudyResponseContracts {
                 throw invalid(operation, "중복 기록 ID");
             }
         }
-        long calculatedTotal = records.stream()
-                .mapToLong(StudyRecordView::studySeconds)
-                .sum();
+        long calculatedTotal = sumStudySeconds(
+                records,
+                StudyRecordView::studySeconds,
+                operation,
+                "일별 총 공부 시간 합계 오버플로"
+        );
         if (calculatedTotal != response.totalStudySeconds()) {
             throw invalid(operation, "일별 총 공부 시간 불일치");
         }
@@ -124,9 +128,12 @@ final class StudyResponseContracts {
                 throw invalid(operation, "월별 일자 순서 불일치");
             }
         }
-        long calculatedTotal = dailyTotals.stream()
-                .mapToLong(DailyStudySecondsView::studySeconds)
-                .sum();
+        long calculatedTotal = sumStudySeconds(
+                dailyTotals,
+                DailyStudySecondsView::studySeconds,
+                operation,
+                "월별 총 공부 시간 합계 오버플로"
+        );
         if (calculatedTotal != response.totalStudySeconds()) {
             throw invalid(operation, "월별 총 공부 시간 불일치");
         }
@@ -214,10 +221,35 @@ final class StudyResponseContracts {
         };
     }
 
+    private static <T> long sumStudySeconds(
+            List<T> items,
+            ToLongFunction<T> mapper,
+            String operation,
+            String overflowDetail
+    ) {
+        long total = 0L;
+        try {
+            for (T item : items) {
+                total = Math.addExact(total, mapper.applyAsLong(item));
+            }
+            return total;
+        } catch (ArithmeticException exception) {
+            throw invalid(operation, overflowDetail, exception);
+        }
+    }
+
     private static BusinessException invalid(String operation, String detail) {
         return new BusinessException(
                 CommonErrorCode.DOWNSTREAM_INVALID_RESPONSE,
                 operation + " 성공 응답 " + detail
+        );
+    }
+
+    private static BusinessException invalid(String operation, String detail, Throwable cause) {
+        return new BusinessException(
+                CommonErrorCode.DOWNSTREAM_INVALID_RESPONSE,
+                operation + " 성공 응답 " + detail,
+                cause
         );
     }
 }

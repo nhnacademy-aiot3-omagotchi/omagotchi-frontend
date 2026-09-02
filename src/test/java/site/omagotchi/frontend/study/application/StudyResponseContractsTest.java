@@ -137,6 +137,67 @@ class StudyResponseContractsTest {
                     "월별 공부 시간 조회"
             ));
         }
+
+        @Test
+        @DisplayName("일별 및 월별 공부 시간 합계 오버플로 거부")
+        void rejectsOverflowingStudySecondsSum() {
+            UUID recordId1 = UUID.fromString("10000000-0000-0000-0000-000000000001");
+            UUID recordId2 = UUID.fromString("10000000-0000-0000-0000-000000000002");
+            UUID recordId3 = UUID.fromString("10000000-0000-0000-0000-000000000003");
+
+            // Long.MAX_VALUE + Long.MAX_VALUE + 2L = 0L (LongStream.sum() overflow 시 0으로 순환)
+            List<LearningStudyRecordResponse> overflowRecords = List.of(
+                    studyRecord(recordId1, Long.MAX_VALUE),
+                    studyRecord(recordId2, Long.MAX_VALUE),
+                    studyRecord(recordId3, 2L)
+            );
+            LearningDailyStudyRecordsResponse overflowDaily =
+                    new LearningDailyStudyRecordsResponse(
+                            AGGREGATION_DATE,
+                            0L,
+                            overflowRecords
+                    );
+
+            assertThatThrownBy(() -> StudyResponseContracts.requireDailyRecords(
+                    overflowDaily,
+                    AGGREGATION_DATE,
+                    "일별 공부 기록 조회"
+            )).isInstanceOfSatisfying(BusinessException.class, exception -> {
+                assertThat(exception.getErrorCode())
+                        .isEqualTo(CommonErrorCode.DOWNSTREAM_INVALID_RESPONSE);
+                assertThat(exception.getDiagnosticMessage())
+                        .contains("일별 총 공부 시간 합계 오버플로");
+                assertThat(exception.getCause())
+                        .isInstanceOf(ArithmeticException.class);
+            });
+
+            List<LearningDailyStudySecondsResponse> overflowDailyTotals = IntStream
+                    .rangeClosed(1, AGGREGATION_MONTH.lengthOfMonth())
+                    .mapToObj(day -> new LearningDailyStudySecondsResponse(
+                            AGGREGATION_MONTH.atDay(day),
+                            day == 1 || day == 2 ? Long.MAX_VALUE : (day == 3 ? 2L : 0L)
+                    ))
+                    .toList();
+            LearningMonthlyStudySecondsResponse overflowMonthly =
+                    new LearningMonthlyStudySecondsResponse(
+                            AGGREGATION_MONTH,
+                            0L,
+                            overflowDailyTotals
+                    );
+
+            assertThatThrownBy(() -> StudyResponseContracts.requireMonthlySummary(
+                    overflowMonthly,
+                    AGGREGATION_MONTH,
+                    "월별 공부 시간 조회"
+            )).isInstanceOfSatisfying(BusinessException.class, exception -> {
+                assertThat(exception.getErrorCode())
+                        .isEqualTo(CommonErrorCode.DOWNSTREAM_INVALID_RESPONSE);
+                assertThat(exception.getDiagnosticMessage())
+                        .contains("월별 총 공부 시간 합계 오버플로");
+                assertThat(exception.getCause())
+                        .isInstanceOf(ArithmeticException.class);
+            });
+        }
     }
 
     @Nested
@@ -220,6 +281,19 @@ class StudyResponseContractsTest {
                 ENDED_AT,
                 3_600L,
                 version,
+                STARTED_AT,
+                ENDED_AT
+        );
+    }
+
+    private static LearningStudyRecordResponse studyRecord(UUID id, long studySeconds) {
+        return new LearningStudyRecordResponse(
+                id,
+                AGGREGATION_DATE,
+                STARTED_AT,
+                ENDED_AT,
+                studySeconds,
+                1L,
                 STARTED_AT,
                 ENDED_AT
         );
