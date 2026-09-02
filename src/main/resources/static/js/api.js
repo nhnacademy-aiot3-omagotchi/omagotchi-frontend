@@ -179,7 +179,15 @@
             getHistory: (query = {}) => optional(withQuery("/attendance/history", query)),
             getToday: () => optional("/attendance/today"),
             checkIn: () => request("/attendance/check-in", { method: "POST" }),
-            checkOut: () => request("/attendance/check-out", { method: "POST" })
+            checkOut: () => request("/attendance/check-out", { method: "POST" }),
+            moveLab: (spaceId) => request("/attendance/move-lab", {
+                method: "POST",
+                body: {spaceId}
+            }),
+            moveStudySpace: (spaceId) => request("/attendance/move-study", {
+                method: "POST",
+                body: {spaceId}
+            })
         },
         spaces: {
             list: () => request("/spaces"),
