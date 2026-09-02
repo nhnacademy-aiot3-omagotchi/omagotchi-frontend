@@ -185,9 +185,9 @@ export const ProgressWithoutAiQuest = {
       </section>
       <section data-overlay-panel="leaders">
         <div class="overlay-section-label"><strong>명예의 전당</strong><span></span><em>전체 학습 시간</em></div>
-        <ol class="overlay-list overlay-leader-list" aria-label="학습 시간 랭킹">
-          <li data-empty-ranking><strong>-</strong><span>랭킹 데이터가 없습니다.</span><em>기록 없음</em></li>
-        </ol>
+        <div class="rank-board" aria-label="학습 시간 랭킹">
+          <p class="rank-empty" data-empty-ranking>랭킹 데이터가 없습니다.</p>
+        </div>
       </section>
     `
   }
@@ -218,9 +218,9 @@ export const Progress = {
       </section>
       <section data-overlay-panel="leaders">
         <div class="overlay-section-label"><strong>명예의 전당</strong><span></span><em>전체 학습 시간</em></div>
-        <ol class="overlay-list overlay-leader-list" aria-label="학습 시간 랭킹">
-          <li data-empty-ranking><strong>-</strong><span>랭킹 데이터가 없습니다.</span><em>기록 없음</em></li>
-        </ol>
+        <div class="rank-board" aria-label="학습 시간 랭킹">
+          <p class="rank-empty" data-empty-ranking>랭킹 데이터가 없습니다.</p>
+        </div>
       </section>
     `
   }
