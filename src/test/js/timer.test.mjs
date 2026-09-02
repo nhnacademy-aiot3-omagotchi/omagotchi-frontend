@@ -1,9 +1,14 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 import { createTimer } from "../../main/resources/static/js/home/timer.js";
 import { promptResumeTimer } from "../../main/resources/static/js/home/timerPrompt.js";
 
+const accountSettingsTemplate = await readFile(
+    new URL("../../main/resources/templates/pages/auth/accountSettings.html", import.meta.url),
+    "utf8"
+);
 
 function deferred() {
     let resolve;
@@ -426,4 +431,9 @@ test("타이머 복구 선택은 native modal에서 처리하고 배경으로 cl
     assert.equal(defaultPrevented, true);
     assert.equal(propagationStopped, true);
     assert.equal(dialog.removed, true);
+});
+
+test("계정 설정의 홈 링크는 로그아웃 버튼이 있는 설정 오버레이를 다시 열지 않는다", () => {
+    assert.match(accountSettingsTemplate, /href="\/home">홈으로<\/a>/);
+    assert.doesNotMatch(accountSettingsTemplate, /\/home\?overlay=settings/);
 });
