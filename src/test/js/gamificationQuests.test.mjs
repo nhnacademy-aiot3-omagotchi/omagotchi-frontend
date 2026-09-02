@@ -20,6 +20,18 @@ const questDataSource = await readFile(
     new URL("../../main/resources/static/js/home/questData.js", import.meta.url),
     "utf8"
 );
+const homeOverlaySource = await readFile(
+    new URL("../../main/frontend/home-react/components/HomeOverlay.jsx", import.meta.url),
+    "utf8"
+);
+const gameTabsSource = await readFile(
+    new URL("../../main/frontend/ui/GameTabs.jsx", import.meta.url),
+    "utf8"
+);
+const homeCssSource = await readFile(
+    new URL("../../main/resources/static/css/home.css", import.meta.url),
+    "utf8"
+);
 
 test("일일 퀘스트 API 래퍼는 전용 BFF 경로를 호출한다", async () => {
     const calls = [];
@@ -159,4 +171,40 @@ test("진행 오버레이 탭은 퀘스트와 랭킹만 남긴다", () => {
     }
     assert.match(homeSource, /data-overlay-tab="quests"/);
     assert.match(homeSource, /data-overlay-tab="leaders"/);
+});
+
+// 회귀 방지: 랭킹 패널 노드 하나가 없다는 이유로 진행 패널 전체가 조용히 비어 버린 사고가 있었다.
+// Radix Tabs가 비활성 탭을 언마운트하면서 [data-progress-ranking] 이 사라진 것이 원인이었다.
+test("진행 패널은 일부 노드가 없어도 나머지 영역을 계속 그린다", () => {
+    // 세 노드를 OR 로 묶어 전부 없을 때만 중단해야 한다. AND 가드는 조용한 미표시를 만든다.
+    assert.match(
+        homeSource,
+        /if \(!questList && !rankingList && !aiSlot\) return;/,
+        "가드가 다시 AND 로 묶이면 노드 하나만 없어도 진행 패널 전체가 비어 버립니다."
+    );
+    assert.equal(
+        /if \(!questList \|\| !rankingList \|\| !aiSlot\) return;/.test(homeSource),
+        false,
+        "AND 가드가 되살아났습니다."
+    );
+
+    // 각 영역은 자기 노드가 있을 때만 쓴다.
+    assert.match(homeSource, /if \(questList\) questList\.innerHTML/);
+    assert.match(homeSource, /if \(aiSlot\) \{/);
+    assert.match(homeSource, /if \(!rankingList\) return;/);
+});
+
+test("진행 오버레이 탭은 두 패널을 모두 DOM에 남긴다", () => {
+    // home.js 가 탭 밖에서 querySelector 로 패널 내부를 채우므로 언마운트되면 안 된다.
+    assert.match(gameTabsSource, /forceMount = false/);
+    assert.match(gameTabsSource, /forceMount=\{forceMount \|\| undefined\}/);
+    assert.match(homeOverlaySource, /forceMount/);
+
+    // forceMount 를 켜면 Radix 가 hidden 을 붙이지 않으므로 CSS 가 숨김을 맡아야 한다.
+    // 이 규칙이 빠지면 퀘스트와 랭킹이 한 화면에 동시에 나온다.
+    assert.match(
+        homeCssSource,
+        /\.overlay-tab-panel\[data-state="inactive"\]\s*\{\s*display:\s*none/,
+        "비활성 패널 숨김 규칙이 없으면 두 탭이 겹쳐 보입니다."
+    );
 });

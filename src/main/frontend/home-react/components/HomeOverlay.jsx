@@ -37,6 +37,9 @@ function ProgressTabsContent({ content }) {
       listClassName="overlay-tabs"
       triggerClassName=""
       contentClassName="overlay-tab-panel"
+      // home.js가 두 패널 내부를 querySelector로 채운다. 비활성 탭이 언마운트되면
+      // 노드를 찾지 못해 진행 패널 전체가 조용히 비어 버리므로 둘 다 DOM에 남긴다.
+      forceMount
     />
   );
 }

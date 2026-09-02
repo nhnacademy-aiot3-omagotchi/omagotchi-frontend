@@ -10,7 +10,11 @@ export function GameTabs({
   rootClassName = "ui-game-tabs",
   listClassName = "ui-game-tabs__list",
   triggerClassName = "ui-game-tabs__trigger",
-  contentClassName = "ui-game-tabs__content"
+  contentClassName = "ui-game-tabs__content",
+  // 기본값은 Radix 그대로(비활성 탭 언마운트)다. 켜면 모든 패널이 DOM에 남는다.
+  // 탭 밖의 코드가 querySelector로 패널 내부를 갱신해야 할 때만 켠다.
+  // 켠 경우 Radix가 hidden을 붙이지 않으므로 숨김은 [data-state="inactive"] CSS가 맡는다.
+  forceMount = false
 }) {
   const initialValue = defaultValue || items[0]?.value;
 
@@ -38,6 +42,7 @@ export function GameTabs({
           key={item.value}
           {...item.contentProps}
           value={item.value}
+          forceMount={forceMount || undefined}
           asChild
         >
           <div
@@ -51,6 +56,7 @@ export function GameTabs({
           {...item.contentProps}
           className={contentClassName}
           value={item.value}
+          forceMount={forceMount || undefined}
         >
           {item.content}
         </Tabs.Content>
