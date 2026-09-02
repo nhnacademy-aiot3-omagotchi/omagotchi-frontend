@@ -3,7 +3,7 @@ import { createBgmPlayer } from "./home/bgm.js";
 import { createCharacter } from "./home/character.js";
 import { saveCommunityPost } from "./home/community.js?v=20260831-1";
 import { createLevel } from "./home/level.js";
-import { isAiRecommendedQuest, loadProgressResources, normalizeDailyQuests } from "./home/questData.js";
+import { isAiRecommendedQuest, loadProgressResources, normalizeDailyQuests } from "./home/questData.js?v=20260902-1";
 import { createStudyRecords } from "./home/studyRecords.js?v=20260825-5";
 import { createTimer } from "./home/timer.js?v=20260902-1";
 import { promptResumeTimer } from "./home/timerPrompt.js?v=20260902-1";
