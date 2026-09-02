@@ -86,12 +86,8 @@ export function TelegramLink({
 
   return (
     <div className={`telegram-canvas${embedded ? " is-embedded" : ""}`}>
-      <section className="telegram-card" aria-labelledby="telegram-link-title">
-        <header className="telegram-card-head">
-          <h2 id="telegram-link-title">텔레그램 연동</h2>
-          <img src="/images/manager_character.gif" alt="" aria-hidden="true" />
-        </header>
-
+      {/* 제목은 호스트(대시보드 패널)가 갖는다. 여기서 머리말을 그리면 제목이 두 번 쌓인다. */}
+      <section className="telegram-card" aria-label="텔레그램 연동">
         <div className="telegram-card-body" aria-live="polite" aria-busy={loading}>
           <TelegramMark />
           {renderBody()}
