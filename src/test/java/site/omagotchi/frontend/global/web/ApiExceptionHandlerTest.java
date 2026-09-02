@@ -5,6 +5,9 @@ import jakarta.validation.constraints.NotBlank;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.boot.test.system.OutputCaptureExtension;
@@ -37,6 +40,7 @@ import site.omagotchi.frontend.global.security.BrowserSessionInvalidator;
 import site.omagotchi.frontend.global.security.SecurityErrorCode;
 
 import java.util.Set;
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.SoftAssertions.assertSoftly;
@@ -223,6 +227,37 @@ class ApiExceptionHandlerTest {
                 );
     }
 
+    @ParameterizedTest(name = "[{index}] {0}")
+    @MethodSource("teamDownstreamErrors")
+    @DisplayName("Learning 팀 4xx 오류의 Status와 Code를 Browser 응답까지 보존")
+    void forwardsTeamDownstreamErrors(String code, HttpStatus status) {
+        LearningDownstreamException exception = new LearningDownstreamException(
+                status,
+                new ApiErrorResponse(
+                        code,
+                        "공개하지 않을 Learning 내부 메시지",
+                        "/api/v1/teams/10",
+                        "learning-team-error"
+                ),
+                new IllegalStateException("team request rejected")
+        );
+
+        ResponseEntity<ApiErrorResponse> response = handler.handleLearningDownstreamException(
+                exception,
+                new MockHttpServletRequest("POST", "/bff/v1/teams/10"),
+                new MockHttpServletResponse()
+        );
+
+        assertSoftly(softly -> {
+            softly.assertThat(response.getStatusCode()).isEqualTo(status);
+            softly.assertThat(response.getBody()).isNotNull().satisfies(body -> {
+                softly.assertThat(body.code()).isEqualTo(code);
+                softly.assertThat(body.path()).isEqualTo("/bff/v1/teams/10");
+                softly.assertThat(body.requestId()).isEqualTo("learning-team-error");
+            });
+        });
+    }
+
     @Test
     @DisplayName("Learning 하류 5xx 오류는 상세 정보를 기록하고 공통 500으로 은닉")
     void hidesLearningDownstreamServerError(CapturedOutput output) throws Exception {
@@ -246,6 +281,29 @@ class ApiExceptionHandlerTest {
                 .contains("downstream.code=COMMUNITY_ATTACHMENT_STORAGE_FAILED")
                 .contains("downstream.requestId=learning-request-5xx")
                 .contains("storage connection refused");
+    }
+
+    private static Stream<Arguments> teamDownstreamErrors() {
+        return Stream.of(
+                Arguments.of("TEAM_INVALID_NAME", HttpStatus.BAD_REQUEST),
+                Arguments.of("TEAM_INVALID_MEMBER_QUERY", HttpStatus.BAD_REQUEST),
+                Arguments.of("TEAM_COHORT_REQUIRED", HttpStatus.BAD_REQUEST),
+                Arguments.of("TEAM_TARGET_NOT_IN_COHORT", HttpStatus.BAD_REQUEST),
+                Arguments.of("TEAM_MASTER_CANNOT_BE_KICKED", HttpStatus.BAD_REQUEST),
+                Arguments.of("TEAM_CANNOT_DELEGATE_TO_SELF", HttpStatus.BAD_REQUEST),
+                Arguments.of("TEAM_COHORT_ACCESS_DENIED", HttpStatus.FORBIDDEN),
+                Arguments.of("TEAM_MASTER_REQUIRED", HttpStatus.FORBIDDEN),
+                Arguments.of("TEAM_NOT_A_MEMBER", HttpStatus.FORBIDDEN),
+                Arguments.of("TEAM_NOT_FOUND", HttpStatus.NOT_FOUND),
+                Arguments.of("TEAM_MEMBER_NOT_FOUND", HttpStatus.NOT_FOUND),
+                Arguments.of("TEAM_ACCOUNT_NOT_FOUND", HttpStatus.NOT_FOUND),
+                Arguments.of("TEAM_DUPLICATE_NAME", HttpStatus.CONFLICT),
+                Arguments.of("TEAM_ALREADY_IN_TEAM", HttpStatus.CONFLICT),
+                Arguments.of("TEAM_CAPACITY_EXCEEDED", HttpStatus.CONFLICT),
+                Arguments.of("TEAM_ACCOUNT_WITHDRAWN", HttpStatus.CONFLICT),
+                Arguments.of("TEAM_DELEGATION_REQUIRED", HttpStatus.CONFLICT),
+                Arguments.of("TEAM_MASTER_STATE_CONFLICT", HttpStatus.CONFLICT)
+        );
     }
 
     @Test
