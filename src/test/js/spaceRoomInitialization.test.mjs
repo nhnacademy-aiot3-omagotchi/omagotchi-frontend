@@ -578,6 +578,114 @@ test("server MEETING presence blocks lab and library movement even before occupa
     }, api);
 });
 
+test("failed presence lookup drops the stale location instead of showing it as current", async () => {
+    // 한 번 성공해 위치를 들고 있는 상태에서 재조회가 실패해야 재현된다.
+    // 첫 조회부터 실패하면 currentPresence가 원래 null이라 폐기 여부를 구분할 수 없다.
+    let presenceFails = false;
+    const api = {
+        attendance: {
+            async getToday() {
+                return {
+                    checkedInAt: "2026-09-01T09:00:00Z",
+                    checkedOutAt: null
+                };
+            },
+            async getCurrentPresence() {
+                if (presenceFails) {
+                    throw new Error("체류 상태를 불러오지 못했습니다.");
+                }
+                return {
+                    spaceId: 101,
+                    state: "PRESENT",
+                    startedAt: "2026-09-01T09:05:00Z"
+                };
+            }
+        },
+        spaces: {
+            async list() {
+                return [
+                    { spaceId: 101, name: "3기 실습실 A", type: "LAB", capacity: 30, operationalStatus: "ACTIVE", cohortId: 3 }
+                ];
+            },
+            async getMyVacancyAlerts() {
+                return [];
+            }
+        }
+    };
+
+    await withSpaceRoom(async (spaceRoom) => {
+        const root = createRoot();
+        spaceRoom.mount(root);
+        await new Promise(setImmediate);
+        assert.match(root.innerHTML, /data-location-state="lab"/);
+
+        presenceFails = true;
+        spaceRoom.mount(root);
+        await new Promise(setImmediate);
+
+        assert.match(root.innerHTML, /data-location-state="unavailable"/);
+        assert.match(root.innerHTML, /현재 위치 확인 불가/);
+        assert.match(root.innerHTML, /체류 상태를 불러오지 못했습니다/);
+        // 떠났을 수도 있는 공간을 현재 위치로 계속 보여주면 안 된다.
+        assert.doesNotMatch(root.innerHTML, /실습실 이용 중/);
+        // 조회 실패를 "아직 안 골랐음"으로 표시하면 이미 자리에 있는 사용자를 헷갈리게 한다.
+        assert.doesNotMatch(root.innerHTML, /실습실을 선택해 주세요/);
+    }, { activeTab: "lab" }, {
+        approvedCohort: { cohortId: 3, name: "3기" }
+    }, api);
+});
+
+test("failed presence lookup still reports the meeting that occupancy data proves", async () => {
+    // 체류를 못 읽어도 점유 데이터는 실제로 가진 정보다. 확인 불가로 덮지 않는다.
+    const api = {
+        attendance: {
+            async getToday() {
+                return {
+                    checkedInAt: "2026-09-01T09:00:00Z",
+                    checkedOutAt: null
+                };
+            },
+            async getCurrentPresence() {
+                throw new Error("체류 상태를 불러오지 못했습니다.");
+            }
+        },
+        spaces: {
+            async list() {
+                return [{
+                    spaceId: 301,
+                    name: "3기 회의실 1",
+                    type: "MEETING",
+                    capacity: 8,
+                    operationalStatus: "ACTIVE",
+                    status: "OCCUPIED",
+                    occupiedBySameCohort: true,
+                    occupiedByRequester: true,
+                    participatingByRequester: true,
+                    participantCount: 1,
+                    remainingTimeSeconds: 3600
+                }];
+            },
+            async getOccupancyParticipants() {
+                return [];
+            },
+            async getMyVacancyAlerts() {
+                return [];
+            }
+        }
+    };
+
+    await withSpaceRoom(async (spaceRoom) => {
+        const root = createRoot();
+        spaceRoom.mount(root);
+        await new Promise(setImmediate);
+
+        assert.match(root.innerHTML, /data-location-state="meeting"/);
+        assert.doesNotMatch(root.innerHTML, /현재 위치 확인 불가/);
+    }, { activeTab: "meeting" }, {
+        approvedCohort: { cohortId: 3, name: "3기" }
+    }, api);
+});
+
 test("updateData renders external rooms instead of stale loading or error state", async () => {
     await withSpaceRoom(async (spaceRoom) => {
         const root = createRoot();

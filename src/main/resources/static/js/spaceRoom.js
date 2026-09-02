@@ -194,6 +194,9 @@ import {
         if (presenceResult.status === "fulfilled") {
             currentPresence = presenceResult.value || null;
         } else {
+            // 실패한 조회의 이전 값을 남기면 끝난 회의가 MEETING으로 남고, 떠난 공간이
+            // "현재 이용 중"으로 잠긴다. 모르는 것은 모른다고 둔다.
+            currentPresence = null;
             errors.push(presenceResult.reason);
         }
 
@@ -241,7 +244,15 @@ import {
             };
         }
 
-        if (currentContextError && currentAttendance == null) {
+        // 조회에 실패해 위치를 모르는 상태와, 아직 공간을 고르지 않은 상태는 다르다.
+        // 후자는 "실습실을 선택해 주세요"가 맞지만 전자에 같은 문구를 쓰면 이미 자리에
+        // 있는 사용자에게 불필요한 이동을 시킨다.
+        //
+        // 다만 점유 데이터로 회의 중임을 알 수 있으면 그것은 실제로 가진 정보이므로
+        // 확인 불가로 덮지 않고 아래 회의 분기에 맡긴다.
+        if (currentContextError
+                && (currentAttendance == null || currentPresence == null)
+                && !getCurrentOccupancyRoom()) {
             return {
                 state: "unavailable",
                 name: "현재 위치 확인 불가",
