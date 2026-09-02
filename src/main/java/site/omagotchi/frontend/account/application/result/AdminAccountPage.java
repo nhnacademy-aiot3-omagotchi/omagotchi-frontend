@@ -1,16 +1,17 @@
 package site.omagotchi.frontend.account.application.result;
 
+import site.omagotchi.frontend.global.application.result.PageMetadata;
+
 import java.util.List;
+import java.util.Objects;
 
 public record AdminAccountPage(
-        List<AdminAccountView> content,
-        int page,
-        int size,
-        long totalElements,
-        int totalPages
+        List<AdminAccountView> items,
+        PageMetadata page
 ) {
 
     public AdminAccountPage {
-        content = content == null ? List.of() : List.copyOf(content);
+        items = items == null ? List.of() : List.copyOf(items);
+        page = Objects.requireNonNull(page, "page");
     }
 }

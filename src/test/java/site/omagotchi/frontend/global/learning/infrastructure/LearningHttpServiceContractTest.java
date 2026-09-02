@@ -118,6 +118,30 @@ class LearningHttpServiceContractTest {
     @DisplayName("게이미피케이션 계약")
     class GamificationContract {
 
+        @Test
+        @DisplayName("일일 퀘스트 조회 경로와 Bearer Token을 전달한다")
+        void mapsDailyQuestPath() {
+            server.expect(once(), requestTo(BASE_URL + "/api/v1/gamification/quests/daily"))
+                    .andExpect(header(HttpHeaders.AUTHORIZATION, BEARER))
+                    .andRespond(withSuccess("""
+                            [{
+                              "id": 42,
+                              "title": "출석하기",
+                              "targetCount": 1,
+                              "progressCount": 1,
+                              "rewardXp": 20,
+                              "status": "COMPLETED"
+                            }]
+                            """, MediaType.APPLICATION_JSON));
+
+            JsonNode response = service.getDailyQuests(BEARER);
+
+            assertThat(response).hasSize(1);
+            assertThat(response.get(0).get("id").asLong()).isEqualTo(42L);
+            assertThat(response.get(0).get("status").asText()).isEqualTo("COMPLETED");
+            server.verify();
+        }
+
         // Learning의 aggregationDate는 required=false다. View가 더 엄격하면 정상 요청을 막는다.
         @Test
         @DisplayName("집계일 미지정 요청을 전달한다")

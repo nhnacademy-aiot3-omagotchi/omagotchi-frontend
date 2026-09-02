@@ -105,8 +105,7 @@
     letter-spacing: 0;
 }
 
-.space-room-status,
-.space-room-alert-count {
+.space-room-status {
     display: inline-flex;
     align-items: center;
     min-height: 30px;
@@ -485,9 +484,105 @@
 
 .space-room-master-detail {
     display: grid;
-    grid-template-columns: minmax(250px, 0.74fr) minmax(0, 1.45fr);
+    grid-template-columns: minmax(340px, 0.95fr) minmax(0, 1.15fr);
     gap: 16px;
     align-items: start;
+}
+
+.ui-space-meeting__body,
+.ui-space-meeting .ui-space-list__grid {
+    grid-template-columns: minmax(0, 1fr);
+}
+
+.ui-space-room-card.is-selected {
+    border-color: var(--room-accent);
+    box-shadow: inset 3px 0 0 var(--room-accent);
+}
+
+.ui-space-meeting .ui-space-room-card {
+    min-height: 132px;
+    cursor: pointer;
+}
+
+.ui-space-meeting .ui-space-room-card.is-mine > .ui-menu-chip {
+    background: #e3f0ff;
+    color: #2563a6;
+}
+
+.ui-space-meeting .ui-space-room-card.is-inactive > .ui-menu-chip {
+    background: #edf0ee;
+    color: #64716b;
+}
+
+@media (min-width: 821px) {
+    .ui-space-meeting .space-room-detail {
+        min-height: 560px;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .ui-space-meeting .space-room-detail-head {
+        min-height: 105px;
+        flex: 0 0 auto;
+    }
+
+    .ui-space-meeting .space-room-detail-sensors {
+        flex: 0 0 auto;
+    }
+
+    .ui-space-meeting .space-room-detail.is-mine {
+        height: 560px;
+        min-height: 0;
+        overflow: hidden;
+    }
+
+    .ui-space-meeting .space-room-detail.is-mine .space-room-detail-head,
+    .ui-space-meeting .space-room-detail.is-mine .space-room-detail-sensors,
+    .ui-space-meeting .space-room-detail.is-mine .space-room-actions,
+    .ui-space-meeting .space-room-detail.is-mine .space-room-action-note {
+        flex: 0 0 auto;
+    }
+
+    .ui-space-meeting .space-room-detail.is-mine .space-room-participant-manager {
+        min-height: 0;
+        flex: 1 1 auto;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    .ui-space-meeting .space-room-detail.is-mine .space-room-participants {
+        min-height: 0;
+        flex: 1 1 auto;
+        overflow-x: hidden;
+        overflow-y: auto;
+    }
+
+    .ui-space-meeting .ui-space-list {
+        display: grid;
+        grid-template-rows: auto minmax(0, 1fr);
+        min-height: 0;
+        max-height: 560px;
+        overflow: hidden;
+    }
+
+    .ui-space-meeting .ui-space-list__grid {
+        min-height: 0;
+        overflow-x: hidden;
+        overflow-y: auto;
+        align-content: start;
+        padding: 0 2px 2px 0;
+    }
+}
+
+.space-room-list-empty {
+    margin: 0;
+    padding: 18px;
+    border: 1px solid var(--room-line);
+    border-radius: 12px;
+    background: #ffffff;
+    color: var(--room-muted);
+    font-size: 13px;
 }
 
 .space-room-list {
@@ -721,13 +816,6 @@
     margin: 11px 0 0;
     padding: 0;
     list-style: none;
-}
-
-.space-room-participant-label {
-    margin: 12px 0 0;
-    color: var(--room-muted);
-    font-size: 11px;
-    font-weight: 800;
 }
 
 .space-room-participants li {
@@ -1007,7 +1095,8 @@
     color: #8a2222;
 }
 
-.space-room-action-note {
+.ui-space-meeting .space-room-action-note {
+    color: #244b39 !important;
     text-align: right;
 }
 

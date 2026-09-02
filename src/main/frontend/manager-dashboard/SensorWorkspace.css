@@ -285,6 +285,8 @@ button, input, select { font: inherit; }
 .space-table-actions { min-width: 168px; white-space: nowrap; }
 .space-table-actions button { min-height: 34px; padding: 0 7px; border: 1px solid #afb9b4; border-radius: 4px; background: #fff; font-size: 12px; font-weight: 800; cursor: pointer; }
 .space-table-actions button + button { margin-left: 5px; }
+.space-management-panel .space-table-actions { display: grid; grid-template-columns: 38px 62px 38px; gap: 5px; }
+.space-management-panel .space-table-actions button + button { margin-left: 0; }
 .space-table-actions button:hover { background: #f0f4f2; }
 .space-table-actions button.is-danger { color: #a72727; border-color: #d6b5b5; }
 .space-cohort-cell { white-space: nowrap; }

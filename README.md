@@ -33,7 +33,6 @@ SPRING_PROFILES_ACTIVE=local ./mvnw spring-boot:run
 - Redis 논리 DB: `SESSION_REDIS_DATABASE`, 로컬 기본값 `0`
 - Identity 주소: `IDENTITY_SERVICE_BASE_URL=http://localhost:8083`
 - Learning 주소: `LEARNING_SERVICE_BASE_URL=http://localhost:8084`
-- AI Chat Gateway 주소: `GATEWAY_SERVICE_BASE_URL=http://localhost:8080`
 - 서비스 인증 정보: Identity와 동일한 `FRONTEND_USERNAME`·`FRONTEND_PASSWORD`
 - Access Token 선제 갱신: `ACCESS_TOKEN_REFRESH_BEFORE_EXPIRY`
   - Identity가 발급하는 Access Token 수명보다 짧게 설정하고, 새 Token Bundle의 만료 시각은 Refresh 응답에서 검증
@@ -55,15 +54,15 @@ SPRING_PROFILES_ACTIVE=local ./mvnw spring-boot:run
 
 - Browser 저장 정보: Opaque Session Cookie만 허용
 - Token 저장 위치: Spring Session Redis
-- 가입 처리: Spring MVC Form Binding·Validation
+- 가입 처리: 이메일 OTP 기반 `/bff/v2/auth/signup/**` JSON BFF
 - 로그인 처리: Spring Security Form Login
 - 로그아웃 처리: CSRF Token을 포함한 `POST /logout`
 - 인증 사용자 화면: Spring Security의 서버 측 보호
-- Browser 전용 API: `/bff/v1/**`
+- Browser 전용 API: 기본 `/bff/v1/**`, 회원가입 `/bff/v2/auth/signup/**`
 - 내부 서비스 호출: 담당 Domain Service 직접 호출, Discovery·Client-side Load Balancing 사용
 - Access Token 갱신: 만료 임박 BFF 요청 진입 시 Redis Session 단위 single-flight Refresh
 - 요청 실행 기준: Refresh 성공 뒤에도 원래 Controller·downstream 요청은 최대 1회
-- AI Chat 호출: 후속 직접 전환 전까지 Gateway 경유
+- AI Chat 호출: Learning Service 직접 호출과 SSE 응답 전달
 - Gateway 역할: 외부 `/api/**`·Webhook 경계
 - 금지 사항: Browser JWT 저장, In-memory Session 자동 전환, Secret 하드코딩
 

@@ -105,7 +105,7 @@ body.system-admin-preview #storybook-root { min-height: 100%; }
 .system-cohort-card footer > div:first-child { display: grid; gap: 4px; min-width: 0; }
 .system-cohort-card footer span { color: var(--muted); font-size: 9px; }
 .system-cohort-card footer strong { overflow: hidden; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
-.system-cohort-actions { display: flex; gap: 6px; }
+.system-cohort-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
 .system-cohort-actions button { min-height: 31px; padding: 0 9px; }
 .system-cohort-actions .is-danger { border-color: #eac5ca; background: #fff; color: var(--danger); }
 .system-audit-card ol li { display: grid; grid-template-columns: 90px 14px minmax(0, 1fr); gap: 13px; min-height: 82px; }
