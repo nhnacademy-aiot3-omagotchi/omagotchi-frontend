@@ -1,7 +1,24 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 import { createTimer } from "../../main/resources/static/js/home/timer.js";
+import { promptResumeTimer } from "../../main/resources/static/js/home/timerPrompt.js";
+
+const accountSettingsTemplate = await readFile(
+    new URL("../../main/resources/templates/pages/auth/accountSettings.html", import.meta.url),
+    "utf8"
+);
+
+function deferred() {
+    let resolve;
+    let reject;
+    const promise = new Promise((resolvePromise, rejectPromise) => {
+        resolve = resolvePromise;
+        reject = rejectPromise;
+    });
+    return { promise, resolve, reject };
+}
 
 function setupMockDom() {
     const display = {
@@ -202,52 +219,221 @@ test("최초 접속 시 실행 중 타이머 감지: 사용자가 '파기(discar
     assert.equal(toggle.textContent, "시작");
 });
 
-test("브라우저 이탈 방지(beforeunload): 타이머 실행 중일 때 preventDefault를 호출한다", async () => {
-    const { display, toggle, statusMessage, listeners } = setupMockDom();
-
-    const mockApi = {
-        startTimer: async () => ({
-            timerRunId: "run-unload",
-            startedAt: new Date().toISOString()
-        })
-    };
+test("초기 서버 상태 확인 중에는 시작할 수 없고 확인 완료 뒤 활성화한다", async () => {
+    const { display, toggle, statusMessage } = setupMockDom();
+    const currentTimer = deferred();
+    let startCalls = 0;
 
     const timer = createTimer({
         display,
         toggle,
         statusMessage,
-        api: mockApi,
-        warnOnLeave: true
+        api: {
+            getCurrentTimer: () => currentTimer.promise,
+            startTimer: async () => {
+                startCalls += 1;
+                return {
+                    timerRunId: "new-run-after-sync",
+                    startedAt: new Date().toISOString()
+                };
+            }
+        }
+    });
+
+    const initialization = timer.init();
+    assert.equal(toggle.disabled, true);
+    assert.equal(toggle.textContent, "확인 중...");
+
+    await timer.start();
+    assert.equal(startCalls, 0);
+
+    currentTimer.resolve({ state: "IDLE" });
+    await initialization;
+    assert.equal(toggle.disabled, false);
+    assert.equal(toggle.textContent, "시작");
+
+    await timer.start();
+    assert.equal(startCalls, 1);
+    assert.equal(timer.isRunning(), true);
+    timer.destroy();
+});
+
+test("초기 서버 상태 확인 실패를 idle로 간주하지 않고 시작 버튼을 차단한다", async () => {
+    const { display, toggle, statusMessage } = setupMockDom();
+    let startCalls = 0;
+    let reportedError = null;
+
+    const timer = createTimer({
+        display,
+        toggle,
+        statusMessage,
+        api: {
+            getCurrentTimer: async () => {
+                throw new Error("timer lookup failed");
+            },
+            startTimer: async () => {
+                startCalls += 1;
+            }
+        },
+        onError: (error) => {
+            reportedError = error;
+        }
+    });
+
+    await timer.init();
+    assert.equal(toggle.disabled, true);
+    assert.equal(toggle.textContent, "새로고침 필요");
+    assert.match(statusMessage.textContent, /새로고침/);
+    assert.equal(reportedError?.message, "timer lookup failed");
+
+    await timer.start();
+    assert.equal(startCalls, 0);
+    timer.destroy();
+});
+
+test("시작 경합으로 TIMER_ALREADY_RUNNING을 받으면 현재 타이머를 다시 조회해 복구한다", async () => {
+    const { display, toggle, statusMessage } = setupMockDom();
+    let currentCalls = 0;
+    let restored = null;
+    let reportedError = null;
+
+    const timer = createTimer({
+        display,
+        toggle,
+        statusMessage,
+        api: {
+            getCurrentTimer: async () => {
+                currentCalls += 1;
+                if (currentCalls === 1) {
+                    return { state: "IDLE" };
+                }
+                return {
+                    state: "RUNNING",
+                    timerRunId: "concurrent-run",
+                    startedAt: new Date(Date.now() - 30000).toISOString(),
+                    elapsedSeconds: 30
+                };
+            },
+            startTimer: async () => {
+                throw Object.assign(new Error("already running"), {
+                    status: 409,
+                    code: "TIMER_ALREADY_RUNNING"
+                });
+            }
+        },
+        onRunningTimerDetected: async () => "resume",
+        onStart: ({ restored: wasRestored }) => {
+            restored = wasRestored;
+        },
+        onError: (error) => {
+            reportedError = error;
+        }
+    });
+
+    await timer.syncWithServer();
+    await timer.start();
+
+    assert.equal(currentCalls, 2);
+    assert.equal(timer.isRunning(), true);
+    assert.equal(timer.getTimerRunId(), "concurrent-run");
+    assert.equal(restored, true);
+    assert.equal(reportedError, null);
+});
+
+test("서버 복구형 타이머는 페이지 이동을 막는 beforeunload를 등록하지 않는다", () => {
+    const { display, toggle, statusMessage, listeners } = setupMockDom();
+
+    const timer = createTimer({
+        display,
+        toggle,
+        statusMessage,
+        api: {}
     });
 
     timer.init();
-
-    const beforeUnloadHandlers = listeners["beforeunload"] || [];
-    assert.ok(beforeUnloadHandlers.length > 0);
-
-    // 아직 시작 전일 때 이벤트 발생
-    let eventBefore = {
-        defaultPrevented: false,
-        returnValue: null,
-        preventDefault() {
-            this.defaultPrevented = true;
-        }
-    };
-    beforeUnloadHandlers[0](eventBefore);
-    assert.equal(eventBefore.defaultPrevented, false);
-
-    // 시작 후 이벤트 발생
-    await timer.start();
-
-    let eventAfter = {
-        defaultPrevented: false,
-        returnValue: null,
-        preventDefault() {
-            this.defaultPrevented = true;
-        }
-    };
-    beforeUnloadHandlers[0](eventAfter);
-    assert.equal(eventAfter.defaultPrevented, true);
-
+    assert.deepEqual(listeners["beforeunload"] || [], []);
     timer.destroy();
+});
+
+test("타이머 복구 선택은 native modal에서 처리하고 배경으로 click을 전파하지 않는다", async () => {
+    const resumeButton = {
+        focused: false,
+        closest(selector) {
+            return selector === "[data-timer-resume]" ? this : null;
+        },
+        focus() {
+            this.focused = true;
+        }
+    };
+    const discardButton = {
+        closest(selector) {
+            return selector === "[data-timer-discard]" ? this : null;
+        }
+    };
+    const handlers = {};
+    const dialog = {
+        className: "",
+        dataset: {},
+        open: false,
+        removed: false,
+        attributes: {},
+        addEventListener(type, handler) {
+            handlers[type] = handler;
+        },
+        setAttribute(name, value) {
+            this.attributes[name] = value;
+            if (name === "open") this.open = true;
+        },
+        querySelector(selector) {
+            if (selector === "[data-timer-resume]") return resumeButton;
+            if (selector === "[data-timer-discard]") return discardButton;
+            return null;
+        },
+        showModal() {
+            this.open = true;
+        },
+        close() {
+            this.open = false;
+        },
+        remove() {
+            this.removed = true;
+        }
+    };
+    const documentRef = {
+        createElement(tagName) {
+            assert.equal(tagName, "dialog");
+            return dialog;
+        },
+        body: {
+            append(node) {
+                assert.equal(node, dialog);
+            }
+        }
+    };
+
+    const result = promptResumeTimer({}, { documentRef });
+    assert.equal(dialog.open, true);
+    assert.equal(resumeButton.focused, true);
+
+    let defaultPrevented = false;
+    let propagationStopped = false;
+    handlers.click({
+        target: resumeButton,
+        preventDefault() {
+            defaultPrevented = true;
+        },
+        stopPropagation() {
+            propagationStopped = true;
+        }
+    });
+
+    assert.equal(await result, "resume");
+    assert.equal(defaultPrevented, true);
+    assert.equal(propagationStopped, true);
+    assert.equal(dialog.removed, true);
+});
+
+test("계정 설정의 홈 링크는 로그아웃 버튼이 있는 설정 오버레이를 다시 열지 않는다", () => {
+    assert.match(accountSettingsTemplate, /href="\/home">홈으로<\/a>/);
+    assert.doesNotMatch(accountSettingsTemplate, /\/home\?overlay=settings/);
 });

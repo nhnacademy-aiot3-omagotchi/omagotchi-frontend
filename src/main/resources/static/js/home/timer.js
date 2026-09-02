@@ -9,7 +9,6 @@ import { formatDuration } from "./utils.js";
  * @param {HTMLButtonElement} [options.toggle] - 시작/정지 토글 버튼
  * @param {HTMLElement} [options.statusMessage] - 상태 안내 메시지 엘리먼트
  * @param {object} [options.api] - 타이머 API 객체 (OmagotchiApi.study)
- * @param {boolean} [options.warnOnLeave=true] - 실행 중 브라우저 닫기/이동 시 beforeunload 경고 여부
  * @param {Function} [options.onStart] - 타이머 시작 시 콜백 ({ restored: boolean })
  * @param {Function} [options.onPause] - 타이머 정지 시 콜백 ({ elapsedSeconds: number })
  * @param {Function} [options.onDiscard] - 타이머 파기 완료 시 콜백
@@ -21,18 +20,18 @@ export function createTimer({
     toggle,
     statusMessage,
     api,
-    warnOnLeave = true,
     onStart,
     onPause,
     onDiscard,
     onError,
     onRunningTimerDetected
 }) {
-    let status = "idle";
+    let status = api?.getCurrentTimer ? "unknown" : "idle";
     let currentTimerRunId = null;
     let startedAt = 0;
     let tickId = null;
     let isTransitioning = false;
+    let isSynchronizing = false;
 
     function getElapsedSeconds(now = Date.now()) {
         if (status !== "running" || !startedAt) {
@@ -46,17 +45,26 @@ export function createTimer({
             return;
         }
 
-        toggle.disabled = isTransitioning;
-        toggle.textContent = isTransitioning
-            ? "처리 중..."
-            : status === "running"
-                ? "정지"
-                : "시작";
+        const isUnavailable = status === "unknown" || status === "error";
+        toggle.disabled = isTransitioning || isSynchronizing || isUnavailable;
+        if (isTransitioning) {
+            toggle.textContent = "처리 중...";
+        } else if (isSynchronizing || status === "unknown") {
+            toggle.textContent = "확인 중...";
+        } else if (status === "error") {
+            toggle.textContent = "새로고침 필요";
+        } else {
+            toggle.textContent = status === "running" ? "정지" : "시작";
+        }
 
         if (statusMessage) {
-            statusMessage.textContent = status === "running"
-                ? "학습이 진행 중입니다."
-                : "";
+            statusMessage.textContent = isSynchronizing || status === "unknown"
+                ? "진행 중인 타이머를 확인하고 있습니다."
+                : status === "error"
+                    ? "타이머 상태를 확인하지 못했습니다. 새로고침해 주세요."
+                    : status === "running"
+                        ? "학습이 진행 중입니다."
+                        : "";
         }
     }
 
@@ -74,17 +82,18 @@ export function createTimer({
             : "Omagotchi";
     }
 
-    function handleBeforeUnload(event) {
-        if (warnOnLeave && status === "running") {
-            event.preventDefault();
-            event.returnValue = "";
-        }
-    }
-
     async function syncWithServer() {
         if (!api?.getCurrentTimer) {
+            status = "idle";
+            updateToggleUi();
             return;
         }
+
+        isSynchronizing = true;
+        if (status !== "running") {
+            status = "unknown";
+        }
+        updateToggleUi();
 
         try {
             const res = await api.getCurrentTimer();
@@ -108,7 +117,12 @@ export function createTimer({
                             await api.discardTimer(timerRunId);
                         } catch (discardError) {
                             console.error("타이머 파기 실패:", discardError);
+                            currentTimerRunId = timerRunId;
+                            status = "running";
+                            startedAt = serverStartedAt;
+                            onStart?.({ restored: true });
                             onError?.(discardError);
+                            return;
                         }
                     }
                     status = "idle";
@@ -136,16 +150,21 @@ export function createTimer({
             }
         } catch (error) {
             console.error("타이머 상태 조회 실패:", error);
-            status = "idle";
-            currentTimerRunId = null;
-            startedAt = 0;
+            if (status !== "running") {
+                status = "error";
+                currentTimerRunId = null;
+                startedAt = 0;
+            }
+            onError?.(error);
+        } finally {
+            isSynchronizing = false;
             updateToggleUi();
             render();
         }
     }
 
     async function start() {
-        if (status === "running" || isTransitioning) {
+        if (status !== "idle" || isTransitioning || isSynchronizing) {
             return;
         }
 
@@ -165,6 +184,10 @@ export function createTimer({
             onStart?.({ restored: false });
             render();
         } catch (error) {
+            if (error?.status === 409 && error?.code === "TIMER_ALREADY_RUNNING") {
+                await syncWithServer();
+                return;
+            }
             console.error("타이머 시작 실패:", error);
             status = "idle";
             currentTimerRunId = null;
@@ -248,24 +271,17 @@ export function createTimer({
             }
         });
 
-        if (warnOnLeave) {
-            window.addEventListener("beforeunload", handleBeforeUnload);
-        }
-
         tickId = window.setInterval(render, 1000);
         updateToggleUi();
         render();
 
-        syncWithServer();
+        return syncWithServer();
     }
 
     function destroy() {
         if (tickId) {
             window.clearInterval(tickId);
             tickId = null;
-        }
-        if (warnOnLeave) {
-            window.removeEventListener("beforeunload", handleBeforeUnload);
         }
     }
 

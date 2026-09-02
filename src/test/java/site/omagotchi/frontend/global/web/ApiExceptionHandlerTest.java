@@ -112,6 +112,21 @@ class ApiExceptionHandlerTest {
     }
 
     @Test
+    @DisplayName("이미 실행 중인 Learning 타이머 오류는 Frontend 409 계약으로 전달")
+    void forwardsTimerAlreadyRunning() throws Exception {
+        mockMvc.perform(post("/bff/v1/test/errors/timer-already-running"))
+                .andExpectAll(
+                        status().isConflict(),
+                        content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON),
+                        header().string(HttpHeaders.CACHE_CONTROL, "no-store"),
+                        jsonPath("$.code").value("TIMER_ALREADY_RUNNING"),
+                        jsonPath("$.message").value("현재 상태에서는 요청을 처리할 수 없습니다."),
+                        jsonPath("$.path").value("/bff/v1/test/errors/timer-already-running"),
+                        jsonPath("$.requestId").value("learning-timer-already-running")
+                );
+    }
+
+    @Test
     @DisplayName("Learning Access JWT 401의 기존 인증 세션 폐기")
     void invalidatesStaleSessionForLearningAuthenticationFailure() throws Exception {
         assertAuthenticationFailureExpiresSession(
@@ -530,6 +545,20 @@ class ApiExceptionHandlerTest {
                             "learning-request-4xx"
                     ),
                     new IllegalStateException("approved downstream rejection")
+            );
+        }
+
+        @PostMapping("/bff/v1/test/errors/timer-already-running")
+        void timerAlreadyRunning() {
+            throw new LearningDownstreamException(
+                    HttpStatus.CONFLICT,
+                    new ApiErrorResponse(
+                            "TIMER_ALREADY_RUNNING",
+                            "active timer run already exists",
+                            "/api/v1/cohorts/1/timer/start",
+                            "learning-timer-already-running"
+                    ),
+                    new IllegalStateException("timer already running")
             );
         }
 

@@ -161,7 +161,7 @@ class FrontendApplicationTests {
 						"data-settings-email"
 				)))
 				.andExpect(content().string(org.hamcrest.Matchers.containsString(
-						"href=\"/home?overlay=settings\""
+						"href=\"/home\""
 				)))
 				.andExpect(content().string(org.hamcrest.Matchers.not(
 						org.hamcrest.Matchers.containsString("type=\"email\"")
