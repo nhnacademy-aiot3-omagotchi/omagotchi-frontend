@@ -108,6 +108,13 @@ public interface LearningHttpService {
             @RequestParam(required = false) String aggregationDate
     );
 
+    // Learning 계약이 POST다. Body는 없고 예측 대상 사용자는 Access Token에서 결정된다.
+    @PostExchange("/cohorts/{cohort-id}/predictions/study-time")
+    JsonNode predictStudyTime(
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
+            @PathVariable("cohort-id") Long cohortId
+    );
+
     @GetExchange("/cohorts/{cohort-id}/study-rankings/today")
     JsonNode getTodayStudyRankings(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
