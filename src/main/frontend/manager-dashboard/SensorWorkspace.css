@@ -234,6 +234,7 @@ button, input, select { font: inherit; }
 .sensor-pagination-gap { padding: 0 4px; color: var(--sensor-muted); }
 .sensor-threshold-hint--none { color: #8a5a12; font-weight: 700; }
 .sensor-threshold-saved.has-skipped { color: #8a5a12; }
+.sensor-threshold-validation { margin: 0 26px 20px; color: #a12b2b; font-size: 12px; font-weight: 750; text-align: right; }
 
 .sensor-workspace > .space-management-panel, .space-management-panel { padding: clamp(18px, 2.6vw, 38px); background: #fff; }
 .space-workspace-tabs { padding-top: 20px; border: 1px solid #b8c2bc; border-radius: 26px; background: var(--sensor-green-pale); overflow: hidden; }
@@ -321,7 +322,7 @@ button, input, select { font: inherit; }
   .sensor-audit { margin-top: 58px; padding: 18px 14px; }.sensor-audit-branch { width: 70%; }.sensor-audit > header { align-items: flex-start; flex-direction: column; }
   .sensor-audit-filters { flex-wrap: wrap; width: 100%; }.sensor-audit-filters label { flex: 1 1 140px; }.sensor-audit-filters select, .sensor-audit-filters input { width: 100%; min-width: 0; }
   .sensor-alert-table-wrap { overflow-x: visible; }.sensor-alert-table { min-width: 0; }.sensor-alert-table, .sensor-alert-table tbody { display: block; }.sensor-alert-table thead { display: none; }.sensor-alert-table tr { display: grid; gap: 10px; margin-bottom: 12px; padding: 14px; border: 1px solid var(--sensor-line); border-radius: 12px; }.sensor-alert-table th, .sensor-alert-table td { display: grid; grid-template-columns: 64px 1fr; grid-column: 1 / -1; gap: 10px; padding: 0; border: 0; }.sensor-alert-table th::before, .sensor-alert-table td::before { color: var(--sensor-muted); font-size: 11px; font-weight: 700; content: attr(data-label); }
-  .sensor-threshold-panel { padding: 16px 12px 28px; }.sensor-threshold-card > header { padding: 18px 16px 14px; }.sensor-threshold-rows { padding: 16px; gap: 12px; }.sensor-threshold-card footer { padding: 14px 16px; }.sensor-threshold-card footer button { flex: 1; }.sensor-threshold-saved { margin: 0 16px 16px; }
+  .sensor-threshold-panel { padding: 16px 12px 28px; }.sensor-threshold-card > header { padding: 18px 16px 14px; }.sensor-threshold-rows { padding: 16px; gap: 12px; }.sensor-threshold-card footer { padding: 14px 16px; }.sensor-threshold-card footer button { flex: 1; }.sensor-threshold-saved,.sensor-threshold-validation { margin: 0 16px 16px; }
   .sensor-pagination { align-items: flex-start; flex-direction: column; }.sensor-pagination > div { width: 100%; justify-content: flex-end; }
   .sensor-dialog-conflict { flex-direction: column; align-items: stretch; }.sensor-claim-button { width: 100%; }
   .sensor-empty-state { min-height: 330px; padding: 25px 18px; }
