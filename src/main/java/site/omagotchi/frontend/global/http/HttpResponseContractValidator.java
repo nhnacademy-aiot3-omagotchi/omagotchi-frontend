@@ -30,4 +30,17 @@ public final class HttpResponseContractValidator {
             );
         }
     }
+
+    public static <T> T requireBody(
+            ResponseEntity<T> response,
+            String operation
+    ) {
+        if (response == null || response.getBody() == null) {
+            throw new BusinessException(
+                    CommonErrorCode.DOWNSTREAM_INVALID_RESPONSE,
+                    operation + " 성공 응답 Body 누락"
+            );
+        }
+        return response.getBody();
+    }
 }

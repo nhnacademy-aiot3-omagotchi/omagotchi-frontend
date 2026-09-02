@@ -10,11 +10,20 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import site.omagotchi.frontend.global.learning.application.LearningProxyBffService;
 import site.omagotchi.frontend.ranking.presentation.RankingBffController;
 import site.omagotchi.frontend.statistics.presentation.AdminStudyStatisticsBffController;
+import site.omagotchi.frontend.study.application.StudyRecordBffService;
+import site.omagotchi.frontend.study.application.StudyTimerBffService;
+import site.omagotchi.frontend.study.application.result.CurrentTimerView;
+import site.omagotchi.frontend.study.application.result.DailyStudyRecordsView;
+import site.omagotchi.frontend.study.application.result.MonthlyStudySecondsView;
+import site.omagotchi.frontend.study.application.result.TimerState;
 import site.omagotchi.frontend.study.presentation.StudyRecordBffController;
 import site.omagotchi.frontend.study.presentation.StudyTimerBffController;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
+import java.time.LocalDate;
+import java.time.YearMonth;
+import java.util.List;
 import java.util.function.BiFunction;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -30,11 +39,13 @@ class BffRouteContractTest {
         JsonNode response = JsonMapper.builder().build().createObjectNode()
                 .put("contract", "matched");
         LearningProxyBffService proxy = new StubLearningProxyBffService(response);
+        StudyRecordBffService studyRecordBffService = new StubStudyRecordBffService();
+        StudyTimerBffService studyTimerBffService = new StubStudyTimerBffService();
 
         mockMvc = MockMvcBuilders.standaloneSetup(
                 new RankingBffController(proxy),
-                new StudyRecordBffController(proxy),
-                new StudyTimerBffController(proxy),
+                new StudyRecordBffController(studyRecordBffService),
+                new StudyTimerBffController(studyTimerBffService),
                 new AdminStudyStatisticsBffController(proxy)
         ).build();
     }
@@ -75,12 +86,14 @@ class BffRouteContractTest {
             mockMvc.perform(get("/bff/v1/study-records")
                             .param("date", "2026-08-24"))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.contract").value("matched"));
+                    .andExpect(jsonPath("$.aggregationDate").value("2026-08-24"));
             mockMvc.perform(get("/bff/v1/study-time-summaries")
                             .param("month", "2026-08"))
-                    .andExpect(status().isOk());
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.aggregationMonth").value("2026-08"));
             mockMvc.perform(get("/bff/v1/timer"))
-                    .andExpect(status().isOk());
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.state").value("STOPPED"));
         }
 
         @Test
@@ -146,6 +159,41 @@ class BffRouteContractTest {
                 java.util.function.Function<AuthorizedLearningRequest, T> operation
         ) {
             return (T) response;
+        }
+    }
+
+    private static final class StubStudyRecordBffService extends StudyRecordBffService {
+
+        private StubStudyRecordBffService() {
+            super(null, null, null);
+        }
+
+        @Override
+        public DailyStudyRecordsView getDailyStudyRecords(
+                LocalDate date,
+                HttpServletRequest request
+        ) {
+            return new DailyStudyRecordsView(date, 0L, List.of());
+        }
+
+        @Override
+        public MonthlyStudySecondsView getMonthlyStudyTimeSummary(
+                YearMonth month,
+                HttpServletRequest request
+        ) {
+            return new MonthlyStudySecondsView(month, 0L, List.of());
+        }
+    }
+
+    private static final class StubStudyTimerBffService extends StudyTimerBffService {
+
+        private StubStudyTimerBffService() {
+            super(null, null, null);
+        }
+
+        @Override
+        public CurrentTimerView getCurrentTimer(HttpServletRequest request) {
+            return new CurrentTimerView(TimerState.STOPPED, null, null, 0L);
         }
     }
 }
