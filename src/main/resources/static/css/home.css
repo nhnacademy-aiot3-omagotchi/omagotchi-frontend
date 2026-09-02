@@ -902,6 +902,15 @@ a {
     display: none !important;
 }
 
+/*
+ * 진행 패널 탭은 forceMount로 두 패널을 모두 DOM에 남긴다.
+ * 이때 Radix가 hidden을 붙이지 않으므로 숨김은 data-state가 맡는다.
+ * 이 규칙이 없으면 퀘스트와 랭킹이 한 화면에 동시에 나온다.
+ */
+.overlay-tab-panel[data-state="inactive"] {
+    display: none !important;
+}
+
 .overlay-card-grid,
 /* 내 정보 통계 카드 */
 .overlay-stat-grid {
