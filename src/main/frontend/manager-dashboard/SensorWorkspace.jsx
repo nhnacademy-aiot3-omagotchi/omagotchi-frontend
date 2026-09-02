@@ -648,7 +648,7 @@ function ThresholdContent({ spaces, spaceThresholds, onSave }) {
         <label><span>공간</span><select value={spaceId ?? ""} onChange={(event) => setSpaceId(Number(event.target.value))}>{spaces.map((space) => <option key={space.spaceId} value={space.spaceId}>{space.name}</option>)}</select></label>
       </section>
 
-      <form className="sensor-threshold-card" onSubmit={submit}>
+      <form className="sensor-threshold-card" onSubmit={submit} noValidate>
         <header>
           <h3>임계값 설정</h3>
           <p>CO2·온도·습도를 {spaceName} 전체에 적용합니다. 기기 {deviceCount}대 · 설정된 규칙 {totalRules}건입니다.</p>
