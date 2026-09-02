@@ -64,6 +64,36 @@ public class AdminAccountBffService {
         cohortManagerClient.removeManager(accessToken, userId, cohortId);
     }
 
+    /**
+     * 계정 상태를 변경한다.
+     *
+     * <p>Identity 단독 작업이라 Learning 합성이 없다. 같은 상태로의 요청은 Identity가
+     * 조용히 무시하므로 여기서 미리 걸러내지 않는다.</p>
+     */
+    public void changeAccountStatus(
+            String accessToken,
+            UUID userId,
+            String status,
+            String reason
+    ) {
+        identityAccountClient.changeStatus(accessToken, userId, status, reason);
+    }
+
+    /**
+     * 전역 역할을 변경한다.
+     *
+     * <p>기수 관리자 배정은 Learning 쪽 경로라 여기서 함께 처리하지 않는다. 두 저장소에
+     * 걸친 원자적 갱신을 흉내 내면 한쪽만 성공한 상태를 감추게 된다.</p>
+     */
+    public void changeAccountRole(
+            String accessToken,
+            UUID userId,
+            String role,
+            String reason
+    ) {
+        identityAccountClient.changeRole(accessToken, userId, role, reason);
+    }
+
     private static AdminAccountView toView(
             IdentityAdminAccount account,
             List<AdminManagedCohort> managedCohorts

@@ -347,6 +347,14 @@
                 `/admin/users/${encodeURIComponent(userId)}/managed-cohorts/${encodeURIComponent(cohortId)}`,
                 {method: "PUT"}
             ),
+            changeAccountStatus: (userId, status, reason) => request(
+                `/admin/users/${encodeURIComponent(userId)}/status`,
+                {method: "PATCH", body: {status, reason}}
+            ),
+            changeAccountRole: (userId, role, reason) => request(
+                `/admin/users/${encodeURIComponent(userId)}/role`,
+                {method: "PATCH", body: {role, reason}}
+            ),
             removeManager: (userId, cohortId) => request(
                 `/admin/users/${encodeURIComponent(userId)}/managed-cohorts/${encodeURIComponent(cohortId)}`,
                 {method: "DELETE"}

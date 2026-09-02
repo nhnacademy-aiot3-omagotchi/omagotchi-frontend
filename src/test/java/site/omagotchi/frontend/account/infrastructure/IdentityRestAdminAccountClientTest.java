@@ -25,11 +25,13 @@ import site.omagotchi.frontend.global.http.ApiErrorResponseDecoder;
 import site.omagotchi.frontend.global.http.RestClientCallExecutor;
 
 import java.time.Instant;
+import java.util.UUID;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.springframework.test.web.client.ExpectedCount.once;
+import static org.springframework.test.web.client.match.MockRestRequestMatchers.content;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.header;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.method;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
@@ -39,6 +41,8 @@ class IdentityRestAdminAccountClientTest {
 
     private static final String BASE_URL = "http://identity-service:8080";
     private static final String PATH = "/api/v1/admin/users";
+    private static final String ACCOUNT_PATH = "/api/v1/admin/accounts";
+    private static final String TARGET_ID = "00000000-0000-0000-0000-000000000002";
     private static final String ACCESS_TOKEN = "admin-token";
 
     private IdentityRestAdminAccountClient client;
@@ -48,12 +52,13 @@ class IdentityRestAdminAccountClientTest {
     void setUp() {
         RestClient.Builder builder = RestClient.builder().baseUrl(BASE_URL);
         server = MockRestServiceServer.bindTo(builder).build();
-        IdentityAdminAccountHttpService httpService = HttpServiceProxyFactory
+        HttpServiceProxyFactory proxyFactory = HttpServiceProxyFactory
                 .builderFor(RestClientAdapter.create(builder.build()))
-                .build()
-                .createClient(IdentityAdminAccountHttpService.class);
+                .build();
         client = new IdentityRestAdminAccountClient(
-                httpService,
+                proxyFactory.createClient(IdentityAdminAccountHttpService.class),
+                proxyFactory.createClient(IdentityAdminAccountStatusHttpService.class),
+                proxyFactory.createClient(IdentityAdminAccountRoleHttpService.class),
                 new RestClientCallExecutor(),
                 new ApiErrorContractResolver(new ApiErrorResponseDecoder())
         );
@@ -195,6 +200,62 @@ class IdentityRestAdminAccountClientTest {
         )).isInstanceOfSatisfying(BusinessException.class, exception ->
                 assertThat(exception.getErrorCode())
                         .isEqualTo(CommonErrorCode.DOWNSTREAM_INVALID_RESPONSE));
+    }
+
+    @Test
+    @DisplayName("계정 상태 변경 204 응답의 정상 종료")
+    void changesAccountStatusOnNoContent() {
+        // Given: Identity 가 204로 응답하는 상태 변경
+        server.expect(once(), requestTo(BASE_URL + ACCOUNT_PATH + "/" + TARGET_ID + "/status"))
+                .andExpect(method(HttpMethod.PATCH))
+                .andExpect(header("Authorization", "Bearer " + ACCESS_TOKEN))
+                .andExpect(content().json("""
+                        {"status": "DISABLED", "reason": "부정 사용 신고"}
+                        """))
+                .andRespond(withStatus(HttpStatus.NO_CONTENT));
+
+        // When & Then: 예외 없이 종료
+        client.changeStatus(
+                ACCESS_TOKEN, UUID.fromString(TARGET_ID), "DISABLED", "부정 사용 신고");
+    }
+
+    @Test
+    @DisplayName("전역 역할 변경 204 응답의 정상 종료")
+    void changesAccountRoleOnNoContent() {
+        // Given: Identity 가 204로 응답하는 역할 변경
+        server.expect(once(), requestTo(BASE_URL + ACCOUNT_PATH + "/" + TARGET_ID + "/role"))
+                .andExpect(method(HttpMethod.PATCH))
+                .andExpect(header("Authorization", "Bearer " + ACCESS_TOKEN))
+                .andExpect(content().json("""
+                        {"role": "SYSTEM_ADMIN", "reason": "운영 인수인계"}
+                        """))
+                .andRespond(withStatus(HttpStatus.NO_CONTENT));
+
+        // When & Then: 예외 없이 종료
+        client.changeRole(
+                ACCESS_TOKEN, UUID.fromString(TARGET_ID), "SYSTEM_ADMIN", "운영 인수인계");
+    }
+
+    @Test
+    @DisplayName("전역 역할 변경의 마지막 관리자 충돌 보존")
+    void preservesLastSystemAdminConflictOnRoleChange() {
+        // Given: 마지막 이용 가능 관리자 강등을 Identity 가 409로 거부
+        server.expect(once(), requestTo(BASE_URL + ACCOUNT_PATH + "/" + TARGET_ID + "/role"))
+                .andRespond(withStatus(HttpStatus.CONFLICT)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .body("""
+                                {
+                                  "error": {
+                                    "code": "ACCOUNT_LAST_SYSTEM_ADMIN",
+                                    "message": "마지막 관리자입니다."
+                                  }
+                                }
+                                """));
+
+        // When & Then: 화면이 해석할 수 있도록 승인 목록 밖의 코드는 삼키지 않는다
+        assertThatThrownBy(() -> client.changeRole(
+                ACCESS_TOKEN, UUID.fromString(TARGET_ID), "USER", "퇴사 처리"
+        )).isInstanceOf(BusinessException.class);
     }
 
     private static Stream<Arguments> approvedIdentityErrors() {

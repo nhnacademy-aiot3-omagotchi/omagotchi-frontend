@@ -3,6 +3,8 @@ function requireApi(api) {
         || !api?.manager?.getAttendancePolicy
         || !api?.manager?.updateAttendancePolicy
         || !api?.systemAdmin?.getUsers
+        || !api?.systemAdmin?.changeAccountStatus
+        || !api?.systemAdmin?.changeAccountRole
         || !api?.systemAdmin?.assignManager
         || !api?.systemAdmin?.removeManager) {
         throw new Error("System Admin API 클라이언트를 불러오지 못했습니다.");
@@ -184,7 +186,10 @@ export function createSystemAdminApiRepository(api = window.OmagotchiApi) {
                 capabilities: {
                     identity: true,
                     managerWrite: true,
-                    identityWrite: false,
+                    // Identity 에 계정 상태 변경 API가 있어 열어 둔다.
+                    accountStatusWrite: true,
+                    // Identity 에 전역 역할 변경 API가 생겨 열어 둔다.
+                    identityWrite: true,
                     audit: false,
                     cohortDelete: true,
                     cohortSummary: true
@@ -192,7 +197,63 @@ export function createSystemAdminApiRepository(api = window.OmagotchiApi) {
             };
         },
 
+        /**
+         * 계정 상태·전역 역할·기수 권한을 한 번에 반영한다.
+         *
+         * 순서가 중요하다.
+         * 1) Identity 는 ACTIVE·LOCKED 계정의 역할만 바꿔 준다. 그래서 활성화는 역할
+         *    변경 앞에, 비활성화는 역할 변경 뒤에 둔다. 한 방향으로 고정하면
+         *    "활성화하며 관리자 부여" 또는 "관리자 회수하며 비활성화" 중 하나가 반드시
+         *    깨진다.
+         * 2) Identity 작업이 모두 끝난 뒤에 Learning 의 기수 권한을 건드린다. 앞이
+         *    실패하면 기수 권한은 손대지 않아 아무것도 변하지 않는다.
+         *
+         * 서로 다른 서비스라 원자성은 없다. 그래서 어디까지 반영됐는지를 오류에 실어
+         * 올려 보내고(statusApplied·roleApplied), 화면이 그 사실을 숨기지 않는다.
+         */
         async updateUserPermissions(userId, payload) {
+            const activating = Boolean(payload.statusChanged) && payload.status === "ACTIVE";
+            const disabling = Boolean(payload.statusChanged) && payload.status !== "ACTIVE";
+            let statusApplied = false;
+            let roleApplied = false;
+
+            const changeStatus = async () => {
+                await client.systemAdmin.changeAccountStatus(
+                    userId,
+                    payload.status,
+                    payload.reason
+                );
+                statusApplied = true;
+            };
+
+            // 활성화가 먼저다. 비활성 계정에는 역할을 줄 수 없다.
+            if (activating) {
+                await changeStatus();
+            }
+            if (payload.roleChanged) {
+                try {
+                    await client.systemAdmin.changeAccountRole(
+                        userId,
+                        payload.globalRole,
+                        payload.reason
+                    );
+                    roleApplied = true;
+                } catch (roleError) {
+                    // 활성화만 반영된 채 멈춘 사실을 숨기지 않는다.
+                    roleError.statusApplied = statusApplied;
+                    throw roleError;
+                }
+            }
+            // 비활성화는 마지막이다. 먼저 하면 뒤따르는 역할 변경이 Identity 에서 막힌다.
+            if (disabling) {
+                try {
+                    await changeStatus();
+                } catch (statusError) {
+                    statusError.roleApplied = roleApplied;
+                    throw statusError;
+                }
+            }
+
             const previous = new Set((payload.previousManagerCohortIds || []).map(String));
             const next = new Set((payload.managerCohortIds || []).map(String));
             const removals = [...previous].filter((cohortId) => !next.has(cohortId));
@@ -232,8 +293,14 @@ export function createSystemAdminApiRepository(api = window.OmagotchiApi) {
                     );
                     partialFailure.code = "MANAGER_PERMISSION_UPDATE_PARTIAL_FAILURE";
                     partialFailure.rollbackErrors = rollbackErrors;
+                    partialFailure.statusApplied = statusApplied;
+                    partialFailure.roleApplied = roleApplied;
                     throw partialFailure;
                 }
+                // 계정 상태와 전역 역할은 되돌리지 않는다. 감사 기록이 남고 세션도 이미
+                // 폐기됐으므로 되돌리면 기록만 두 줄 늘고 결과는 제자리다.
+                operationError.statusApplied = statusApplied;
+                operationError.roleApplied = roleApplied;
                 throw operationError;
             }
         },

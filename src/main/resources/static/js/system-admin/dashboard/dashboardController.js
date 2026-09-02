@@ -2,6 +2,22 @@ import {validateAttendancePolicyDraft} from "./data/systemAdminApiRepository.js"
 
 const STATUS_LABELS = {PREPARING: "준비 중", ACTIVE: "운영 중", CLOSED: "종료"};
 const ACCOUNT_STATUS_LABELS = {ACTIVE: "활성", LOCKED: "잠금", DISABLED: "비활성화", WITHDRAWN: "탈퇴"};
+// Identity 가 관리자 지정으로 받는 값. LOCKED 는 로그인 실패 누적, WITHDRAWN 은 본인 탈퇴로만 도달한다.
+const ACCOUNT_STATUS_SELECTABLE = new Set(["ACTIVE", "DISABLED"]);
+// Identity 의 Account.isGlobalRoleChangeAllowed 와 같은 조건. DISABLED·WITHDRAWN 은 거부된다.
+const ROLE_CHANGEABLE_STATUSES = new Set(["ACTIVE", "LOCKED"]);
+// Identity·Learning 이 돌려주는 오류 코드를 화면 문구로 옮긴다.
+// 목록에 없는 코드는 원문을 노출하지 않고 일반 문구로 떨어뜨린다.
+const PERMISSION_ERROR_MESSAGES = {
+    ACCOUNT_STATUS_CHANGE_INVALID_REASON: "변경 사유는 공백을 제외하고 1~500자여야 합니다.",
+    ACCOUNT_LAST_SYSTEM_ADMIN: "마지막 시스템 관리자는 비활성화하거나 권한을 회수할 수 없습니다.",
+    ACCOUNT_SELF_DISABLE_NOT_ALLOWED: "자신의 계정은 비활성화할 수 없습니다.",
+    ACCOUNT_SELF_ROLE_CHANGE_NOT_ALLOWED: "자신의 전역 권한은 변경할 수 없습니다.",
+    ACCOUNT_ROLE_CHANGE_NOT_ALLOWED: "현재 계정 상태에서는 전역 권한을 변경할 수 없습니다.",
+    ACCOUNT_STATUS_TRANSITION_NOT_ALLOWED: "허용되지 않은 계정 상태 변경입니다.",
+    ACCOUNT_ADMIN_OPERATION_NOT_ALLOWED: "현재 계정은 시스템 관리자 작업을 수행할 수 없습니다.",
+    ACCOUNT_NOT_FOUND: "대상 계정을 찾을 수 없습니다. 목록을 새로고침해 주세요."
+};
 const USER_PAGE_SIZE = 20;
 
 function escapeHtml(value) {
@@ -35,6 +51,9 @@ export async function initializeSystemAdminDashboard(root = document, repository
     const capabilities = () => ({
         identity: false,
         managerWrite: false,
+        // 계정 상태와 전역 역할은 Identity API가 각각 따로 있다.
+        // 저장소가 실제 클라이언트 유무를 보고 켜 주므로 기본값은 닫아 둔다.
+        accountStatusWrite: false,
         identityWrite: false,
         audit: false,
         cohortDelete: true,
@@ -171,6 +190,32 @@ export async function initializeSystemAdminDashboard(root = document, repository
         if (savePermission) savePermission.disabled = !capabilities().managerWrite;
     }
 
+    /**
+     * 다이얼로그 입력과 현재 사용자 상태를 비교해 무엇이 실제로 바뀌는지 판정한다.
+     *
+     * 사유 표시와 저장 요청이 서로 다른 기준을 쓰면 "사유 칸이 안 떴는데 서버가 사유를
+     * 요구"하는 어긋남이 생긴다. 그래서 한 함수로 모은다.
+     */
+    function readPermissionChanges(dialog, user) {
+        const status = dialog.querySelector("[data-account-status-select]").value;
+        const globalRole = dialog.querySelector("[data-system-admin-toggle]").checked
+            ? "SYSTEM_ADMIN"
+            : "USER";
+        const statusChanged = capabilities().accountStatusWrite
+            && ACCOUNT_STATUS_SELECTABLE.has(user?.status)
+            && status !== user?.status;
+        const roleChanged = capabilities().identityWrite
+            && ROLE_CHANGEABLE_STATUSES.has(user?.status)
+            && globalRole !== user?.globalRole;
+        return {
+            status,
+            globalRole,
+            statusChanged,
+            roleChanged,
+            identityChanged: statusChanged || roleChanged
+        };
+    }
+
     function setDialogOpen(dialog, open) {
         dialog.hidden = !open;
         document.body.classList.toggle("has-system-dialog", open);
@@ -185,8 +230,35 @@ export async function initializeSystemAdminDashboard(root = document, repository
         dialog.querySelector("[data-dialog-user-initial]").textContent = user.name.slice(0, 1);
         dialog.querySelector("[data-dialog-user-name]").textContent = user.name;
         dialog.querySelector("[data-dialog-user-email]").textContent = user.email;
-        dialog.querySelector("[data-system-admin-toggle]").checked = user.globalRole === "SYSTEM_ADMIN";
-        dialog.querySelector("[data-account-status-select]").value = user.status;
+        const statusSelect = dialog.querySelector("[data-account-status-select]");
+        const statusReadonly = dialog.querySelector("[data-account-status-readonly]");
+        const roleToggle = dialog.querySelector("[data-system-admin-toggle]");
+        const roleReadonly = dialog.querySelector("[data-system-admin-readonly]");
+        const reasonRow = dialog.querySelector("[data-permission-reason-row]");
+        const reasonInput = dialog.querySelector("[data-permission-reason]");
+
+        // LOCKED·WITHDRAWN 은 관리자가 지정할 수 없다. 선택지에 없으므로 읽기 전용으로 알린다.
+        const selectable = ACCOUNT_STATUS_SELECTABLE.has(user.status);
+        statusSelect.disabled = !capabilities().accountStatusWrite || !selectable;
+        statusSelect.value = selectable ? user.status : "ACTIVE";
+        statusReadonly.hidden = selectable;
+        statusReadonly.textContent = selectable
+            ? ""
+            : `현재 상태(${ACCOUNT_STATUS_LABELS[user.status] || user.status})는 관리자가 직접 바꿀 수 없습니다.`;
+
+        // Identity 는 탈퇴·비활성 계정의 전역 역할을 바꿔 주지 않는다. 미리 잠가서
+        // 눌러 봐야 서버가 거부하는 조작을 만들지 않는다.
+        const roleChangeable = ROLE_CHANGEABLE_STATUSES.has(user.status);
+        roleToggle.checked = user.globalRole === "SYSTEM_ADMIN";
+        roleToggle.disabled = !capabilities().identityWrite || !roleChangeable;
+        roleReadonly.hidden = roleChangeable;
+        roleReadonly.textContent = roleChangeable
+            ? ""
+            : `현재 상태(${ACCOUNT_STATUS_LABELS[user.status] || user.status})에서는 전역 권한을 바꿀 수 없습니다.`;
+
+        reasonInput.value = "";
+        reasonRow.hidden = true;
+
         dialog.querySelector("[data-permission-error]").hidden = true;
         dialog.querySelector("[data-dialog-cohort-options]").innerHTML = state.cohorts.filter((cohort) => cohort.status !== "CLOSED").map((cohort) => `<label data-cohort-option="${escapeHtml(cohort.id)}"><input type="checkbox" value="${escapeHtml(cohort.id)}" ${user.managerCohortIds.includes(cohort.id) ? "checked" : ""}><span><strong>${escapeHtml(cohort.name)}</strong><small>${formatDate(cohort.startDate)} – ${formatDate(cohort.endDate)} · ${STATUS_LABELS[cohort.status]}</small><em data-cohort-conflict hidden>선택한 기수와 운영 기간 중복</em></span></label>`).join("");
         syncCohortAssignmentOptions(dialog);
@@ -268,6 +340,17 @@ export async function initializeSystemAdminDashboard(root = document, repository
         const button = event.target.closest("[data-open-permission]");
         if (button) openPermissionDialog(button.dataset.openPermission);
     });
+    // 상태나 전역 역할을 실제로 바꿀 때만 사유를 받는다. 둘 다 그대로면 서버도 호출하지 않는다.
+    function syncReasonRow() {
+        const dialog = find("[data-permission-dialog]");
+        const reasonRow = dialog?.querySelector("[data-permission-reason-row]");
+        if (!reasonRow) return;
+        const user = state.users.find((item) => item.id === selectedUserId);
+        reasonRow.hidden = !readPermissionChanges(dialog, user).identityChanged;
+    }
+
+    find("[data-account-status-select]")?.addEventListener("change", syncReasonRow);
+    find("[data-system-admin-toggle]")?.addEventListener("change", syncReasonRow);
     find("[data-dialog-cohort-options]")?.addEventListener("change", (event) => {
         if (event.target.matches('input[type="checkbox"]')) syncCohortAssignmentOptions(find("[data-permission-dialog]"));
     });
@@ -275,9 +358,9 @@ export async function initializeSystemAdminDashboard(root = document, repository
     find("[data-open-cohort-dialog]")?.addEventListener("click", () => setDialogOpen(find("[data-cohort-dialog]"), true));
     find("[data-save-permission]")?.addEventListener("click", async () => {
         const dialog = find("[data-permission-dialog]");
-        const globalRole = dialog.querySelector("[data-system-admin-toggle]").checked ? "SYSTEM_ADMIN" : "USER";
-        const status = dialog.querySelector("[data-account-status-select]").value;
         const selectedUser = state.users.find((user) => user.id === selectedUserId);
+        const changes = readPermissionChanges(dialog, selectedUser);
+        const reason = dialog.querySelector("[data-permission-reason]").value.trim();
         const editableInputs = [...dialog.querySelectorAll("[data-dialog-cohort-options] input")];
         const managerCohortIds = mergeManagerCohortSelection(
             selectedUser?.managerCohortIds,
@@ -285,10 +368,21 @@ export async function initializeSystemAdminDashboard(root = document, repository
             editableInputs.filter((input) => input.checked).map((input) => input.value)
         );
         const errorMessage = dialog.querySelector("[data-permission-error]");
+
+        // 사유는 서버가 필수로 검증한다. 왕복 전에 먼저 막아 준다.
+        if (changes.identityChanged && !reason) {
+            errorMessage.textContent = "계정 상태나 전역 권한을 바꾸려면 사유를 입력해 주세요.";
+            errorMessage.hidden = false;
+            return;
+        }
+
         try {
             await repository.updateUserPermissions(selectedUserId, {
-                status,
-                globalRole,
+                status: changes.status,
+                statusChanged: changes.statusChanged,
+                globalRole: changes.globalRole,
+                roleChanged: changes.roleChanged,
+                reason,
                 managerCohortIds,
                 previousManagerCohortIds: selectedUser?.managerCohortIds || []
             });
@@ -299,7 +393,16 @@ export async function initializeSystemAdminDashboard(root = document, repository
                 ? "운영 기간이 겹치는 여러 기수에 같은 관리자를 배치할 수 없습니다."
                 : error.code === "MANAGER_PERMISSION_UPDATE_PARTIAL_FAILURE"
                     ? "일부 권한을 복구하지 못했습니다. 서버 상태를 확인한 뒤 다시 시도해 주세요."
-                    : "기수 권한을 저장하지 못했습니다. 잠시 후 다시 시도해 주세요.";
+                    : PERMISSION_ERROR_MESSAGES[error.code]
+                        || "권한을 저장하지 못했습니다. 잠시 후 다시 시도해 주세요.";
+            // 앞 단계가 이미 반영됐는데 뒤에서 실패한 경우를 숨기지 않는다.
+            const applied = [
+                error.statusApplied ? "계정 상태" : null,
+                error.roleApplied ? "전역 권한" : null
+            ].filter(Boolean);
+            if (applied.length) {
+                publicMessage = `${applied.join("과 ")}는 변경되었습니다. ${publicMessage}`;
+            }
             try {
                 state = await repository.loadDashboard();
                 renderAll();
