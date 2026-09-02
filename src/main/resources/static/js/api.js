@@ -286,6 +286,9 @@
         gamification: {
             getHome: () => request("/gamification/home"),
             getDailyQuests: () => request("/gamification/quests/daily"),
+            // 예측 공부 시간은 Quest 응답에 포함되지 않으므로 별도로 조회한다.
+            // cohortId는 서버가 Session에서 확보하므로 Browser가 보내지 않는다.
+            getStudyTimePrediction: () => request("/gamification/predictions/study-time"),
             // 서버 계약은 Quest 정의 ID가 아니라 사용자별 일일 Quest 인스턴스 ID를 받는다.
             claimQuest: (userDailyQuestId) => request(
                 `/gamification/quests/${encodeURIComponent(userDailyQuestId)}/claim`,

@@ -5,7 +5,8 @@ import { saveCommunityPost } from "./home/community.js?v=20260831-1";
 import { createLevel } from "./home/level.js";
 import { AI_QUEST_TYPE, loadProgressResources, normalizeDailyQuests } from "./home/questData.js";
 import { createStudyRecords } from "./home/studyRecords.js?v=20260825-5";
-import { createTimer } from "./home/timer.js";
+import { createTimer } from "./home/timer.js?v=20260902-1";
+import { promptResumeTimer } from "./home/timerPrompt.js?v=20260902-1";
 import { escapeHtml, formatDuration } from "./home/utils.js";
 
 const timerDisplay = document.querySelector("[data-timer-display]");
@@ -219,59 +220,11 @@ const bgmPlayer = createBgmPlayer({
 
 let studyRecordsController;
 
-function promptResumeTimer({ elapsedSeconds = 0 } = {}) {
-    return new Promise((resolve) => {
-        const backdrop = document.createElement("section");
-        backdrop.className = "home-confirm-backdrop";
-        backdrop.innerHTML = `
-            <article class="home-confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="home-timer-confirm-title">
-                <h2 id="home-timer-confirm-title">진행 중인 타이머가 있어요</h2>
-                <p>이전에 시작된 학습 타이머가 실행 중입니다.<br />이어서 계속 진행할까요, 아니면 기존 기록을 파기할까요?</p>
-                <div class="home-confirm-actions">
-                    <button type="button" data-timer-discard>파기하기</button>
-                    <button type="button" data-confirm-ok data-timer-resume>계속 진행</button>
-                </div>
-            </article>
-        `;
-
-        function close(action) {
-            document.removeEventListener("keydown", handleKeydown);
-            backdrop.remove();
-            resolve(action);
-        }
-
-        function handleKeydown(event) {
-            if (event.key === "Escape") {
-                close("resume");
-            }
-        }
-
-        backdrop.addEventListener("click", (event) => {
-            const target = event.target;
-            if (!(target instanceof Element)) return;
-
-            if (target.closest("[data-timer-discard]")) {
-                close("discard");
-                return;
-            }
-
-            if (target.closest("[data-timer-resume]")) {
-                close("resume");
-            }
-        });
-
-        document.addEventListener("keydown", handleKeydown);
-        document.body.append(backdrop);
-        backdrop.querySelector("[data-timer-resume]")?.focus();
-    });
-}
-
 const timerController = createTimer({
     display: timerDisplay,
     toggle: timerToggle,
     statusMessage: document.querySelector("[data-timer-status]"),
     api: api?.study,
-    warnOnLeave: true,
     onRunningTimerDetected: promptResumeTimer,
     onStart: ({ restored }) => {
         characterController.setStudyState(true);
@@ -1206,6 +1159,11 @@ homeOverlayRoot?.addEventListener("click", (event) => {
     }
 
     if (logoutButton) {
+        if (document.querySelector("[data-timer-resume-dialog]")) {
+            event.preventDefault();
+            event.stopPropagation();
+            return;
+        }
         logout(logoutButton);
     }
 });
