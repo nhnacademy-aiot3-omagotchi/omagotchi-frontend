@@ -10,9 +10,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.mock.web.MockHttpServletRequest;
-import site.omagotchi.frontend.global.exception.BusinessException;
-import site.omagotchi.frontend.global.exception.CommonErrorCode;
+import site.omagotchi.frontend.global.security.BrowserSessionInvalidator;
+import site.omagotchi.frontend.global.web.ApiExceptionHandler;
 import site.omagotchi.frontend.global.http.ApiErrorResponseDecoder;
 import site.omagotchi.frontend.global.learning.application.LearningCohortContext;
 import site.omagotchi.frontend.global.learning.infrastructure.LearningGatewayCallExecutor;
@@ -41,7 +40,6 @@ import java.util.UUID;
 import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -69,8 +67,6 @@ class StudyBffResponseOwnershipTest {
 
     private final LearningStub learningStub = new LearningStub();
     private MockMvc mockMvc;
-    private StudyRecordBffService recordService;
-    private StudyTimerBffService timerService;
 
     @BeforeEach
     void setUp() {
@@ -79,12 +75,12 @@ class StudyBffResponseOwnershipTest {
                 new ApiErrorResponseDecoder()
         );
         LearningCohortContext cohortContext = new FixedLearningCohortContext();
-        recordService = new StudyRecordBffService(
+        StudyRecordBffService recordService = new StudyRecordBffService(
                 learningHttpService,
                 executor,
                 cohortContext
         );
-        timerService = new StudyTimerBffService(
+        StudyTimerBffService timerService = new StudyTimerBffService(
                 learningHttpService,
                 executor,
                 cohortContext
@@ -93,7 +89,9 @@ class StudyBffResponseOwnershipTest {
         mockMvc = standaloneSetup(
                 new StudyRecordBffController(recordService),
                 new StudyTimerBffController(timerService)
-        ).build();
+        )
+                .setControllerAdvice(new ApiExceptionHandler(new BrowserSessionInvalidator()))
+                .build();
     }
 
     @Nested
@@ -102,17 +100,38 @@ class StudyBffResponseOwnershipTest {
 
         @Test
         @DisplayName("예상하지 않은 생성과 시작 상태의 502 변환")
-        void rejectsUnexpectedCreateAndStartStatus() {
+        void rejectsUnexpectedCreateAndStartStatus() throws Exception {
             learningStub.createStatus = HttpStatus.OK;
             learningStub.startStatus = HttpStatus.OK;
-            MockHttpServletRequest request = new MockHttpServletRequest();
 
-            assertInvalid(() -> recordService.createStudyRecord(
-                    LocalDateTime.of(2026, 8, 24, 23, 30),
-                    LocalDateTime.of(2026, 8, 25, 0, 30),
-                    request
-            ));
-            assertInvalid(() -> timerService.startTimer(request));
+            mockMvc.perform(post("/bff/v1/study-records")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("""
+                                    {
+                                      "startDateTime": "2026-08-24T23:30",
+                                      "endDateTime": "2026-08-25T00:30"
+                                    }
+                                    """))
+                    .andExpectAll(
+                            status().isBadGateway(),
+                            header().doesNotExist(DOWNSTREAM_HEADER),
+                            header().string(HttpHeaders.CACHE_CONTROL, "no-store"),
+                            content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON),
+                            jsonPath("$.code").value("COMMON_DOWNSTREAM_INVALID_RESPONSE"),
+                            jsonPath("$.message").value("연결된 서비스의 응답이 올바르지 않습니다."),
+                            jsonPath("$.path").value("/bff/v1/study-records")
+                    );
+
+            mockMvc.perform(post("/bff/v1/timer/start"))
+                    .andExpectAll(
+                            status().isBadGateway(),
+                            header().doesNotExist(DOWNSTREAM_HEADER),
+                            header().string(HttpHeaders.CACHE_CONTROL, "no-store"),
+                            content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON),
+                            jsonPath("$.code").value("COMMON_DOWNSTREAM_INVALID_RESPONSE"),
+                            jsonPath("$.message").value("연결된 서비스의 응답이 올바르지 않습니다."),
+                            jsonPath("$.path").value("/bff/v1/timer/start")
+                    );
         }
     }
 
@@ -359,12 +378,5 @@ class StudyBffResponseOwnershipTest {
                     dailyTotals
             );
         }
-    }
-
-    private static void assertInvalid(org.assertj.core.api.ThrowableAssert.ThrowingCallable action) {
-        assertThatThrownBy(action)
-                .isInstanceOfSatisfying(BusinessException.class, exception ->
-                        assertThat(exception.getErrorCode())
-                                .isEqualTo(CommonErrorCode.DOWNSTREAM_INVALID_RESPONSE));
     }
 }
