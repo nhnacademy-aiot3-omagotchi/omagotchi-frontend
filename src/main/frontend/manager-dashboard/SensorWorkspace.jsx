@@ -9,9 +9,9 @@ import { Tabs } from "radix-ui";
 const QUERY_DEBOUNCE_MS = 300;
 
 const THRESHOLD_METRICS = [
-  { value: "co2", label: "CO2" },
-  { value: "temperature", label: "온도" },
-  { value: "humidity", label: "습도" }
+  { value: "co2", label: "CO2", defaultOperator: "GTE", defaultThreshold: 1000 },
+  { value: "temperature", label: "온도", defaultOperator: "GTE", defaultThreshold: 28 },
+  { value: "humidity", label: "습도", defaultOperator: "GTE", defaultThreshold: 70 }
 ];
 
 // site.omagotchi.learningservice.rule.domain.Operator
@@ -534,9 +534,14 @@ function DashboardContent({ spaces, thresholds, auditLog }) {
   );
 }
 
-// 아직 룰이 없는 항목. threshold를 0으로 채우면 그대로 저장했을 때
-// "0 이상"처럼 항상 적중하는 룰이 만들어지므로 비워 두고 입력을 강제한다.
-const EMPTY_METRIC = Object.freeze({ operator: "GTE", threshold: null, ruleCount: 0, mixed: false });
+function defaultMetric(metric) {
+  return {
+    operator: metric.defaultOperator,
+    threshold: metric.defaultThreshold,
+    ruleCount: 0,
+    mixed: false
+  };
+}
 
 /** GET /api/v1/threshold-rules/spaces 의 한 공간을 metric 키로 눕힌다. */
 function metricsOf(spaceThreshold) {
@@ -544,7 +549,7 @@ function metricsOf(spaceThreshold) {
   for (const metric of spaceThreshold?.metrics || []) byMetric[metric.metric] = metric;
   return Object.fromEntries(THRESHOLD_METRICS.map((metric) => [
     metric.value,
-    byMetric[metric.value] || EMPTY_METRIC
+    byMetric[metric.value] || defaultMetric(metric)
   ]));
 }
 
@@ -557,12 +562,13 @@ function ThresholdContent({ spaces, spaceThresholds, onSave }) {
   const [draft, setDraft] = useState(() => metricsOf(current));
   const [savedTick, setSavedTick] = useState(0);
   const [saveResult, setSaveResult] = useState(null);
+  const [validationError, setValidationError] = useState(null);
   const [saving, setSaving] = useState(false);
 
   // 저장 직후 서버 재조회가 이 effect를 깨우므로, 여기서 savedTick을 지우면 성공 메시지가
   // 한 프레임 만에 사라진다. 메시지는 공간을 바꿀 때만 지운다.
   useEffect(() => { setDraft(metricsOf(current)); }, [current]);
-  useEffect(() => { setSavedTick(0); setSaveResult(null); }, [spaceId]);
+  useEffect(() => { setSavedTick(0); setSaveResult(null); setValidationError(null); }, [spaceId]);
 
   const spaceName = spaces.find((space) => space.spaceId === spaceId)?.name || "선택한 공간";
   const deviceCount = current?.deviceCount ?? 0;
@@ -573,6 +579,7 @@ function ThresholdContent({ spaces, spaceThresholds, onSave }) {
     setDraft((prev) => ({ ...prev, [metric]: { ...prev[metric], [field]: value } }));
     setSavedTick(0);
     setSaveResult(null);
+    setValidationError(null);
   }
 
   async function submit(event) {
@@ -581,7 +588,10 @@ function ThresholdContent({ spaces, spaceThresholds, onSave }) {
       const value = draft[metric.value]?.threshold;
       return value === null || value === undefined || value === "" || Number.isNaN(Number(value));
     });
-    if (missing) return;
+    if (missing) {
+      setValidationError("CO2, 온도, 습도 임계값을 모두 입력해 주세요.");
+      return;
+    }
 
     // 저장 결과를 확인하기 전에 성공 메시지를 띄우면, 서버가 거절해도 초록 메시지가 뜬다.
     setSaving(true);
@@ -603,11 +613,12 @@ function ThresholdContent({ spaces, spaceThresholds, onSave }) {
     }
   }
 
-  // 서버는 규칙이 없는 (기기 × 항목)을 missing 으로 돌려준다. 0이 아니면 화면이 알려야 한다.
+  // 서버는 기존 룰을 갱신하고 없는 룰은 생성한다.
   function savedMessage() {
     if (!saveResult) return "저장되었습니다.";
-    const { applied = 0, unchanged = 0, missing: skipped = 0 } = saveResult;
+    const { created = 0, applied = 0, unchanged = 0, missing: skipped = 0 } = saveResult;
     const parts = [];
+    if (created) parts.push(`${created}건 생성`);
     if (applied) parts.push(`${applied}건 적용`);
     if (unchanged) parts.push(`${unchanged}건은 이미 같은 값`);
     if (skipped) parts.push(`${skipped}건은 규칙이 없어 건너뜀`);
@@ -623,7 +634,7 @@ function ThresholdContent({ spaces, spaceThresholds, onSave }) {
       <form className="sensor-threshold-card" onSubmit={submit}>
         <header>
           <h3>임계값 설정</h3>
-          <p>{spaceName} 전체에 같은 값을 적용합니다. 기기 {deviceCount}대 · 규칙 {totalRules}건이 센서마다 저장됩니다.</p>
+          <p>CO2·온도·습도를 {spaceName} 전체에 적용합니다. 기기 {deviceCount}대 · 설정된 규칙 {totalRules}건입니다.</p>
         </header>
         {hasMixed && (
           <p className="sensor-threshold-mixed" role="status">
@@ -644,12 +655,11 @@ function ThresholdContent({ spaces, spaceThresholds, onSave }) {
                 <select aria-label={`${metric.label} 조건`} value={rule.operator} onChange={(event) => update(metric.value, "operator", event.target.value)}>
                   {THRESHOLD_OPERATORS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
                 </select>
-                {/* 서버(applyToSpace)는 규칙 없는 기기를 만나면 만들지 않고 건너뛴다. */}
                 <small className={rule.ruleCount === 0 ? "sensor-threshold-hint--none" : undefined}>
                   {rule.ruleCount === 0
-                    ? `이 항목을 감시하는 기기가 없어 저장되지 않습니다.`
+                    ? `아직 룰이 없어 서버 기본값을 표시합니다. 저장하면 모든 센서에 생성됩니다.`
                     : rule.ruleCount < deviceCount
-                      ? `기기 ${deviceCount}대 중 ${rule.ruleCount}대만 이 항목을 감시합니다.`
+                      ? `기기 ${deviceCount}대 중 ${rule.ruleCount}대만 룰이 있습니다. 저장하면 누락 룰도 생성됩니다.`
                       : `센서 ${rule.ruleCount}대에 각각 저장됩니다.`}
                 </small>
               </div>
@@ -657,9 +667,10 @@ function ThresholdContent({ spaces, spaceThresholds, onSave }) {
           })}
         </div>
         <footer>
-          <button type="button" className="sensor-secondary-button" onClick={() => { setDraft(metricsOf(current)); setSavedTick(0); setSaveResult(null); }}>되돌리기</button>
+          <button type="button" className="sensor-secondary-button" onClick={() => { setDraft(metricsOf(current)); setSavedTick(0); setSaveResult(null); setValidationError(null); }}>되돌리기</button>
           <button type="submit" className="sensor-primary-button" disabled={saving}>{saving ? "저장 중…" : "저장"}</button>
         </footer>
+        {validationError && <p className="sensor-threshold-validation" role="alert">{validationError}</p>}
         {savedTick > 0 && (
           <p className={`sensor-threshold-saved${saveResult?.missing ? " has-skipped" : ""}`} role="status">
             {savedMessage()}
@@ -920,17 +931,34 @@ export function SensorWorkspace({
       return onSaveThresholds(spaceId, body);
     }
     // 로컬 모드에서는 서버가 돌려줄 모양을 흉내낸다.
-    setSpaceThresholds((current) => current.map((item) => item.spaceId !== spaceId ? item : {
+    const current = spaceThresholds.find((item) => item.spaceId === spaceId);
+    const saveSummary = body.rules.reduce((summary, rule) => {
+      const existing = current?.metrics?.find((metric) => metric.metric === rule.metric);
+      const existingCount = existing?.ruleCount ?? 0;
+      summary.created += Math.max(0, (current?.deviceCount ?? 0) - existingCount);
+      if (existingCount > 0) {
+        if (existing.operator === rule.operator && Number(existing.threshold) === Number(rule.threshold)) {
+          summary.unchanged += existingCount;
+        } else {
+          summary.applied += existingCount;
+        }
+      }
+      return summary;
+    }, { created: 0, applied: 0, unchanged: 0 });
+    setSpaceThresholds((items) => items.map((item) => item.spaceId !== spaceId ? item : {
       ...item,
-      metrics: body.rules.map((rule) => ({
-        metric: rule.metric,
-        operator: rule.operator,
-        threshold: rule.threshold,
-        ruleCount: item.deviceCount || item.metrics.find((m) => m.metric === rule.metric)?.ruleCount || 0,
-        mixed: false
-      }))
+      metrics: [
+        ...(item.metrics || []).filter((metric) => !body.rules.some((rule) => rule.metric === metric.metric)),
+        ...body.rules.map((rule) => ({
+          metric: rule.metric,
+          operator: rule.operator,
+          threshold: rule.threshold,
+          ruleCount: item.deviceCount ?? item.metrics?.find((metric) => metric.metric === rule.metric)?.ruleCount ?? 0,
+          mixed: false
+        }))
+      ]
     }));
-    return null;
+    return { ...saveSummary, missing: 0 };
   }
 
   const auditLog = {

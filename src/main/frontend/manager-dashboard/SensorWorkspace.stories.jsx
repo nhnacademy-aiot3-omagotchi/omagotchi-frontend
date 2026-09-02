@@ -167,16 +167,31 @@ export const SensorListNullable = {
 };
 
 export const ThresholdSettings = { name: "임계값 설정", args: { ...baseArgs, defaultTab: "thresholds" } };
-// 서버 applyToSpace 는 규칙 없는 기기를 건너뛴다. 화면이 "저장되지 않습니다"라고 알려야 한다.
-export const ThresholdPartialRules = {
-  name: "임계값 설정 · 일부 항목 규칙 없음",
-  args: {
-    ...baseArgs,
-    defaultTab: "thresholds",
-    initialSpaceThresholds: [
-      { spaceId: 1, deviceCount: 3, metrics: [{ metric: "co2", operator: "GTE", threshold: 1000, ruleCount: 1, mixed: false }] },
-      ...spaceThresholds.slice(1)
-    ]
+// 서버 applyToSpace는 규칙이 없는 기기도 생성한다. 기존 센서가 룰 없이 등록된 경우의 복구 화면이다.
+const missingThresholdArgs = {
+  ...baseArgs,
+  defaultTab: "thresholds",
+  initialSpaceThresholds: [
+    { spaceId: 1, deviceCount: 3, metrics: [{ metric: "co2", operator: "GTE", threshold: 1000, ruleCount: 1, mixed: false }] },
+    ...spaceThresholds.slice(1)
+  ]
+};
+
+export const ThresholdMissingRules = {
+  name: "임계값 설정 · 필수 룰 복구",
+  args: missingThresholdArgs
+};
+
+export const ThresholdMissingRulesSaved = {
+  name: "임계값 설정 · 필수 룰 저장 완료",
+  args: missingThresholdArgs,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByRole("spinbutton", { name: "CO2 임계값" })).toHaveValue(1000);
+    await expect(canvas.getByRole("spinbutton", { name: "온도 임계값" })).toHaveValue(28);
+    await expect(canvas.getByRole("spinbutton", { name: "습도 임계값" })).toHaveValue(70);
+    await userEvent.click(canvas.getByRole("button", { name: "저장" }));
+    await expect(canvas.getByRole("status")).toHaveTextContent("8건 생성 · 1건은 이미 같은 값");
   }
 };
 
