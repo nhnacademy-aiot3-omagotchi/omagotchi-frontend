@@ -36,8 +36,14 @@ class BffRouteContractTest {
 
     @BeforeEach
     void setUp() {
-        JsonNode response = JsonMapper.builder().build().createObjectNode()
-                .put("contract", "matched");
+        var response = JsonMapper.builder().build().createObjectNode()
+                .put("contract", "matched")
+                .put("runningTimerCount", 2L);
+        response.putArray("items")
+                .addObject()
+                .put("nickname", "오마")
+                .put("isRunning", true)
+                .put("timerStartedAt", "2026-08-25T02:00:00Z");
         LearningProxyBffService proxy = new StubLearningProxyBffService(response);
         StudyRecordBffService studyRecordBffService = new StubStudyRecordBffService();
         StudyTimerBffService studyTimerBffService = new StubStudyTimerBffService();
@@ -114,7 +120,8 @@ class BffRouteContractTest {
         void exposesStudyStatisticsRoutes() throws Exception {
             mockMvc.perform(get("/bff/v1/admin/cohorts/1/study-statistics/today"))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.contract").value("matched"));
+                    .andExpect(jsonPath("$.contract").value("matched"))
+                    .andExpect(jsonPath("$.runningTimerCount").value(2L));
 
             mockMvc.perform(get("/bff/v1/admin/cohorts/1/study-statistics/trend")
                             .param("window", "7d"))
@@ -122,7 +129,11 @@ class BffRouteContractTest {
 
             mockMvc.perform(get("/bff/v1/admin/cohorts/1/study-statistics/members")
                             .param("window", "7d"))
-                    .andExpect(status().isOk());
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.items[0].nickname").value("오마"))
+                    .andExpect(jsonPath("$.items[0].isRunning").value(true))
+                    .andExpect(jsonPath("$.items[0].timerStartedAt")
+                            .value("2026-08-25T02:00:00Z"));
 
             mockMvc.perform(get("/bff/v1/admin/cohorts/1/study-statistics/members/10/overview")
                             .param("window", "7d"))
