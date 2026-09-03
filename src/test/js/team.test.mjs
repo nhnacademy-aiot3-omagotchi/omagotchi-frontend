@@ -267,7 +267,19 @@ function masterApi(overrides = {}) {
     };
 }
 
-async function mountMaster(api) {
+function memberApi(overrides = {}) {
+    return {
+        teams: {
+            mine: async () => [{teamId: 30, cohortId: 3, name: "서버 팀"}],
+            detail: async () => detail(30, 3, "서버 팀", "MEMBER"),
+            ...overrides
+        },
+        access: {getContext: async () => access({cohortId: 3, name: "3기"})}
+    };
+}
+
+/** 두 헬퍼 모두 오버라이드는 `teams` 레벨에 펼쳐진다. `{teams: {...}}`로 넘기지 않는다. */
+async function mountTeamApp(api) {
     const app = createTeamApp({api, profile: {approvedCohort: {cohortId: 3}}});
     const root = createRoot();
     app.mount(root);
@@ -286,13 +298,11 @@ test("후보 상태별 선택 가능 여부는 AVAILABLE에서만 참이다", ()
 });
 
 test("팀원에게는 추가·제외·위임·해체 조작이 렌더되지 않는다", async () => {
-    const {root} = await mountMaster({
-        teams: {
-            mine: async () => [{teamId: 30, cohortId: 3, name: "서버 팀"}],
-            detail: async () => detail(30, 3, "서버 팀", "MEMBER")
-        },
-        access: {getContext: async () => access({cohortId: 3, name: "3기"})}
-    });
+    const {root} = await mountTeamApp(memberApi());
+
+    // 상세가 비어서 통과하는 것이 아님을 함께 고정한다.
+    assert.match(root.innerHTML, /home-team-members-title/);
+    assert.match(root.innerHTML, /김마스터/);
 
     assert.doesNotMatch(root.innerHTML, /data-team-open-invite/);
     assert.doesNotMatch(root.innerHTML, /data-team-kick/);
@@ -301,19 +311,32 @@ test("팀원에게는 추가·제외·위임·해체 조작이 렌더되지 않�
     assert.match(root.innerHTML, /data-team-leave/);
 });
 
-test("마스터에게는 자기 자신을 뺀 팀원에게만 제외·위임 조작이 붙는다", async () => {
-    const {root} = await mountMaster(masterApi());
+test("마스터에게 팀 운영 조작이 렌더된다", async () => {
+    const {root} = await mountTeamApp(masterApi());
 
     assert.match(root.innerHTML, /data-team-open-invite/);
     assert.match(root.innerHTML, /data-team-disband/);
-    // myMemberId 11 은 자기 자신이라 조작이 없고, 10 에만 붙는다.
+});
+
+test("제외 조작은 자기 자신을 뺀 팀원에게만 붙는다", async () => {
+    const {root} = await mountTeamApp(masterApi());
+
+    // myMemberId 11 이 자기 자신이다. MASTER_CANNOT_BE_KICKED 를 누를 수 없게 한다.
     assert.match(root.innerHTML, /data-team-kick="10"/);
     assert.doesNotMatch(root.innerHTML, /data-team-kick="11"/);
 });
 
+test("위임 조작은 자기 자신을 뺀 팀원에게만 붙는다", async () => {
+    const {root} = await mountTeamApp(masterApi());
+
+    // CANNOT_DELEGATE_TO_SELF 를 누를 수 없게 한다.
+    assert.match(root.innerHTML, /data-team-delegate="10"/);
+    assert.doesNotMatch(root.innerHTML, /data-team-delegate="11"/);
+});
+
 test("검색어 없이 후보를 조회하지 않고 입력을 요구한다", async () => {
     let searched = 0;
-    const {root} = await mountMaster(masterApi({
+    const {root} = await mountTeamApp(masterApi({
         memberCandidates: async () => {
             searched += 1;
             return [];
@@ -331,7 +354,7 @@ test("검색어 없이 후보를 조회하지 않고 입력을 요구한다", as
 });
 
 test("이미 소속된 후보는 목록에 보이되 추가 대상으로 선택되지 않는다", async () => {
-    const {root} = await mountMaster(masterApi({
+    const {root} = await mountTeamApp(masterApi({
         memberCandidates: async () => [
             {userId: "u-1", displayName: "박가능", email: "a@b.c", status: "AVAILABLE"},
             {userId: "u-2", displayName: "최소속", email: "d@e.f", status: "IN_ANOTHER_TEAM"}
@@ -353,7 +376,7 @@ test("이미 소속된 후보는 목록에 보이되 추가 대상으로 선택�
 test("후보 검색부터 추가까지 이어지고 성공하면 상세를 다시 조회한다", async () => {
     const added = [];
     let detailRequests = 0;
-    const {root} = await mountMaster(masterApi({
+    const {root} = await mountTeamApp(masterApi({
         detail: async () => {
             detailRequests += 1;
             return detail(30, 3, "서버 팀", "MASTER");
@@ -385,7 +408,7 @@ test("후보 검색부터 추가까지 이어지고 성공하면 상세를 다�
 
 test("제외는 확인 단계를 거친 뒤에만 서버에 요청한다", async () => {
     const kicked = [];
-    const {root} = await mountMaster(masterApi({
+    const {root} = await mountTeamApp(masterApi({
         kickMember: async (teamId, memberId) => {
             kicked.push([teamId, memberId]);
         }
@@ -406,7 +429,7 @@ test("제외는 확인 단계를 거친 뒤에만 서버에 요청한다", async
 
 test("확인 단계에서 취소하면 서버에 요청하지 않는다", async () => {
     const disbanded = [];
-    const {root} = await mountMaster(masterApi({
+    const {root} = await mountTeamApp(masterApi({
         disband: async (teamId) => {
             disbanded.push(teamId);
         }
@@ -423,7 +446,7 @@ test("확인 단계에서 취소하면 서버에 요청하지 않는다", async 
 });
 
 test("위임은 확인 후 요청하고 서버 오류 코드에 맞는 안내를 표시한다", async () => {
-    const {root} = await mountMaster(masterApi({
+    const {root} = await mountTeamApp(masterApi({
         delegate: async () => {
             throw Object.assign(new Error("보낼 수 없음"), {
                 code: "TEAM_MASTER_STATE_CONFLICT"
@@ -443,7 +466,7 @@ test("위임은 확인 후 요청하고 서버 오류 코드에 맞는 안내를
 
 test("상세 조회만 실패하면 팀 목록을 지우지 않고 다시 시도를 제공한다", async () => {
     let detailFails = true;
-    const {root} = await mountMaster(masterApi({
+    const {root} = await mountTeamApp(masterApi({
         detail: async () => {
             if (detailFails) {
                 throw new Error("상세 실패");
