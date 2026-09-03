@@ -1,7 +1,0 @@
-/* 캐릭터와 서비스 이미지의 드래그 및 모바일 길게 누르기를 막는다. */
-img {
-    -webkit-user-drag: none;
-    -webkit-touch-callout: none;
-    -webkit-user-select: none;
-    user-select: none;
-}
