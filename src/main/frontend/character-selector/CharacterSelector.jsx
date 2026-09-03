@@ -23,9 +23,16 @@ export const CHARACTER_COLORS = [
   { id: "dark_gray", name: "차콜", value: "#3f3f3f" }
 ];
 
+/*
+ * 색상 파일명은 캐릭터 폴더 안에서 색상 id 그대로다. (예: /images/characters/night/pistachio.png)
+ *
+ * 예전에는 `{캐릭터}_{색상}.png` 규칙이었는데 자산이 정리되면서 바뀌었고,
+ * 실제 화면(main.jsx)은 characterAssets.js 규칙으로 덮어써서 문제가 드러나지 않았다.
+ * 이 기본값만 옛 규칙으로 남아 Storybook과 resolver 미지정 사용처가 깨져 있었다.
+ */
 const defaultImageResolver = (character, color) => color.id === "original"
   ? character.baseImage
-  : `/images/characters/${character.id}/${character.id}_${color.id}.png`;
+  : `/images/characters/${character.id}/${color.id}.png`;
 
 export function CharacterSelector({
   characters = CHARACTERS,
