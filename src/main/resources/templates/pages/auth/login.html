@@ -7,23 +7,27 @@
 
     <link rel="icon" type="image/gif" sizes="32x32" href="/favicon_11.gif" th:href="@{/favicon_11.gif}" />
     <link rel="stylesheet" href="/css/gameFont.css" th:href="@{/css/gameFont.css}" />
-    <link rel="stylesheet" href="/css/ui/design-system.css?v=20260814-2" th:href="@{/css/ui/design-system.css(v='20260814-2')}" />
-    <link rel="stylesheet" href="/css/auth.css?v=20260814-1" th:href="@{/css/auth.css(v='20260814-1')}" />
+    <link rel="stylesheet" href="/css/ui/design-system.css?v=20260903-1" th:href="@{/css/ui/design-system.css(v='20260903-1')}" />
+    <link rel="stylesheet" href="/css/auth.css?v=20260903-1" th:href="@{/css/auth.css(v='20260903-1')}" />
     <link rel="stylesheet" href="/css/passwordToggle.css" th:href="@{/css/passwordToggle.css}" />
     <link rel="stylesheet" href="/css/cursor.css" th:href="@{/css/cursor.css}" />
 </head>
 <body>
 <main class="login-page auth-page">
     <section class="login-card auth-card ui-auth-shell" aria-labelledby="login-title">
-        <aside class="ui-auth-aside" aria-label="오마고치 서비스 소개">
+        <aside class="ui-auth-aside auth-hero" aria-label="오마고치 소개">
             <a class="auth-back-link" href="/" aria-label="인덱스로 돌아가기">←</a>
-            <div>
-                <p class="auth-brand ui-auth-brand">omagotchi</p>
-                <h2>오늘의 집중을<br />캐릭터 성장으로</h2>
-                <p>출석하고 집중 시간을 기록하며 함께 성장하세요.</p>
+
+            <!-- 캐릭터는 장식이다. 페이지 제목은 오른쪽 폼의 h1 이 갖는다. -->
+            <div class="auth-hero-stage" aria-hidden="true">
+                <img class="auth-hero-character" src="/images/characters/study/study_eye.gif"
+                     th:src="@{/images/characters/study/study_eye.gif}" alt="" />
+                <span class="auth-hero-shadow"></span>
             </div>
-            <div class="ui-auth-aside-badges" aria-label="주요 기능">
-                <span>#집중타이머</span><span>#출석기록</span><span>#캐릭터성장</span>
+
+            <div class="auth-hero-copy">
+                <p class="auth-brand ui-auth-brand">omagotchi</p>
+                <p class="auth-hero-line">오늘도 같이 공부해요</p>
             </div>
         </aside>
 

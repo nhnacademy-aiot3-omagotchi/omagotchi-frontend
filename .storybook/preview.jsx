@@ -28,6 +28,7 @@ import "../src/main/resources/static/css/home/react-stage.css";
 import "../src/main/resources/static/css/studyRecords.css";
 import "../src/main/resources/static/css/gameFont.css";
 import "../src/main/resources/static/css/ui/design-system.css";
+import "../src/main/resources/static/css/auth.css";
 import "../src/main/resources/static/css/spaceRoom.css";
 import "../src/main/resources/static/css/notificationPanel.css";
 import "../src/main/resources/static/css/imageProtection.css";
