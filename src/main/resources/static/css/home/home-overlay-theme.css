@@ -2469,6 +2469,12 @@
    탭과 헤더를 동시에 고정하면 둘 다 top:0 이라 겹치므로, 닫기 버튼 쪽을 택했다.
    탭 고정이 다시 필요하면 헤더 높이를 CSS 변수로 내보내 탭의 top 에 물려야 한다. */
 .home-overlay--progress .overlay-tabs {
+    /* [필수] 위쪽 .home-overlay--progress .overlay-tabs 가 position:absolute !important 와
+       top:17px 로 탭을 "옛 헤더(높이 132px) 안쪽"에 얹어 두고 있다. 그 헤더는 사라졌으므로
+       여기서 반드시 흐름으로 되돌려야 한다. 이 한 줄을 빼면 탭이 머리말 위로 떠서 제목을 덮는다.
+       absolute 쪽이 !important 라 이쪽도 !important 가 필요하다. */
+    position: static !important;
+    top: auto !important;
     right: auto;
     left: auto;
     /* 바는 가로를 채우고 버튼만 내용 폭으로 둔다. 폭을 좁히면 고정된 탭 옆으로
