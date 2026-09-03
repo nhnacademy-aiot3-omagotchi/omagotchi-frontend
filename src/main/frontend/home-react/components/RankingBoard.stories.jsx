@@ -9,6 +9,13 @@ import { renderRankingBoard } from "../../../resources/static/js/home/rankingBoa
  * CSS 가 .home-overlay--progress 아래로 스코프돼 있으므로 래퍼를 그대로 맞춘다.
  * 래퍼가 어긋나면 스토리만 멀쩡해 보이고 운영 화면은 깨진다.
  */
+
+if (typeof window !== "undefined" && !window.OmagotchiCharacterAssets) {
+  window.OmagotchiCharacterAssets = {
+    getPng: (type, color) => `/images/characters/${type}/${type}_${color || "original"}.png`
+  };
+}
+
 function RankingBoardStory({ entries }) {
   return (
     <div className="home-overlay home-overlay--progress" style={{ padding: 16, maxWidth: 520 }}>
