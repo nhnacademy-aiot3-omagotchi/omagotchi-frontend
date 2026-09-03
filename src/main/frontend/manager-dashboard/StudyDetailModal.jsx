@@ -103,7 +103,6 @@ export function StudyDetailModal({
   isOpen = true,
   onClose,
   memberName = "수강생",
-  memberEmail = "",
   periodDays: controlledPeriod,
   onPeriodChange,
   selectedDate: controlledDate,
