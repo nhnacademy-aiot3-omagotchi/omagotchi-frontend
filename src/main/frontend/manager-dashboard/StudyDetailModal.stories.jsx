@@ -149,7 +149,6 @@ export const Default = {
     // 헤더 영역 확인
     expect(canvas.getByText("개인 공부 통계")).toBeInTheDocument();
     expect(canvas.getByText("이열공")).toBeInTheDocument();
-    expect(canvas.getByText("student1@omagotchi.site")).toBeInTheDocument();
 
     // 기간 토글 및 안내 확인
     expect(canvas.getByRole("button", { name: "최근 7일" })).toHaveClass("is-active");
@@ -180,6 +179,7 @@ export const Default = {
     expect(canvas.getByText("3개 세션")).toBeInTheDocument();
     expect(canvas.getByText("09:10 ~ 11:30")).toBeInTheDocument();
     expect(canvas.getByText("2시간 20분")).toBeInTheDocument();
+    expect(canvas.getByText("2026-09-02 11:30:00")).toBeInTheDocument();
     expect(canvas.getByText("13:00 ~ 15:00")).toBeInTheDocument();
     expect(canvas.getByText("16:30 ~ 17:10")).toBeInTheDocument();
     expect(canvas.getByText("40분")).toBeInTheDocument();

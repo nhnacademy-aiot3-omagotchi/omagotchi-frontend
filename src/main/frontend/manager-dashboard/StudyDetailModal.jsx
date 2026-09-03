@@ -70,6 +70,25 @@ export function formatKstTime(value) {
   }).format(new Date(value));
 }
 
+export function formatKstDateTime(value) {
+  if (!value) return "-";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "-";
+  const parts = Object.fromEntries(
+    new Intl.DateTimeFormat("en-US", {
+      timeZone: "Asia/Seoul",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hourCycle: "h23"
+    }).formatToParts(date).map((part) => [part.type, part.value])
+  );
+  return `${parts.year}-${parts.month}-${parts.day} ${parts.hour}:${parts.minute}:${parts.second}`;
+}
+
 export function calculateTimelinePosition(record, selectedDate) {
   const startOfDay = new Date(`${selectedDate}T04:00:00+09:00`).getTime();
   const endOfDay = startOfDay + 24 * 60 * 60 * 1000;
@@ -84,7 +103,6 @@ export function StudyDetailModal({
   isOpen = true,
   onClose,
   memberName = "수강생",
-  memberEmail = "",
   periodDays: controlledPeriod,
   onPeriodChange,
   selectedDate: controlledDate,
@@ -277,9 +295,6 @@ export function StudyDetailModal({
             <h2 id="study-detail-title">
               <span data-detail-name>{memberName}</span> 님의 공부 기록
             </h2>
-            <p className="study-detail-email" data-detail-email>
-              {memberEmail}
-            </p>
           </div>
           <button
             type="button"
@@ -502,7 +517,7 @@ export function StudyDetailModal({
                     </div>
                     <div>
                       <strong data-detail-record-updated-at>
-                        {formatKstTime(record.updatedAt)}
+                        {formatKstDateTime(record.updatedAt)}
                       </strong>
                       <small>최종 수정</small>
                     </div>

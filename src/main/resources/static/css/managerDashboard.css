@@ -1526,7 +1526,7 @@ td small {
 
 .study-detail-record {
     display: grid;
-    grid-template-columns: 30px minmax(150px, 1.25fr) minmax(120px, 1fr) minmax(140px, 1fr);
+    grid-template-columns: 30px minmax(140px, 1.2fr) minmax(110px, 0.9fr) minmax(160px, 1.3fr);
     align-items: center;
     gap: 12px;
     padding: 11px 12px;

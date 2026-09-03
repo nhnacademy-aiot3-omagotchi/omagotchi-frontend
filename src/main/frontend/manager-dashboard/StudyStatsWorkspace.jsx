@@ -216,7 +216,7 @@ export function StudyStatsWorkspace({
             <input
               type="search"
               data-studystats-search
-              placeholder="이름 또는 이메일"
+              placeholder="이름 검색"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
