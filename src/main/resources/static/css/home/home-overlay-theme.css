@@ -49,6 +49,12 @@
     --overlay-accent-strong: #176b46;
 }
 
+/* 조회 결과 높이가 달라져도 중앙 배치 기준이 바뀌지 않도록 외곽 높이를 고정한다. */
+.home-overlay--write {
+    height: min(1040px, calc(100vh - 32px));
+    height: min(1040px, calc(100dvh - 32px));
+}
+
 .home-overlay > .home-overlay-header {
     flex-shrink: 0;
     position: sticky;

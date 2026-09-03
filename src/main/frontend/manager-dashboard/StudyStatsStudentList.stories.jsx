@@ -1,5 +1,6 @@
 import React from "react";
 import { expect, fn, userEvent, within } from "storybook/test";
+import "../../resources/static/css/managerDashboard.css";
 import { StudyStatsStudentList } from "./StudyStatsStudentList.jsx";
 
 const mockMembers = [
