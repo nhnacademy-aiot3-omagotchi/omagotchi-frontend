@@ -28,6 +28,7 @@ import "../src/main/resources/static/css/home/react-stage.css";
 import "../src/main/resources/static/css/studyRecords.css";
 import "../src/main/resources/static/css/gameFont.css";
 import "../src/main/resources/static/css/ui/design-system.css";
+import "../src/main/resources/static/css/auth.css";
 import "../src/main/resources/static/css/spaceRoom.css";
 import "../src/main/resources/static/css/notificationPanel.css";
 import "../src/main/resources/static/css/imageProtection.css";
@@ -35,6 +36,7 @@ import "../src/main/resources/static/css/serviceIntegrationState.css";
 import "../src/main/resources/static/css/cursor.css";
 import "../src/main/resources/static/css/home/home-responsive.css";
 import "../src/main/resources/static/css/home/home-overlay-theme.css";
+import "../src/main/resources/static/css/home/panel-header.css";
 import "../src/main/resources/static/css/home/home-quick-panels.css";
 /* home.html 에는 없고 characterSelector 스토리 전용 */
 import "../src/main/resources/static/css/characterSelector.css";

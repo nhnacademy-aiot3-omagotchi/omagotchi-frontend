@@ -33,17 +33,30 @@ export function AuthScreen({
     ? "인증번호를 다시 확인해 주세요."
     : undefined;
 
+  // 회원가입은 새싹이(시작), 로그인은 공부쟁이. Thymeleaf 쪽과 같은 조합이다.
+  const hero = isRegister
+    ? { image: "/images/characters/sprout/sprout_eye.gif", line: "같이 공부할 오마고치가 기다려요" }
+    : { image: "/images/characters/study/study_eye.gif", line: "오늘도 같이 공부해요" };
+
   return (
     <main className="ui-story-canvas">
       <section className="ui-auth-shell" aria-labelledby="auth-title">
-        <aside className="ui-auth-aside">
-          <span className="ui-auth-brand">오마고치</span>
-          <div>
-            <h2>오늘의 집중을<br />캐릭터와 함께</h2>
-            <p>학습 시간과 출석을 기록하고 작은 성장을 눈으로 확인해 보세요.</p>
+        {/*
+          실제 화면은 Thymeleaf(login.html / register.html)다. 이 컴포넌트는 스토리북 전용이라
+          마크업과 클래스를 그쪽과 똑같이 유지해야 한다. 한쪽만 바꾸면 스토리북만 멀쩡해 보인다.
+        */}
+        <aside className="ui-auth-aside auth-hero" aria-label="오마고치 소개">
+          <a className="auth-back-link" href="/" aria-label="인덱스로 돌아가기">←</a>
+
+          {/* 캐릭터는 장식이다. 페이지 제목은 오른쪽 폼의 h1 이 갖는다. */}
+          <div className="auth-hero-stage" aria-hidden="true">
+            <img className="auth-hero-character" src={hero.image} alt="" />
+            <span className="auth-hero-shadow" />
           </div>
-          <div className="ui-auth-aside-badges" aria-label="서비스 특징 해시태그">
-            <span>#집중타이머</span><span>#출석기록</span><span>#캐릭터성장</span>
+
+          <div className="auth-hero-copy">
+            <p className="auth-brand ui-auth-brand">omagotchi</p>
+            <p className="auth-hero-line">{hero.line}</p>
           </div>
         </aside>
 

@@ -892,7 +892,10 @@
     .ui-auth-shell { grid-template-columns: 1fr; border-radius: 20px; }
     .ui-auth-aside { min-height: auto; padding: 22px; }
     .ui-auth-aside h2 { font-size: 26px; }
-    .ui-auth-aside p, .ui-auth-aside-badges { display: none; }
+    /* 히어로는 한 줄만 남기므로 그 문구까지 숨기면 안 된다.
+       예전 레이아웃(긴 설명 + 배지)에만 적용한다. */
+    .ui-auth-aside:not(.auth-hero) p,
+    .ui-auth-aside-badges { display: none; }
     .ui-auth-card { padding: 24px 18px 28px; }
     .ui-menu-panel { border-radius: 20px; }
     .ui-menu-panel__header { padding: 14px; }

@@ -1,4 +1,5 @@
 import React, {useEffect, useRef, useState} from "react";
+import { PanelHeader } from "../../ui/PanelHeader.jsx";
 import PropTypes from "prop-types";
 import {streamAiChat} from "./aiAssistantClient.js";
 import {AI_ASSISTANT_TIPS, AI_ASSISTANT_TOOLS, AI_ASSISTANT_UPCOMING} from "./aiAssistantGuide.js";
@@ -196,34 +197,36 @@ export function AiAssistantPanel({
                 id="home-ai-assistant-panel"
                 aria-hidden={!open}
             >
-                <header className="home-ai-panel-heading">
-          <span className="home-ai-panel-icon" aria-hidden="true">
-            <img src="/images/app/commu.png" alt=""/>
-          </span>
-                    <span className="home-ai-panel-title">
-            <strong>AI 도우미</strong>
-            <small>학습을 돕는 오마고치 AI</small>
-          </span>
-                    <button
-                        ref={helpButtonRef}
-                        className={guideOpen ? "home-ai-panel-help is-active" : "home-ai-panel-help"}
-                        type="button"
-                        aria-label={guideOpen ? "AI 도우미 사용법 닫기" : "AI 도우미 사용법"}
-                        aria-expanded={guideOpen}
-                        aria-controls="home-ai-guide"
-                        onClick={() => setGuideOpen((current) => !current)}
-                    >
-                        ?
-                    </button>
-                    <button
-                        className="home-ai-panel-close"
-                        type="button"
-                        aria-label="AI 도우미 닫기"
-                        onClick={() => setOpen(false)}
-                    >
-                        ×
-                    </button>
-                </header>
+                {/* 사용법(?) 버튼은 홈 전체에서 여기에만 있다. 다른 패널은 닫기만 넘긴다. */}
+                <PanelHeader
+                    icon="/images/app/commu.png"
+                    title="AI 도우미"
+                    description="학습을 돕는 오마고치 AI"
+                    className="home-ai-panel-heading"
+                    actions={(
+                        <button
+                            ref={helpButtonRef}
+                            className={guideOpen ? "home-ai-panel-help is-active" : "home-ai-panel-help"}
+                            type="button"
+                            aria-label={guideOpen ? "AI 도우미 사용법 닫기" : "AI 도우미 사용법"}
+                            aria-expanded={guideOpen}
+                            aria-controls="home-ai-guide"
+                            onClick={() => setGuideOpen((current) => !current)}
+                        >
+                            ?
+                        </button>
+                    )}
+                    closeButton={(
+                        <button
+                            className="home-ai-panel-close"
+                            type="button"
+                            aria-label="AI 도우미 닫기"
+                            onClick={() => setOpen(false)}
+                        >
+                            ×
+                        </button>
+                    )}
+                />
                 {/* 사용법이 덮고 있는 동안에는 아래 대화가 읽히거나 탭으로 잡히지 않게 한다. */}
                 <div
                     className="home-ai-conversation"

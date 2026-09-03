@@ -854,9 +854,6 @@ a {
 }
 
 .home-overlay-close {
-    position: absolute;
-    top: 22px;
-    right: 24px;
     width: 44px;
     height: 44px;
     border: 0;
@@ -3742,11 +3739,6 @@ a {
 
     .home-overlay h2 {
         font-size: 38px;
-    }
-
-    .home-overlay-close {
-        top: 14px;
-        right: 14px;
     }
 
     .overlay-quest header,
