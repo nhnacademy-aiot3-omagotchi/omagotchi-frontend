@@ -11,34 +11,57 @@ const communityMeta = {
   description: "공지와 기수 동료들의 이야기를 확인하세요."
 };
 
+// 기수의 고정 공지는 하나뿐이고 목록이 아니라 상단 배너에만 나온다.
+const pinnedNotice = {
+  postId: 40,
+  type: "NOTICE",
+  title: "9월 첫째 주 학습 일정 안내",
+  content: "고정 공지는 목록에서 빠지고 상단 배너에만 표시됩니다. 제목을 누르면 상세로 이동합니다.",
+  authorNickname: "기수장",
+  createdLabel: "2026. 9. 1. 오전 9:00:00",
+  attachments: [],
+  canManage: false
+};
+
+// canManage는 보는 사람에 따라 달라진다. 공지는 MANAGER·MENTOR, 자유글은 작성자 본인일 때 참이다.
 const initialPosts = [
   {
     postId: 31,
     type: "FREE",
     title: "박지우 테스트 글입니다",
     content: "커뮤니티 상세 화면의 읽기 쉬운 구성을 확인하는 예시 글입니다.",
+    authorNickname: "박지우",
     createdLabel: "2026. 8. 31. 오후 7:10:34",
-    attachments: []
+    attachments: [],
+    canManage: true
   },
   {
     postId: 30,
     type: "FREE",
     title: "첨부파일이 있는 자유글",
     content: "이미지는 작성 화면의 버튼으로 선택하고, 상세 화면에서는 파일 목록으로 확인합니다.",
+    authorNickname: "옆자리",
     createdLabel: "2026. 8. 31. 오후 5:31:39",
-    attachments: [{ name: "storybook.png", sizeLabel: "24KB" }]
+    attachments: [{ name: "storybook.png", sizeLabel: "24KB" }],
+    canManage: false
   },
   {
     postId: 29,
     type: "NOTICE",
     title: "이번 주 학습 일정 안내",
-    content: "관리자가 작성한 공지는 공지 게시판으로 표시됩니다.",
+    content: "고정되지 않은 공지는 목록의 공지 탭에서 확인합니다.",
+    authorNickname: "기수장",
     createdLabel: "2026. 8. 31. 오후 2:15:00",
-    attachments: []
+    attachments: [],
+    canManage: false
   }
 ];
 
-function renderCommunityList(posts, filter, keyword) {
+function authorLabel(post) {
+  return escapeHtml(post?.authorNickname || "알 수 없음");
+}
+
+function renderCommunityList(posts, filter, keyword, pinned) {
   const filteredPosts = posts.filter((post) => (
     (filter === "all" || post.type === filter) && post.title.includes(keyword.trim())
   ));
@@ -60,9 +83,18 @@ function renderCommunityList(posts, filter, keyword) {
 
       <section class="overlay-community-notice" aria-label="고정 공지">
         <strong>공지</strong>
-        <div>
-          <h3>등록된 고정 공지가 없습니다.</h3>
-          <p>기수 관리자가 작성한 공지가 이 영역에 표시됩니다.</p>
+        <div data-community-pinned>
+          ${pinned ? `
+            <h3>
+              <button class="overlay-community-pinned-open" type="button" data-community-post="${pinned.postId}">
+                ${escapeHtml(pinned.title)}
+              </button>
+            </h3>
+            <p>${authorLabel(pinned)} · ${escapeHtml(pinned.createdLabel)}</p>
+          ` : `
+            <h3>등록된 고정 공지가 없습니다.</h3>
+            <p>기수 관리자가 작성한 공지가 이 영역에 표시됩니다.</p>
+          `}
         </div>
       </section>
 
@@ -75,7 +107,7 @@ function renderCommunityList(posts, filter, keyword) {
               </span>
               <div>
                 <h3>${escapeHtml(post.title)}</h3>
-                <p>${escapeHtml(post.createdLabel)}</p>
+                <p>${authorLabel(post)} · ${escapeHtml(post.createdLabel)}</p>
               </div>
               <footer>${post.attachments.length ? `<span>첨부 ${post.attachments.length}</span>` : ""}</footer>
             </button>
@@ -114,7 +146,7 @@ function renderCommunityComposer(post = null) {
       </label>
       <label class="overlay-community-form-field">
         <span>내용</span>
-        <textarea name="content" maxlength="1000" placeholder="기수 구성원과 공유할 내용을 입력하세요" required>${escapeHtml(post?.content || "")}</textarea>
+        <textarea name="content" maxlength="10000" placeholder="기수 구성원과 공유할 내용을 입력하세요" required>${escapeHtml(post?.content || "")}</textarea>
       </label>
       <section class="overlay-community-form-field">
         <span>이미지 첨부</span>
@@ -144,7 +176,7 @@ function renderCommunityDetail(post) {
       <div class="overlay-community-form-field">
         <span>제목</span>
         <div class="overlay-community-readonly">${escapeHtml(post.title)}</div>
-        <p class="overlay-community-date">${escapeHtml(post.createdLabel)}</p>
+        <p class="overlay-community-date">${authorLabel(post)} · ${escapeHtml(post.createdLabel)}</p>
       </div>
       <div class="overlay-community-form-field">
         <span>내용</span>
@@ -156,8 +188,10 @@ function renderCommunityDetail(post) {
       </section>
       <footer>
         <button type="button" data-community-list>목록</button>
+        ${post.canManage ? `
         <button type="button" data-community-edit>수정</button>
         <button type="button" data-community-delete>삭제</button>
+        ` : ""}
       </footer>
     </article>
   `;
@@ -191,7 +225,8 @@ function CommunityOverlayStory() {
     const handleClick = (event) => {
       const target = event.target;
       const closeTarget = target.closest("[data-close-home-overlay]");
-      const selectedPost = posts.find((post) => String(post.postId) === String(selectedPostId));
+      const selectedPost = [pinnedNotice, ...posts]
+        .find((post) => String(post.postId) === String(selectedPostId));
 
       if (closeTarget && (target === closeTarget || closeTarget.matches("button, a"))) {
         close();
@@ -213,6 +248,7 @@ function CommunityOverlayStory() {
       }
       const postButton = target.closest("[data-community-post]");
       if (postButton) {
+        // 배너의 고정 공지도 같은 훅을 쓴다.
         setSelectedPostId(postButton.dataset.communityPost);
         setMode("detail");
         return;
@@ -284,15 +320,19 @@ function CommunityOverlayStory() {
         if (!result || !savedPost) return;
 
         const existingStoryPost = posts.find((post) => String(post.postId) === String(savedPost.postId));
+        // 실제 화면은 저장 뒤 상세를 다시 조회해 서버가 채운 작성자·권한을 받는다.
+        // 목업도 그 결과를 흉내 낸다. 내가 쓰거나 고친 글이므로 관리 권한이 있다.
         const savedStoryPost = {
           postId: savedPost.postId || `storybook-${Date.now()}`,
           type: savedPost.type,
           title: savedPost.title,
           content: savedPost.content,
+          authorNickname: existingStoryPost?.authorNickname || "박지우",
           createdLabel: "방금 전",
           attachments: attachmentCount
             ? [{ name: `${attachmentCount}개 이미지`, sizeLabel: "선택됨" }]
-            : existingStoryPost?.attachments || []
+            : existingStoryPost?.attachments || [],
+          canManage: true
         };
         setPosts((current) => {
           const existingPost = current.find((post) => String(post.postId) === String(savedStoryPost.postId));
@@ -307,7 +347,8 @@ function CommunityOverlayStory() {
           setMode("detail");
           return;
         }
-        close();
+        // 등록 뒤에는 목록으로 돌아가 방금 쓴 글을 보여준다.
+        setMode("list");
       } catch (error) {
         showToast(error.message || "게시글을 저장하지 못했습니다.");
       }
@@ -325,13 +366,20 @@ function CommunityOverlayStory() {
     };
   }, [close, posts, selectedPostId, showToast]);
 
-  const selectedPost = posts.find((post) => String(post.postId) === String(selectedPostId)) || posts[0];
+  // 화면을 바꾸면 본문 스크롤을 맨 위로 되돌린다. 실제 화면도 같게 동작한다.
+  useEffect(() => {
+    const body = hostRef.current?.querySelector(".home-overlay-body");
+    if (body) body.scrollTop = 0;
+  }, [mode, selectedPostId, editingPostId]);
+
+  const selectedPost = [pinnedNotice, ...posts]
+    .find((post) => String(post.postId) === String(selectedPostId)) || posts[0];
   const editingPost = posts.find((post) => String(post.postId) === String(editingPostId));
   const content = mode === "compose"
     ? renderCommunityComposer(editingPost || null)
     : mode === "detail" && selectedPost
       ? renderCommunityDetail(selectedPost)
-      : renderCommunityList(posts, filter, keyword);
+      : renderCommunityList(posts, filter, keyword, pinnedNotice);
   const title = mode === "compose" ? "새 게시글" : mode === "detail" ? "게시글" : communityMeta.title;
 
   return (
@@ -411,7 +459,7 @@ export const ComposerCancel = {
 };
 
 export const RegistrationComplete = {
-  name: "글 등록 완료 후 닫기",
+  name: "글 등록 완료 후 목록",
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await userEvent.click(canvas.getByRole("button", { name: "글쓰기" }));
@@ -419,8 +467,16 @@ export const RegistrationComplete = {
     await userEvent.type(canvas.getByPlaceholderText("기수 구성원과 공유할 내용을 입력하세요"), "등록 완료 안내를 확인합니다.");
     await userEvent.click(canvas.getByRole("button", { name: "등록하기" }));
 
-    expect(canvas.getByRole("button", { name: "등록 중…" })).toBeDisabled();
-    await waitFor(() => expect(canvas.queryByRole("dialog")).not.toBeInTheDocument());
+    // 제출 중 버튼 잠금은 타이밍에 걸려 여기서 검증하지 않는다.
+    // communityUi.test.mjs의 "게시글 등록 중에는 중복 제출을 막고..."가 맡는다.
+
+    // 오버레이를 닫지 않고 목록으로 돌아가 방금 쓴 글을 보여준다.
+    // mock이 300ms를 지연시키고 계측 오버헤드가 더해져 기본 1초로는 빠듯하다.
+    await waitFor(
+      () => expect(canvas.getByRole("button", { name: "글쓰기" })).toBeInTheDocument(),
+      { timeout: 3000 }
+    );
+    expect(canvas.getByText("스토리북 등록 테스트")).toBeInTheDocument();
 
     const storyDocument = within(canvasElement.ownerDocument.body);
     expect(storyDocument.getByRole("status")).toHaveTextContent("게시글이 등록되었습니다.");
@@ -441,7 +497,11 @@ export const RegistrationCompleteWithAttachment = {
     expect(canvas.getByText("1개 파일 선택됨 · storybook.png")).toBeInTheDocument();
     await userEvent.click(canvas.getByRole("button", { name: "등록하기" }));
 
-    await waitFor(() => expect(canvas.queryByRole("dialog")).not.toBeInTheDocument());
+    await waitFor(
+      () => expect(canvas.getByRole("button", { name: "글쓰기" })).toBeInTheDocument(),
+      { timeout: 3000 }
+    );
+    expect(canvas.getByText("첨부파일 등록 테스트")).toBeInTheDocument();
     expect(within(canvasElement.ownerDocument.body).getByRole("status")).toHaveTextContent("게시글이 등록되었습니다.");
   }
 };
@@ -471,6 +531,52 @@ export const DeleteComplete = {
     expect(canvas.getByRole("button", { name: "글쓰기" })).toBeInTheDocument();
     expect(canvas.queryByText("박지우 테스트 글입니다")).not.toBeInTheDocument();
     expect(within(canvasElement.ownerDocument.body).getByRole("status")).toHaveTextContent("게시글이 삭제되었습니다.");
+  }
+};
+
+export const PinnedNoticeBanner = {
+  name: "고정 공지 배너",
+  play: async ({ canvasElement }) => {
+    const banner = canvasElement.querySelector("[data-community-pinned]");
+    const pinnedOpen = banner.querySelector(".overlay-community-pinned-open");
+    const listTitles = Array.from(
+      canvasElement.querySelectorAll(".overlay-community-list h3")
+    ).map((heading) => heading.textContent.trim());
+
+    // 고정 공지는 배너에만 있고 목록에는 없다.
+    await expect(pinnedOpen).toHaveTextContent("9월 첫째 주 학습 일정 안내");
+    await expect(listTitles).not.toContain("9월 첫째 주 학습 일정 안내");
+
+    // 배너에서 상세로 들어갈 수 있어야 한다. 목록에 없으니 여기가 유일한 진입점이다.
+    await userEvent.click(pinnedOpen);
+    await waitFor(() => {
+      expect(canvasElement.querySelector(".overlay-community-detail")).toBeTruthy();
+    });
+  }
+};
+
+export const ManagePermission = {
+  name: "권한 없는 글의 수정·삭제 숨김",
+  play: async ({ canvasElement }) => {
+    const openMine = canvasElement.querySelector("[data-community-post='31']");
+    await userEvent.click(openMine);
+    await waitFor(() => {
+      expect(canvasElement.querySelector("[data-community-edit]")).toBeTruthy();
+    });
+
+    // 내 글이 아니면 수정·삭제가 아예 렌더되지 않는다.
+    await userEvent.click(canvasElement.querySelector("[data-community-list]"));
+    const openOthers = await waitFor(() => {
+      const button = canvasElement.querySelector("[data-community-post='30']");
+      expect(button).toBeTruthy();
+      return button;
+    });
+    await userEvent.click(openOthers);
+    await waitFor(() => {
+      expect(canvasElement.querySelector(".overlay-community-detail")).toBeTruthy();
+    });
+    await expect(canvasElement.querySelector("[data-community-edit]")).toBeNull();
+    await expect(canvasElement.querySelector("[data-community-delete]")).toBeNull();
   }
 };
 
