@@ -840,11 +840,26 @@ td small {
 
 /* 공부 통계 패널 추가 스타일 */
 .sortable {
+    padding: 0;
     cursor: pointer;
     user-select: none;
 }
 .sortable:hover {
     background: #eef6f1;
+}
+.sortable-button {
+    width: 100%;
+    padding: 11px 12px;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    white-space: inherit;
+}
+.sortable-button:focus-visible {
+    outline: 2px solid var(--green-700);
+    outline-offset: -3px;
 }
 .sort-icon {
     display: inline-block;
@@ -1079,7 +1094,7 @@ td small {
 .study-statistics-heading {
     height: auto !important;
     min-height: 56px;
-    align-items: flex-end !important;
+    align-items: flex-end;
 }
 
 .study-statistics-heading > div {

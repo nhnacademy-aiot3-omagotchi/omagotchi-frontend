@@ -9,21 +9,6 @@ const studyRecordsMeta = {
   description: "집중한 시간을 돌아보고 학습 흐름을 정리하세요."
 };
 
-function localDateTimeValue(date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  const hour = String(date.getHours()).padStart(2, "0");
-  const minute = String(date.getMinutes()).padStart(2, "0");
-  return `${year}-${month}-${day}T${hour}:${minute}:00`;
-}
-
-function localTimeValue(date) {
-  const hour = String(date.getHours()).padStart(2, "0");
-  const minute = String(date.getMinutes()).padStart(2, "0");
-  return `${hour}:${minute}`;
-}
-
 function createStoryRecord({
   id,
   daysAgo = 0,
@@ -56,7 +41,7 @@ function createStoryRecord({
 }
 
 const sampleRecords = [
-  createStoryRecord({ id: "rec-1", daysAgo: 1, startHour: 9, startMinute: 10, endHour: 10, endMinute: 30 }),
+  createStoryRecord({ id: "rec-1", daysAgo: 0, startHour: 9, startMinute: 10, endHour: 10, endMinute: 30 }),
   createStoryRecord({ id: "rec-2", daysAgo: 1, startHour: 13, startMinute: 0, endHour: 15, endMinute: 0 }),
   createStoryRecord({ id: "rec-3", daysAgo: 2, startHour: 14, startMinute: 30, endHour: 16, endMinute: 45 }),
   createStoryRecord({ id: "rec-4", daysAgo: 3, startHour: 10, startMinute: 20, endHour: 11, endMinute: 50 })
@@ -192,9 +177,12 @@ export const Default = {
     expect(overlay).toHaveStyle({ overflow: "hidden", display: "flex" });
 
     // 3. 기록 내용 확인
-    expect(await canvas.findByText("09:10")).toBeInTheDocument();
-    expect(canvas.getByText("10:30")).toBeInTheDocument();
-    expect(canvas.getByText("1시간 20분")).toBeInTheDocument();
+    const record = await canvas.findByText("09:10");
+    const recordItem = record.closest("[data-study-record-id='rec-1']");
+    const recordCanvas = within(recordItem);
+    expect(recordCanvas.getByText("09:10")).toBeInTheDocument();
+    expect(recordCanvas.getByText("10:30")).toBeInTheDocument();
+    expect(recordCanvas.getByText("1시간 20분")).toBeInTheDocument();
   }
 };
 

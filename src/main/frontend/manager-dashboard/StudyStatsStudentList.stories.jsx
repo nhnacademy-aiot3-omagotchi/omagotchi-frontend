@@ -103,7 +103,7 @@ export const Default = {
     expect(canvas.getByText("구성원")).toBeInTheDocument();
     expect(canvas.getByText("이메일")).toBeInTheDocument();
     expect(canvas.getByText("오늘 학습")).toBeInTheDocument();
-    expect(canvas.getByText("구간 총 시간")).toBeInTheDocument();
+    expect(canvas.getByText("조회 기간 누적")).toBeInTheDocument();
     expect(canvas.getByText("학습일")).toBeInTheDocument();
     expect(canvas.getByText("최근 기록")).toBeInTheDocument();
     expect(canvas.getByText("기록 확인")).toBeInTheDocument();
@@ -324,5 +324,69 @@ export const InteractiveSelectMember = {
     expect(args.onSelectMember).toHaveBeenCalledWith(
       expect.objectContaining({ name: "이열공" })
     );
+  }
+};
+
+/** 키보드 정렬 및 정렬 상태 접근성 스토리 */
+export const KeyboardSorting = {
+  name: "키보드 정렬 접근성",
+  args: {
+    members: mockMembers,
+    pageSize: 5
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const sortableLabels = [
+      "구성원",
+      "오늘 학습",
+      "조회 기간 누적",
+      "학습일",
+      "최근 기록"
+    ];
+
+    sortableLabels.forEach((label) => {
+      expect(canvas.getByRole("button", { name: label })).toBeInTheDocument();
+    });
+
+    const nameSortButton = canvas.getByRole("button", { name: "구성원" });
+    const nameHeader = nameSortButton.closest("th");
+    expect(nameHeader).toHaveAttribute("aria-sort", "none");
+
+    nameSortButton.focus();
+    await userEvent.keyboard("{Enter}");
+    expect(nameHeader).toHaveAttribute("aria-sort", "descending");
+
+    await userEvent.keyboard(" ");
+    expect(nameHeader).toHaveAttribute("aria-sort", "ascending");
+  }
+};
+
+function ShrinkingMemberList() {
+  const [members, setMembers] = React.useState(mockManyMembers);
+
+  return (
+    <>
+      <button type="button" onClick={() => setMembers(mockMembers.slice(0, 2))}>
+        조회 결과 축소
+      </button>
+      <StudyStatsStudentList members={members} pageSize={5} />
+    </>
+  );
+}
+
+/** 구성원 목록 축소 시 현재 페이지 보정 스토리 */
+export const PageRangeCorrection = {
+  name: "목록 축소 시 페이지 보정",
+  render: () => <ShrinkingMemberList />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const pageButtons = canvas.getAllByRole("button", { name: /^[1-3]$/ });
+
+    await userEvent.click(pageButtons[2]);
+    expect(canvas.getByText("수강생11")).toBeInTheDocument();
+
+    await userEvent.click(canvas.getByRole("button", { name: "조회 결과 축소" }));
+    expect(canvas.getByText("최코딩")).toBeInTheDocument();
+    expect(canvas.queryByText("조회된 수강생이 없습니다.")).not.toBeInTheDocument();
   }
 };

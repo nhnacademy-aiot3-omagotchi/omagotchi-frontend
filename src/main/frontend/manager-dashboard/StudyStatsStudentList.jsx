@@ -26,6 +26,30 @@ export function formatDateTime(value) {
   }).format(new Date(value));
 }
 
+function SortableHeader({ label, sortKey, sort, onSort }) {
+  const isActive = sort.key === sortKey;
+  const ariaSort = isActive
+    ? (sort.dir === "asc" ? "ascending" : "descending")
+    : "none";
+
+  return (
+    <th
+      className="sortable"
+      data-sort={sortKey}
+      data-dir={isActive ? sort.dir : undefined}
+      aria-sort={ariaSort}
+    >
+      <button
+        type="button"
+        className="sortable-button"
+        onClick={() => onSort(sortKey)}
+      >
+        {label}
+      </button>
+    </th>
+  );
+}
+
 export function StudyStatsStudentList({
   members = [],
   loading = false,
@@ -74,9 +98,18 @@ export function StudyStatsStudentList({
 
   // 페이지네이션
   const totalPages = Math.max(1, Math.ceil(filteredAndSortedMembers.length / pageSize));
+  const lastPage = totalPages - 1;
+  const currentPage = Math.min(page, lastPage);
+
+  useEffect(() => {
+    if (page > lastPage) {
+      setPage(lastPage);
+    }
+  }, [lastPage, page]);
+
   const currentPageMembers = filteredAndSortedMembers.slice(
-    page * pageSize,
-    (page + 1) * pageSize
+    currentPage * pageSize,
+    (currentPage + 1) * pageSize
   );
 
   // 정렬 핸들러
@@ -106,47 +139,37 @@ export function StudyStatsStudentList({
           </colgroup>
           <thead>
             <tr>
-              <th
-                className="sortable"
-                data-sort="name"
-                data-dir={sort.key === "name" ? sort.dir : undefined}
-                onClick={() => handleSort("name")}
-              >
-                구성원
-              </th>
+              <SortableHeader
+                label="구성원"
+                sortKey="name"
+                sort={sort}
+                onSort={handleSort}
+              />
               <th>이메일</th>
-              <th
-                className="sortable"
-                data-sort="today"
-                data-dir={sort.key === "today" ? sort.dir : undefined}
-                onClick={() => handleSort("today")}
-              >
-                오늘 학습
-              </th>
-              <th
-                className="sortable"
-                data-sort="period"
-                data-dir={sort.key === "period" ? sort.dir : undefined}
-                onClick={() => handleSort("period")}
-              >
-                조회 기간 누적
-              </th>
-              <th
-                className="sortable"
-                data-sort="days"
-                data-dir={sort.key === "days" ? sort.dir : undefined}
-                onClick={() => handleSort("days")}
-              >
-                학습일
-              </th>
-              <th
-                className="sortable"
-                data-sort="last"
-                data-dir={sort.key === "last" ? sort.dir : undefined}
-                onClick={() => handleSort("last")}
-              >
-                최근 기록
-              </th>
+              <SortableHeader
+                label="오늘 학습"
+                sortKey="today"
+                sort={sort}
+                onSort={handleSort}
+              />
+              <SortableHeader
+                label="조회 기간 누적"
+                sortKey="period"
+                sort={sort}
+                onSort={handleSort}
+              />
+              <SortableHeader
+                label="학습일"
+                sortKey="days"
+                sort={sort}
+                onSort={handleSort}
+              />
+              <SortableHeader
+                label="최근 기록"
+                sortKey="last"
+                sort={sort}
+                onSort={handleSort}
+              />
               <th>기록 확인</th>
             </tr>
           </thead>
@@ -225,7 +248,7 @@ export function StudyStatsStudentList({
               <button
                 key={i}
                 type="button"
-                className={`page-btn ${i === page ? "is-active" : ""}`}
+                className={`page-btn ${i === currentPage ? "is-active" : ""}`}
                 data-go-page={i}
                 onClick={() => setPage(i)}
               >
