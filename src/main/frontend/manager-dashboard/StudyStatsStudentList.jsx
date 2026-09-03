@@ -1,5 +1,4 @@
 import React, { useEffect, useMemo, useState } from "react";
-import "../../resources/static/css/managerDashboard.css";
 
 const DEFAULT_PAGE_SIZE = 5;
 
@@ -208,7 +207,7 @@ export function StudyStatsStudentList({
                           <span
                             className="study-running-light"
                             data-studystats-running
-                            title="공부 중"
+                            role="img"
                             aria-label="공부 중"
                           />
                         )}

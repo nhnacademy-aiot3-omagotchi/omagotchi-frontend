@@ -49,6 +49,12 @@
     --overlay-accent-strong: #176b46;
 }
 
+/* 조회 결과 높이가 달라져도 중앙 배치 기준이 바뀌지 않도록 외곽 높이를 고정한다. */
+.home-overlay--write {
+    height: min(1040px, calc(100vh - 32px));
+    height: min(1040px, calc(100dvh - 32px));
+}
+
 .home-overlay > .home-overlay-header {
     /* 생김새(높이·그리드·배경·글자색·sticky)는 전부 panel-header.css 소관이다.
        여기 남는 건 "오버레이 안에 끼우는 배치" 뿐이다.
