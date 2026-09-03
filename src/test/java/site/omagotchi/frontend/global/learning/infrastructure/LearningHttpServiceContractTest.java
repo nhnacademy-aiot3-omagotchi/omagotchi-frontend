@@ -128,15 +128,16 @@ class LearningHttpServiceContractTest {
         @Test
         @DisplayName("첨부파일 본문과 헤더를 전달한다")
         void relaysAttachmentBodyAndDownloadHeaders() throws IOException {
+            // 게시판이 기수에 속하므로 소속 기수가 경로에 들어간다.
             server.expect(once(), requestTo(BASE_URL
-                            + "/api/v1/community/posts/11/attachments/29"))
+                            + "/api/v1/cohorts/7/community/posts/11/attachments/29"))
                     .andExpect(header(HttpHeaders.AUTHORIZATION, BEARER))
                     .andRespond(request -> withSuccess("attachment-content", MediaType.TEXT_PLAIN)
                             .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=note.txt")
                             .createResponse(request));
 
             ResponseEntity<Resource> response =
-                    service.downloadCommunityAttachment(BEARER, 11L, 29L);
+                    service.downloadCommunityAttachment(BEARER, 7L, 11L, 29L);
 
             String contentDisposition = response.getHeaders()
                     .getFirst(HttpHeaders.CONTENT_DISPOSITION);
