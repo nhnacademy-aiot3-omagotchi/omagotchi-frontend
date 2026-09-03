@@ -71,19 +71,22 @@ const mockTodayRecords = [
     id: "rec-101",
     startTime: "2026-09-02T00:10:00Z", // KST 09:10
     endTime: "2026-09-02T02:30:00Z",   // KST 11:30
-    studySeconds: 8400 // 2시간 20분
+    studySeconds: 8400, // 2시간 20분
+    updatedAt: "2026-09-02T02:30:00Z"
   },
   {
     id: "rec-102",
     startTime: "2026-09-02T04:00:00Z", // KST 13:00
     endTime: "2026-09-02T06:00:00Z",   // KST 15:00
-    studySeconds: 7200 // 2시간
+    studySeconds: 7200, // 2시간
+    updatedAt: "2026-09-02T06:00:00Z"
   },
   {
     id: "rec-103",
     startTime: "2026-09-02T07:30:00Z", // KST 16:30
     endTime: "2026-09-02T08:10:00Z",   // KST 17:10
-    studySeconds: 2400 // 40분
+    studySeconds: 2400, // 40분
+    updatedAt: "2026-09-02T08:10:00Z"
   }
 ];
 
@@ -93,13 +96,15 @@ const mockPastRecords = [
     id: "rec-201",
     startTime: "2026-08-31T01:00:00Z", // KST 10:00
     endTime: "2026-08-31T04:00:00Z",   // KST 13:00
-    studySeconds: 10800 // 3시간
+    studySeconds: 10800, // 3시간
+    updatedAt: "2026-08-31T04:00:00Z"
   },
   {
     id: "rec-202",
     startTime: "2026-08-31T05:00:00Z", // KST 14:00
     endTime: "2026-08-31T07:00:00Z",   // KST 16:00
-    studySeconds: 7200 // 2시간
+    studySeconds: 7200, // 2시간
+    updatedAt: "2026-08-31T07:00:00Z"
   }
 ];
 

@@ -502,7 +502,7 @@ export function StudyDetailModal({
                     </div>
                     <div>
                       <strong data-detail-record-updated-at>
-                        {formatDuration(record.studySeconds)}
+                        {formatKstTime(record.updatedAt)}
                       </strong>
                       <small>최종 수정</small>
                     </div>
