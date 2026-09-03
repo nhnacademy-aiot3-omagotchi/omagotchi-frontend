@@ -24,7 +24,8 @@ import {
         ? profileCharacter.assetKey.trim().replace(/^\/+/, "").replace(/\.(?:png|gif)$/i, "")
         : "";
     const currentCharacterImage = profileAssetKey
-        ? `/images/characters/${profileAssetKey}.png`
+        ? characterAssets?.versioned?.(`/images/characters/${profileAssetKey}.png`)
+            ?? `/images/characters/${profileAssetKey}.png`
         : characterAssets?.getPng?.(profileCharacter.type || "study", profileCharacter.colorId || "original")
             || "/images/characters/study/study.png";
     const currentUser = {

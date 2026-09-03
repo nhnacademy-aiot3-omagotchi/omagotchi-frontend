@@ -1,4 +1,5 @@
 import React from "react";
+import { PanelHeader } from "../../ui/PanelHeader.jsx";
 
 export function BgmPlayer({
   title = "준비 중",
@@ -16,11 +17,15 @@ export function BgmPlayer({
 }) {
   return (
     <aside className="bgm-player" id="home-bgm-player" data-bgm-player aria-label="배경 음악">
-      <header className="quick-panel-header bgm-panel-header">
-        <span className="quick-panel-icon" aria-hidden="true"><img src="/images/app/music.png" alt="" /></span>
-        <div><h2>배경 음악</h2></div>
-        <button className="quick-panel-close" type="button" data-home-music-close aria-label="BGM 닫기">×</button>
-      </header>
+      <PanelHeader
+        icon="/images/app/music.png"
+        title="배경 음악"
+        description="공부에 어울리는 음악을 재생하세요."
+        className="quick-panel-header bgm-panel-header"
+        closeButton={(
+          <button className="quick-panel-close" type="button" data-home-music-close aria-label="BGM 닫기">×</button>
+        )}
+      />
       <div className="bgm-player-copy">
         <span>현재 재생</span>
         <strong data-bgm-title>{title}</strong>
