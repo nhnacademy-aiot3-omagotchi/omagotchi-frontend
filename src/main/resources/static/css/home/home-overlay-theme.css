@@ -26,6 +26,9 @@
 .home-overlay {
     width: min(1060px, calc(100vw - 32px));
     max-height: calc(100dvh - 32px);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
     padding: 0 clamp(18px, 3vw, 34px) clamp(20px, 3vw, 34px);
     border: 2px solid rgba(236, 255, 246, 0.88);
     border-radius: clamp(18px, 2.4vw, 26px);
@@ -47,6 +50,7 @@
 }
 
 .home-overlay > .home-overlay-header {
+    flex-shrink: 0;
     position: sticky;
     top: 0;
     z-index: 6;
@@ -122,6 +126,12 @@
 }
 
 .home-overlay-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
     gap: clamp(14px, 2vw, 20px);
 }
 
@@ -1972,6 +1982,7 @@
 .ui-menu-live-panel.home-overlay--progress,
 .ui-menu-live-panel.home-overlay--personal,
 .ui-menu-live-panel.home-overlay--cohort,
+.ui-menu-live-panel.home-overlay--write,
 .ui-menu-live-panel.home-overlay--community,
 .ui-menu-live-panel.home-overlay--settings {
     --overlay-list-surface: #f7fcf9;
@@ -1985,18 +1996,18 @@
     color: var(--overlay-list-ink);
 }
 
-.ui-menu-live-panel:is(.home-overlay--progress, .home-overlay--personal, .home-overlay--cohort, .home-overlay--community, .home-overlay--settings) .ui-menu-live-header {
+.ui-menu-live-panel:is(.home-overlay--progress, .home-overlay--personal, .home-overlay--cohort, .home-overlay--write, .home-overlay--community, .home-overlay--settings) .ui-menu-live-header {
     border-bottom-color: rgba(18, 56, 42, 0.18);
     background: #2fc47c;
     color: #0c3022;
 }
 
-.ui-menu-live-panel:is(.home-overlay--progress, .home-overlay--personal, .home-overlay--cohort, .home-overlay--community, .home-overlay--settings) .ui-menu-live-header :is(h2, p),
-.ui-menu-live-panel:is(.home-overlay--progress, .home-overlay--personal, .home-overlay--cohort, .home-overlay--community, .home-overlay--settings) > .home-overlay-close {
+.ui-menu-live-panel:is(.home-overlay--progress, .home-overlay--personal, .home-overlay--cohort, .home-overlay--write, .home-overlay--community, .home-overlay--settings) .ui-menu-live-header :is(h2, p),
+.ui-menu-live-panel:is(.home-overlay--progress, .home-overlay--personal, .home-overlay--cohort, .home-overlay--write, .home-overlay--community, .home-overlay--settings) > .home-overlay-close {
     color: #0c3022 !important;
 }
 
-.ui-menu-live-panel:is(.home-overlay--progress, .home-overlay--personal, .home-overlay--cohort, .home-overlay--community, .home-overlay--settings) .ui-menu-live-body {
+.ui-menu-live-panel:is(.home-overlay--progress, .home-overlay--personal, .home-overlay--cohort, .home-overlay--write, .home-overlay--community, .home-overlay--settings) .ui-menu-live-body {
     background: var(--overlay-list-surface);
 }
 
@@ -2290,8 +2301,82 @@
     color: #ffffff !important;
 }
 
+.home-overlay--progress .ranking-period-tabs button {
+    border-color: var(--overlay-list-line);
+    background: var(--overlay-list-soft);
+    color: var(--overlay-list-muted);
+}
+
+.home-overlay--progress .ranking-period-tabs button:hover,
+.home-overlay--progress .ranking-period-tabs button:focus-visible {
+    background: #dff2e8;
+    color: var(--overlay-list-ink);
+}
+
+.home-overlay--progress .ranking-period-tabs button.is-active {
+    border-color: #176b46;
+    background: #176b46;
+    color: #ffffff;
+}
+
+.home-overlay--progress .ranking-date-field {
+    color: var(--overlay-list-muted);
+}
+
+.home-overlay--progress .ranking-date-field input {
+    border-color: var(--overlay-list-line);
+    background: var(--overlay-list-soft);
+    color: var(--overlay-list-ink);
+    color-scheme: light;
+}
+
+.home-overlay--progress .ranking-date-field.is-active input {
+    border-color: #176b46;
+    box-shadow: 0 0 0 2px rgba(23, 107, 70, 0.14);
+}
+
+.home-overlay--progress .ranking-aggregation-note {
+    color: var(--overlay-list-muted);
+}
+
 .home-overlay--progress .overlay-section-label :is(strong, em) {
     color: var(--overlay-list-muted) !important;
+}
+
+.overlay-state-list,
+.overlay-metric-list,
+.home-overlay--progress .overlay-leader-list {
+    overflow: hidden;
+    margin: 0;
+    padding: 0;
+    border: 1px solid var(--overlay-list-line) !important;
+    border-radius: 12px;
+    background: var(--overlay-list-row) !important;
+    color: var(--overlay-list-ink);
+    list-style: none;
+}
+
+.overlay-state-list li,
+.overlay-metric-list > div,
+.home-overlay--progress .overlay-leader-list li,
+.home-overlay--progress .overlay-leader-list [data-empty-ranking] {
+    min-height: 64px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 16px;
+    padding: 12px 16px;
+    border: 0 !important;
+    border-bottom: 1px solid var(--overlay-list-line) !important;
+    border-radius: 0 !important;
+    background: var(--overlay-list-row) !important;
+    color: var(--overlay-list-ink) !important;
+}
+
+.overlay-state-list li:last-child,
+.overlay-metric-list > div:last-child,
+.home-overlay--progress .overlay-leader-list li:last-child {
+    border-bottom: 0 !important;
 }
 
 .overlay-state-list li > div {
@@ -2299,9 +2384,35 @@
     display: grid;
     gap: 4px;
 }
-
 .overlay-metric-list > div {
     grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.overlay-state-list :is(strong, p),
+.home-overlay--progress .overlay-leader-list :is(strong, span, em) {
+    margin: 0;
+    color: var(--overlay-list-ink) !important;
+}
+
+.overlay-state-list p,
+.overlay-state-list em,
+.home-overlay--progress .overlay-leader-list em {
+    color: var(--overlay-list-muted) !important;
+    font-size: 12px;
+    font-style: normal;
+}
+
+.home-overlay--progress .overlay-leader-list li {
+    grid-template-columns: 34px minmax(0, 1fr) auto;
+}
+
+.home-overlay--progress .overlay-leader-list li strong {
+    width: 30px;
+    height: 30px;
+    display: grid;
+    place-items: center;
+    border-radius: 8px;
+    background: var(--overlay-list-soft);
 }
 
 .overlay-metric-list :is(dt, dd) {
@@ -2319,7 +2430,14 @@
     display: grid;
     align-content: center;
     gap: 6px;
+    overflow: hidden;
+    margin: 0;
     padding: 20px;
+    border: 1px solid var(--overlay-list-line) !important;
+    border-radius: 12px;
+    background: var(--overlay-list-row) !important;
+    color: var(--overlay-list-ink);
+    list-style: none;
 }
 
 .overlay-empty-state strong {
