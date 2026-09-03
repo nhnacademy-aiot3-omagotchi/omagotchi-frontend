@@ -88,7 +88,7 @@ const api = window.OmagotchiApi;
 let communityFilter = "all";
 let communityKeyword = "";
 let communityPage = 1;
-const communityPageSize = 3;
+const communityPageSize = 10;
 
 function renderHomeCohortOverlay() {
     const cohort = currentProfile.approvedCohort;
@@ -202,6 +202,10 @@ function renderPersonalOverlay() {
     `;
 }
 let communityPosts = [];
+let communityPinned = null;
+let activeCommunityPost = null;
+// 상세를 불러오는 동안 목록으로 돌아가면 늦게 도착한 응답이 목록을 덮어쓴다.
+let communityViewSequence = 0;
 let communityPageCount = 1;
 let homeToastTimer;
 let communitySearchTimer;
@@ -699,7 +703,7 @@ const overlayContent = {
 
             <section class="overlay-community-notice" aria-label="고정 공지">
                 <strong>공지</strong>
-                <div>
+                <div data-community-pinned>
                     <h3>등록된 고정 공지가 없습니다.</h3>
                     <p>기수 관리자가 작성한 공지가 이 영역에 표시됩니다.</p>
                 </div>
@@ -923,6 +927,11 @@ async function loadProgressOverlay() {
 }
 
 // 커뮤니티 검색, 필터, 페이지 이동 및 글쓰기 처리
+// 작성자는 대표 캐릭터 닉네임이다. 아직 캐릭터를 고르지 않은 사용자는 서버가 null을 준다.
+function communityAuthorLabel(post) {
+    return escapeHtml(post?.authorNickname || "알 수 없음");
+}
+
 async function loadCommunity() {
     const result = await api.community.listPosts({
         page: communityPage - 1,
@@ -931,8 +940,43 @@ async function loadCommunity() {
         search: communityKeyword.trim() || undefined
     });
     communityPosts = Array.isArray(result?.items) ? result.items : [];
+    // 고정 공지는 목록에서 빠져 배너에만 나온다. 필터·검색·페이지와 무관하게 같은 글이다.
+    communityPinned = result?.pinned || null;
     communityPageCount = Math.max(1, Number(result?.page?.totalPages) || 1);
+
+    // 마지막 페이지의 마지막 글을 지우면 사라진 페이지를 조회하게 된다.
+    // 되짚은 뒤에는 communityPage <= communityPageCount라 다시 들어오지 않는다.
+    if (communityPage > communityPageCount) {
+        communityPage = communityPageCount;
+        return loadCommunity();
+    }
+
     renderCommunity();
+}
+
+// 고정 공지는 목록에 없으므로 배너에서 열 수 있어야 한다.
+function renderPinnedNotice() {
+    const banner = homeOverlayRoot?.querySelector("[data-community-pinned]");
+    if (!banner) {
+        return;
+    }
+
+    if (!communityPinned) {
+        banner.innerHTML = `
+            <h3>등록된 고정 공지가 없습니다.</h3>
+            <p>기수 관리자가 작성한 공지가 이 영역에 표시됩니다.</p>
+        `;
+        return;
+    }
+
+    banner.innerHTML = `
+        <h3>
+            <button class="overlay-community-pinned-open" type="button" data-community-post="${communityPinned.postId}">
+                ${escapeHtml(communityPinned.title)}
+            </button>
+        </h3>
+        <p>${communityAuthorLabel(communityPinned)} · ${escapeHtml(new Date(communityPinned.createdAt).toLocaleString("ko-KR"))}</p>
+    `;
 }
 
 function renderCommunity() {
@@ -944,6 +988,8 @@ function renderCommunity() {
     if (!list || !pageLabel) {
         return;
     }
+
+    renderPinnedNotice();
 
     const pageCount = communityPageCount;
     communityPage = Math.min(Math.max(communityPage, 1), pageCount);
@@ -968,7 +1014,7 @@ function renderCommunity() {
                 </span>
                 <div>
                     <h3>${escapeHtml(post.title)}</h3>
-                    <p>${escapeHtml(new Date(post.createdAt).toLocaleString("ko-KR"))}</p>
+                    <p>${communityAuthorLabel(post)} · ${escapeHtml(new Date(post.createdAt).toLocaleString("ko-KR"))}</p>
                 </div>
                 <footer>
                     ${post.pinned ? "<span>고정</span>" : ""}
@@ -991,19 +1037,55 @@ function renderCommunity() {
         button.classList.toggle("is-active", isActive);
         button.setAttribute("aria-pressed", String(isActive));
     });
+
+    // 상세에서 목록으로 돌아오면 템플릿이 빈 검색창으로 다시 그려진다.
+    // 검색어는 모듈 상태에 남아 결과에 계속 반영되므로 입력값도 맞춰 준다.
+    // 입력 중에는 두 값이 같아 건드리지 않는다.
+    const searchInput = homeOverlayRoot.querySelector("[data-community-search]");
+    if (searchInput && searchInput.value !== communityKeyword) {
+        searchInput.value = communityKeyword;
+    }
+}
+
+/**
+ * 오버레이 본문은 React가 소유한다(HomeMenuLiveContent의 dangerouslySetInnerHTML).
+ * body.innerHTML로 직접 덮으면 두 가지가 깨진다.
+ *   1. .ui-menu-live-content 래퍼가 사라져 grid·gap·min-width 레이아웃을 잃는다.
+ *   2. Store 스냅샷은 그대로라 화면과 어긋난다. 같은 content로 다시 open해도
+ *      React가 __html이 같다고 보고 DOM을 건드리지 않아 목록으로 돌아오지 못한다.
+ * 그래서 커뮤니티의 모든 화면 전환은 Store를 거친다.
+ */
+function renderCommunityOverlay(title, content) {
+    if (!homeOverlayRoot) {
+        return false;
+    }
+
+    const opened = window.OmagotchiHomeOverlay?.open({
+        type: "community",
+        meta: { ...overlayMeta.community, title },
+        content
+    });
+    if (!opened) {
+        return false;
+    }
+
+    homeOverlayRoot.classList.add("is-open");
+    document.body.classList.add("has-home-overlay");
+
+    // 본문이 스크롤 컨테이너다. 긴 작성 화면에서 아래로 내려간 위치가 그대로 남으면
+    // 목록으로 돌아왔을 때 툴바가 화면 밖에 있어 사라진 것처럼 보인다.
+    const body = homeOverlayRoot.querySelector(".home-overlay-body");
+    if (body) {
+        body.scrollTop = 0;
+    }
+    return true;
 }
 
 function openCommunityComposer(post = null) {
-    const title = homeOverlayRoot?.querySelector("#home-overlay-title");
-    const body = homeOverlayRoot?.querySelector(".home-overlay-body");
-
-    if (!title || !body) {
-        return;
-    }
-
+    communityViewSequence += 1;
+    activeCommunityPost = post;
     const attachmentInputId = `community-attachments-${post?.postId || "new"}`;
-    title.textContent = post ? "게시글 수정" : "새 게시글";
-    body.innerHTML = `
+    const content = `
         <form class="overlay-community-compose" data-community-compose data-community-post-type="${post?.type || "FREE"}"${post ? ` data-community-post-id="${post.postId}"` : ""}>
             <section class="overlay-community-form-field">
                 <span>게시판</span>
@@ -1015,7 +1097,7 @@ function openCommunityComposer(post = null) {
             </label>
             <label class="overlay-community-form-field">
                 <span>내용</span>
-                <textarea name="content" maxlength="1000" placeholder="기수 구성원과 공유할 내용을 입력하세요" required>${escapeHtml(post?.content || "")}</textarea>
+                <textarea name="content" maxlength="10000" placeholder="기수 구성원과 공유할 내용을 입력하세요" required>${escapeHtml(post?.content || "")}</textarea>
             </label>
             <section class="overlay-community-form-field">
                 <span>이미지 첨부</span>
@@ -1031,7 +1113,10 @@ function openCommunityComposer(post = null) {
             </footer>
         </form>
     `;
-    body.querySelector("input")?.focus();
+
+    if (renderCommunityOverlay(post ? "게시글 수정" : "새 게시글", content)) {
+        homeOverlayRoot.querySelector(".home-overlay-body input")?.focus();
+    }
 }
 
 async function submitCommunityPost(form) {
@@ -1047,25 +1132,43 @@ async function submitCommunityPost(form) {
     }
 
     if (result.action === "updated") {
-        await openCommunityDetail(form.dataset.communityPostId);
-        showHomeToast(result.message);
+        const opened = await openCommunityDetail(form.dataset.communityPostId);
+        if (opened) {
+            showHomeToast(result.message);
+        }
         return;
     }
 
     showHomeToast(result.message);
-    closeHomeOverlay();
+    openHomeOverlay("community");
 }
 
 async function openCommunityDetail(postId) {
-    const title = homeOverlayRoot?.querySelector("#home-overlay-title");
-    const body = homeOverlayRoot?.querySelector(".home-overlay-body");
-    if (!title || !body) return;
+    const viewSequence = ++communityViewSequence;
+    renderCommunityOverlay("게시글", `<p class="overlay-community-loading">게시글을 불러오는 중입니다.</p>`);
 
-    title.textContent = "게시글";
-    body.innerHTML = `<p class="overlay-community-loading">게시글을 불러오는 중입니다.</p>`;
-    const post = await api.community.getPost(postId);
+    let post;
+    try {
+        post = await api.community.getPost(postId);
+    } catch {
+        // 사용자가 이미 다른 화면으로 이동했다면 늦은 오류 응답으로 현재 화면을 덮지 않는다.
+        if (viewSequence !== communityViewSequence) {
+            return false;
+        }
+
+        const message = "게시글을 불러오지 못했습니다.";
+        renderCommunityOverlay("게시글", `<p class="overlay-community-error" role="alert">${message}</p>`);
+        showHomeToast(message);
+        return false;
+    }
+    // 불러오는 사이에 목록이나 다른 글로 옮겼으면 이 응답은 버린다.
+    if (viewSequence !== communityViewSequence) {
+        return false;
+    }
+
+    activeCommunityPost = post;
     const attachments = Array.isArray(post?.attachments) ? post.attachments : [];
-    body.innerHTML = `
+    const content = `
         <article class="overlay-community-detail" data-community-detail="${post.postId}">
             <div class="overlay-community-form-field">
                 <span>게시판</span>
@@ -1074,7 +1177,7 @@ async function openCommunityDetail(postId) {
             <div class="overlay-community-form-field">
                 <span>제목</span>
                 <div class="overlay-community-readonly">${escapeHtml(post.title)}</div>
-                <p class="overlay-community-date">${escapeHtml(new Date(post.createdAt).toLocaleString("ko-KR"))}</p>
+                <p class="overlay-community-date">${communityAuthorLabel(post)} · ${escapeHtml(new Date(post.createdAt).toLocaleString("ko-KR"))}</p>
             </div>
             <div class="overlay-community-form-field">
                 <span>내용</span>
@@ -1086,12 +1189,16 @@ async function openCommunityDetail(postId) {
             </section>
             <footer>
                 <button type="button" data-community-list>목록</button>
+                ${post.canManage ? `
                 <button type="button" data-community-edit>수정</button>
                 <button type="button" data-community-delete>삭제</button>
+                ` : ""}
             </footer>
         </article>
     `;
-    body.querySelector("[data-community-edit]")?.addEventListener("click", () => openCommunityComposer(post));
+
+    renderCommunityOverlay("게시글", content);
+    return true;
 }
 
 // 홈 화면을 유지한 채 메뉴 내용을 모달 오버레이로 전환
@@ -1101,6 +1208,8 @@ function closeHomeOverlay() {
     }
 
     window.OmagotchiHomeOverlay?.close();
+    activeCommunityPost = null;
+    communityViewSequence += 1;
     homeOverlayRoot.classList.remove("is-open");
     document.body.classList.remove("has-home-overlay");
 }
@@ -1123,6 +1232,8 @@ function openHomeOverlay(type) {
     document.body.classList.add("has-home-overlay");
 
     if (type === "community") {
+        activeCommunityPost = null;
+        communityViewSequence += 1;
         loadCommunity().catch((error) => showHomeToast(error.message));
     }
 
@@ -1220,6 +1331,7 @@ homeOverlayRoot?.addEventListener("click", (event) => {
     const communityCloseButton = event.target.closest("[data-community-close]");
     const communityListButton = event.target.closest("[data-community-list]");
     const communityPostButton = event.target.closest("[data-community-post]");
+    const communityEditButton = event.target.closest("[data-community-edit]");
     const communityDeleteButton = event.target.closest("[data-community-delete]");
 
     if (closeTarget && (event.target === closeTarget || closeTarget.matches("button, a"))) {
@@ -1247,7 +1359,12 @@ homeOverlayRoot?.addEventListener("click", (event) => {
 
     if (communityPostButton) {
         openCommunityDetail(communityPostButton.dataset.communityPost)
-            .catch((error) => showHomeToast(error.message || "게시글을 불러오지 못했습니다."));
+            .catch(() => showHomeToast("게시글을 불러오지 못했습니다."));
+        return;
+    }
+
+    if (communityEditButton && activeCommunityPost) {
+        openCommunityComposer(activeCommunityPost);
         return;
     }
 

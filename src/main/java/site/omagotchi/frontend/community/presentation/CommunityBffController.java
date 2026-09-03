@@ -24,6 +24,13 @@ import site.omagotchi.frontend.global.learning.application.LearningProxyBffServi
 import java.util.Arrays;
 import java.util.List;
 
+/**
+ * 사용자 홈의 커뮤니티 Browser 계약.
+ *
+ * <p>게시판은 기수에 속하지만 cohortId를 경로에서 받지 않는다. Browser가 지정하면 다른 기수
+ * 게시판을 조회하는 요청을 만들 수 있으므로, 조회 대상 기수는 Session 기반 승인 기수로
+ * 확보한다. 랭킹·출결과 같은 방식이다.</p>
+ */
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/bff/v1/community/posts")
@@ -39,15 +46,14 @@ public class CommunityBffController {
             @RequestParam(required = false) String type,
             @RequestParam(required = false) String search
     ) {
-        return proxy.execute(request, context -> context.service().getCommunityPosts(
-                context.bearerToken(), page, size, type, search
-        ));
+        return proxy.executeWithCohort(request, (context, cohortId) -> context.service()
+                .getCommunityPosts(context.bearerToken(), cohortId, page, size, type, search));
     }
 
     @GetMapping("/{post-id}")
     public JsonNode getPost(HttpServletRequest request, @PathVariable("post-id") Long postId) {
-        return proxy.execute(request, context -> context.service()
-                .getCommunityPost(context.bearerToken(), postId));
+        return proxy.executeWithCohort(request, (context, cohortId) -> context.service()
+                .getCommunityPost(context.bearerToken(), cohortId, postId));
     }
 
     @GetMapping("/{post-id}/attachments/{attachment-id}")
@@ -56,15 +62,14 @@ public class CommunityBffController {
             @PathVariable("post-id") Long postId,
             @PathVariable("attachment-id") Long attachmentId
     ) {
-        return proxy.execute(request, context -> context.service().downloadCommunityAttachment(
-                context.bearerToken(), postId, attachmentId
-        ));
+        return proxy.executeWithCohort(request, (context, cohortId) -> context.service()
+                .downloadCommunityAttachment(context.bearerToken(), cohortId, postId, attachmentId));
     }
 
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
     public JsonNode createJson(HttpServletRequest request, @RequestBody JsonNode body) {
-        return proxy.execute(request, context -> context.service()
-                .createCommunityPost(context.bearerToken(), body));
+        return proxy.executeWithCohort(request, (context, cohortId) -> context.service()
+                .createCommunityPost(context.bearerToken(), cohortId, body));
     }
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -73,8 +78,8 @@ public class CommunityBffController {
             @RequestPart("post") JsonNode post,
             @RequestPart(value = "attachments", required = false) MultipartFile[] attachments
     ) {
-        return proxy.execute(request, context -> context.service()
-                .createCommunityPostMultipart(context.bearerToken(), post, parts(attachments)));
+        return proxy.executeWithCohort(request, (context, cohortId) -> context.service()
+                .createCommunityPostMultipart(context.bearerToken(), cohortId, post, parts(attachments)));
     }
 
     @PatchMapping(value = "/{post-id}", consumes = MediaType.APPLICATION_JSON_VALUE)
@@ -83,8 +88,8 @@ public class CommunityBffController {
             @PathVariable("post-id") Long postId,
             @RequestBody JsonNode body
     ) {
-        return proxy.execute(request, context -> context.service()
-                .updateCommunityPost(context.bearerToken(), postId, body));
+        return proxy.executeWithCohort(request, (context, cohortId) -> context.service()
+                .updateCommunityPost(context.bearerToken(), cohortId, postId, body));
     }
 
     @PatchMapping(value = "/{post-id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -94,14 +99,14 @@ public class CommunityBffController {
             @RequestPart("post") JsonNode post,
             @RequestPart(value = "attachments", required = false) MultipartFile[] attachments
     ) {
-        return proxy.execute(request, context -> context.service()
-                .updateCommunityPostMultipart(context.bearerToken(), postId, post, parts(attachments)));
+        return proxy.executeWithCohort(request, (context, cohortId) -> context.service()
+                .updateCommunityPostMultipart(context.bearerToken(), cohortId, postId, post, parts(attachments)));
     }
 
     @DeleteMapping("/{post-id}")
     public ResponseEntity<Void> delete(HttpServletRequest request, @PathVariable("post-id") Long postId) {
-        proxy.execute(request, context -> context.service()
-                .deleteCommunityPost(context.bearerToken(), postId));
+        proxy.executeWithCohort(request, (context, cohortId) -> context.service()
+                .deleteCommunityPost(context.bearerToken(), cohortId, postId));
         return ResponseEntity.noContent().build();
     }
 

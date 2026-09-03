@@ -2450,6 +2450,19 @@
     color: #176b46 !important;
 }
 
+/*
+ * 공지는 자유글과 구별돼야 하므로 강조색을 쓴다.
+ * 위 규칙이 .is-notice를 포함하지 않아, 앞쪽의 반투명 배경
+ * rgba(255, 255, 255, 0.2)가 특정도(선택자 3개)로 살아남아 있었다.
+ * 그 탓에 공지 뱃지만 뒤 초록이 비쳐 자유 뱃지와 다르게 보였다.
+ * 배너 라벨도 늘 공지이므로 같은 색으로 맞춘다.
+ */
+.home-overlay--community .overlay-community-notice > strong,
+.home-overlay--community .overlay-community-type.is-notice {
+    background: var(--overlay-accent-strong);
+    color: #ffffff !important;
+}
+
 /* Settings */
 .home-overlay--settings .overlay-settings-section > h3 {
     color: var(--overlay-list-muted) !important;

@@ -81,9 +81,7 @@ test("게시글 등록 중에는 중복 제출을 막고 성공 메시지를 반
         assert.deepEqual(requests[0], {
             type: "FREE",
             title: "제목",
-            content: "내용",
-            scope: "COHORT",
-            cohortId: 7
+            content: "내용"
         });
         assert.deepEqual(result, {action: "created", message: "게시글이 등록되었습니다."});
         assert.equal(submitButton.disabled, false);

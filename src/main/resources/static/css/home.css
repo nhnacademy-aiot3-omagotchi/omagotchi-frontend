@@ -1825,6 +1825,24 @@ a {
     font-weight: 900;
 }
 
+/* 배너의 고정 공지 제목은 상세로 가는 버튼이지만 제목처럼 보여야 한다. */
+.overlay-community-pinned-open {
+    display: block;
+    width: 100%;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.overlay-community-pinned-open:hover,
+.overlay-community-pinned-open:focus-visible {
+    text-decoration: underline;
+}
+
 .overlay-community-notice p,
 .overlay-community-list p {
     margin: 6px 0 0;
