@@ -15,6 +15,7 @@
     "test:storybook-css": "node --test src/test/js/storybookPreviewCss.test.mjs",
     "test:vacancy-alerts": "node --test src/test/js/vacancyAlerts.test.mjs",
     "test:participants": "node --test src/test/js/participants.test.mjs src/test/js/participantActions.test.mjs",
+    "test:teams": "node --test src/test/js/apiTeams.test.mjs src/test/js/team.test.mjs src/test/js/teamHomeIntegration.test.mjs",
     "test:space-room": "node --test src/test/js/spaceRoomInitialization.test.mjs",
     "test:admin-occupancies": "node --test src/test/js/adminOccupancies.test.mjs",
     "test:service-integration": "node --test src/test/js/serviceIntegrationState.test.mjs",

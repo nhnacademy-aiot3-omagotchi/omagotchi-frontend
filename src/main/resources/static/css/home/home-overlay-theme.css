@@ -2080,6 +2080,85 @@
     text-align: right;
 }
 
+.home-team-toolbar {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.home-team-cohort-picker {
+    width: min(320px, 100%);
+}
+
+.home-team-cohort-picker select {
+    width: 100%;
+    min-height: 42px;
+    padding: 0 36px 0 12px;
+    border: 1px solid var(--ui-line);
+    border-radius: 12px;
+    background: #ffffff;
+    color: var(--ui-ink);
+    font: inherit;
+    font-size: 13px;
+    font-weight: 800;
+}
+
+.home-team-state {
+    margin: 0;
+    padding: 18px;
+    border: 1px dashed var(--ui-line-strong);
+    border-radius: 14px;
+    background: #ffffff;
+    color: var(--ui-ink-muted);
+    text-align: center;
+}
+
+.home-team-state.is-error {
+    display: grid;
+    justify-items: center;
+    gap: 10px;
+    border-color: #d8aaaa;
+}
+
+.home-team-state.is-error p {
+    margin: 0;
+}
+
+.home-team-member-preview {
+    min-width: 0;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 5px;
+}
+
+.home-team-member-preview > span {
+    max-width: 130px;
+    overflow: hidden;
+    padding: 5px 8px;
+    border-radius: 999px;
+    background: var(--ui-emerald-50);
+    color: var(--ui-emerald-800);
+    font-size: 11px;
+    font-weight: 800;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.home-team-member-preview .home-team-member-empty {
+    color: var(--ui-ink-muted);
+}
+
+.home-overlay--cohort .ui-party-members li {
+    grid-template-columns: minmax(0, 1fr) auto auto;
+}
+
+.home-overlay--cohort .ui-party-members li > strong {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 @media (max-width: 840px) {
     .home-overlay--cohort .ui-cohort-summary__copy {
         grid-template-columns: 1fr auto;
@@ -2098,7 +2177,7 @@
     }
 
     .home-overlay--cohort .ui-party-members li {
-        grid-template-columns: auto minmax(0, 1fr) auto;
+        grid-template-columns: minmax(0, 1fr) auto auto;
     }
 
     .home-overlay--cohort .ui-party-members li > button {
@@ -2107,6 +2186,14 @@
 
     .home-overlay--cohort .ui-party-management {
         grid-template-columns: 1fr;
+    }
+
+    .home-team-toolbar {
+        justify-content: stretch;
+    }
+
+    .home-team-cohort-picker {
+        width: 100%;
     }
 
     .home-overlay--cohort .ui-party-members ul {

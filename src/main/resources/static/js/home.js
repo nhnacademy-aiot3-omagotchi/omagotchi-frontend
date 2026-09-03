@@ -112,11 +112,14 @@ function renderHomeCohortOverlay() {
                     <button class="ui-button ui-button--primary" type="submit">참가 신청</button>
                     <p class="home-cohort-join-message" data-home-cohort-message>유효한 코드를 입력하면 관리자 승인 대기 상태로 등록됩니다.</p>
                 </form>
-                <section class="ui-cohort-party-locked" aria-label="기수 내 파티 비활성 상태">
-                    <div>
-                        <strong>기수 참여 후 파티를 만들 수 있어요.</strong>
-                        <p>승인이 완료되면 같은 기수 멤버와 최대 8명까지 파티를 구성할 수 있습니다.</p>
-                    </div>
+                <section class="ui-cohort-party-zone" aria-labelledby="home-cohort-team-title">
+                    <header>
+                        <div>
+                            <h3 id="home-cohort-team-title">내 팀</h3>
+                            <p>활성 기수별 팀을 확인하거나 새로 만들 수 있어요.</p>
+                        </div>
+                    </header>
+                    <div data-home-party-app></div>
                 </section>
             </div>`;
     }
@@ -137,8 +140,8 @@ function renderHomeCohortOverlay() {
             <section class="ui-cohort-party-zone" aria-labelledby="home-cohort-party-title">
                 <header>
                     <div>
-                        <h3 id="home-cohort-party-title">${escapeHtml(cohortLabel)} 내 파티</h3>
-                        <p>같은 기수 멤버와 최대 8명까지 함께할 수 있어요.</p>
+                        <h3 id="home-cohort-party-title">${escapeHtml(cohortLabel)} 내 팀</h3>
+                        <p>같은 기수 멤버와 팀을 만들고 함께 공부할 수 있어요.</p>
                     </div>
                 </header>
                 <div data-home-party-app></div>
@@ -495,7 +498,7 @@ const overlayContent = {
             <summary>4. 공간 이용</summary>
             <div class="help-detail">
                 <ul>
-                    <li><strong>회의실</strong>: 파티를 구성해 제한된 인원으로 이용</li>
+                    <li><strong>회의실</strong>: 점유자가 같은 기수 사용자를 참여자로 추가해 함께 이용</li>
                     <li><strong>도서관</strong>: 개인 또는 조용한 학습 공간</li>
                     <li>사용 중인 회의실은 이용 시간을 연장하거나 반납할 수 있습니다.</li>
                     <li>만실인 회의실은 공실 알림을 신청할 수 있습니다.</li>
@@ -505,13 +508,11 @@ const overlayContent = {
         </details>
 
         <details>
-            <summary>5. 파티와 사용자 목록</summary>
+            <summary>5. 팀과 사용자 목록</summary>
             <div class="help-detail">
                 <ul>
-                    <li>기수 · 팀 메뉴에서 파티를 만들고 관리합니다.</li>
-                    <li>이름 또는 이메일로 같은 기수 사용자를 검색해 파티원으로 초대합니다.</li>
-                    <li>파티를 만든 후 이용 가능한 회의실에 입장합니다.</li>
-                    <li>공간 메뉴에서는 현재 파티의 캐릭터와 닉네임을 확인합니다.</li>
+                    <li>기수 · 팀 메뉴에서 서버에 저장되는 팀을 만들고 확인합니다.</li>
+                    <li>팀과 회의실 참여자는 서로 독립적으로 관리됩니다.</li>
                     <li>실시간 채팅 기능은 사용하지 않습니다. 홈 하단의 같은 자리는 AI 도우미 영역입니다.</li>
                 </ul>
             </div>
@@ -523,7 +524,7 @@ const overlayContent = {
                 <ul>
                     <li><strong>진행</strong>: 퀘스트, 업적, 랭킹, 타임라인, 통계 확인</li>
                     <li><strong>내 정보</strong>: 학습 시간, 출석, 캐릭터 정보 확인</li>
-                    <li><strong>기수 · 팀</strong>: 소속 기수와 파티 생성·관리</li>
+                    <li><strong>기수 · 팀</strong>: 소속 기수와 팀 생성·관리</li>
                     <li><strong>학습 기록</strong>: 월간 달력에서 저장한 기록을 확인·수정·삭제</li>
                     <li><strong>공간</strong>: 회의실과 도서관 이용</li>
                     <li><strong>커뮤</strong>: 공지 및 자유 게시판 이용</li>
@@ -1143,7 +1144,7 @@ function openHomeOverlay(type) {
     }
 
     if (type === "cohort") {
-        window.OmagotchiSpaceRoom?.mountParty(
+        window.OmagotchiTeam?.mount(
             homeOverlayRoot.querySelector("[data-home-party-app]")
         );
     }

@@ -18,22 +18,8 @@ import {
 (() => {
     const stateKey = "omagotchiSpaceState";
     const profile = window.OmagotchiProfile || {};
-    const characterAssets = window.OmagotchiCharacterAssets;
-    const profileCharacter = profile.currentCharacter || {};
-    const profileAssetKey = typeof profileCharacter.assetKey === "string"
-        ? profileCharacter.assetKey.trim().replace(/^\/+/, "").replace(/\.(?:png|gif)$/i, "")
-        : "";
-    const currentCharacterImage = profileAssetKey
-        ? characterAssets?.versioned?.(`/images/characters/${profileAssetKey}.png`)
-            ?? `/images/characters/${profileAssetKey}.png`
-        : characterAssets?.getPng?.(profileCharacter.type || "study", profileCharacter.colorId || "original")
-            || "/images/characters/study/study.png";
     const currentUser = {
-        id: profile.userId || "current-user",
-        name: profile.currentCharacter?.nickname || profile.nickname || "나",
-        cohortId: profile.approvedCohort?.cohortId || null,
-        cohortName: profile.approvedCohort?.name || "",
-        characterImage: currentCharacterImage
+        cohortId: profile.approvedCohort?.cohortId || null
     };
 
     const initialState = {
@@ -41,9 +27,6 @@ import {
         selectedRoomId: "",
         vacancyAlerts: [],
         roomPage: 0,
-        partyCreateOpen: false,
-        partyDetailOpen: false,
-        party: null,
         labs: [],
         studySpaces: [],
         rooms: [],
@@ -58,7 +41,6 @@ import {
         participantSearchLoading: false
     };
 
-    let cohortMembers = normalizeCohortMembers(profile.approvedCohort?.members);
     let telegramOverride = null;
     let currentAttendance = null;
     let currentPresence = null;
@@ -73,7 +55,6 @@ import {
     };
 
     const roots = new Set();
-    const partyRoots = new Set();
     let state = loadState();
     let ticker = null;
     let spaceLoadPromise = null;
@@ -126,10 +107,7 @@ import {
                 activeTab: ["lab", "meeting", "library"].includes(saved.activeTab)
                     ? saved.activeTab
                     : "meeting",
-                roomPage: Math.max(0, Number(saved.roomPage) || 0),
-                partyCreateOpen: Boolean(saved.partyCreateOpen),
-                partyDetailOpen: Boolean(saved.partyDetailOpen),
-                party: saved.party || null
+                roomPage: Math.max(0, Number(saved.roomPage) || 0)
             };
         } catch {
             return cloneInitialState();
@@ -507,17 +485,6 @@ import {
             && String(left) === String(right);
     }
 
-    function normalizeCohortMembers(members) {
-        if (!Array.isArray(members)) return [];
-        return members.map((member) => ({
-            id: member.id || member.userId,
-            name: member.name || member.nickname || "기수원",
-            email: member.email || "",
-            status: member.status || "offline",
-            characterImage: member.characterImage || "/images/characters/study/study.png"
-        })).filter((member) => member.id);
-    }
-
     function safeTelegramDeepLink(value) {
         if (typeof value !== "string" || !value.trim()) return "";
         try {
@@ -545,14 +512,6 @@ import {
                 || profile.telegramDeepLink
             )
         };
-    }
-
-    function renderCharacter(member, compact = false) {
-        const image = member.characterImage || "/images/characters/study/study.png";
-        return `
-            <span class="ui-character-avatar${compact ? " is-compact" : ""}" title="${escapeHtml(member.name)}">
-                <img src="${escapeHtml(image)}" alt="${escapeHtml(member.name)} 캐릭터" />
-            </span>`;
     }
 
     function getRoomView(room) {
@@ -732,157 +691,6 @@ import {
                 `}
             </section>
         `;
-    }
-
-    function partyMembers() {
-        return Array.isArray(state.party?.members) ? state.party.members : [];
-    }
-
-    function renderPartyHud() {
-        if (!state.party) {
-            return `
-                <aside class="ui-party-hud is-empty" aria-label="내 파티 없음">
-                    <strong>MY PARTY</strong>
-                    <p>참여 중인 파티가 없습니다.</p>
-                    <small>기수 · 팀 메뉴에서 파티를 만들 수 있어요.</small>
-                </aside>`;
-        }
-
-        const members = partyMembers();
-        return `
-            <aside class="ui-party-hud" aria-label="내 파티 ${escapeHtml(state.party.name)}">
-                <header>
-                    <div><span>MY PARTY</span><h3>${escapeHtml(state.party.name)}</h3></div>
-                    <strong>${members.length} / 8</strong>
-                </header>
-                <ul>
-                    ${members.map((member) => `
-                        <li>
-                            ${renderCharacter(member)}
-                            <strong>${escapeHtml(member.name)}</strong>
-                        </li>`).join("")}
-                </ul>
-            </aside>`;
-    }
-
-    function renderPartyInvite(candidates, isFull) {
-        return `
-            <form class="ui-party-invite" data-party-add-member>
-                <h3>파티원 초대</h3>
-                <p>같은 기수 구성원만 초대할 수 있어요.</p>
-                <label class="ui-field">
-                    <span class="ui-field__label">이름 또는 이메일</span>
-                    <div class="space-room-party-picker" data-space-party-picker>
-                        <input
-                            name="partyMemberEmail"
-                            type="email"
-                            placeholder="이름 또는 이메일 검색"
-                            aria-label="초대할 같은 기수 사용자 검색"
-                            aria-controls="home-party-candidates"
-                            autocomplete="off"
-                            ${isFull || !candidates.length ? "disabled" : ""}
-                            required
-                        />
-                        <div class="space-room-party-candidates" id="home-party-candidates" role="listbox" aria-label="파티 초대 후보">
-                            ${candidates.map((candidate) => `
-                                <button
-                                    type="button"
-                                    role="option"
-                                    data-space-party-candidate="${escapeHtml(candidate.email)}"
-                                    data-space-party-search="${escapeHtml(`${candidate.name} ${candidate.email}`.toLowerCase())}"
-                                >
-                                    <span><strong>${escapeHtml(candidate.name)}</strong><small>${escapeHtml(candidate.email)}</small></span>
-                                    <em>선택</em>
-                                </button>`).join("")}
-                            <p data-space-party-empty hidden>일치하는 사용자가 없습니다.</p>
-                        </div>
-                    </div>
-                </label>
-                <button class="ui-button ui-button--primary" type="submit" ${isFull || !candidates.length ? "disabled" : ""}>초대 보내기</button>
-                ${!candidates.length ? "<small>현재 초대할 수 있는 기수원이 없습니다.</small>" : ""}
-            </form>`;
-    }
-
-    function renderPartyManager() {
-        if (!state.party) {
-            if (!state.partyCreateOpen) {
-                return `
-                    <div class="ui-cohort-party-grid is-single">
-                        <button class="ui-cohort-party-create" type="button" data-party-open-create>
-                            <strong>새 파티 만들기</strong>
-                            <small>참여 중인 파티가 없습니다.</small>
-                        </button>
-                    </div>`;
-            }
-
-            return `
-                <form class="home-party-create-form" data-space-create-party>
-                    <div>
-                        <span class="ui-menu-eyebrow">MY STUDY PARTY</span>
-                        <h3>함께 공부할 파티 만들기</h3>
-                        <p>같은 기수 구성원과 최대 8명까지 함께할 수 있어요.</p>
-                    </div>
-                    <label class="ui-field">
-                        <span class="ui-field__label">파티 이름</span>
-                        <input name="partyName" type="text" minlength="1" maxlength="30" placeholder="파티 이름을 입력하세요" required />
-                    </label>
-                    <div>
-                        <button class="ui-button ui-button--secondary" type="button" data-party-cancel-create>취소</button>
-                        <button class="ui-button ui-button--primary" type="submit">파티 만들기</button>
-                    </div>
-                </form>`;
-        }
-
-        const members = partyMembers();
-        if (!state.partyDetailOpen) {
-            return `
-                <div class="ui-cohort-party-grid is-single">
-                    <article class="ui-cohort-party-card">
-                        <div><h4>${escapeHtml(state.party.name)}</h4><span>${members.length} / 8</span></div>
-                        <div class="ui-cohort-party-card__members">${members.map((member) => renderCharacter(member)).join("")}</div>
-                        <span class="ui-menu-chip">내 파티</span>
-                        <button class="ui-button ui-button--secondary" type="button" data-party-open-detail>파티 보기</button>
-                    </article>
-                </div>`;
-        }
-
-        const memberIds = new Set(members.map((member) => String(member.id)));
-        const candidates = cohortMembers.filter((member) => !memberIds.has(String(member.id)) && member.email);
-        const isFull = members.length >= 8;
-        const isMaster = sameId(state.party.masterId, currentUser.id);
-
-        return `
-            <div class="ui-party-page">
-                <header class="home-party-detail-head">
-                    <button type="button" data-party-close-detail>기수 · 팀</button>
-                    <span aria-hidden="true">›</span>
-                    <div><small>내 파티</small><strong>${escapeHtml(state.party.name)}</strong></div>
-                    <span class="ui-menu-chip">${members.length} / 8</span>
-                </header>
-                <div class="ui-party-management">
-                    <section class="ui-party-members" aria-labelledby="home-party-members-title">
-                        <h3 id="home-party-members-title">파티원</h3>
-                        <ul>
-                            ${members.map((member) => `
-                                <li>
-                                    ${renderCharacter(member, true)}
-                                    <strong>${escapeHtml(member.name)}</strong>
-                                    ${sameId(member.id, currentUser.id) ? "<span>나</span>" : ""}
-                                    ${sameId(member.id, state.party.masterId) ? "<em>마스터</em>" : ""}
-                                    ${isMaster && !sameId(member.id, currentUser.id) ? `<button type="button" data-space-remove-party-member="${escapeHtml(member.id)}">제외</button>` : ""}
-                                </li>`).join("")}
-                        </ul>
-                    </section>
-                    ${isMaster
-                        ? renderPartyInvite(candidates, isFull)
-                        : `<section class="ui-party-member-note"><h3>파티 정보</h3><p>파티원은 회의실 입장 시 참여자 후보에 먼저 표시됩니다.</p></section>`}
-                </div>
-                <footer class="ui-party-danger-zone">
-                    <p>파티에서 나가도 기수에는 계속 참여합니다.</p>
-                    <button class="ui-button ui-button--danger ui-party-danger-action" type="button" data-party-leave>파티 나가기</button>
-                    ${isMaster ? '<button class="ui-button ui-button--danger ui-party-danger-action" type="button" data-space-disband-party>파티 해체</button>' : ""}
-                </footer>
-            </div>`;
     }
 
     function renderRoomList() {
@@ -1246,16 +1054,6 @@ import {
                 showToast(root, message);
             }
         });
-        partyRoots.forEach((root) => {
-            if (!root.isConnected) {
-                partyRoots.delete(root);
-                return;
-            }
-            root.innerHTML = renderPartyManager();
-            if (message) {
-                root.insertAdjacentHTML("beforeend", `<p class="home-party-message" role="status">${escapeHtml(message)}</p>`);
-            }
-        });
         saveState();
     }
 
@@ -1425,14 +1223,6 @@ import {
             : null;
         const participantCandidate = event.target.closest("[data-space-participant-candidate]");
         const libraryEnter = event.target.closest("[data-space-library-enter]");
-        const partyCandidate = event.target.closest("[data-space-party-candidate]");
-        const openPartyCreate = event.target.closest("[data-party-open-create]");
-        const cancelPartyCreate = event.target.closest("[data-party-cancel-create]");
-        const openPartyDetail = event.target.closest("[data-party-open-detail]");
-        const closePartyDetail = event.target.closest("[data-party-close-detail]");
-        const leaveParty = event.target.closest("[data-party-leave]");
-        const removePartyMember = event.target.closest("[data-space-remove-party-member]");
-        const disbandParty = event.target.closest("[data-space-disband-party]");
         const retry = event.target.closest("[data-space-retry]");
 
         if (participantCandidate) {
@@ -1456,13 +1246,6 @@ import {
                 state.participantDialogRoomId = room.id;
                 resetParticipantSearch();
                 renderAll();
-            }
-        } else if (partyCandidate) {
-            const picker = partyCandidate.closest("[data-space-party-picker]");
-            const input = picker?.querySelector('input[name="partyMemberEmail"]');
-            if (input) {
-                input.value = partyCandidate.dataset.spacePartyCandidate;
-                picker.classList.add("has-selection");
             }
         } else if (retry) {
             await refreshSpaces();
@@ -1584,38 +1367,6 @@ import {
         } else if (roomSelect) {
             state.selectedRoomId = roomSelect.dataset.spaceSelectRoom;
             renderAll();
-        } else if (openPartyCreate) {
-            state.partyCreateOpen = true;
-            renderAll();
-        } else if (cancelPartyCreate) {
-            state.partyCreateOpen = false;
-            renderAll();
-        } else if (openPartyDetail) {
-            state.partyDetailOpen = true;
-            renderAll();
-        } else if (closePartyDetail) {
-            state.partyDetailOpen = false;
-            renderAll();
-        } else if (leaveParty && state.party) {
-            const partyName = state.party.name;
-            state.party = null;
-            state.partyCreateOpen = false;
-            state.partyDetailOpen = false;
-            renderAll(`${partyName} 파티에서 나갔습니다.`);
-        } else if (removePartyMember) {
-            const member = state.party?.members.find(
-                (item) => String(item.id) === removePartyMember.dataset.spaceRemovePartyMember
-            );
-            if (sameId(state.party?.masterId, currentUser.id) && member) {
-                state.party.members = state.party.members.filter((item) => !sameId(item.id, member.id));
-                renderAll(`${member.name} 님을 파티에서 제외했습니다.`);
-            }
-        } else if (disbandParty && sameId(state.party?.masterId, currentUser.id)) {
-            const partyName = state.party.name;
-            state.party = null;
-            state.partyCreateOpen = false;
-            state.partyDetailOpen = false;
-            renderAll(`${partyName} 파티를 해체했습니다.`);
         }
 
         if (root.isConnected && event.target.closest("button")) {
@@ -1625,85 +1376,14 @@ import {
 
     async function handleSubmit(event) {
         const participantSearchForm = event.target.closest("[data-space-participant-search-form]");
-        const createPartyForm = event.target.closest("[data-space-create-party]");
-        const addPartyMemberForm = event.target.closest("[data-party-add-member]");
 
-        if (!participantSearchForm && !createPartyForm && !addPartyMemberForm) {
+        if (!participantSearchForm) {
             return;
         }
 
         event.preventDefault();
 
-        if (participantSearchForm) {
-            await searchParticipants(participantSearchForm);
-            return;
-        }
-
-        if (createPartyForm) {
-            const partyName = String(new FormData(createPartyForm).get("partyName") || "").trim();
-            if (!partyName) {
-                renderAll("파티 이름을 입력해 주세요.");
-                return;
-            }
-
-            state.party = {
-                id: `party-${Date.now()}`,
-                name: partyName,
-                cohortId: currentUser.cohortId,
-                masterId: currentUser.id,
-                members: [{
-                    id: currentUser.id,
-                    name: currentUser.name,
-                    characterImage: currentUser.characterImage
-                }]
-            };
-            state.partyCreateOpen = false;
-            state.partyDetailOpen = false;
-            renderAll(`${partyName} 파티를 만들었습니다.`);
-            return;
-        }
-
-        const memberEmail = String(new FormData(addPartyMemberForm).get("partyMemberEmail") || "").trim();
-        const member = cohortMembers.find((item) => item.email === memberEmail);
-        if (!state.party || !sameId(state.party.masterId, currentUser.id) || !member) {
-            renderAll("파티원을 추가할 수 없습니다.");
-            return;
-        }
-        if (state.party.members.length >= 8) {
-            renderAll("파티는 최대 8명까지 참여할 수 있습니다.");
-            return;
-        }
-        if (state.party.members.some((item) => sameId(item.id, member.id))) {
-            renderAll("이미 파티에 참여 중인 사용자입니다.");
-            return;
-        }
-
-        state.party.members.push({
-            id: member.id,
-            name: member.name,
-            email: member.email,
-            characterImage: member.characterImage
-        });
-        renderAll(`${member.name} 님을 파티에 추가했습니다.`);
-    }
-
-    function handlePartySearch(event) {
-        const input = event.target.closest('input[name="partyMemberEmail"]');
-        if (!input) return;
-
-        const picker = input.closest("[data-space-party-picker]");
-        const keyword = input.value.trim().toLowerCase();
-        let visibleCount = 0;
-
-        picker?.classList.remove("has-selection");
-        picker?.querySelectorAll("[data-space-party-candidate]").forEach((candidate) => {
-            const matches = !keyword || candidate.dataset.spacePartySearch.includes(keyword);
-            candidate.hidden = !matches;
-            if (matches) visibleCount += 1;
-        });
-
-        const empty = picker?.querySelector("[data-space-party-empty]");
-        if (empty) empty.hidden = visibleCount > 0;
+        await searchParticipants(participantSearchForm);
     }
 
     function updateCountdowns() {
@@ -1758,12 +1438,6 @@ import {
             root.addEventListener("submit", (event) => {
                 void handleSubmit(event);
             });
-            root.addEventListener("input", handlePartySearch);
-            root.addEventListener("focusin", (event) => {
-                event.target.closest('input[name="partyMemberEmail"]')
-                    ?.closest("[data-space-party-picker]")
-                    ?.classList.remove("has-selection");
-            });
             root.dataset.spaceRoomMounted = "true";
         }
         render(root);
@@ -1783,23 +1457,6 @@ import {
         }
     }
 
-    function mountParty(root) {
-        if (!root) return;
-        partyRoots.add(root);
-        if (!root.dataset.partyManagerMounted) {
-            root.addEventListener("click", (event) => handleAction(event, root));
-            root.addEventListener("submit", handleSubmit);
-            root.addEventListener("input", handlePartySearch);
-            root.addEventListener("focusin", (event) => {
-                event.target.closest('input[name="partyMemberEmail"]')
-                    ?.closest("[data-space-party-picker]")
-                    ?.classList.remove("has-selection");
-            });
-            root.dataset.partyManagerMounted = "true";
-        }
-        root.innerHTML = renderPartyManager();
-    }
-
     function updateData(data = {}) {
         if (Array.isArray(data.rooms)) {
             state.rooms = data.rooms;
@@ -1811,16 +1468,6 @@ import {
             if (!hasSelectedRoom) state.selectedRoomId = "";
         }
 
-        if (Object.hasOwn(data, "party")) {
-            state.party = data.party;
-            state.partyCreateOpen = false;
-            state.partyDetailOpen = false;
-        }
-
-        if (Array.isArray(data.cohortMembers)) {
-            cohortMembers = normalizeCohortMembers(data.cohortMembers);
-        }
-
         if (data.telegram && typeof data.telegram === "object") {
             telegramOverride = { ...data.telegram };
         }
@@ -1828,5 +1475,5 @@ import {
         renderAll();
     }
 
-    window.OmagotchiSpaceRoom = { mount, mountParty, updateData };
+    window.OmagotchiSpaceRoom = { mount, updateData };
 })();
