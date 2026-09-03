@@ -430,7 +430,7 @@ export const SearchFilter = {
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    const searchInput = canvas.getByPlaceholderText("이름 또는 이메일");
+    const searchInput = canvas.getByPlaceholderText("이름 검색");
     await userEvent.type(searchInput, "최코딩");
 
     expect(canvas.getByText("최코딩")).toBeInTheDocument();

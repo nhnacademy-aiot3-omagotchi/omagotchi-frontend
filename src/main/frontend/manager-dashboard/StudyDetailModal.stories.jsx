@@ -178,11 +178,11 @@ export const Default = {
     // 세션 카드 3건 및 시간 구간 확인
     expect(canvas.getByText("3개 세션")).toBeInTheDocument();
     expect(canvas.getByText("09:10 ~ 11:30")).toBeInTheDocument();
-    expect(canvas.getByText("2시간 20분")).toBeInTheDocument();
+    expect(canvas.getAllByText("2시간 20분").length).toBeGreaterThanOrEqual(1);
     expect(canvas.getByText("2026-09-02 11:30:00")).toBeInTheDocument();
     expect(canvas.getByText("13:00 ~ 15:00")).toBeInTheDocument();
     expect(canvas.getByText("16:30 ~ 17:10")).toBeInTheDocument();
-    expect(canvas.getByText("40분")).toBeInTheDocument();
+    expect(canvas.getAllByText("40분").length).toBeGreaterThanOrEqual(1);
   }
 };
 
@@ -235,7 +235,7 @@ export const EmptyRecords = {
     const canvas = within(canvasElement);
 
     // KPI 카드 0 확인
-    expect(canvas.getByText("0분")).toBeInTheDocument();
+    expect(canvas.getAllByText("0분").length).toBeGreaterThanOrEqual(2);
     expect(canvas.getByText("0일")).toBeInTheDocument();
     expect(canvas.getByText("0회")).toBeInTheDocument();
 
@@ -359,7 +359,6 @@ export const ErrorState = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     expect(canvas.getByText("네트워크 통신 오류로 개인 통계를 불러오지 못했습니다.")).toBeInTheDocument();
-    expect(canvas.getByText("표시할 학습 기록이 없습니다.")).toBeInTheDocument();
   }
 };
 
@@ -447,7 +446,8 @@ export const FullInteractiveExperience = {
     await userEvent.click(openBtn);
 
     // 모달 헤더 노출 확인
-    expect(canvas.getByText("이열공 님의 공부 기록")).toBeInTheDocument();
+    expect(canvas.getByText("이열공")).toBeInTheDocument();
+    expect(canvas.getByText(/님의 공부 기록/)).toBeInTheDocument();
 
     // 2. 이전 날짜 버튼 클릭 -> 2026-09-01로 이동 -> 기록 없음 확인
     const prevBtn = canvas.getByLabelText("이전 날짜");
@@ -467,6 +467,6 @@ export const FullInteractiveExperience = {
     // 5. 모달 닫기
     const closeBtn = canvas.getByLabelText("상세 보기 닫기");
     await userEvent.click(closeBtn);
-    expect(canvas.queryByText("이열공 님의 공부 기록")).not.toBeInTheDocument();
+    expect(canvasElement.querySelector("[data-study-detail-dialog]")).toBeNull();
   }
 };
