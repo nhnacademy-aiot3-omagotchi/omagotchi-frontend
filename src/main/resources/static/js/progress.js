@@ -1,9 +1,22 @@
+import {
+    lastClosedRankingDate,
+    normalizeStudyRanking,
+    rankingCoverageLabel,
+    rankingPeriodLabel,
+    requestStudyRanking
+} from "./home/rankingData.js?v=20260903-1";
+
 // 독립 진행 화면도 홈 오버레이와 동일한 BFF 데이터를 사용한다.
 const progressTabs = document.querySelectorAll("[data-progress-tab]");
 const progressViews = document.querySelectorAll("[data-progress-view]");
 const progressTitle = document.querySelector("[data-progress-title]");
 const questList = document.querySelector("[data-progress-quests]");
 const rankingList = document.querySelector("[data-progress-ranking]");
+const myRankingCard = document.querySelector("[data-progress-my-ranking]");
+const rankingMeta = document.querySelector("[data-ranking-meta]");
+const rankingPeriodButtons = document.querySelectorAll("[data-ranking-period]");
+const rankingDateInput = document.querySelector("[data-ranking-date]");
+const rankingDateField = document.querySelector("[data-ranking-date-field]");
 const stats = document.querySelector("[data-progress-stats]");
 const claimIndicator = document.querySelector("[data-claim-indicator]");
 const api = window.OmagotchiApi;
@@ -86,16 +99,40 @@ function renderQuests(quests) {
     updateClaimIndicator();
 }
 
-function renderRanking(result) {
+function renderRanking(result, period = "TODAY", dailyDate = null) {
     if (!rankingList) return;
-    const entries = Array.isArray(result?.entries) ? result.entries : [];
-    rankingList.innerHTML = entries.length ? entries.map((entry) => `
+    if (myRankingCard) {
+        myRankingCard.hidden = true;
+        myRankingCard.innerHTML = "";
+    }
+    if (result?.status !== "fulfilled") {
+        if (rankingMeta) rankingMeta.textContent = "조회 실패";
+        rankingList.innerHTML = '<li data-empty-ranking><strong>!</strong><span>랭킹을 불러오지 못했습니다.</span><em>다시 시도</em></li>';
+        return;
+    }
+    const ranking = normalizeStudyRanking(result.value, period);
+    if (ranking === null || ranking.period !== period) {
+        if (rankingMeta) rankingMeta.textContent = "응답 오류";
+        rankingList.innerHTML = '<li data-empty-ranking><strong>!</strong><span>랭킹 응답을 확인할 수 없습니다.</span><em>잠시 후 재시도</em></li>';
+        return;
+    }
+    if (rankingMeta) {
+        rankingMeta.textContent = `${rankingPeriodLabel(period, dailyDate)} · ${rankingCoverageLabel(period, ranking.includedThroughDate)} · ${ranking.rankedMemberCount}명 참여`;
+    }
+    const mine = ranking.myRanking.ranked ? ranking.myRanking.ranking : null;
+    const rows = ranking.entries.map((entry) => `
         <li>
-            <strong>${Number(entry.rank) || "-"}</strong>
+            <strong>${entry.rank}</strong>
             <span>${escapeHtml(entry.displayName || `수강생 (${entry.rank}위)`)}</span>
-            <em>${formatDuration(entry.studySeconds)}</em>
-        </li>`).join("") : `
-        <li data-empty-ranking><strong>-</strong><span>랭킹 데이터가 없습니다.</span><em>기록 없음</em></li>`;
+            <em>${formatDuration(entry.studySeconds)}${entry.timerRunning ? " · 진행 중" : ""}</em>
+        </li>`).join("");
+    rankingList.innerHTML = rows
+        ? rows
+        : `<li data-empty-ranking><strong>-</strong><span>${rankingPeriodLabel(period, dailyDate)} 학습 기록이 아직 없습니다.</span><em>0명</em></li>`;
+    if (mine !== null && myRankingCard) {
+        myRankingCard.hidden = false;
+        myRankingCard.innerHTML = `<strong>내 순위 ${mine.rank}위</strong><span>${escapeHtml(mine.displayName || "대표 캐릭터 미설정")}</span><em>${formatDuration(mine.studySeconds)}${mine.timerRunning ? " · 진행 중" : ""}</em>`;
+    }
 }
 
 function renderStats(profile, home) {
@@ -114,9 +151,6 @@ function renderProgressFailure() {
     if (questList) {
         questList.innerHTML = '<article class="task-item quest-item"><div><h3>퀘스트를 불러오지 못했습니다.</h3><p>잠시 후 다시 시도해 주세요.</p></div></article>';
     }
-    if (rankingList) {
-        rankingList.innerHTML = '<li data-empty-ranking><strong>-</strong><span>랭킹을 불러오지 못했습니다.</span><em>다시 시도</em></li>';
-    }
     if (stats) {
         stats.innerHTML = '<article class="stat-card"><h3>학습 통계</h3><strong>불러오기 실패</strong><p>잠시 후 다시 시도해 주세요.</p></article>';
     }
@@ -128,17 +162,15 @@ async function loadProgress() {
         typeof api?.gamification?.getHome !== "function"
         || typeof api?.gamification?.getDailyQuests !== "function"
         || typeof api?.profile?.get !== "function"
-        || typeof api?.ranking?.getToday !== "function"
     ) {
         renderProgressFailure();
         return;
     }
 
-    const [homeResult, questResult, profileResult, rankingResult] = await Promise.allSettled([
+    const [homeResult, questResult, profileResult] = await Promise.allSettled([
         api.gamification.getHome(),
         api.gamification.getDailyQuests(),
-        api.profile.get(),
-        api.ranking.getToday()
+        api.profile.get()
     ]);
 
     if (questResult.status === "fulfilled") {
@@ -148,7 +180,6 @@ async function loadProgress() {
         updateClaimIndicator();
     }
 
-    renderRanking(rankingResult.status === "fulfilled" ? rankingResult.value : null);
     renderStats(
         profileResult.status === "fulfilled" ? profileResult.value : null,
         homeResult.status === "fulfilled" ? homeResult.value : null
@@ -157,6 +188,48 @@ async function loadProgress() {
 
 progressTabs.forEach((tab) => {
     tab.addEventListener("click", () => setActiveProgressTab(tab.dataset.progressTab));
+});
+
+let rankingRequestSequence = 0;
+if (rankingDateInput) rankingDateInput.max = lastClosedRankingDate();
+
+async function loadRankingPeriod(period, dailyDate = null) {
+    const requestSequence = ++rankingRequestSequence;
+    if (rankingMeta) rankingMeta.textContent = `${rankingPeriodLabel(period, dailyDate)} · 불러오는 중`;
+    if (rankingList) {
+        rankingList.innerHTML = '<li data-empty-ranking><strong>-</strong><span>랭킹을 불러오는 중입니다.</span><em>대기</em></li>';
+    }
+    try {
+        const value = await requestStudyRanking(api, period, new Date(), dailyDate);
+        if (requestSequence !== rankingRequestSequence) return;
+        renderRanking({status: "fulfilled", value}, period, dailyDate);
+    } catch (error) {
+        if (requestSequence !== rankingRequestSequence) return;
+        renderRanking({status: "rejected", reason: error}, period, dailyDate);
+    }
+}
+
+rankingPeriodButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+        const period = button.dataset.rankingPeriod;
+        rankingPeriodButtons.forEach((candidate) => {
+            const active = candidate === button;
+            candidate.classList.toggle("is-active", active);
+            candidate.setAttribute("aria-selected", String(active));
+        });
+        rankingDateField?.classList.remove("is-active");
+        loadRankingPeriod(period);
+    });
+});
+
+rankingDateInput?.addEventListener("change", () => {
+    if (!rankingDateInput.value) return;
+    rankingPeriodButtons.forEach((button) => {
+        button.classList.remove("is-active");
+        button.setAttribute("aria-selected", "false");
+    });
+    rankingDateField?.classList.add("is-active");
+    loadRankingPeriod("DAILY", rankingDateInput.value);
 });
 
 questList?.addEventListener("click", async (event) => {
@@ -175,3 +248,4 @@ questList?.addEventListener("click", async (event) => {
 setActiveProgressTab(location.hash.slice(1) || "quests");
 updateClaimIndicator();
 loadProgress().catch(() => {});
+loadRankingPeriod("TODAY");

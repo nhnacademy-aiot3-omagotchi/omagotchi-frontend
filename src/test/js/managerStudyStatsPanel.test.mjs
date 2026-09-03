@@ -24,6 +24,7 @@ function eventTarget(value = "") {
     return {
         value,
         textContent: "",
+        hidden: false,
         addEventListener() {},
         replaceChildren() {}
     };
@@ -46,6 +47,7 @@ function loadPanel() {
     let registration;
     const charts = [];
     const calls = { today: [], trend: [], members: [] };
+    const renderedRows = [];
     const elements = new Map();
     const selectors = [
         "[data-studystats-search]",
@@ -55,7 +57,7 @@ function loadPanel() {
         "[data-kpi-total-time]",
         "[data-kpi-participation]",
         "[data-kpi-avg-time]",
-        "[data-kpi-no-record]",
+        "[data-kpi-running-timer]",
         "[data-trend-chart-title]",
         "[data-top-chart-title]",
         "[data-study-boundary-note]",
@@ -67,7 +69,17 @@ function loadPanel() {
         selector === "[data-studystats-period]" ? "7" : ""
     )));
 
-    const rowTemplate = { content: { firstElementChild: { cloneNode: rowNode } } };
+    const rowTemplate = {
+        content: {
+            firstElementChild: {
+                cloneNode() {
+                    const row = rowNode();
+                    renderedRows.push(row);
+                    return row;
+                }
+            }
+        }
+    };
     const root = {
         querySelector(selector) {
             if (selector.endsWith("template]")) return rowTemplate;
@@ -128,6 +140,7 @@ function loadPanel() {
                 activeStudentCount: 2,
                 participantCount: 1,
                 noRecordStudentCount: 1,
+                runningTimerCount: 1,
                 averageParticipantStudySeconds: 10800,
                 durationBuckets: [
                     { code: "NO_RECORD", memberCount: 1 },
@@ -151,21 +164,24 @@ function loadPanel() {
                 items: [{
                     cohortMembershipId: 10,
                     userId: "11111111-1111-1111-1111-111111111111",
+                    nickname: "오마",
                     todayStudySeconds: 7200,
                     periodStudySeconds: 10800,
                     activeStudyDays: 2,
-                    lastStudiedAt: null
+                    lastStudiedAt: null,
+                    isRunning: true,
+                    timerStartedAt: "2026-08-25T02:00:00Z"
                 }]
             };
         },
         getMemberProfiles: () => [{
             cohortMembershipId: 10,
-            name: "수강생 A",
+            name: "사용자 11111111",
             email: "student@example.com"
         }]
     });
 
-    return { calls, charts, panel };
+    return { calls, charts, elements, panel, renderedRows };
 }
 
 test("로컬 Chart.js 4.5.1 번들이 전역 Chart 생성자를 제공한다", () => {
@@ -187,7 +203,7 @@ test("관리자 Dashboard는 전체 기수가 아니라 내 관리 기수만 사
     assert.doesNotMatch(dashboardSource, /api\.cohort\.list\(\)/);
 });
 
-test("선택한 관리 기수의 API 응답으로 세 종류의 차트를 구성한다", async () => {
+test("통계 계약의 공부 중 인원과 닉네임으로 요약, 구성원, 차트를 표시한다", async () => {
     const harness = loadPanel();
 
     harness.panel.activate({ cohortId: 7 });
@@ -202,7 +218,30 @@ test("선택한 관리 기수의 API 응답으로 세 종류의 차트를 구성
     const latestByType = new Map(harness.charts.map((chart) => [chart.config.type, chart.config]));
     assert.deepEqual(latestByType.get("line").data.labels, ["08/24", "08/25"]);
     assert.deepEqual(latestByType.get("line").data.datasets[0].data, [1, 2]);
-    assert.deepEqual(latestByType.get("bar").data.labels, ["수강생 A"]);
+    assert.deepEqual(latestByType.get("bar").data.labels, ["오마"]);
     assert.deepEqual(latestByType.get("bar").data.datasets[0].data, [3]);
     assert.deepEqual(latestByType.get("doughnut").data.datasets[0].data, [1, 1]);
+    assert.equal(
+        harness.elements.get("[data-kpi-running-timer]").textContent,
+        "1명"
+    );
+
+    const memberRow = harness.renderedRows.at(-1);
+    assert.equal(
+        memberRow.querySelector("[data-studystats-member-name]").textContent,
+        "오마"
+    );
+    assert.equal(
+        memberRow.querySelector("[data-studystats-running]").hidden,
+        false
+    );
+});
+
+test("대시보드 index.js의 fetchTrendStats 및 fetchMemberOverview는 파라미터 섀도잉 없이 window.OmagotchiApi를 호출한다", () => {
+    // window가 파라미터로 섀도잉되지 않는지 검증
+    assert.doesNotMatch(dashboardSource, /fetchTrendStats:\s*\(\s*cohortId\s*,\s*window\s*\)\s*=>/);
+    assert.doesNotMatch(dashboardSource, /fetchMemberOverview:\s*\(\s*cohortId\s*,\s*membershipId\s*,\s*window\s*\)\s*=>/);
+
+    assert.match(dashboardSource, /fetchTrendStats:\s*\(\s*cohortId\s*,\s*windowParam\s*\)\s*=>/);
+    assert.match(dashboardSource, /fetchMemberOverview:\s*\(\s*cohortId\s*,\s*membershipId\s*,\s*windowParam\s*\)\s*=>/);
 });

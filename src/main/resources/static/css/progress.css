@@ -201,6 +201,102 @@
     list-style: none;
 }
 
+.ranking-filter-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    padding: 24px 28px 0;
+}
+
+.ranking-period-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+}
+
+.ranking-period-tabs button {
+    min-height: 36px;
+    padding: 0 14px;
+    border: 1px solid rgba(8, 8, 8, 0.14);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.62);
+    color: var(--ink);
+    font: inherit;
+    font-size: 13px;
+    font-weight: 900;
+    cursor: pointer;
+}
+
+.ranking-period-tabs button.is-active {
+    border-color: transparent;
+    background: var(--ink);
+    color: #ffffff;
+}
+
+.ranking-filter-bar > span {
+    margin-left: auto;
+    color: rgba(0, 0, 0, 0.58);
+    font-size: 13px;
+    font-weight: 900;
+}
+
+.ranking-date-field {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: rgba(0, 0, 0, 0.58);
+    font-size: 13px;
+    font-weight: 900;
+}
+
+.ranking-date-field input {
+    min-height: 36px;
+    padding: 0 10px;
+    border: 1px solid rgba(8, 8, 8, 0.14);
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.74);
+    color: var(--ink);
+    font: inherit;
+    font-weight: 800;
+}
+
+.ranking-date-field.is-active input {
+    border-color: var(--ink);
+    box-shadow: 0 0 0 2px rgba(8, 8, 8, 0.1);
+}
+
+.ranking-aggregation-note {
+    margin: 10px 28px 0;
+    color: rgba(0, 0, 0, 0.58);
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+.ranking-my-card {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 12px;
+    margin: 0 28px 28px;
+    padding: 16px 20px;
+    border: 1px solid rgba(15, 157, 99, 0.45);
+    border-radius: 16px;
+    background: rgba(224, 255, 241, 0.9);
+    color: var(--ink);
+    font-size: 14px;
+    font-weight: 900;
+}
+
+.ranking-my-card[hidden] {
+    display: none;
+}
+
+.ranking-my-card em {
+    font-style: normal;
+}
+
 .leader-list li {
     display: grid;
     grid-template-columns: 64px minmax(0, 1fr) auto;
@@ -353,6 +449,26 @@
 
     .progress-section-label em {
         display: none;
+    }
+
+    .ranking-filter-bar {
+        align-items: stretch;
+        padding: 20px 20px 0;
+    }
+
+    .ranking-date-field {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .ranking-date-field input {
+        flex: 1;
+        max-width: 210px;
+    }
+
+    .ranking-filter-bar > span {
+        width: 100%;
+        margin-left: 0;
     }
 
     .achievement-grid {
