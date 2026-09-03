@@ -1,4 +1,3 @@
-import React from "react";
 import { expect, userEvent, within } from "storybook/test";
 import "../../resources/static/css/managerDashboard.css";
 import { StudyStatsWorkspace } from "./StudyStatsWorkspace.jsx";
