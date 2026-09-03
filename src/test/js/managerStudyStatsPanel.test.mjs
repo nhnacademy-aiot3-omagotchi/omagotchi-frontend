@@ -161,6 +161,8 @@ test("관리자 Dashboard는 실제 StudyStats React 모듈을 로드한다", ()
     assert.match(islandBundle, /study-running-light/);
     assert.match(studentListSource, /className="study-running-light"/);
     assert.doesNotMatch(studentListSource, /className="study-running-badge"/);
+    assert.match(studentListSource, /role="img"/);
+    assert.doesNotMatch(studentListSource, /role="status"/);
     assert.match(
         studentListStorySource,
         /import \{ StudyStatsStudentList \} from "\.\/StudyStatsStudentList\.jsx"/

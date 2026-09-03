@@ -207,12 +207,9 @@ export function StudyStatsStudentList({
                           <span
                             className="study-running-light"
                             data-studystats-running
-                            title="공부 중"
-                            role="status"
+                            role="img"
                             aria-label="공부 중"
-                          >
-                            <span className="visually-hidden">공부 중</span>
-                          </span>
+                          />
                         )}
                       </button>
                     </td>
