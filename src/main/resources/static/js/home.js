@@ -4,7 +4,14 @@ import { createCharacter } from "./home/character.js?v=20260902-7";
 import { saveCommunityPost } from "./home/community.js?v=20260831-1";
 import { createLevel } from "./home/level.js";
 import { isAiRecommendedQuest, loadProgressResources, normalizeDailyQuests } from "./home/questData.js?v=20260902-1";
-import { renderRankingBoard } from "./home/rankingBoard.js?v=20260902-1";
+import { renderRankingBoard } from "./home/rankingBoard.js?v=20260902-2";
+import {
+    lastClosedRankingDate,
+    normalizeStudyRanking,
+    rankingCoverageLabel,
+    rankingPeriodLabel,
+    requestStudyRanking
+} from "./home/rankingData.js?v=20260903-1";
 import { createStudyRecords } from "./home/studyRecords.js?v=20260825-5";
 import { createTimer } from "./home/timer.js?v=20260902-1";
 import { promptResumeTimer } from "./home/timerPrompt.js?v=20260902-1";
@@ -649,10 +656,23 @@ const overlayContent = {
             </ul>
         </section>
         <section class="overlay-tab-panel" role="tabpanel" data-overlay-panel="leaders" hidden>
-            <div class="overlay-section-label"><strong>명예의 전당</strong><span></span><em>전체 학습 시간</em></div>
-            <div class="rank-board" aria-label="학습 시간 랭킹" data-progress-ranking>
-                <p class="rank-empty" data-empty-ranking>랭킹 데이터가 없습니다.</p>
+            <div class="ranking-filter-bar">
+                <div class="ranking-period-tabs" role="tablist" aria-label="랭킹 기간">
+                    <button class="is-active" type="button" role="tab" aria-selected="true" data-ranking-period="TODAY">오늘</button>
+                    <button type="button" role="tab" aria-selected="false" data-ranking-period="WEEKLY">이번 주</button>
+                    <button type="button" role="tab" aria-selected="false" data-ranking-period="MONTHLY">이번 달</button>
+                </div>
+                <label class="ranking-date-field" data-ranking-date-field>
+                    <span>지난 날짜</span>
+                    <input type="date" data-ranking-date aria-label="과거 일간 랭킹 날짜" />
+                </label>
             </div>
+            <p class="ranking-aggregation-note">주간·월간 랭킹은 완료된 집계일까지만 반영됩니다. 오늘 기록은 ‘오늘’ 랭킹에서 확인할 수 있습니다.</p>
+            <div class="overlay-section-label"><strong>명예의 전당</strong><span></span><em data-ranking-meta>불러오는 중</em></div>
+            <div class="rank-board" aria-label="학습 시간 랭킹" data-progress-ranking>
+                <p class="rank-empty" data-empty-ranking>랭킹을 불러오는 중입니다.</p>
+            </div>
+            <div class="ranking-my-card" data-progress-my-ranking hidden></div>
         </section>
     `,
     personal: renderPersonalOverlay,
@@ -760,6 +780,11 @@ function questStatusLabel(quest) {
 async function loadProgressOverlay() {
     const questList = homeOverlayRoot?.querySelector("[data-progress-quests]");
     const rankingList = homeOverlayRoot?.querySelector("[data-progress-ranking]");
+    const myRankingCard = homeOverlayRoot?.querySelector("[data-progress-my-ranking]");
+    const rankingMeta = homeOverlayRoot?.querySelector("[data-ranking-meta]");
+    const rankingPeriodButtons = homeOverlayRoot?.querySelectorAll("[data-ranking-period]") ?? [];
+    const rankingDateInput = homeOverlayRoot?.querySelector("[data-ranking-date]");
+    const rankingDateField = homeOverlayRoot?.querySelector("[data-ranking-date-field]");
     const aiSlot = homeOverlayRoot?.querySelector("[data-progress-ai-quest]");
     // 진행 패널은 탭으로 그려지고, 탭 구현이 비활성 패널을 언마운트하면 그쪽 노드는 없다.
     // 하나라도 없다고 전체를 포기하면 남은 영역까지 초기 문구로 굳어 조용한 미표시가 된다.
@@ -770,7 +795,6 @@ async function loadProgressOverlay() {
     // 승인 기수가 없으면 서버가 업무 오류를 반환하므로, 빈 랭킹으로 표시하고 화면은 유지한다.
     const hasRankingCohort = Boolean(currentProfile.approvedCohort?.cohortId);
     const results = await loadProgressResources(api, hasRankingCohort);
-    const rankings = results.rankings.status === "fulfilled" ? results.rankings.value : null;
     const dailyQuests = results.quests.status === "fulfilled"
         ? normalizeDailyQuests(results.quests.value)
         : null;
@@ -814,8 +838,84 @@ async function loadProgressOverlay() {
 
     if (!rankingList) return;
 
-    const entries = Array.isArray(rankings?.entries) ? rankings.entries : [];
-    rankingList.innerHTML = renderRankingBoard(entries);
+    if (rankingDateInput) rankingDateInput.max = lastClosedRankingDate();
+
+    function renderRankingResult(result, period, dailyDate = null) {
+        if (myRankingCard) {
+            myRankingCard.hidden = true;
+            myRankingCard.innerHTML = "";
+        }
+        if (!hasRankingCohort) {
+            if (rankingMeta) rankingMeta.textContent = "기수 미승인";
+            rankingList.innerHTML = `<p class="rank-empty" data-empty-ranking>승인된 기수가 없습니다.</p>`;
+            return;
+        }
+        if (result.status !== "fulfilled") {
+            if (rankingMeta) rankingMeta.textContent = "조회 실패";
+            rankingList.innerHTML = `<p class="rank-empty" data-empty-ranking>랭킹을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.</p>`;
+            return;
+        }
+        const ranking = normalizeStudyRanking(result.value, period);
+        if (ranking === null) {
+            if (rankingMeta) rankingMeta.textContent = "응답 오류";
+            rankingList.innerHTML = `<p class="rank-empty" data-empty-ranking>랭킹 응답을 확인할 수 없습니다.</p>`;
+            return;
+        }
+
+        if (rankingMeta) {
+            rankingMeta.textContent = `${rankingPeriodLabel(period, dailyDate)} · ${rankingCoverageLabel(period, ranking.includedThroughDate)} · ${ranking.rankedMemberCount}명 참여`;
+        }
+        if (ranking.entries.length === 0) {
+            rankingList.innerHTML = `<p class="rank-empty" data-empty-ranking>${rankingPeriodLabel(period, dailyDate)} 학습 기록이 아직 없습니다.</p>`;
+            return;
+        }
+        rankingList.innerHTML = renderRankingBoard(ranking.entries);
+        const mine = ranking.myRanking.ranked ? ranking.myRanking.ranking : null;
+        if (mine !== null && myRankingCard) {
+            myRankingCard.hidden = false;
+            myRankingCard.innerHTML = `<strong>내 순위 ${mine.rank}위</strong><span>${escapeHtml(mine.displayName || "대표 캐릭터 미설정")}</span><em>${formatDuration(mine.studySeconds)}${mine.timerRunning ? " · 진행 중" : ""}</em>`;
+        }
+    }
+
+    renderRankingResult(results.rankings, "TODAY");
+    let rankingRequestSequence = 0;
+    async function loadRankingPeriod(period, dailyDate = null) {
+        const requestSequence = ++rankingRequestSequence;
+        const label = rankingPeriodLabel(period, dailyDate);
+        if (rankingMeta) rankingMeta.textContent = `${label} · 불러오는 중`;
+        rankingList.innerHTML = `<p class="rank-empty" data-empty-ranking>랭킹을 불러오는 중입니다.</p>`;
+        try {
+            const value = await requestStudyRanking(api, period, new Date(), dailyDate);
+            if (requestSequence !== rankingRequestSequence) return;
+            renderRankingResult({status: "fulfilled", value}, period, dailyDate);
+        } catch (error) {
+            if (requestSequence !== rankingRequestSequence) return;
+            renderRankingResult({status: "rejected", reason: error}, period, dailyDate);
+        }
+    }
+
+    rankingPeriodButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+            const period = button.dataset.rankingPeriod;
+            rankingPeriodButtons.forEach((candidate) => {
+                const active = candidate === button;
+                candidate.classList.toggle("is-active", active);
+                candidate.setAttribute("aria-selected", String(active));
+            });
+            rankingDateField?.classList.remove("is-active");
+            loadRankingPeriod(period);
+        });
+    });
+
+    rankingDateInput?.addEventListener("change", () => {
+        if (!rankingDateInput.value) return;
+        rankingPeriodButtons.forEach((button) => {
+            button.classList.remove("is-active");
+            button.setAttribute("aria-selected", "false");
+        });
+        rankingDateField?.classList.add("is-active");
+        loadRankingPeriod("DAILY", rankingDateInput.value);
+    });
 
 }
 

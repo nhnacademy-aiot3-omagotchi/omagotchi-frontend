@@ -8,7 +8,7 @@ function InteractiveAiAssistantPanel({ initialOpen = false }) {
       <AiAssistantPanel
         open={open}
         setOpen={setOpen}
-        characterImage="/images/characters/night/Light_Coral_eye3.gif"
+        characterImage="/images/characters/night/Light_Coral_eye.gif"
         characterName="m00n"
       />
     </div>

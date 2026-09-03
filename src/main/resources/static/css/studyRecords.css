@@ -19,13 +19,17 @@
 }
 
 .study-record-load-error,
-.study-record-action-error {
+.study-record-action-error,
+.home-overlay p.study-record-load-error,
+.home-overlay p.study-record-action-error,
+.study-records p.study-record-load-error,
+.study-records p.study-record-action-error {
     margin: 0;
     padding: 12px 14px;
     border: 1px solid var(--ui-danger, #c73f52);
     border-radius: 14px;
     background: var(--ui-danger-soft, #fff0f2);
-    color: var(--ui-danger, #c73f52);
+    color: var(--ui-danger, #c73f52) !important;
     font-size: 13px;
     font-weight: 800;
 }
