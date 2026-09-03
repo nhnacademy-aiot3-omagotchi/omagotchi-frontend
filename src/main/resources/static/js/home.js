@@ -1129,8 +1129,10 @@ async function submitCommunityPost(form) {
     }
 
     if (result.action === "updated") {
-        await openCommunityDetail(form.dataset.communityPostId);
-        showHomeToast(result.message);
+        const opened = await openCommunityDetail(form.dataset.communityPostId);
+        if (opened) {
+            showHomeToast(result.message);
+        }
         return;
     }
 
@@ -1142,10 +1144,23 @@ async function openCommunityDetail(postId) {
     const viewSequence = ++communityViewSequence;
     renderCommunityOverlay("게시글", `<p class="overlay-community-loading">게시글을 불러오는 중입니다.</p>`);
 
-    const post = await api.community.getPost(postId);
+    let post;
+    try {
+        post = await api.community.getPost(postId);
+    } catch {
+        // 사용자가 이미 다른 화면으로 이동했다면 늦은 오류 응답으로 현재 화면을 덮지 않는다.
+        if (viewSequence !== communityViewSequence) {
+            return false;
+        }
+
+        const message = "게시글을 불러오지 못했습니다.";
+        renderCommunityOverlay("게시글", `<p class="overlay-community-error" role="alert">${message}</p>`);
+        showHomeToast(message);
+        return false;
+    }
     // 불러오는 사이에 목록이나 다른 글로 옮겼으면 이 응답은 버린다.
     if (viewSequence !== communityViewSequence) {
-        return;
+        return false;
     }
 
     activeCommunityPost = post;
@@ -1180,6 +1195,7 @@ async function openCommunityDetail(postId) {
     `;
 
     renderCommunityOverlay("게시글", content);
+    return true;
 }
 
 // 홈 화면을 유지한 채 메뉴 내용을 모달 오버레이로 전환
@@ -1340,7 +1356,7 @@ homeOverlayRoot?.addEventListener("click", (event) => {
 
     if (communityPostButton) {
         openCommunityDetail(communityPostButton.dataset.communityPost)
-            .catch((error) => showHomeToast(error.message || "게시글을 불러오지 못했습니다."));
+            .catch(() => showHomeToast("게시글을 불러오지 못했습니다."));
         return;
     }
 

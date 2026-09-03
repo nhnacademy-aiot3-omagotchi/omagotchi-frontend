@@ -1828,7 +1828,7 @@ a {
     font-weight: 900;
 }
 
-거/* 배너의 고정 공지 제목은 상세로 가는 버튼이지만 제목처럼 보여야 한다. */
+/* 배너의 고정 공지 제목은 상세로 가는 버튼이지만 제목처럼 보여야 한다. */
 .overlay-community-pinned-open {
     display: block;
     width: 100%;
