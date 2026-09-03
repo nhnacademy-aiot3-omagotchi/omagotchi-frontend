@@ -49,80 +49,24 @@
     --overlay-accent-strong: #176b46;
 }
 
+/* 조회 결과 높이가 달라져도 중앙 배치 기준이 바뀌지 않도록 외곽 높이를 고정한다. */
+.home-overlay--write {
+    height: min(1040px, calc(100vh - 32px));
+    height: min(1040px, calc(100dvh - 32px));
+}
+
 .home-overlay > .home-overlay-header {
+    /* 생김새(높이·그리드·배경·글자색·sticky)는 전부 panel-header.css 소관이다.
+       여기 남는 건 "오버레이 안에 끼우는 배치" 뿐이다.
+
+       - flex-shrink: .home-overlay 가 세로 flex 라 본문이 길면 머리말이 눌린다.
+       - 음수 margin: .home-overlay 에 좌우 padding 이 있어서, 그걸 거슬러야
+         머리말이 패널 끝까지 채워진다. padding 값과 반드시 같이 움직여야 한다.
+
+       예전에는 여기서 grid 를 2열로 잡는 바람에 닫기 버튼(3번째 자식)이
+       다음 줄로 밀려났다. 그래서 오른쪽에 padding 88px 을 비워두는 편법을 썼다. */
     flex-shrink: 0;
-    position: sticky;
-    top: 0;
-    z-index: 6;
-    min-height: 132px;
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr);
-    justify-content: start;
-    align-items: center;
-    gap: clamp(14px, 2vw, 22px);
     margin: 0 calc(clamp(18px, 3vw, 34px) * -1) clamp(18px, 2.4vw, 26px);
-    padding: clamp(20px, 2.8vw, 30px) clamp(70px, 7vw, 88px) clamp(18px, 2.4vw, 26px) clamp(18px, 3vw, 34px);
-    border-bottom: 1px solid rgba(236, 255, 246, 0.28);
-    background: #23875b;
-}
-
-.home-overlay-icon {
-    width: clamp(50px, 5vw, 64px);
-    height: clamp(50px, 5vw, 64px);
-    display: grid;
-    place-items: center;
-    border: 1px solid rgba(255, 255, 255, 0.64);
-    border-radius: 16px;
-    background: var(--overlay-accent);
-    box-shadow: none;
-}
-
-.home-overlay-icon img {
-    width: 62%;
-    height: 62%;
-    object-fit: contain;
-    image-rendering: pixelated;
-}
-
-.home-overlay-heading {
-    min-width: 0;
-    display: grid;
-    gap: 7px;
-}
-
-.home-overlay .home-overlay-heading h2 {
-    font-size: clamp(30px, 4vw, 50px);
-    line-height: 0.96;
-}
-
-.home-overlay .home-overlay-heading p {
-    margin: 0;
-    color: rgba(255, 255, 255, 0.82);
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    font-size: clamp(12px, 1.2vw, 14px);
-    font-weight: 700;
-}
-
-.home-overlay-close {
-    top: clamp(18px, 2.5vw, 28px);
-    right: clamp(16px, 2.5vw, 28px);
-    z-index: 8;
-    width: 46px;
-    height: 46px;
-    border: 2px solid var(--overlay-ink);
-    border-radius: 13px;
-    background: #ffffff;
-    color: var(--overlay-ink);
-    font-family: var(--game-font);
-    font-size: 24px;
-    line-height: 1;
-    box-shadow: none;
-}
-
-.home-overlay-close:hover,
-.home-overlay-close:focus-visible {
-    background: var(--overlay-accent);
-    transform: translateY(-1px);
 }
 
 .home-overlay-body {
@@ -525,39 +469,6 @@
     width: min(560px, calc(100vw - 32px));
 }
 
-.home-overlay--settings > .home-overlay-header {
-    min-height: 78px;
-    grid-template-columns: minmax(0, 1fr);
-    gap: 0;
-    margin-bottom: 20px;
-    padding: 18px 56px 14px 22px;
-}
-
-.home-overlay--settings .home-overlay-icon {
-    display: none;
-}
-
-.home-overlay--settings .home-overlay-heading h2 {
-    font-size: clamp(28px, 3vw, 34px);
-    line-height: 1;
-}
-
-.home-overlay--settings > .home-overlay-close {
-    top: 20px;
-    right: 20px;
-    width: 32px;
-    height: 32px;
-    border: 0;
-    background: transparent;
-    color: #ffffff;
-    font-size: 20px;
-}
-
-.home-overlay--settings > .home-overlay-close:hover,
-.home-overlay--settings > .home-overlay-close:focus-visible {
-    background: rgba(255, 255, 255, 0.12);
-}
-
 .overlay-settings-panel,
 .overlay-settings-section {
     display: grid;
@@ -644,54 +555,10 @@
     position: relative;
 }
 
-.home-overlay:not(.home-overlay--help):not(.home-overlay--space) > .home-overlay-header {
-    min-height: 78px;
-    grid-template-columns: minmax(0, 1fr);
-    gap: 0;
-    margin-bottom: 20px;
-    padding: 18px 60px 14px 22px;
-}
-
-.home-overlay:not(.home-overlay--help):not(.home-overlay--space) .home-overlay-icon {
-    display: none;
-}
-
-.home-overlay:not(.home-overlay--help):not(.home-overlay--space) .home-overlay-heading h2 {
-    font-size: clamp(28px, 3vw, 36px);
-    line-height: 1;
-}
-
-.home-overlay:not(.home-overlay--help):not(.home-overlay--space) .home-overlay-heading p {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    overflow: hidden;
-    clip-path: inset(50%);
-    white-space: nowrap;
-    border: 0;
-}
-
-.home-overlay:not(.home-overlay--help):not(.home-overlay--space) > .home-overlay-close {
-    top: 19px;
-    right: 18px;
-    width: 40px;
-    height: 40px;
-    border: 0;
-    background: transparent;
-    color: #ffffff;
-    font-size: 20px;
-}
-
 /* Progress */
 .home-overlay--progress {
     width: min(980px, calc(100vw - 32px)) !important;
     min-height: min(680px, calc(100dvh - 32px));
-}
-
-.home-overlay--progress > .home-overlay-header {
-    margin-bottom: 24px !important;
-    border-bottom: 0;
 }
 
 .home-overlay--progress > .home-overlay-body {
@@ -1435,49 +1302,9 @@
     }
 
     .home-overlay > .home-overlay-header {
-        min-height: 108px;
-        gap: 12px;
-        margin: 0 -14px 16px;
-        padding: 16px 58px 14px 14px;
-        border-radius: 14px 14px 0 0;
         flex: 0 0 auto;
-    }
-
-    .home-overlay-icon {
-        width: 46px;
-        height: 46px;
-        border-radius: 13px;
-    }
-
-    .home-overlay .home-overlay-heading h2 {
-        font-size: clamp(26px, 8vw, 36px);
-    }
-
-    .home-overlay .home-overlay-heading p {
-        max-width: 38ch;
-        font-size: 11px;
-    }
-
-    .home-overlay-close {
-        top: 14px;
-        right: 12px;
-        width: 40px;
-        height: 40px;
-    }
-
-    .home-overlay--settings > .home-overlay-header {
-        min-height: 72px;
-        grid-template-columns: minmax(0, 1fr);
-        gap: 0;
-        margin-bottom: 16px;
-        padding: 16px 56px 12px 14px;
-    }
-
-    .home-overlay--settings > .home-overlay-close {
-        top: 12px;
-        right: 10px;
-        width: 40px;
-        height: 40px;
+        /* .home-overlay 의 좌우 padding 이 14px 로 줄어드는 구간 */
+        margin: 0 -14px 16px;
     }
 
     .overlay-settings-row {
@@ -1529,37 +1356,9 @@
 }
 
 @media (max-width: 430px) {
-    .home-overlay > .home-overlay-header {
-        grid-template-columns: 40px minmax(0, 1fr);
-    }
-
-    .home-overlay--settings > .home-overlay-header {
-        min-height: 72px;
-        grid-template-columns: minmax(0, 1fr);
-        margin-bottom: 16px;
-        padding: 16px 56px 12px 14px;
-    }
-
-    .home-overlay--settings > .home-overlay-close {
-        top: 12px;
-        right: 10px;
-        width: 40px;
-        height: 40px;
-    }
-
     .overlay-settings-row {
         min-height: 60px;
         padding: 10px 12px;
-    }
-
-    .home-overlay-icon {
-        width: 40px;
-        height: 40px;
-        border-radius: 11px;
-    }
-
-    .home-overlay .home-overlay-heading p {
-        display: none;
     }
 
     .profile-summary-grid {
@@ -1612,11 +1411,8 @@
     }
 
     .home-overlay > .home-overlay-header {
-        min-height: 90px;
         flex: 0 0 auto;
         margin: 0 -14px 12px;
-        padding: 12px 58px 12px 14px;
-        border-radius: 12px 12px 0 0;
     }
 
     .home-overlay > .home-overlay-body {
@@ -1628,40 +1424,6 @@
         overscroll-behavior: contain;
     }
 
-    .home-overlay-icon {
-        width: 42px;
-        height: 42px;
-    }
-
-    .home-overlay .home-overlay-heading h2 {
-        font-size: 28px;
-    }
-
-    .home-overlay .home-overlay-heading p {
-        display: none;
-    }
-
-    .home-overlay-close {
-        top: 12px;
-        right: 12px;
-        width: 38px;
-        height: 38px;
-    }
-
-    .home-overlay--settings > .home-overlay-header {
-        min-height: 64px;
-        grid-template-columns: minmax(0, 1fr);
-        gap: 0;
-        margin-bottom: 12px;
-        padding: 12px 46px 10px 14px;
-    }
-
-    .home-overlay--settings > .home-overlay-close {
-        top: 8px;
-        right: 8px;
-        width: 40px;
-        height: 40px;
-    }
 }
 
 @media (max-width: 340px) {
@@ -1687,32 +1449,10 @@
 
 /* Compact progress layout must win over the legacy mobile shell rules above. */
 @media (max-width: 760px) {
-    .home-overlay:not(.home-overlay--help):not(.home-overlay--space) > .home-overlay-header {
-        min-height: 68px;
-        grid-template-columns: minmax(0, 1fr);
-        gap: 0;
-        margin: 0 -14px 14px;
-        padding: 17px 56px 13px 14px;
-    }
-
-    .home-overlay:not(.home-overlay--help):not(.home-overlay--space) .home-overlay-heading h2 {
-        font-size: clamp(25px, 8vw, 30px);
-    }
-
-    .home-overlay:not(.home-overlay--help):not(.home-overlay--space) > .home-overlay-close {
-        top: 12px;
-        right: 10px;
-        width: 40px;
-        height: 40px;
-    }
 
     .home-overlay--progress {
         width: min(560px, 100%) !important;
         min-height: 0;
-    }
-
-    .home-overlay--progress > .home-overlay-header {
-        margin-bottom: 10px !important;
     }
 
     .home-overlay--progress > .home-overlay-body {
@@ -1898,12 +1638,6 @@
         width: min(760px, calc(100vw - 16px)) !important;
     }
 
-    .home-overlay--progress > .home-overlay-header {
-        min-height: 60px;
-        margin-bottom: 8px !important;
-        padding-block: 14px 10px;
-    }
-
     .home-overlay--progress > .home-overlay-body {
         max-height: calc(100dvh - 86px);
     }
@@ -1938,11 +1672,6 @@
 .ui-menu-live-panel *::before,
 .ui-menu-live-panel *::after {
     box-sizing: border-box;
-}
-
-.ui-menu-live-panel .ui-menu-live-header {
-    background: linear-gradient(135deg, var(--ui-emerald-500), #5ed99b);
-    color: var(--ui-ink);
 }
 
 .ui-menu-live-panel .ui-menu-live-body {
@@ -1994,17 +1723,6 @@
     border-color: #b9d6c6;
     background: var(--overlay-list-surface);
     color: var(--overlay-list-ink);
-}
-
-.ui-menu-live-panel:is(.home-overlay--progress, .home-overlay--personal, .home-overlay--cohort, .home-overlay--write, .home-overlay--community, .home-overlay--settings) .ui-menu-live-header {
-    border-bottom-color: rgba(18, 56, 42, 0.18);
-    background: #2fc47c;
-    color: #0c3022;
-}
-
-.ui-menu-live-panel:is(.home-overlay--progress, .home-overlay--personal, .home-overlay--cohort, .home-overlay--write, .home-overlay--community, .home-overlay--settings) .ui-menu-live-header :is(h2, p),
-.ui-menu-live-panel:is(.home-overlay--progress, .home-overlay--personal, .home-overlay--cohort, .home-overlay--write, .home-overlay--community, .home-overlay--settings) > .home-overlay-close {
-    color: #0c3022 !important;
 }
 
 .ui-menu-live-panel:is(.home-overlay--progress, .home-overlay--personal, .home-overlay--cohort, .home-overlay--write, .home-overlay--community, .home-overlay--settings) .ui-menu-live-body {
@@ -2246,6 +1964,85 @@
     text-align: right;
 }
 
+.home-team-toolbar {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.home-team-cohort-picker {
+    width: min(320px, 100%);
+}
+
+.home-team-cohort-picker select {
+    width: 100%;
+    min-height: 42px;
+    padding: 0 36px 0 12px;
+    border: 1px solid var(--ui-line);
+    border-radius: 12px;
+    background: #ffffff;
+    color: var(--ui-ink);
+    font: inherit;
+    font-size: 13px;
+    font-weight: 800;
+}
+
+.home-team-state {
+    margin: 0;
+    padding: 18px;
+    border: 1px dashed var(--ui-line-strong);
+    border-radius: 14px;
+    background: #ffffff;
+    color: var(--ui-ink-muted);
+    text-align: center;
+}
+
+.home-team-state.is-error {
+    display: grid;
+    justify-items: center;
+    gap: 10px;
+    border-color: #d8aaaa;
+}
+
+.home-team-state.is-error p {
+    margin: 0;
+}
+
+.home-team-member-preview {
+    min-width: 0;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 5px;
+}
+
+.home-team-member-preview > span {
+    max-width: 130px;
+    overflow: hidden;
+    padding: 5px 8px;
+    border-radius: 999px;
+    background: var(--ui-emerald-50);
+    color: var(--ui-emerald-800);
+    font-size: 11px;
+    font-weight: 800;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.home-team-member-preview .home-team-member-empty {
+    color: var(--ui-ink-muted);
+}
+
+.home-overlay--cohort .ui-party-members li {
+    grid-template-columns: minmax(0, 1fr) auto auto;
+}
+
+.home-overlay--cohort .ui-party-members li > strong {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 @media (max-width: 840px) {
     .home-overlay--cohort .ui-cohort-summary__copy {
         grid-template-columns: 1fr auto;
@@ -2264,7 +2061,7 @@
     }
 
     .home-overlay--cohort .ui-party-members li {
-        grid-template-columns: auto minmax(0, 1fr) auto;
+        grid-template-columns: minmax(0, 1fr) auto auto;
     }
 
     .home-overlay--cohort .ui-party-members li > button {
@@ -2273,6 +2070,14 @@
 
     .home-overlay--cohort .ui-party-management {
         grid-template-columns: 1fr;
+    }
+
+    .home-team-toolbar {
+        justify-content: stretch;
+    }
+
+    .home-team-cohort-picker {
+        width: 100%;
     }
 
     .home-overlay--cohort .ui-party-members ul {
@@ -2529,6 +2334,19 @@
     color: #176b46 !important;
 }
 
+/*
+ * 공지는 자유글과 구별돼야 하므로 강조색을 쓴다.
+ * 위 규칙이 .is-notice를 포함하지 않아, 앞쪽의 반투명 배경
+ * rgba(255, 255, 255, 0.2)가 특정도(선택자 3개)로 살아남아 있었다.
+ * 그 탓에 공지 뱃지만 뒤 초록이 비쳐 자유 뱃지와 다르게 보였다.
+ * 배너 라벨도 늘 공지이므로 같은 색으로 맞춘다.
+ */
+.home-overlay--community .overlay-community-notice > strong,
+.home-overlay--community .overlay-community-type.is-notice {
+    background: var(--overlay-accent-strong);
+    color: #ffffff !important;
+}
+
 /* Settings */
 .home-overlay--settings .overlay-settings-section > h3 {
     color: var(--overlay-list-muted) !important;
@@ -2644,19 +2462,13 @@
    컨테이너를 따라 흐르므로 본문을 내리면 탭도 같이 올라가 사라졌다.
    sticky 로 바꿔 흐름 안에 두고, 스크롤해도 본문 상단에 남게 한다.
    컬럼 수도 5개 고정이었다. 탭이 2개로 줄어 빈 3칸이 배경만 차지했다. */
-/* 헤더는 흘려보내고 탭만 고정한다.
-   헤더와 탭을 동시에 고정하면 둘 다 top:0 이라 탭이 제목을 덮는다. 헤더 높이는
-   clamp(vw) 기반이라 연속적으로 변해서 탭의 top 을 상수로 맞출 수도 없다.
-   제목은 스크롤과 함께 올라가도 되지만 탭은 남아야 하므로 이렇게 나눈다.
-   닫기 버튼은 헤더 밖(.home-overlay 직계)이라 영향을 받지 않는다. */
-.home-overlay--progress > .home-overlay-header {
-    position: static !important;
-}
-
+/* 헤더를 고정하고 탭은 흘려보낸다. 예전과 반대다.
+   예전 주석은 "닫기 버튼은 헤더 밖이라 영향을 받지 않는다"였는데, 그 뒤 닫기 버튼이
+   헤더 안으로 들어왔다(HomeOverlay.jsx). 그래서 헤더를 static 으로 두면 진행 화면에서만
+   닫기 버튼이 스크롤과 함께 사라진다 — 학습기록에서 고쳤던 그 버그가 진행에서 재발한다.
+   탭과 헤더를 동시에 고정하면 둘 다 top:0 이라 겹치므로, 닫기 버튼 쪽을 택했다.
+   탭 고정이 다시 필요하면 헤더 높이를 CSS 변수로 내보내 탭의 top 에 물려야 한다. */
 .home-overlay--progress .overlay-tabs {
-    position: sticky !important;
-    top: 0;
-    z-index: 7;
     right: auto;
     left: auto;
     /* 바는 가로를 채우고 버튼만 내용 폭으로 둔다. 폭을 좁히면 고정된 탭 옆으로
@@ -2676,8 +2488,6 @@
 @media (max-width: 760px) {
     /* 좁은 화면에서는 가로를 채워 탭이 눌리기 쉬운 크기를 유지한다. */
     .home-overlay--progress .overlay-tabs {
-        position: sticky !important;
-        top: 0;
         width: 100% !important;
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }

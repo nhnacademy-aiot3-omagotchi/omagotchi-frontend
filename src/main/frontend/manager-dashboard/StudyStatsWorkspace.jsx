@@ -1,5 +1,4 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import "../../resources/static/css/managerDashboard.css";
 import { StudyStatsStudentList, formatDuration } from "./StudyStatsStudentList.jsx";
 
 const DEFAULT_BOUNDARY_NOTE = "Asia/Seoul 오전 4시를 하루의 시작으로 집계합니다.";
@@ -19,11 +18,11 @@ export function StudyStatsWorkspace({
   memberProfiles = [],
   loading = false,
   error = null,
-  initialPeriod = 7,
+  period = 7,
   onPeriodChange,
-  onSelectMember
+  onSelectMember,
+  embedded = false
 }) {
-  const [period, setPeriod] = useState(initialPeriod);
   const [search, setSearch] = useState("");
 
   const trendCanvasRef = useRef(null);
@@ -37,7 +36,6 @@ export function StudyStatsWorkspace({
   // 기간 변경 핸들러
   const handlePeriodChange = (e) => {
     const nextPeriod = Number(e.target.value);
-    setPeriod(nextPeriod);
     onPeriodChange?.(nextPeriod);
   };
 
@@ -58,8 +56,7 @@ export function StudyStatsWorkspace({
         || profileByMembershipId.get(String(stat.cohortMembershipId));
       const name = stat.nickname
         || profile?.nickname
-        || profile?.name
-        || `수강생-${String(stat.userId || stat.cohortMembershipId).slice(0, 8)}`;
+        || "닉네임 미설정";
       return {
         ...stat,
         name,
@@ -199,8 +196,8 @@ export function StudyStatsWorkspace({
     ? Math.round((participantCount * 100) / activeStudentCount)
     : 0;
 
-  return (
-    <section className="dashboard-panel is-active" data-dashboard-panel="studyStats">
+  const content = (
+    <>
       <div className="panel-heading study-statistics-heading">
         <div>
           <span>공부 통계</span>
@@ -219,7 +216,7 @@ export function StudyStatsWorkspace({
             <input
               type="search"
               data-studystats-search
-              placeholder="이름 또는 이메일"
+              placeholder="이름 검색"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -280,6 +277,14 @@ export function StudyStatsWorkspace({
         search={search}
         onSelectMember={onSelectMember}
       />
+    </>
+  );
+
+  if (embedded) return content;
+
+  return (
+    <section className="dashboard-panel is-active" data-dashboard-panel="studyStats">
+      {content}
     </section>
   );
 }

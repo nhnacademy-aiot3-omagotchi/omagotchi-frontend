@@ -71,6 +71,25 @@
         }).format(new Date(value));
     }
 
+    function formatKstDateTime(value) {
+        if (!value) return "-";
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return "-";
+        const parts = Object.fromEntries(
+            new Intl.DateTimeFormat("en-US", {
+                timeZone: "Asia/Seoul",
+                year: "numeric",
+                month: "2-digit",
+                day: "2-digit",
+                hour: "2-digit",
+                minute: "2-digit",
+                second: "2-digit",
+                hourCycle: "h23"
+            }).formatToParts(date).map((part) => [part.type, part.value])
+        );
+        return `${parts.year}-${parts.month}-${parts.day} ${parts.hour}:${parts.minute}:${parts.second}`;
+    }
+
     function createTimelineBar(template, record, position) {
         const bar = template.content.firstElementChild.cloneNode(true);
         const label = `${formatKstTime(record.startTime)}부터 ${formatKstTime(record.endTime)}, ${formatDuration(record.studySeconds)}`;
@@ -91,7 +110,7 @@
         article.querySelector("[data-detail-record-duration]").textContent = formatDuration(record.studySeconds);
         const updatedAtElement = article.querySelector("[data-detail-record-updated-at]");
         if (updatedAtElement) {
-            updatedAtElement.textContent = formatDuration(record.studySeconds);
+            updatedAtElement.textContent = formatKstDateTime(record.updatedAt);
         }
         return article;
     }
@@ -271,7 +290,9 @@
 
         function render() {
             elements.name.textContent = state.memberName;
-            elements.email.textContent = state.memberEmail;
+            if (elements.email) {
+                elements.email.textContent = state.memberEmail;
+            }
             elements.period.textContent = `${state.periodDays}일간`;
             elements.periodButtons.forEach((button) => {
                 button.classList.toggle("is-active", Number(button.dataset.detailPeriodDays) === state.periodDays);

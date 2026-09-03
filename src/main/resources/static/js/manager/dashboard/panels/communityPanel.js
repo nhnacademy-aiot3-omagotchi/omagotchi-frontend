@@ -2,7 +2,6 @@
     function createCommunityItem(template, item) {
         const article = template.content.firstElementChild.cloneNode(true);
         const action = article.querySelector("[data-community-action]");
-        article.classList.toggle("is-reported", Boolean(item.reports));
         article.querySelector("[data-community-type]").textContent = item.type === "NOTICE" ? "공지" : "자유";
         article.querySelector("[data-community-title]").textContent = `${item.pinned ? "고정 · " : ""}${item.title ?? ""}`;
         article.querySelector("[data-community-content]").textContent = new Date(item.createdAt).toLocaleString("ko-KR");
@@ -51,12 +50,12 @@
             const content = elements.form.elements.namedItem("content").value.trim();
             if (!title || !content) return;
             try {
-                await window.OmagotchiApi.community.createPost({
+                // 대상 기수를 경로로 지정한다. 관리자는 여러 기수를 다루므로
+                // Session 승인 기수를 쓰는 사용자 경로로는 선택한 기수에 쓸 수 없다.
+                await window.OmagotchiApi.manager.createNotice(store.getState().selectedCohortId, {
                     type: "NOTICE",
                     title,
-                    content,
-                    scope: "COHORT",
-                    cohortId: store.getState().selectedCohortId
+                    content
                 });
                 elements.form.reset();
                 elements.form.hidden = true;
@@ -72,7 +71,11 @@
             const post = getRows().find((item) => String(item.postId) === button.dataset.communityAction);
             if (!post) return;
             try {
-                await window.OmagotchiApi.manager.updatePostPin(post.postId, !post.pinned);
+                await window.OmagotchiApi.manager.updatePostPin(
+                    store.getState().selectedCohortId,
+                    post.postId,
+                    !post.pinned
+                );
                 await refreshDashboard();
             } catch (error) {
                 console.error("게시글 고정 상태를 변경하지 못했습니다.", error);

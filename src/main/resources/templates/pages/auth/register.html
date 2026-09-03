@@ -9,23 +9,27 @@
 
     <link rel="icon" type="image/gif" sizes="32x32" href="/favicon_11.gif" th:href="@{/favicon_11.gif}" />
     <link rel="stylesheet" href="/css/gameFont.css" th:href="@{/css/gameFont.css}" />
-    <link rel="stylesheet" href="/css/ui/design-system.css?v=20260829-1" th:href="@{/css/ui/design-system.css(v='20260829-1')}" />
-    <link rel="stylesheet" href="/css/auth.css?v=20260829-1" th:href="@{/css/auth.css(v='20260829-1')}" />
+    <link rel="stylesheet" href="/css/ui/design-system.css?v=20260903-1" th:href="@{/css/ui/design-system.css(v='20260903-1')}" />
+    <link rel="stylesheet" href="/css/auth.css?v=20260903-1" th:href="@{/css/auth.css(v='20260903-1')}" />
     <link rel="stylesheet" href="/css/passwordToggle.css" th:href="@{/css/passwordToggle.css}" />
     <link rel="stylesheet" href="/css/cursor.css" th:href="@{/css/cursor.css}" />
 </head>
 <body>
 <main class="login-page auth-page">
     <section class="login-card auth-card ui-auth-shell" aria-labelledby="register-title">
-        <aside class="ui-auth-aside" aria-label="오마고치 서비스 소개">
+        <aside class="ui-auth-aside auth-hero" aria-label="오마고치 소개">
             <a class="auth-back-link" href="/" aria-label="인덱스로 돌아가기">←</a>
-            <div>
-                <p class="auth-brand ui-auth-brand">omagotchi</p>
-                <h2>새로운 학습 여정을<br />시작해 보세요</h2>
-                <p>하나의 계정으로 출석, 학습 기록과 캐릭터 성장을 관리합니다.</p>
+
+            <!-- 캐릭터는 장식이다. 페이지 제목은 오른쪽 폼의 h1 이 갖는다. -->
+            <div class="auth-hero-stage" aria-hidden="true">
+                <img class="auth-hero-character" src="/images/characters/sprout/sprout_eye.gif"
+                     th:src="@{/images/characters/sprout/sprout_eye.gif}" alt="" />
+                <span class="auth-hero-shadow"></span>
             </div>
-            <div class="ui-auth-aside-badges" aria-label="주요 기능">
-                <span>#집중타이머</span><span>#출석기록</span><span>#캐릭터성장</span>
+
+            <div class="auth-hero-copy">
+                <p class="auth-brand ui-auth-brand">omagotchi</p>
+                <p class="auth-hero-line">같이 공부할 오마고치가 기다려요</p>
             </div>
         </aside>
 

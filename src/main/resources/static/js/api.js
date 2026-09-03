@@ -168,6 +168,38 @@
         access: {
             getContext: () => request("/cohorts/me/access-context")
         },
+        teams: {
+            create: (payload) => request("/teams", {
+                method: "POST",
+                body: payload
+            }),
+            mine: () => request("/teams/me"),
+            detail: (teamId) => request(`/teams/${encodeURIComponent(teamId)}`),
+            memberCandidates: (teamId, query) => request(withQuery(
+                `/teams/${encodeURIComponent(teamId)}/member-candidates`,
+                {query}
+            )),
+            addMember: (teamId, targetUserId) => request(
+                `/teams/${encodeURIComponent(teamId)}/members`,
+                {method: "POST", body: {targetUserId}}
+            ),
+            kickMember: (teamId, memberId) => request(
+                `/teams/${encodeURIComponent(teamId)}/members/${encodeURIComponent(memberId)}`,
+                {method: "DELETE"}
+            ),
+            leave: (teamId) => request(
+                `/teams/${encodeURIComponent(teamId)}/leave`,
+                {method: "POST"}
+            ),
+            delegate: (teamId, memberId) => request(
+                `/teams/${encodeURIComponent(teamId)}/members/${encodeURIComponent(memberId)}/delegate`,
+                {method: "POST"}
+            ),
+            disband: (teamId) => request(
+                `/teams/${encodeURIComponent(teamId)}`,
+                {method: "DELETE"}
+            )
+        },
         character: {
             list: () => request("/gamification/characters"),
             saveSelection: (payload) => request("/gamification/characters/representative", {
@@ -324,6 +356,8 @@
                 {maxRank}
             ))
         },
+        // 게시판은 기수에 속한다. 대상 기수는 BFF가 Session 승인 기수에서 정하므로
+        // 여기에서는 cohortId를 보내지 않는다.
         community: {
             listPosts: (query = {}) => request(withQuery("/community/posts", query)),
             getPost: (postId) => request(`/community/posts/${encodeURIComponent(postId)}`),
@@ -418,7 +452,18 @@
                 `/admin/cohorts/${encodeURIComponent(cohortId)}/study-statistics/members/${encodeURIComponent(cohortMembershipId)}/records`,
                 { date }
             )),
-            updatePostPin: (postId, pinned) => request(`/admin/community/posts/${encodeURIComponent(postId)}/pin`, {method: "PATCH", body: {pinned}}),
+            getNotices: (cohortId, query = {}) => request(withQuery(
+                `/admin/cohorts/${encodeURIComponent(cohortId)}/community/posts`,
+                {type: "NOTICE", ...query}
+            )),
+            createNotice: (cohortId, payload) => request(
+                `/admin/cohorts/${encodeURIComponent(cohortId)}/community/posts`,
+                {method: "POST", body: payload}
+            ),
+            updatePostPin: (cohortId, postId, pinned) => request(
+                `/admin/cohorts/${encodeURIComponent(cohortId)}/community/posts/${encodeURIComponent(postId)}/pin`,
+                {method: "PATCH", body: {pinned}}
+            ),
             getSensorSpaceSeries: (location, measurement, seriesWindow, options = {}) => request(
                 withQuery("/admin/sensors/space-series", {location, measurement, window: seriesWindow}),
                 options

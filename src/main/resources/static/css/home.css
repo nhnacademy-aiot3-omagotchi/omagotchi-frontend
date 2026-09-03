@@ -822,14 +822,6 @@ a {
     width: min(1160px, calc(100vw - 40px));
 }
 
-.home-overlay header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 18px;
-    margin-bottom: 22px;
-}
-
 .home-overlay h2 {
     margin: 0;
     color: var(--white);
@@ -854,9 +846,6 @@ a {
 }
 
 .home-overlay-close {
-    position: absolute;
-    top: 22px;
-    right: 24px;
     width: 44px;
     height: 44px;
     border: 0;
@@ -1826,6 +1815,24 @@ a {
     color: var(--ink);
     font-size: 18px;
     font-weight: 900;
+}
+
+/* 배너의 고정 공지 제목은 상세로 가는 버튼이지만 제목처럼 보여야 한다. */
+.overlay-community-pinned-open {
+    display: block;
+    width: 100%;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.overlay-community-pinned-open:hover,
+.overlay-community-pinned-open:focus-visible {
+    text-decoration: underline;
 }
 
 .overlay-community-notice p,
@@ -3742,11 +3749,6 @@ a {
 
     .home-overlay h2 {
         font-size: 38px;
-    }
-
-    .home-overlay-close {
-        top: 14px;
-        right: 14px;
     }
 
     .overlay-quest header,

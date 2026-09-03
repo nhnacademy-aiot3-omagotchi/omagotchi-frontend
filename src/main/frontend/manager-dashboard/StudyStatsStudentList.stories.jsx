@@ -1,5 +1,6 @@
 import React from "react";
 import { expect, fn, userEvent, within } from "storybook/test";
+import "../../resources/static/css/managerDashboard.css";
 import { StudyStatsStudentList } from "./StudyStatsStudentList.jsx";
 
 const mockMembers = [
@@ -101,7 +102,6 @@ export const Default = {
 
     // 테이블 헤더 확인
     expect(canvas.getByText("구성원")).toBeInTheDocument();
-    expect(canvas.getByText("이메일")).toBeInTheDocument();
     expect(canvas.getByText("오늘 학습")).toBeInTheDocument();
     expect(canvas.getByText("조회 기간 누적")).toBeInTheDocument();
     expect(canvas.getByText("학습일")).toBeInTheDocument();
@@ -115,8 +115,7 @@ export const Default = {
     expect(canvas.getByText("정새싹")).toBeInTheDocument();
     expect(canvas.getByText("강지각")).toBeInTheDocument();
 
-    // 학습 시간 및 이메일 표시 확인
-    expect(canvas.getByText("student3@omagotchi.site")).toBeInTheDocument();
+    // 학습 시간 표시 확인
     expect(canvas.getByText("6시간 30분")).toBeInTheDocument();
     expect(canvas.getByText("21시간")).toBeInTheDocument();
   }
@@ -233,7 +232,6 @@ export const SearchFiltering = {
 
     // "이열공" 학생만 노출되어야 함
     expect(canvas.getByText("이열공")).toBeInTheDocument();
-    expect(canvas.getByText("student1@omagotchi.site")).toBeInTheDocument();
 
     // 다른 학생들은 노출되지 않아야 함
     expect(canvas.queryByText("최코딩")).not.toBeInTheDocument();
@@ -243,18 +241,17 @@ export const SearchFiltering = {
   }
 };
 
-/** 이메일 검색 필터링 스토리 */
-export const EmailSearchFiltering = {
-  name: "이메일 검색 필터링",
+/** 이름 부분 검색 필터링 스토리 */
+export const PartialNameSearchFiltering = {
+  name: "이름 부분 검색 필터링",
   args: {
     members: mockMembers,
-    search: "student4@"
+    search: "새싹"
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
 
     expect(canvas.getByText("정새싹")).toBeInTheDocument();
-    expect(canvas.getByText("student4@omagotchi.site")).toBeInTheDocument();
     expect(canvas.queryByText("이열공")).not.toBeInTheDocument();
   }
 };

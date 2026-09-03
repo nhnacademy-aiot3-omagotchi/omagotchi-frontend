@@ -71,18 +71,21 @@ public class IdentityRestAdminAuditClient implements IdentityAdminAuditClient {
     }
 
     /*
-     * 이름은 없어도 되지만 나머지는 없으면 안 된다. 사유나 시각이 빠진 감사 한 줄은
-     * 화면에 "누가 무엇을 했는지 모르겠다"를 그리게 되므로 응답 계약 위반으로 끊는다.
+     * 감사 한 줄이 성립하려면 "언제 · 누가 · 누구에게 · 무엇을" 네 가지가 있어야 한다.
+     * 그 넷이 빠지면 화면에 그릴 수 없는 행이므로 응답 계약 위반으로 끊는다.
+     *
+     * 반대로 beforeValue, afterValue, reason 은 비어 있는 것이 정상인 경우가 있다.
+     * 최초 권한 부여에는 이전 값이 없고, 사유를 남기지 않는 작업도 있다.
+     * 이 셋까지 필수로 두었더니 그런 행 하나에 감사 패널 전체가 오류로 막혔다.
+     * 값이 없다는 사실은 화면이 표기하고, 여기서는 null 로 통과시킨다.
+     *
+     * auditType 도 마찬가지다. 화면이 쓰지 않는 분류 값이라 없다고 행을 버릴 이유가 없다.
      */
     private static IdentityAdminAudit toAudit(IdentityAdminAuditResponse audit) {
         if (audit == null
-                || audit.auditType() == null || audit.auditType().isBlank()
                 || audit.action() == null || audit.action().isBlank()
                 || audit.actorUserId() == null
                 || audit.targetUserId() == null
-                || audit.beforeValue() == null || audit.beforeValue().isBlank()
-                || audit.afterValue() == null || audit.afterValue().isBlank()
-                || audit.reason() == null || audit.reason().isBlank()
                 || audit.occurredAt() == null) {
             throw new BusinessException(
                     CommonErrorCode.DOWNSTREAM_INVALID_RESPONSE,
@@ -96,10 +99,15 @@ public class IdentityRestAdminAuditClient implements IdentityAdminAuditClient {
                 audit.actorName(),
                 audit.targetUserId(),
                 audit.targetName(),
-                audit.beforeValue(),
-                audit.afterValue(),
-                audit.reason(),
+                blankToNull(audit.beforeValue()),
+                blankToNull(audit.afterValue()),
+                blankToNull(audit.reason()),
                 audit.occurredAt()
         );
+    }
+
+    /** 빈 문자열과 null 을 한 가지로 모은다. 화면이 두 경우를 따로 다루지 않게 한다. */
+    private static String blankToNull(String value) {
+        return value == null || value.isBlank() ? null : value;
     }
 }

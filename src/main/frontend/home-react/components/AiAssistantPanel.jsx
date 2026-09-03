@@ -1,7 +1,23 @@
 import React, {useEffect, useRef, useState} from "react";
+import { PanelHeader } from "../../ui/PanelHeader.jsx";
 import PropTypes from "prop-types";
 import {streamAiChat} from "./aiAssistantClient.js";
 import {AI_ASSISTANT_TIPS, AI_ASSISTANT_TOOLS, AI_ASSISTANT_UPCOMING} from "./aiAssistantGuide.js";
+
+/**
+ * 답변은 평문으로 받아 그대로 보여준다. 마크다운을 해석하지 않으므로 문법 기호가 그대로 노출된다.
+ * 근본 해결은 모델이 마크다운을 쓰지 않게 하는 것이고, 여기서는 그 지시가 새어 나온 경우만 막는다.
+ * 그래서 우선 세 가지만 다룬다(전체 마크다운 처리가 아님)
+ * 더 많은 기호를 잡지 않는 이유: 규칙을 늘릴수록 마크다운 파서를 다시 쓰게 되고, "- 날씨: 맑음" 은 평문으로도 자연스러워 지우면 오히려 읽기 나빠진다.
+ * 사용자가 기호를 그대로 쓴 경우와도 구분할 수 없다. 새 문법이 실제로 자주 관찰되면 그때 추가한다.
+ * HTML로 해석하지 않고 문자열만 다듬으므로 렌더링 경로의 안전성은 그대로다.
+ */
+function toPlainText(text) {
+    return text
+        .replace(/\*\*/g, "")          // **강조**
+        .replace(/^#{1,6}\s+/gm, "")   // ### 제목
+        .replace(/^\s*---+\s*$/gm, "");// --- 구분선
+}
 
 export function AiAssistantPanel({
                                      open = false,
@@ -181,34 +197,36 @@ export function AiAssistantPanel({
                 id="home-ai-assistant-panel"
                 aria-hidden={!open}
             >
-                <header className="home-ai-panel-heading">
-          <span className="home-ai-panel-icon" aria-hidden="true">
-            <img src="/images/app/commu.png" alt=""/>
-          </span>
-                    <span className="home-ai-panel-title">
-            <strong>AI 도우미</strong>
-            <small>학습을 돕는 오마고치 AI</small>
-          </span>
-                    <button
-                        ref={helpButtonRef}
-                        className={guideOpen ? "home-ai-panel-help is-active" : "home-ai-panel-help"}
-                        type="button"
-                        aria-label={guideOpen ? "AI 도우미 사용법 닫기" : "AI 도우미 사용법"}
-                        aria-expanded={guideOpen}
-                        aria-controls="home-ai-guide"
-                        onClick={() => setGuideOpen((current) => !current)}
-                    >
-                        ?
-                    </button>
-                    <button
-                        className="home-ai-panel-close"
-                        type="button"
-                        aria-label="AI 도우미 닫기"
-                        onClick={() => setOpen(false)}
-                    >
-                        ×
-                    </button>
-                </header>
+                {/* 사용법(?) 버튼은 홈 전체에서 여기에만 있다. 다른 패널은 닫기만 넘긴다. */}
+                <PanelHeader
+                    icon="/images/app/commu.png"
+                    title="AI 도우미"
+                    description="학습을 돕는 오마고치 AI"
+                    className="home-ai-panel-heading"
+                    actions={(
+                        <button
+                            ref={helpButtonRef}
+                            className={guideOpen ? "home-ai-panel-help is-active" : "home-ai-panel-help"}
+                            type="button"
+                            aria-label={guideOpen ? "AI 도우미 사용법 닫기" : "AI 도우미 사용법"}
+                            aria-expanded={guideOpen}
+                            aria-controls="home-ai-guide"
+                            onClick={() => setGuideOpen((current) => !current)}
+                        >
+                            ?
+                        </button>
+                    )}
+                    closeButton={(
+                        <button
+                            className="home-ai-panel-close"
+                            type="button"
+                            aria-label="AI 도우미 닫기"
+                            onClick={() => setOpen(false)}
+                        >
+                            ×
+                        </button>
+                    )}
+                />
                 {/* 사용법이 덮고 있는 동안에는 아래 대화가 읽히거나 탭으로 잡히지 않게 한다. */}
                 <div
                     className="home-ai-conversation"
@@ -261,7 +279,7 @@ export function AiAssistantPanel({
                                     <span className="home-ai-message-author">
                                         {isAssistant ? currentCharacter.name : "나"}
                                     </span>
-                                    <p>{message.text}</p>
+                                    <p>{isAssistant ? toPlainText(message.text) : message.text}</p>
                                 </div>
                             </div>
                         );

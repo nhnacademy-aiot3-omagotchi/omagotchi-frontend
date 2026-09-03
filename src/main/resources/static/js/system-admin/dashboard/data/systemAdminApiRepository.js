@@ -94,30 +94,44 @@ export function formatAuditTime(value) {
         + ` ${pad(at.getHours())}:${pad(at.getMinutes())}`;
 }
 
+/** 값이 없는 항목은 화면에서 자리를 비우지 않고 없다고 말한다. */
+const EMPTY_VALUE = "—";
+const EMPTY_REASON = "사유 없음";
+
+function text(value) {
+    return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
 /**
  * 감사 한 줄을 화면 모델로 옮긴다.
  *
  * 형식이 깨진 행은 버리지 않고 던진다. 감사 로그에서 행을 조용히 빼면 "기록이
  * 없었다"와 "보여 주지 못했다"를 구분할 수 없게 되고, 그건 감사 로그의 존재 이유를
  * 무너뜨린다. 차라리 패널 전체가 오류를 말하게 둔다.
+ *
+ * 다만 필수로 보는 범위는 "언제 · 누가 · 누구에게 · 무엇을" 넷뿐이다.
+ * beforeValue, afterValue, reason 은 비어 있는 것이 정상인 경우가 있다.
+ * 최초 권한 부여에는 이전 값이 없고, 사유를 남기지 않는 작업도 있다.
+ * 예전에는 이 셋까지 필수로 두어 그런 행 하나에 감사 패널 전체가 오류로 막혔다.
  */
 export function normalizeAudit(audit) {
     if (!audit
-        || typeof audit.action !== "string" || !audit.action.trim()
-        || typeof audit.actorUserId !== "string" || !audit.actorUserId.trim()
-        || typeof audit.targetUserId !== "string" || !audit.targetUserId.trim()
-        || typeof audit.beforeValue !== "string" || !audit.beforeValue.trim()
-        || typeof audit.afterValue !== "string" || !audit.afterValue.trim()
-        || typeof audit.reason !== "string" || !audit.reason.trim()) {
+        || !text(audit.action)
+        || !text(audit.actorUserId)
+        || !text(audit.targetUserId)
+        || !text(audit.occurredAt)) {
         throw new Error("감사 로그 응답 형식이 올바르지 않습니다.");
     }
     // 이름은 없을 수 있다. 계정이 지워졌거나 조회에 실패해도 누가 했는지는 UUID 가 남긴다.
-    const target = audit.targetName || audit.targetUserId;
-    const actor = audit.actorName || audit.actorUserId;
+    const target = text(audit.targetName) || audit.targetUserId;
+    const actor = text(audit.actorName) || audit.actorUserId;
+    const before = text(audit.beforeValue) || EMPTY_VALUE;
+    const after = text(audit.afterValue) || EMPTY_VALUE;
+    const reason = text(audit.reason) || EMPTY_REASON;
     return {
         time: formatAuditTime(audit.occurredAt),
         action: AUDIT_ACTION_LABELS[audit.action] || audit.action,
-        detail: `${target} · ${audit.beforeValue} → ${audit.afterValue} · ${audit.reason}`,
+        detail: `${target} · ${before} → ${after} · ${reason}`,
         actor
     };
 }
