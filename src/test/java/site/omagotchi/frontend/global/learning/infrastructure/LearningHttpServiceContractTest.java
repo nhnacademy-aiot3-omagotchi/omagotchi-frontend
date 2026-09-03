@@ -15,12 +15,23 @@ import org.springframework.web.client.RestClient;
 import org.springframework.web.client.support.RestClientAdapter;
 import org.springframework.web.service.invoker.HttpServiceProxyFactory;
 import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.json.JsonMapper;
 import site.omagotchi.frontend.cohort.infrastructure.response.UserAccessContextResponse;
+import site.omagotchi.frontend.learning.infrastructure.response.LearningSelectableLabResponse;
+import site.omagotchi.frontend.study.infrastructure.request.LearningCreateStudyRecordRequest;
+import site.omagotchi.frontend.study.infrastructure.request.LearningUpdateStudyRecordRequest;
+import site.omagotchi.frontend.study.infrastructure.response.LearningCurrentTimerResponse;
+import site.omagotchi.frontend.study.infrastructure.response.LearningDailyStudyRecordsResponse;
+import site.omagotchi.frontend.study.infrastructure.response.LearningMonthlyStudySecondsResponse;
+import site.omagotchi.frontend.study.infrastructure.response.LearningStartTimerResponse;
+import site.omagotchi.frontend.study.infrastructure.response.LearningStudyRecordResponse;
+import site.omagotchi.frontend.study.infrastructure.response.LearningTimerState;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
+import java.util.List;
+import java.time.LocalDateTime;
+import java.time.YearMonth;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -43,8 +54,6 @@ class LearningHttpServiceContractTest {
     private static final UUID TIMER_RUN_ID = UUID.fromString(
             "20000000-0000-0000-0000-000000000001"
     );
-    private static final JsonMapper JSON_MAPPER = JsonMapper.builder().build();
-
     private MockRestServiceServer server;
     private LearningHttpService service;
 
@@ -83,6 +92,32 @@ class LearningHttpServiceContractTest {
         assertThat(response.isCohortManager()).isTrue();
         assertThat(response.managedCohorts()).extracting("cohortId").containsExactly(7L);
         assertThat(response.managedCohorts().getFirst().status()).isEqualTo("PREPARING");
+        server.verify();
+    }
+
+    @Test
+    @DisplayName("선택 가능 실습실 경로와 정원 응답 계약을 사용한다")
+    void getsSelectableLabs() {
+        server.expect(once(), requestTo(BASE_URL + "/api/v1/cohorts/7/spaces/labs"))
+                .andExpect(method(HttpMethod.GET))
+                .andExpect(header(HttpHeaders.AUTHORIZATION, BEARER))
+                .andRespond(withSuccess("""
+                        [{
+                          "spaceId": 11,
+                          "name": "3기 실습실",
+                          "capacity": 2,
+                          "reservedCount": 2
+                        }]
+                        """, MediaType.APPLICATION_JSON));
+
+        ResponseEntity<List<LearningSelectableLabResponse>> response =
+                service.getSelectableLabs(BEARER, 7L);
+
+        assertThat(response.getBody()).singleElement().satisfies(lab -> {
+            assertThat(lab.spaceId()).isEqualTo(11L);
+            assertThat(lab.capacity()).isEqualTo(2);
+            assertThat(lab.reservedCount()).isEqualTo(2L);
+        });
         server.verify();
     }
 
@@ -126,6 +161,8 @@ class LearningHttpServiceContractTest {
                     .andRespond(withSuccess("""
                             [{
                               "id": 42,
+                              "type": "ROUTINE",
+                              "code": "ATTENDANCE",
                               "title": "출석하기",
                               "targetCount": 1,
                               "progressCount": 1,
@@ -138,7 +175,7 @@ class LearningHttpServiceContractTest {
 
             assertThat(response).hasSize(1);
             assertThat(response.get(0).get("id").asLong()).isEqualTo(42L);
-            assertThat(response.get(0).get("status").asText()).isEqualTo("COMPLETED");
+            assertThat(response.get(0).get("status").asString()).isEqualTo("COMPLETED");
             server.verify();
         }
 
@@ -249,19 +286,41 @@ class LearningHttpServiceContractTest {
             server.expect(once(), requestTo(BASE_URL
                             + "/api/v1/cohorts/7/study-records/" + STUDY_RECORD_ID))
                     .andExpect(header(HttpHeaders.AUTHORIZATION, BEARER))
-                    .andRespond(withSuccess("{\"id\":\"" + STUDY_RECORD_ID + "\"}", MediaType.APPLICATION_JSON));
+                    .andRespond(withSuccess(studyRecordBody(2L), MediaType.APPLICATION_JSON));
             server.expect(once(), requestTo(BASE_URL
                             + "/api/v1/cohorts/7/study-records?date=2026-08-24"))
                     .andExpect(header(HttpHeaders.AUTHORIZATION, BEARER))
-                    .andRespond(withSuccess("{\"records\":[]}", MediaType.APPLICATION_JSON));
+                    .andRespond(withSuccess("""
+                            {
+                              "aggregationDate": "2026-08-24",
+                              "totalStudySeconds": 0,
+                              "records": []
+                            }
+                            """, MediaType.APPLICATION_JSON));
             server.expect(once(), requestTo(BASE_URL
                             + "/api/v1/cohorts/7/study-time-summaries?month=2026-08"))
                     .andExpect(header(HttpHeaders.AUTHORIZATION, BEARER))
-                    .andRespond(withSuccess("{\"dailyStudySeconds\":[]}", MediaType.APPLICATION_JSON));
+                    .andRespond(withSuccess("""
+                            {
+                              "aggregationMonth": "2026-08",
+                              "totalStudySeconds": 0,
+                              "dailyTotals": []
+                            }
+                            """, MediaType.APPLICATION_JSON));
 
-            service.getStudyRecord(BEARER, 7L, STUDY_RECORD_ID);
-            service.getDailyStudyRecords(BEARER, 7L, "2026-08-24");
-            service.getMonthlyStudyTimeSummary(BEARER, 7L, "2026-08");
+            ResponseEntity<LearningStudyRecordResponse> studyRecord = service.getStudyRecord(
+                    BEARER, 7L, STUDY_RECORD_ID);
+            ResponseEntity<LearningDailyStudyRecordsResponse> daily =
+                    service.getDailyStudyRecords(BEARER, 7L, "2026-08-24");
+            ResponseEntity<LearningMonthlyStudySecondsResponse> monthly =
+                    service.getMonthlyStudyTimeSummary(BEARER, 7L, "2026-08");
+
+            assertThat(studyRecord.getBody()).isNotNull().satisfies(body ->
+                    assertThat(body.id()).isEqualTo(STUDY_RECORD_ID));
+            assertThat(daily.getBody()).isNotNull().satisfies(body ->
+                    assertThat(body.aggregationDate()).isEqualTo(LocalDate.of(2026, 8, 24)));
+            assertThat(monthly.getBody()).isNotNull().satisfies(body ->
+                    assertThat(body.aggregationMonth()).isEqualTo(YearMonth.of(2026, 8)));
 
             server.verify();
         }
@@ -269,40 +328,53 @@ class LearningHttpServiceContractTest {
         @Test
         @DisplayName("기록 생성과 수정 계약을 전달한다")
         void mapsStudyRecordCreateAndUpdateContracts() {
-            JsonNode createRequest = JSON_MAPPER.createObjectNode()
-                    .put("startDateTime", "2026-08-24T23:30")
-                    .put("endDateTime", "2026-08-25T00:30");
-            JsonNode updateRequest = JSON_MAPPER.createObjectNode()
-                    .put("startDateTime", "2026-08-24T23:40")
-                    .put("endDateTime", "2026-08-25T00:40")
-                    .put("expectedVersion", 2L);
+            LearningCreateStudyRecordRequest createRequest =
+                    new LearningCreateStudyRecordRequest(
+                            LocalDateTime.of(2026, 8, 24, 23, 30),
+                            LocalDateTime.of(2026, 8, 25, 0, 30)
+                    );
+            LearningUpdateStudyRecordRequest updateRequest =
+                    new LearningUpdateStudyRecordRequest(
+                            LocalDateTime.of(2026, 8, 24, 23, 40),
+                            LocalDateTime.of(2026, 8, 25, 0, 40),
+                            2L
+                    );
 
             server.expect(once(), requestTo(BASE_URL + "/api/v1/cohorts/7/study-records"))
                     .andExpect(method(HttpMethod.POST))
                     .andExpect(header(HttpHeaders.AUTHORIZATION, BEARER))
-                    .andExpect(content().json(createRequest.toString()))
+                    .andExpect(content().json("""
+                            {
+                              "startDateTime": "2026-08-24T23:30",
+                              "endDateTime": "2026-08-25T00:30"
+                            }
+                            """))
                     .andRespond(withStatus(HttpStatus.CREATED)
                             .contentType(MediaType.APPLICATION_JSON)
-                            .body("{\"id\":\"" + STUDY_RECORD_ID + "\"}"));
+                            .body(studyRecordBody(2L)));
             server.expect(once(), requestTo(BASE_URL
                             + "/api/v1/cohorts/7/study-records/" + STUDY_RECORD_ID))
                     .andExpect(method(HttpMethod.PUT))
                     .andExpect(header(HttpHeaders.AUTHORIZATION, BEARER))
-                    .andExpect(content().json(updateRequest.toString()))
-                    .andRespond(withSuccess(
-                            "{\"id\":\"" + STUDY_RECORD_ID + "\",\"version\":3}",
-                            MediaType.APPLICATION_JSON
-                    ));
+                    .andExpect(content().json("""
+                            {
+                              "startDateTime": "2026-08-24T23:40",
+                              "endDateTime": "2026-08-25T00:40",
+                              "expectedVersion": 2
+                            }
+                            """))
+                    .andRespond(withSuccess(studyRecordBody(3L), MediaType.APPLICATION_JSON));
 
-            ResponseEntity<JsonNode> created = service.createStudyRecord(
+            ResponseEntity<LearningStudyRecordResponse> created = service.createStudyRecord(
                     BEARER, 7L, createRequest
             );
-            JsonNode updated = service.updateStudyRecord(
+            ResponseEntity<LearningStudyRecordResponse> updated = service.updateStudyRecord(
                     BEARER, 7L, STUDY_RECORD_ID, updateRequest
             );
 
             assertThat(created.getStatusCode()).isEqualTo(HttpStatus.CREATED);
-            assertThat(updated.get("version").asLong()).isEqualTo(3L);
+            assertThat(updated.getBody()).isNotNull().satisfies(body ->
+                    assertThat(body.version()).isEqualTo(3L));
 
             server.verify();
         }
@@ -337,18 +409,39 @@ class LearningHttpServiceContractTest {
             server.expect(once(), requestTo(BASE_URL + "/api/v1/cohorts/7/timer"))
                     .andExpect(method(HttpMethod.GET))
                     .andExpect(header(HttpHeaders.AUTHORIZATION, BEARER))
-                    .andRespond(withSuccess("{\"running\":false}", MediaType.APPLICATION_JSON));
+                    .andRespond(withSuccess("""
+                            {
+                              "state": "STOPPED",
+                              "timerRunId": null,
+                              "startedAt": null,
+                              "elapsedSeconds": 0
+                            }
+                            """, MediaType.APPLICATION_JSON));
             server.expect(once(), requestTo(BASE_URL + "/api/v1/cohorts/7/timer/start"))
                     .andExpect(method(HttpMethod.POST))
                     .andExpect(header(HttpHeaders.AUTHORIZATION, BEARER))
                     .andRespond(withStatus(HttpStatus.CREATED)
                             .contentType(MediaType.APPLICATION_JSON)
-                            .body("{\"timerRunId\":\"" + TIMER_RUN_ID + "\"}"));
+                            .body("""
+                                    {
+                                      "resultCode": "TIMER_STARTED",
+                                      "timerRunId": "%s",
+                                      "state": "RUNNING",
+                                      "startedAt": "2026-08-24T14:30:00Z",
+                                      "elapsedSeconds": 0
+                                    }
+                                    """.formatted(TIMER_RUN_ID)));
 
-            service.getCurrentTimer(BEARER, 7L);
-            ResponseEntity<JsonNode> started = service.startTimer(BEARER, 7L);
+            ResponseEntity<LearningCurrentTimerResponse> current =
+                    service.getCurrentTimer(BEARER, 7L);
+            ResponseEntity<LearningStartTimerResponse> started =
+                    service.startTimer(BEARER, 7L);
 
+            assertThat(current.getBody()).isNotNull().satisfies(body ->
+                    assertThat(body.state()).isEqualTo(LearningTimerState.STOPPED));
             assertThat(started.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+            assertThat(started.getBody()).isNotNull().satisfies(body ->
+                    assertThat(body.timerRunId()).isEqualTo(TIMER_RUN_ID));
 
             server.verify();
         }
@@ -415,16 +508,19 @@ class LearningHttpServiceContractTest {
             server.expect(once(), requestTo(BASE_URL + "/api/v1/cohorts/7/study-statistics/today"))
                     .andExpect(method(HttpMethod.GET))
                     .andExpect(header(HttpHeaders.AUTHORIZATION, BEARER))
-                    .andRespond(withSuccess("{\"totalStudySeconds\": 3600}", MediaType.APPLICATION_JSON));
+                    .andRespond(withSuccess("""
+                            {"totalStudySeconds": 3600, "runningTimerCount": 2}
+                            """, MediaType.APPLICATION_JSON));
 
             server.expect(once(), requestTo(BASE_URL + "/api/v1/cohorts/7/study-statistics/trend?window=7d"))
                     .andExpect(method(HttpMethod.GET))
                     .andExpect(header(HttpHeaders.AUTHORIZATION, BEARER))
                     .andRespond(withSuccess("{\"totalStudySeconds\": 25200}", MediaType.APPLICATION_JSON));
 
-            service.getStudyStatisticsToday(BEARER, 7L);
+            JsonNode today = service.getStudyStatisticsToday(BEARER, 7L);
             service.getStudyStatisticsTrend(BEARER, 7L, "7d");
 
+            assertThat(today.get("runningTimerCount").asLong()).isEqualTo(2L);
             server.verify();
         }
 
@@ -434,7 +530,15 @@ class LearningHttpServiceContractTest {
             server.expect(once(), requestTo(BASE_URL + "/api/v1/cohorts/7/study-statistics/members?window=7d&page=0&size=20&sort=periodStudySeconds%2Cdesc"))
                     .andExpect(method(HttpMethod.GET))
                     .andExpect(header(HttpHeaders.AUTHORIZATION, BEARER))
-                    .andRespond(withSuccess("{\"items\": []}", MediaType.APPLICATION_JSON));
+                    .andRespond(withSuccess("""
+                            {
+                              "items": [{
+                                "nickname": "오마",
+                                "isRunning": true,
+                                "timerStartedAt": "2026-08-25T02:00:00Z"
+                              }]
+                            }
+                            """, MediaType.APPLICATION_JSON));
 
             server.expect(once(), requestTo(BASE_URL + "/api/v1/cohorts/7/study-statistics/members/10/overview?window=7d"))
                     .andExpect(method(HttpMethod.GET))
@@ -446,11 +550,38 @@ class LearningHttpServiceContractTest {
                     .andExpect(header(HttpHeaders.AUTHORIZATION, BEARER))
                     .andRespond(withSuccess("{\"records\": []}", MediaType.APPLICATION_JSON));
 
-            service.getStudyStatisticsMembers(BEARER, 7L, "7d", 0, 20, "periodStudySeconds,desc");
+            JsonNode members = service.getStudyStatisticsMembers(
+                    BEARER,
+                    7L,
+                    "7d",
+                    0,
+                    20,
+                    "periodStudySeconds,desc"
+            );
             service.getStudyStatisticsMemberOverview(BEARER, 7L, 10L, "7d");
             service.getStudyStatisticsMemberDailyRecords(BEARER, 7L, 10L, "2026-08-25");
 
+            JsonNode member = members.get("items").get(0);
+            assertThat(member.get("nickname").asString()).isEqualTo("오마");
+            assertThat(member.get("isRunning").asBoolean()).isTrue();
+            assertThat(member.get("timerStartedAt").asString())
+                    .isEqualTo("2026-08-25T02:00:00Z");
             server.verify();
         }
+    }
+
+    private static String studyRecordBody(long version) {
+        return """
+                {
+                  "id": "%s",
+                  "aggregationDate": "2026-08-24",
+                  "startTime": "2026-08-24T14:30:00Z",
+                  "endTime": "2026-08-24T15:30:00Z",
+                  "studySeconds": 3600,
+                  "version": %d,
+                  "createdAt": "2026-08-24T14:30:00Z",
+                  "updatedAt": "2026-08-24T15:30:00Z"
+                }
+                """.formatted(STUDY_RECORD_ID, version);
     }
 }

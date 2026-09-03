@@ -18,33 +18,17 @@ import {
 (() => {
     const stateKey = "omagotchiSpaceState";
     const profile = window.OmagotchiProfile || {};
-    const characterAssets = window.OmagotchiCharacterAssets;
-    const profileCharacter = profile.currentCharacter || {};
-    const profileAssetKey = typeof profileCharacter.assetKey === "string"
-        ? profileCharacter.assetKey.trim().replace(/^\/+/, "").replace(/\.(?:png|gif)$/i, "")
-        : "";
-    const currentCharacterImage = profileAssetKey
-        ? `/images/characters/${profileAssetKey}.png`
-        : characterAssets?.getPng?.(profileCharacter.type || "study", profileCharacter.colorId || "original")
-            || "/images/characters/study/study.png";
     const currentUser = {
-        id: profile.userId || "current-user",
-        name: profile.currentCharacter?.nickname || profile.nickname || "나",
-        cohortId: profile.approvedCohort?.cohortId || null,
-        cohortName: profile.approvedCohort?.name || "",
-        characterImage: currentCharacterImage
+        cohortId: profile.approvedCohort?.cohortId || null
     };
 
     const initialState = {
         activeTab: "meeting",
         selectedRoomId: "",
         vacancyAlerts: [],
-        libraryInside: false,
         roomPage: 0,
-        partyCreateOpen: false,
-        partyDetailOpen: false,
-        party: null,
         labs: [],
+        studySpaces: [],
         rooms: [],
         roomsLoading: true,
         roomsError: "",
@@ -57,9 +41,11 @@ import {
         participantSearchLoading: false
     };
 
-    let cohortMembers = normalizeCohortMembers(profile.approvedCohort?.members);
     let telegramOverride = null;
     let currentAttendance = null;
+    let currentPresence = null;
+    let currentContextLoading = false;
+    let currentContextError = "";
 
     const memberStatusLabels = {
         present: "재실",
@@ -69,23 +55,20 @@ import {
     };
 
     const roots = new Set();
-    const partyRoots = new Set();
     let state = loadState();
     let ticker = null;
     let spaceLoadPromise = null;
+    let currentContextLoadPromise = null;
     let vacancyAlertLoadPromise = null;
     let refreshingExpiredRoom = false;
     let roomActionPending = false;
 
-    window.OmagotchiApi?.attendance?.getToday?.()
-        .then((attendance) => {
-            currentAttendance = attendance;
-        })
-        .catch(() => {
-            currentAttendance = null;
-        });
     window.addEventListener("omagotchi:attendance", (event) => {
         currentAttendance = event.detail || null;
+        if (!isCheckedIn()) {
+            currentPresence = null;
+        }
+        renderAll();
     });
     window.addEventListener("omagotchi:space-data", (event) => {
         updateData(event.detail || {});
@@ -109,6 +92,7 @@ import {
                 ...cloneInitialState(),
                 ...saved,
                 labs: [],
+                studySpaces: [],
                 rooms: [],
                 roomsLoading: true,
                 roomsError: "",
@@ -120,11 +104,10 @@ import {
                 participantSearchValidation: "",
                 participantCandidates: [],
                 participantSearchLoading: false,
-                activeTab: saved.activeTab === "library" ? "library" : "meeting",
-                roomPage: Math.max(0, Number(saved.roomPage) || 0),
-                partyCreateOpen: Boolean(saved.partyCreateOpen),
-                partyDetailOpen: Boolean(saved.partyDetailOpen),
-                party: saved.party || null
+                activeTab: ["lab", "meeting", "library"].includes(saved.activeTab)
+                    ? saved.activeTab
+                    : "meeting",
+                roomPage: Math.max(0, Number(saved.roomPage) || 0)
             };
         } catch {
             return cloneInitialState();
@@ -132,7 +115,15 @@ import {
     }
 
     function saveState() {
-        const { labs, rooms, roomsLoading, roomsError, vacancyAlerts, ...prototypeState } = state;
+        const {
+            labs,
+            studySpaces,
+            rooms,
+            roomsLoading,
+            roomsError,
+            vacancyAlerts,
+            ...prototypeState
+        } = state;
         sessionStorage.setItem(stateKey, JSON.stringify(prototypeState));
     }
 
@@ -147,9 +138,187 @@ import {
         return Boolean(currentAttendance?.checkedInAt) && !currentAttendance?.checkedOutAt;
     }
 
+    async function loadCurrentContext(showLoading) {
+        const attendanceApi = window.OmagotchiApi?.attendance;
+        const getToday = attendanceApi?.getToday;
+        const getCurrentPresence = attendanceApi?.getCurrentPresence;
+        if (typeof getToday !== "function" && typeof getCurrentPresence !== "function") {
+            currentContextLoading = false;
+            currentContextError = "";
+            renderAll();
+            return;
+        }
+
+        if (showLoading) {
+            currentContextLoading = true;
+            currentContextError = "";
+            renderAll();
+        }
+
+        const [attendanceResult, presenceResult] = await Promise.allSettled([
+            typeof getToday === "function"
+                ? getToday.call(attendanceApi)
+                : Promise.resolve(currentAttendance),
+            typeof getCurrentPresence === "function"
+                ? getCurrentPresence.call(attendanceApi)
+                : Promise.resolve(currentPresence)
+        ]);
+
+        const errors = [];
+        if (attendanceResult.status === "fulfilled") {
+            currentAttendance = attendanceResult.value || null;
+        } else {
+            errors.push(attendanceResult.reason);
+        }
+        if (presenceResult.status === "fulfilled") {
+            currentPresence = presenceResult.value || null;
+        } else {
+            // 실패한 조회의 이전 값을 남기면 끝난 회의가 MEETING으로 남고, 떠난 공간이
+            // "현재 이용 중"으로 잠긴다. 모르는 것은 모른다고 둔다.
+            currentPresence = null;
+            errors.push(presenceResult.reason);
+        }
+
+        currentContextLoading = false;
+        currentContextError = errors[0]?.message || "";
+        renderAll();
+    }
+
+    function refreshCurrentContext(showLoading = true) {
+        if (currentContextLoadPromise) {
+            return currentContextLoadPromise;
+        }
+        currentContextLoadPromise = loadCurrentContext(showLoading).finally(() => {
+            currentContextLoadPromise = null;
+        });
+        return currentContextLoadPromise;
+    }
+
+    async function refreshCurrentContextAfterMutation() {
+        if (currentContextLoadPromise) {
+            await currentContextLoadPromise;
+        }
+        return refreshCurrentContext(false);
+    }
+
     function getCurrentOccupancyRoom() {
         return state.rooms.find((room) => room.occupancy?.ownedByRequester
             || room.occupancy?.participatingByRequester);
+    }
+
+    function isInMeeting() {
+        return currentPresence?.state === "MEETING" || Boolean(getCurrentOccupancyRoom());
+    }
+
+    /**
+     * 현재 위치는 서버의 열린 체류구간에서 계산한다. 브라우저 저장 상태를 위치 근거로
+     * 사용하면 다른 사용자가 회의 참여자로 추가했거나 회의가 만료된 뒤의 복귀를 놓친다.
+     */
+    function getCurrentLocation() {
+        if (currentContextLoading && currentAttendance == null) {
+            return {
+                state: "loading",
+                name: "현재 위치 확인 중",
+                detail: "출석과 체류 상태를 불러오고 있습니다."
+            };
+        }
+
+        // 조회에 실패해 위치를 모르는 상태와, 아직 공간을 고르지 않은 상태는 다르다.
+        // 후자는 "실습실을 선택해 주세요"가 맞지만 전자에 같은 문구를 쓰면 이미 자리에
+        // 있는 사용자에게 불필요한 이동을 시킨다.
+        //
+        // 다만 점유 데이터로 회의 중임을 알 수 있으면 그것은 실제로 가진 정보이므로
+        // 확인 불가로 덮지 않고 아래 회의 분기에 맡긴다.
+        if (currentContextError
+                && (currentAttendance == null || currentPresence == null)
+                && !getCurrentOccupancyRoom()) {
+            return {
+                state: "unavailable",
+                name: "현재 위치 확인 불가",
+                detail: currentContextError
+            };
+        }
+
+        if (!isCheckedIn()) {
+            return {
+                state: "checked-out",
+                name: "입실 전",
+                detail: "오늘 체크인하면 이용할 공간을 선택할 수 있습니다."
+            };
+        }
+
+        if (state.roomsLoading) {
+            return {
+                state: "loading",
+                name: "현재 위치 확인 중",
+                detail: "공간 이용 상태를 불러오고 있습니다."
+            };
+        }
+
+        const currentSpaceId = currentPresence?.spaceId;
+        const presenceState = currentPresence?.state;
+        const occupancyRoom = getCurrentOccupancyRoom();
+        const meetingRoom = presenceState === "MEETING"
+            ? state.rooms.find((room) => sameId(room.id, currentSpaceId)) || occupancyRoom
+            : currentPresence == null ? occupancyRoom : null;
+        if (presenceState === "MEETING" || meetingRoom) {
+            return {
+                state: "meeting",
+                name: meetingRoom?.name || "회의실",
+                detail: meetingRoom?.occupancy?.ownedByRequester
+                    ? "회의실 이용 중"
+                    : "회의실 참여 중"
+            };
+        }
+
+        if (presenceState === "AWAY") {
+            return {
+                state: "away",
+                name: "자리 비움",
+                detail: "현재 공간에서 잠시 자리를 비운 상태입니다."
+            };
+        }
+
+        const currentStudySpace = state.studySpaces.find(
+            (space) => sameId(space.spaceId, currentSpaceId)
+        );
+        if (currentStudySpace) {
+            return {
+                state: "library",
+                name: currentStudySpace?.name || "도서관",
+                detail: "도서관 이용 중"
+            };
+        }
+
+        const currentLab = state.labs.find(
+            (lab) => sameId(lab.spaceId, currentSpaceId)
+        );
+        if (currentLab) {
+            return {
+                state: "lab",
+                name: currentLab.name,
+                detail: "실습실 이용 중"
+            };
+        }
+
+        return {
+            state: "unselected",
+            name: "실습실을 선택해 주세요",
+            detail: "출석은 완료됐지만 현재 위치가 선택되지 않았습니다."
+        };
+    }
+
+    function renderCurrentLocation() {
+        const location = getCurrentLocation();
+        return `
+            <aside class="space-room-current-location" data-location-state="${location.state}" aria-live="polite">
+                <span>현재 내 위치</span>
+                <div>
+                    <strong>${escapeHtml(location.name)}</strong>
+                    <small>${escapeHtml(location.detail)}</small>
+                </div>
+            </aside>
+        `;
     }
 
     function occupancyExpiresAt(space) {
@@ -215,16 +384,32 @@ import {
         renderAll();
 
         try {
-            const spaces = await window.OmagotchiApi.spaces.list();
+            const selectableLabRequest = typeof window.OmagotchiApi.spaces.listLabs === "function"
+                ? window.OmagotchiApi.spaces.listLabs().catch(() => null)
+                : Promise.resolve(null);
+            const [spaces, selectableLabs] = await Promise.all([
+                window.OmagotchiApi.spaces.list(),
+                selectableLabRequest
+            ]);
             const spaceList = Array.isArray(spaces) ? spaces : [];
+            const selectableLabList = Array.isArray(selectableLabs) ? selectableLabs : [];
+            const labAvailabilityById = new Map(
+                selectableLabList.map((lab) => [String(lab.spaceId), lab])
+            );
             const requesterCohortId = currentUser.cohortId == null
                 ? null
                 : String(currentUser.cohortId);
-            state.labs = spaceList.filter(
-                (space) => space.type === "LAB"
-                    && (requesterCohortId == null
-                        || String(space.cohortId) === requesterCohortId)
-            );
+            state.labs = requesterCohortId == null
+                ? []
+                : spaceList.filter(
+                    (space) => space.type === "LAB"
+                        && String(space.cohortId) === requesterCohortId
+                ).map((space) => ({
+                    ...space,
+                    reservedCount: labAvailabilityById.get(String(space.spaceId))
+                        ?.reservedCount ?? null
+                }));
+            state.studySpaces = spaceList.filter((space) => space.type === "STUDY");
             const rooms = spaceList
                 .filter((space) => space.type === "MEETING")
                 .map(mapMeetingRoom);
@@ -235,6 +420,7 @@ import {
             state.roomsError = "";
         } catch (error) {
             state.labs = [];
+            state.studySpaces = [];
             state.rooms = [];
             state.selectedRoomId = "";
             state.roomsError = error?.message || "공간 정보를 불러오지 못했습니다.";
@@ -299,17 +485,6 @@ import {
             && String(left) === String(right);
     }
 
-    function normalizeCohortMembers(members) {
-        if (!Array.isArray(members)) return [];
-        return members.map((member) => ({
-            id: member.id || member.userId,
-            name: member.name || member.nickname || "기수원",
-            email: member.email || "",
-            status: member.status || "offline",
-            characterImage: member.characterImage || "/images/characters/study/study.png"
-        })).filter((member) => member.id);
-    }
-
     function safeTelegramDeepLink(value) {
         if (typeof value !== "string" || !value.trim()) return "";
         try {
@@ -337,14 +512,6 @@ import {
                 || profile.telegramDeepLink
             )
         };
-    }
-
-    function renderCharacter(member, compact = false) {
-        const image = member.characterImage || "/images/characters/study/study.png";
-        return `
-            <span class="ui-character-avatar${compact ? " is-compact" : ""}" title="${escapeHtml(member.name)}">
-                <img src="${escapeHtml(image)}" alt="${escapeHtml(member.name)} 캐릭터" />
-            </span>`;
     }
 
     function getRoomView(room) {
@@ -406,8 +573,24 @@ import {
         `).join("");
     }
 
+    function getLabReservedCount(lab) {
+        if (lab?.reservedCount == null) {
+            return null;
+        }
+        const reservedCount = Number(lab?.reservedCount);
+        return Number.isInteger(reservedCount) && reservedCount >= 0
+            ? reservedCount
+            : null;
+    }
+
+    function isLabFull(lab) {
+        const reservedCount = getLabReservedCount(lab);
+        return reservedCount != null && reservedCount >= lab.capacity;
+    }
+
     function renderLab() {
         const checkedIn = isCheckedIn();
+        const inMeeting = isInMeeting();
 
         if (state.roomsLoading) {
             return `
@@ -429,17 +612,55 @@ import {
             `;
         }
 
-        const assignedLabs = state.labs.map((lab) => `
-            <div class="space-room-lab-stage">
-                <div>
-                    <span>${lab.operationalStatus === "ACTIVE" ? "운영 중" : "운영 중지"}</span>
+        const assignedLabs = state.labs.map((lab) => {
+            const active = lab.operationalStatus === "ACTIVE";
+            const current = sameId(lab.spaceId, currentPresence?.spaceId);
+            const reservedCount = getLabReservedCount(lab);
+            const capacityKnown = reservedCount != null;
+            const full = isLabFull(lab);
+            const selectable = active && checkedIn && !inMeeting && !current && !full;
+            const selectionStatus = active
+                ? current
+                    ? "현재 이용 중"
+                    : full
+                        ? "정원 마감"
+                        : inMeeting
+                            ? "회의 종료 후 선택 가능"
+                            : (checkedIn ? "선택 가능" : "체크인 후 선택 가능")
+                : "선택 불가";
+            const capacityDetail = capacityKnown
+                ? `${reservedCount} / ${lab.capacity}명`
+                : `정원 ${lab.capacity}명`;
+            return `
+            <article class="space-room-lab-stage${active ? "" : " is-inactive"}" role="listitem">
+                <div class="space-room-lab-stage__identity">
+                    <span class="space-room-status ${active ? "is-active" : "is-inactive"}">
+                        ${active ? "운영 중" : "운영 중지"}
+                    </span>
                     <strong>${escapeHtml(lab.name)}</strong>
+                    ${lab.inactiveReason
+                        ? `<small>${escapeHtml(lab.inactiveReason)}</small>`
+                        : ""}
                 </div>
-                <p>${lab.capacity}인실${lab.inactiveReason
-                    ? ` · ${escapeHtml(lab.inactiveReason)}`
-                    : ""} · ${checkedIn ? "입실 중" : "입실 전"}</p>
-            </div>
-        `).join("");
+                <div class="space-room-lab-stage__meta">
+                    <strong>${capacityDetail}</strong>
+                    <span class="${full ? "is-full" : selectable ? "is-selectable" : ""}">
+                        ${selectionStatus}
+                    </span>
+                </div>
+                <button type="button" data-space-lab-move="${lab.spaceId}"${selectable ? "" : " disabled"}>
+                    ${current ? "현재 이용 중" : full ? "정원 마감" : "이 실습실로 이동"}
+                </button>
+            </article>
+        `;
+        }).join("");
+
+        const emptyTitle = currentUser.cohortId == null
+            ? "참여 중인 기수가 없습니다"
+            : "배정된 실습실이 없습니다";
+        const emptyDescription = currentUser.cohortId == null
+            ? "승인된 기수에 참여하면 배정된 실습실을 확인할 수 있습니다."
+            : "활성 기수에 LAB이 배정되면 이 영역에 표시됩니다.";
 
         return `
             <section class="space-room-lab" aria-labelledby="space-lab-title">
@@ -452,170 +673,24 @@ import {
                         ${state.labs.length ? `${state.labs.length}곳 배정` : "미배정"}
                     </span>
                 </header>
-                ${state.labs.length ? `<div class="space-room-lab-grid">
-                    <aside class="space-room-sensors" aria-label="실습실 센서 상태">
-                        ${renderSensor({ co2: null, temperature: null, humidity: null })}
-                    </aside>
-                    ${assignedLabs}
-                </div>` : `
+                ${state.labs.length ? `
+                    <section class="space-room-lab-list" aria-labelledby="space-lab-list-title">
+                        <header>
+                            <h4 id="space-lab-list-title">실습실 목록</h4>
+                            <span>${state.labs.length}개</span>
+                        </header>
+                        <div class="space-room-lab-grid" role="list" aria-label="실습실 목록" tabindex="0">
+                            ${assignedLabs}
+                        </div>
+                    </section>
+                ` : `
                     <div class="space-room-empty-state">
-                        <h4>배정된 실습실이 없습니다</h4>
-                        <p>활성 기수에 LAB이 배정되면 이 영역에 표시됩니다.</p>
+                        <h4>${emptyTitle}</h4>
+                        <p>${emptyDescription}</p>
                     </div>
                 `}
             </section>
         `;
-    }
-
-    function partyMembers() {
-        return Array.isArray(state.party?.members) ? state.party.members : [];
-    }
-
-    function renderPartyHud() {
-        if (!state.party) {
-            return `
-                <aside class="ui-party-hud is-empty" aria-label="내 파티 없음">
-                    <strong>MY PARTY</strong>
-                    <p>참여 중인 파티가 없습니다.</p>
-                    <small>기수 · 팀 메뉴에서 파티를 만들 수 있어요.</small>
-                </aside>`;
-        }
-
-        const members = partyMembers();
-        return `
-            <aside class="ui-party-hud" aria-label="내 파티 ${escapeHtml(state.party.name)}">
-                <header>
-                    <div><span>MY PARTY</span><h3>${escapeHtml(state.party.name)}</h3></div>
-                    <strong>${members.length} / 8</strong>
-                </header>
-                <ul>
-                    ${members.map((member) => `
-                        <li>
-                            ${renderCharacter(member)}
-                            <strong>${escapeHtml(member.name)}</strong>
-                        </li>`).join("")}
-                </ul>
-            </aside>`;
-    }
-
-    function renderPartyInvite(candidates, isFull) {
-        return `
-            <form class="ui-party-invite" data-party-add-member>
-                <h3>파티원 초대</h3>
-                <p>같은 기수 구성원만 초대할 수 있어요.</p>
-                <label class="ui-field">
-                    <span class="ui-field__label">이름 또는 이메일</span>
-                    <div class="space-room-party-picker" data-space-party-picker>
-                        <input
-                            name="partyMemberEmail"
-                            type="email"
-                            placeholder="이름 또는 이메일 검색"
-                            aria-label="초대할 같은 기수 사용자 검색"
-                            aria-controls="home-party-candidates"
-                            autocomplete="off"
-                            ${isFull || !candidates.length ? "disabled" : ""}
-                            required
-                        />
-                        <div class="space-room-party-candidates" id="home-party-candidates" role="listbox" aria-label="파티 초대 후보">
-                            ${candidates.map((candidate) => `
-                                <button
-                                    type="button"
-                                    role="option"
-                                    data-space-party-candidate="${escapeHtml(candidate.email)}"
-                                    data-space-party-search="${escapeHtml(`${candidate.name} ${candidate.email}`.toLowerCase())}"
-                                >
-                                    <span><strong>${escapeHtml(candidate.name)}</strong><small>${escapeHtml(candidate.email)}</small></span>
-                                    <em>선택</em>
-                                </button>`).join("")}
-                            <p data-space-party-empty hidden>일치하는 사용자가 없습니다.</p>
-                        </div>
-                    </div>
-                </label>
-                <button class="ui-button ui-button--primary" type="submit" ${isFull || !candidates.length ? "disabled" : ""}>초대 보내기</button>
-                ${!candidates.length ? "<small>현재 초대할 수 있는 기수원이 없습니다.</small>" : ""}
-            </form>`;
-    }
-
-    function renderPartyManager() {
-        if (!state.party) {
-            if (!state.partyCreateOpen) {
-                return `
-                    <div class="ui-cohort-party-grid is-single">
-                        <button class="ui-cohort-party-create" type="button" data-party-open-create>
-                            <strong>새 파티 만들기</strong>
-                            <small>참여 중인 파티가 없습니다.</small>
-                        </button>
-                    </div>`;
-            }
-
-            return `
-                <form class="home-party-create-form" data-space-create-party>
-                    <div>
-                        <span class="ui-menu-eyebrow">MY STUDY PARTY</span>
-                        <h3>함께 공부할 파티 만들기</h3>
-                        <p>같은 기수 구성원과 최대 8명까지 함께할 수 있어요.</p>
-                    </div>
-                    <label class="ui-field">
-                        <span class="ui-field__label">파티 이름</span>
-                        <input name="partyName" type="text" minlength="1" maxlength="30" placeholder="파티 이름을 입력하세요" required />
-                    </label>
-                    <div>
-                        <button class="ui-button ui-button--secondary" type="button" data-party-cancel-create>취소</button>
-                        <button class="ui-button ui-button--primary" type="submit">파티 만들기</button>
-                    </div>
-                </form>`;
-        }
-
-        const members = partyMembers();
-        if (!state.partyDetailOpen) {
-            return `
-                <div class="ui-cohort-party-grid is-single">
-                    <article class="ui-cohort-party-card">
-                        <div><h4>${escapeHtml(state.party.name)}</h4><span>${members.length} / 8</span></div>
-                        <div class="ui-cohort-party-card__members">${members.map((member) => renderCharacter(member)).join("")}</div>
-                        <span class="ui-menu-chip">내 파티</span>
-                        <button class="ui-button ui-button--secondary" type="button" data-party-open-detail>파티 보기</button>
-                    </article>
-                </div>`;
-        }
-
-        const memberIds = new Set(members.map((member) => String(member.id)));
-        const candidates = cohortMembers.filter((member) => !memberIds.has(String(member.id)) && member.email);
-        const isFull = members.length >= 8;
-        const isMaster = sameId(state.party.masterId, currentUser.id);
-
-        return `
-            <div class="ui-party-page">
-                <header class="home-party-detail-head">
-                    <button type="button" data-party-close-detail>기수 · 팀</button>
-                    <span aria-hidden="true">›</span>
-                    <div><small>내 파티</small><strong>${escapeHtml(state.party.name)}</strong></div>
-                    <span class="ui-menu-chip">${members.length} / 8</span>
-                </header>
-                <div class="ui-party-management">
-                    <section class="ui-party-members" aria-labelledby="home-party-members-title">
-                        <h3 id="home-party-members-title">파티원</h3>
-                        <ul>
-                            ${members.map((member) => `
-                                <li>
-                                    ${renderCharacter(member, true)}
-                                    <strong>${escapeHtml(member.name)}</strong>
-                                    ${sameId(member.id, currentUser.id) ? "<span>나</span>" : ""}
-                                    ${sameId(member.id, state.party.masterId) ? "<em>마스터</em>" : ""}
-                                    ${isMaster && !sameId(member.id, currentUser.id) ? `<button type="button" data-space-remove-party-member="${escapeHtml(member.id)}">제외</button>` : ""}
-                                </li>`).join("")}
-                        </ul>
-                    </section>
-                    ${isMaster
-                        ? renderPartyInvite(candidates, isFull)
-                        : `<section class="ui-party-member-note"><h3>파티 정보</h3><p>파티원은 회의실 입장 시 참여자 후보에 먼저 표시됩니다.</p></section>`}
-                </div>
-                <footer class="ui-party-danger-zone">
-                    <p>파티에서 나가도 기수에는 계속 참여합니다.</p>
-                    <button class="ui-button ui-button--danger ui-party-danger-action" type="button" data-party-leave>파티 나가기</button>
-                    ${isMaster ? '<button class="ui-button ui-button--danger ui-party-danger-action" type="button" data-space-disband-party>파티 해체</button>' : ""}
-                </footer>
-            </div>`;
     }
 
     function renderRoomList() {
@@ -881,6 +956,34 @@ import {
     }
 
     function renderLibrary() {
+        const checkedIn = isCheckedIn();
+        const inMeeting = isInMeeting();
+        const currentStudySpaceId = currentPresence?.spaceId;
+        const current = state.studySpaces.some(
+            (space) => sameId(space.spaceId, currentStudySpaceId)
+        ) && !inMeeting;
+        const activeCount = state.studySpaces.filter(
+            (space) => space.operationalStatus === "ACTIVE"
+        ).length;
+        const studyCards = state.studySpaces.map((library) => {
+            const active = library.operationalStatus === "ACTIVE";
+            const usingThis = sameId(library.spaceId, currentStudySpaceId) && !inMeeting;
+            const selectable = checkedIn && active && !inMeeting && !usingThis;
+            return `
+                <article class="space-room-library-action">
+                    <span>운영 상태</span>
+                    <strong>${escapeHtml(library.name)}</strong>
+                    <p>${active ? "정상 운영" : escapeHtml(library.inactiveReason || "운영 중지")} · 여러 기수가 함께 사용하는 조용한 학습 공간입니다.</p>
+                    <button type="button" data-space-library-enter="${library.spaceId}"${selectable ? "" : " disabled"}>
+                        ${usingThis
+                            ? "현재 이용 중"
+                            : inMeeting
+                                ? "회의 종료 후 입장"
+                                : checkedIn ? "도서관 입장" : "체크인 후 입장"}
+                    </button>
+                </article>
+            `;
+        }).join("");
         return `
             <section class="space-room-library" aria-labelledby="space-library-title">
                 <header class="space-room-section-head">
@@ -888,28 +991,17 @@ import {
                         <span class="space-room-kicker">SHARED STUDY SPACE</span>
                         <h3 id="space-library-title">도서관</h3>
                     </div>
-                    <span class="space-room-status ${state.libraryInside ? "is-active" : ""}">
-                        ${state.libraryInside ? "이용 중" : "이용 가능"}
+                    <span class="space-room-status ${current ? "is-active" : ""}">
+                        ${current ? "이용 중" : activeCount ? `${activeCount}곳 이용 가능` : "이용 불가"}
                     </span>
                 </header>
                 <div class="space-room-library-grid">
-                    <article>
-                        <span>현재 이용</span>
-                        <strong>0</strong>
-                        <p>여러 기수가 함께 사용하는 조용한 학습 공간입니다.</p>
-                    </article>
-                    <article>
-                        <span>운영 상태</span>
-                        <strong>정상 운영</strong>
-                        <p>도서관은 좌석을 선점하거나 공실 알림을 신청하지 않습니다.</p>
-                    </article>
-                    <article class="space-room-library-action">
-                        <span>내 상태</span>
-                        <strong>${state.libraryInside ? "도서관 이용 중" : "도서관 밖"}</strong>
-                        <button type="button" data-space-library-toggle>
-                            ${state.libraryInside ? "도서관 나가기" : "도서관 입장"}
-                        </button>
-                    </article>
+                    ${studyCards || `
+                        <article class="space-room-empty-state">
+                            <strong>등록된 도서관이 없습니다</strong>
+                            <p>활성 STUDY 공간이 등록되면 이곳에서 입장할 수 있습니다.</p>
+                        </article>
+                    `}
                 </div>
             </section>
         `;
@@ -926,6 +1018,7 @@ import {
             <div class="space-room-app-inner">
                 <nav class="space-room-tabs" aria-label="공간 종류">
                     ${[
+                        ["lab", "실습실"],
                         ["meeting", "회의실"],
                         ["library", "도서관"]
                     ].map(([key, label]) => `
@@ -939,7 +1032,9 @@ import {
                         >${label}</button>
                     `).join("")}
                 </nav>
+                ${renderCurrentLocation()}
                 <div class="space-room-content">
+                    ${state.activeTab === "lab" ? renderLab() : ""}
                     ${state.activeTab === "meeting" ? renderMeeting() : ""}
                     ${state.activeTab === "library" ? renderLibrary() : ""}
                 </div>
@@ -957,16 +1052,6 @@ import {
             render(root);
             if (message) {
                 showToast(root, message);
-            }
-        });
-        partyRoots.forEach((root) => {
-            if (!root.isConnected) {
-                partyRoots.delete(root);
-                return;
-            }
-            root.innerHTML = renderPartyManager();
-            if (message) {
-                root.insertAdjacentHTML("beforeend", `<p class="home-party-message" role="status">${escapeHtml(message)}</p>`);
             }
         });
         saveState();
@@ -990,7 +1075,11 @@ import {
         roomActionPending = true;
         try {
             await action();
-            await refreshSpaces(successMessage);
+            await Promise.all([
+                refreshSpaces(),
+                refreshCurrentContextAfterMutation()
+            ]);
+            renderAll(successMessage);
         } catch (error) {
             renderAll(error?.message || "회의실 요청을 처리하지 못했습니다.");
         } finally {
@@ -1008,6 +1097,35 @@ import {
             () => window.OmagotchiApi.spaces.startOccupancy(roomId),
             `${room.name} 사용을 시작했습니다.`
         );
+    }
+
+    async function movePresence(action, spaceId, successMessage) {
+        if (roomActionPending) {
+            return;
+        }
+        roomActionPending = true;
+        try {
+            const result = await action(spaceId);
+            currentPresence = {
+                spaceId: result.spaceId,
+                state: "PRESENT",
+                startedAt: new Date().toISOString()
+            };
+            await Promise.all([
+                refreshCurrentContextAfterMutation(),
+                refreshSpaces()
+            ]);
+            renderAll(successMessage);
+        } catch (error) {
+            if (error?.code === "LAB_CAPACITY_EXCEEDED") {
+                await refreshSpaces();
+                renderAll("실습실 정원이 가득 찼습니다.");
+            } else {
+                renderAll(error?.message || "공간 이동을 처리하지 못했습니다.");
+            }
+        } finally {
+            roomActionPending = false;
+        }
     }
 
     async function addParticipant(roomId, participantId) {
@@ -1089,6 +1207,7 @@ import {
 
     async function handleAction(event, root) {
         const tab = event.target.closest("[data-space-tab]");
+        const labMove = event.target.closest("[data-space-lab-move]");
         const roomSelect = event.target.closest("[data-space-select-room]");
         const occupy = event.target.closest("[data-space-occupy]");
         const alert = event.target.closest("[data-space-alert]");
@@ -1103,15 +1222,7 @@ import {
             ? event.target
             : null;
         const participantCandidate = event.target.closest("[data-space-participant-candidate]");
-        const libraryToggle = event.target.closest("[data-space-library-toggle]");
-        const partyCandidate = event.target.closest("[data-space-party-candidate]");
-        const openPartyCreate = event.target.closest("[data-party-open-create]");
-        const cancelPartyCreate = event.target.closest("[data-party-cancel-create]");
-        const openPartyDetail = event.target.closest("[data-party-open-detail]");
-        const closePartyDetail = event.target.closest("[data-party-close-detail]");
-        const leaveParty = event.target.closest("[data-party-leave]");
-        const removePartyMember = event.target.closest("[data-space-remove-party-member]");
-        const disbandParty = event.target.closest("[data-space-disband-party]");
+        const libraryEnter = event.target.closest("[data-space-library-enter]");
         const retry = event.target.closest("[data-space-retry]");
 
         if (participantCandidate) {
@@ -1135,13 +1246,6 @@ import {
                 state.participantDialogRoomId = room.id;
                 resetParticipantSearch();
                 renderAll();
-            }
-        } else if (partyCandidate) {
-            const picker = partyCandidate.closest("[data-space-party-picker]");
-            const input = picker?.querySelector('input[name="partyMemberEmail"]');
-            if (input) {
-                input.value = partyCandidate.dataset.spacePartyCandidate;
-                picker.classList.add("has-selection");
             }
         } else if (retry) {
             await refreshSpaces();
@@ -1220,44 +1324,49 @@ import {
                     roomActionPending = false;
                 }
             }
-        } else if (libraryToggle) {
-            state.libraryInside = !state.libraryInside;
-            renderAll(state.libraryInside ? "도서관에 입장했습니다." : "도서관에서 나왔습니다.");
+        } else if (labMove) {
+            if (!isCheckedIn()) {
+                renderAll("실습실을 선택하려면 먼저 체크인해 주세요.");
+                return;
+            }
+            if (isInMeeting()) {
+                renderAll("회의 참여를 종료한 뒤 실습실로 이동해 주세요.");
+                return;
+            }
+            const lab = state.labs.find(
+                (item) => sameId(item.spaceId, labMove.dataset.spaceLabMove)
+            );
+            if (lab?.operationalStatus === "ACTIVE" && !isLabFull(lab)) {
+                await movePresence(
+                    (spaceId) => window.OmagotchiApi.attendance.moveLab(spaceId),
+                    lab.spaceId,
+                    `${lab.name}으로 이동했습니다.`
+                );
+            } else if (isLabFull(lab)) {
+                renderAll("실습실 정원이 가득 찼습니다.");
+            }
+        } else if (libraryEnter) {
+            if (!isCheckedIn()) {
+                renderAll("도서관에 입장하려면 먼저 체크인해 주세요.");
+                return;
+            }
+            if (isInMeeting()) {
+                renderAll("회의 참여를 종료한 뒤 도서관에 입장해 주세요.");
+                return;
+            }
+            const library = state.studySpaces.find(
+                (space) => sameId(space.spaceId, libraryEnter.dataset.spaceLibraryEnter)
+            );
+            if (library?.operationalStatus === "ACTIVE") {
+                await movePresence(
+                    (spaceId) => window.OmagotchiApi.attendance.moveStudySpace(spaceId),
+                    library.spaceId,
+                    `${library.name}에 입장했습니다.`
+                );
+            }
         } else if (roomSelect) {
             state.selectedRoomId = roomSelect.dataset.spaceSelectRoom;
             renderAll();
-        } else if (openPartyCreate) {
-            state.partyCreateOpen = true;
-            renderAll();
-        } else if (cancelPartyCreate) {
-            state.partyCreateOpen = false;
-            renderAll();
-        } else if (openPartyDetail) {
-            state.partyDetailOpen = true;
-            renderAll();
-        } else if (closePartyDetail) {
-            state.partyDetailOpen = false;
-            renderAll();
-        } else if (leaveParty && state.party) {
-            const partyName = state.party.name;
-            state.party = null;
-            state.partyCreateOpen = false;
-            state.partyDetailOpen = false;
-            renderAll(`${partyName} 파티에서 나갔습니다.`);
-        } else if (removePartyMember) {
-            const member = state.party?.members.find(
-                (item) => String(item.id) === removePartyMember.dataset.spaceRemovePartyMember
-            );
-            if (sameId(state.party?.masterId, currentUser.id) && member) {
-                state.party.members = state.party.members.filter((item) => !sameId(item.id, member.id));
-                renderAll(`${member.name} 님을 파티에서 제외했습니다.`);
-            }
-        } else if (disbandParty && sameId(state.party?.masterId, currentUser.id)) {
-            const partyName = state.party.name;
-            state.party = null;
-            state.partyCreateOpen = false;
-            state.partyDetailOpen = false;
-            renderAll(`${partyName} 파티를 해체했습니다.`);
         }
 
         if (root.isConnected && event.target.closest("button")) {
@@ -1267,85 +1376,14 @@ import {
 
     async function handleSubmit(event) {
         const participantSearchForm = event.target.closest("[data-space-participant-search-form]");
-        const createPartyForm = event.target.closest("[data-space-create-party]");
-        const addPartyMemberForm = event.target.closest("[data-party-add-member]");
 
-        if (!participantSearchForm && !createPartyForm && !addPartyMemberForm) {
+        if (!participantSearchForm) {
             return;
         }
 
         event.preventDefault();
 
-        if (participantSearchForm) {
-            await searchParticipants(participantSearchForm);
-            return;
-        }
-
-        if (createPartyForm) {
-            const partyName = String(new FormData(createPartyForm).get("partyName") || "").trim();
-            if (!partyName) {
-                renderAll("파티 이름을 입력해 주세요.");
-                return;
-            }
-
-            state.party = {
-                id: `party-${Date.now()}`,
-                name: partyName,
-                cohortId: currentUser.cohortId,
-                masterId: currentUser.id,
-                members: [{
-                    id: currentUser.id,
-                    name: currentUser.name,
-                    characterImage: currentUser.characterImage
-                }]
-            };
-            state.partyCreateOpen = false;
-            state.partyDetailOpen = false;
-            renderAll(`${partyName} 파티를 만들었습니다.`);
-            return;
-        }
-
-        const memberEmail = String(new FormData(addPartyMemberForm).get("partyMemberEmail") || "").trim();
-        const member = cohortMembers.find((item) => item.email === memberEmail);
-        if (!state.party || !sameId(state.party.masterId, currentUser.id) || !member) {
-            renderAll("파티원을 추가할 수 없습니다.");
-            return;
-        }
-        if (state.party.members.length >= 8) {
-            renderAll("파티는 최대 8명까지 참여할 수 있습니다.");
-            return;
-        }
-        if (state.party.members.some((item) => sameId(item.id, member.id))) {
-            renderAll("이미 파티에 참여 중인 사용자입니다.");
-            return;
-        }
-
-        state.party.members.push({
-            id: member.id,
-            name: member.name,
-            email: member.email,
-            characterImage: member.characterImage
-        });
-        renderAll(`${member.name} 님을 파티에 추가했습니다.`);
-    }
-
-    function handlePartySearch(event) {
-        const input = event.target.closest('input[name="partyMemberEmail"]');
-        if (!input) return;
-
-        const picker = input.closest("[data-space-party-picker]");
-        const keyword = input.value.trim().toLowerCase();
-        let visibleCount = 0;
-
-        picker?.classList.remove("has-selection");
-        picker?.querySelectorAll("[data-space-party-candidate]").forEach((candidate) => {
-            const matches = !keyword || candidate.dataset.spacePartySearch.includes(keyword);
-            candidate.hidden = !matches;
-            if (matches) visibleCount += 1;
-        });
-
-        const empty = picker?.querySelector("[data-space-party-empty]");
-        if (empty) empty.hidden = visibleCount > 0;
+        await searchParticipants(participantSearchForm);
     }
 
     function updateCountdowns() {
@@ -1355,7 +1393,11 @@ import {
 
         if (expiredRoom && !refreshingExpiredRoom) {
             refreshingExpiredRoom = true;
-            refreshSpaces(`${expiredRoom.name} 사용 상태를 갱신했습니다.`)
+            Promise.all([
+                refreshSpaces(),
+                refreshCurrentContextAfterMutation()
+            ])
+                .then(() => renderAll(`${expiredRoom.name} 사용 상태를 갱신했습니다.`))
                 .finally(() => {
                     refreshingExpiredRoom = false;
                 });
@@ -1386,7 +1428,7 @@ import {
     function mount(root, options = {}) {
         if (!root) return;
         roots.add(root);
-        if (["meeting", "library"].includes(options.initialTab)) {
+        if (["lab", "meeting", "library"].includes(options.initialTab)) {
             state.activeTab = options.initialTab;
         }
         if (!root.dataset.spaceRoomMounted) {
@@ -1396,17 +1438,12 @@ import {
             root.addEventListener("submit", (event) => {
                 void handleSubmit(event);
             });
-            root.addEventListener("input", handlePartySearch);
-            root.addEventListener("focusin", (event) => {
-                event.target.closest('input[name="partyMemberEmail"]')
-                    ?.closest("[data-space-party-picker]")
-                    ?.classList.remove("has-selection");
-            });
             root.dataset.spaceRoomMounted = "true";
         }
         render(root);
 
-        if (!spaceLoadPromise && state.roomsLoading) {
+        void refreshCurrentContext();
+        if (!spaceLoadPromise) {
             void refreshSpaces();
         }
         if (!vacancyAlertLoadPromise) {
@@ -1420,23 +1457,6 @@ import {
         }
     }
 
-    function mountParty(root) {
-        if (!root) return;
-        partyRoots.add(root);
-        if (!root.dataset.partyManagerMounted) {
-            root.addEventListener("click", (event) => handleAction(event, root));
-            root.addEventListener("submit", handleSubmit);
-            root.addEventListener("input", handlePartySearch);
-            root.addEventListener("focusin", (event) => {
-                event.target.closest('input[name="partyMemberEmail"]')
-                    ?.closest("[data-space-party-picker]")
-                    ?.classList.remove("has-selection");
-            });
-            root.dataset.partyManagerMounted = "true";
-        }
-        root.innerHTML = renderPartyManager();
-    }
-
     function updateData(data = {}) {
         if (Array.isArray(data.rooms)) {
             state.rooms = data.rooms;
@@ -1448,16 +1468,6 @@ import {
             if (!hasSelectedRoom) state.selectedRoomId = "";
         }
 
-        if (Object.hasOwn(data, "party")) {
-            state.party = data.party;
-            state.partyCreateOpen = false;
-            state.partyDetailOpen = false;
-        }
-
-        if (Array.isArray(data.cohortMembers)) {
-            cohortMembers = normalizeCohortMembers(data.cohortMembers);
-        }
-
         if (data.telegram && typeof data.telegram === "object") {
             telegramOverride = { ...data.telegram };
         }
@@ -1465,5 +1475,5 @@ import {
         renderAll();
     }
 
-    window.OmagotchiSpaceRoom = { mount, mountParty, updateData };
+    window.OmagotchiSpaceRoom = { mount, updateData };
 })();

@@ -11,11 +11,13 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import site.omagotchi.frontend.attendance.application.AttendanceBffService;
 import site.omagotchi.frontend.attendance.application.result.AttendancePageResult;
 import site.omagotchi.frontend.attendance.application.result.AttendanceRecordResult;
+import site.omagotchi.frontend.attendance.application.result.CurrentPresenceResult;
 import site.omagotchi.frontend.global.application.result.PageMetadata;
 
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
@@ -97,6 +99,53 @@ class AttendanceBffControllerTest {
                 );
 
         verify(service).checkIn();
+    }
+
+    @Test
+    @DisplayName("현재 위치 Application 결과의 Presentation 응답 변환")
+    void returnsCurrentPresence() throws Exception {
+        when(service.getCurrentPresence()).thenReturn(Optional.of(
+                new CurrentPresenceResult(
+                        301L,
+                        "PRESENT",
+                        Instant.parse("2026-09-02T01:00:00Z")
+                )
+        ));
+
+        mockMvc.perform(get("/bff/v1/attendance/current-presence"))
+                .andExpectAll(
+                        status().isOk(),
+                        jsonPath("$.spaceId").value(301),
+                        jsonPath("$.state").value("PRESENT"),
+                        jsonPath("$.startedAt").value("2026-09-02T01:00:00Z")
+                );
+
+        verify(service).getCurrentPresence();
+    }
+
+    @Test
+    @DisplayName("현재 체류구간이 없으면 현재 위치 응답 본문이 없다")
+    void returnsNoContentWithoutCurrentPresence() throws Exception {
+        when(service.getCurrentPresence()).thenReturn(Optional.empty());
+
+        mockMvc.perform(get("/bff/v1/attendance/current-presence"))
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
+    @DisplayName("도서관 입장 요청의 공간 ID를 전달하고 확정 위치를 반환한다")
+    void movesToStudySpace() throws Exception {
+        when(service.moveStudySpace(301L)).thenReturn(301L);
+
+        mockMvc.perform(post("/bff/v1/attendance/move-study")
+                        .contentType("application/json")
+                        .content("{\"spaceId\":301}"))
+                .andExpectAll(
+                        status().isOk(),
+                        jsonPath("$.spaceId").value(301)
+                );
+
+        verify(service).moveStudySpace(301L);
     }
 
     private static AttendanceRecordResult attendanceRecord() {

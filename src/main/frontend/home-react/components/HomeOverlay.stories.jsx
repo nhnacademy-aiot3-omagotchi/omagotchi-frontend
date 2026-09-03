@@ -185,9 +185,9 @@ export const ProgressWithoutAiQuest = {
       </section>
       <section data-overlay-panel="leaders">
         <div class="overlay-section-label"><strong>명예의 전당</strong><span></span><em>전체 학습 시간</em></div>
-        <ol class="overlay-list overlay-leader-list" aria-label="학습 시간 랭킹">
-          <li data-empty-ranking><strong>-</strong><span>랭킹 데이터가 없습니다.</span><em>기록 없음</em></li>
-        </ol>
+        <div class="rank-board" aria-label="학습 시간 랭킹">
+          <p class="rank-empty" data-empty-ranking>랭킹 데이터가 없습니다.</p>
+        </div>
       </section>
     `
   }
@@ -203,7 +203,7 @@ export const Progress = {
           <article class="quest-ai-card">
             <span class="quest-ai-badge">AI 추천</span>
             <div class="quest-ai-body">
-              <strong>오답 노트 3문항 다시 풀기</strong>
+              <strong>오늘 3시간 30분 공부하기</strong>
               <p>0 / 1 · 40 XP</p>
             </div>
             <div class="quest-ai-action"><em>0/1</em></div>
@@ -212,15 +212,15 @@ export const Progress = {
         <div class="overlay-section-label"><strong>일일</strong><span></span><em>익일 4시에 초기화</em></div>
         <ul class="overlay-state-list" aria-label="퀘스트 목록">
           <li><div><strong>출석하기</strong><p>1 / 1 · 20 XP</p></div><button type="button">보상 받기</button></li>
-          <li><div><strong>학습 세션 완료</strong><p>0 / 1 · 30 XP</p></div><em>0/1</em></li>
+          <li><div><strong>학습 완료하기</strong><p>0 / 1 · 30 XP</p></div><em>0/1</em></li>
           <li><div><strong>캐릭터 확인</strong><p>1 / 1 · 10 XP</p></div><em>수령 완료</em></li>
         </ul>
       </section>
       <section data-overlay-panel="leaders">
         <div class="overlay-section-label"><strong>명예의 전당</strong><span></span><em>전체 학습 시간</em></div>
-        <ol class="overlay-list overlay-leader-list" aria-label="학습 시간 랭킹">
-          <li data-empty-ranking><strong>-</strong><span>랭킹 데이터가 없습니다.</span><em>기록 없음</em></li>
-        </ol>
+        <div class="rank-board" aria-label="학습 시간 랭킹">
+          <p class="rank-empty" data-empty-ranking>랭킹 데이터가 없습니다.</p>
+        </div>
       </section>
     `
   }

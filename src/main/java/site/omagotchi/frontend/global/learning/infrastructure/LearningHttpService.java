@@ -23,16 +23,29 @@ import site.omagotchi.frontend.learning.infrastructure.request.LearningSpaceMuta
 import site.omagotchi.frontend.learning.infrastructure.request.LearningUpdateSpaceRequest;
 import site.omagotchi.frontend.learning.infrastructure.request.LearningVacancyAlertRequest;
 import site.omagotchi.frontend.learning.infrastructure.request.LearningAddParticipantRequest;
+import site.omagotchi.frontend.learning.infrastructure.request.LearningAddTeamMemberRequest;
+import site.omagotchi.frontend.learning.infrastructure.request.LearningCreateTeamRequest;
 import site.omagotchi.frontend.learning.infrastructure.response.LearningOccupancyResponse;
 import site.omagotchi.frontend.learning.infrastructure.response.LearningAdminActiveOccupancyResponse;
 import site.omagotchi.frontend.learning.infrastructure.response.LearningSpaceResponse;
 import site.omagotchi.frontend.learning.infrastructure.response.LearningVacancyAlertResponse;
 import site.omagotchi.frontend.learning.infrastructure.response.LearningParticipantCandidateResponse;
 import site.omagotchi.frontend.learning.infrastructure.response.LearningOccupancyParticipantResponse;
+import site.omagotchi.frontend.learning.infrastructure.response.LearningSelectableLabResponse;
+import site.omagotchi.frontend.learning.infrastructure.response.LearningTeamDetailResponse;
+import site.omagotchi.frontend.learning.infrastructure.response.LearningTeamMemberCandidateResponse;
+import site.omagotchi.frontend.learning.infrastructure.response.LearningTeamResponse;
 import site.omagotchi.frontend.profile.infrastructure.request.UpdateNicknameRequest;
 import site.omagotchi.frontend.profile.infrastructure.response.UserNicknameResponse;
 import site.omagotchi.frontend.profile.infrastructure.response.UserProfileResponse;
 import site.omagotchi.frontend.cohort.infrastructure.response.UserAccessContextResponse;
+import site.omagotchi.frontend.study.infrastructure.request.LearningCreateStudyRecordRequest;
+import site.omagotchi.frontend.study.infrastructure.request.LearningUpdateStudyRecordRequest;
+import site.omagotchi.frontend.study.infrastructure.response.LearningCurrentTimerResponse;
+import site.omagotchi.frontend.study.infrastructure.response.LearningDailyStudyRecordsResponse;
+import site.omagotchi.frontend.study.infrastructure.response.LearningMonthlyStudySecondsResponse;
+import site.omagotchi.frontend.study.infrastructure.response.LearningStartTimerResponse;
+import site.omagotchi.frontend.study.infrastructure.response.LearningStudyRecordResponse;
 
 import java.util.List;
 import java.util.UUID;
@@ -108,6 +121,13 @@ public interface LearningHttpService {
             @RequestParam(required = false) String aggregationDate
     );
 
+    // Learning 계약이 POST다. Body는 없고 예측 대상 사용자는 Access Token에서 결정된다.
+    @PostExchange("/cohorts/{cohort-id}/predictions/study-time")
+    JsonNode predictStudyTime(
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
+            @PathVariable("cohort-id") Long cohortId
+    );
+
     @GetExchange("/cohorts/{cohort-id}/study-rankings/today")
     JsonNode getTodayStudyRankings(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
@@ -140,39 +160,39 @@ public interface LearningHttpService {
     );
 
     @GetExchange("/cohorts/{cohort-id}/study-records/{study-record-id}")
-    JsonNode getStudyRecord(
+    ResponseEntity<LearningStudyRecordResponse> getStudyRecord(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
             @PathVariable("cohort-id") Long cohortId,
             @PathVariable("study-record-id") UUID studyRecordId
     );
 
     @GetExchange("/cohorts/{cohort-id}/study-records")
-    JsonNode getDailyStudyRecords(
+    ResponseEntity<LearningDailyStudyRecordsResponse> getDailyStudyRecords(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
             @PathVariable("cohort-id") Long cohortId,
             @RequestParam String date
     );
 
     @GetExchange("/cohorts/{cohort-id}/study-time-summaries")
-    JsonNode getMonthlyStudyTimeSummary(
+    ResponseEntity<LearningMonthlyStudySecondsResponse> getMonthlyStudyTimeSummary(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
             @PathVariable("cohort-id") Long cohortId,
             @RequestParam String month
     );
 
     @PostExchange("/cohorts/{cohort-id}/study-records")
-    ResponseEntity<JsonNode> createStudyRecord(
+    ResponseEntity<LearningStudyRecordResponse> createStudyRecord(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
             @PathVariable("cohort-id") Long cohortId,
-            @RequestBody JsonNode request
+            @RequestBody LearningCreateStudyRecordRequest request
     );
 
     @PutExchange("/cohorts/{cohort-id}/study-records/{study-record-id}")
-    JsonNode updateStudyRecord(
+    ResponseEntity<LearningStudyRecordResponse> updateStudyRecord(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
             @PathVariable("cohort-id") Long cohortId,
             @PathVariable("study-record-id") UUID studyRecordId,
-            @RequestBody JsonNode request
+            @RequestBody LearningUpdateStudyRecordRequest request
     );
 
     @DeleteExchange("/cohorts/{cohort-id}/study-records/{study-record-id}")
@@ -184,13 +204,13 @@ public interface LearningHttpService {
     );
 
     @GetExchange("/cohorts/{cohort-id}/timer")
-    JsonNode getCurrentTimer(
+    ResponseEntity<LearningCurrentTimerResponse> getCurrentTimer(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
             @PathVariable("cohort-id") Long cohortId
     );
 
     @PostExchange("/cohorts/{cohort-id}/timer/start")
-    ResponseEntity<JsonNode> startTimer(
+    ResponseEntity<LearningStartTimerResponse> startTimer(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
             @PathVariable("cohort-id") Long cohortId
     );
@@ -440,9 +460,73 @@ public interface LearningHttpService {
             @PathVariable("cohort-membership-id") Long cohortMembershipId,
             @RequestParam String date
     );
+
+    @PostExchange("/teams")
+    ResponseEntity<LearningTeamResponse> createTeam(
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
+            @RequestBody LearningCreateTeamRequest request
+    );
+
+    @GetExchange("/teams/me")
+    ResponseEntity<List<LearningTeamResponse>> getMyTeams(
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization
+    );
+
+    @GetExchange("/teams/{team-id}")
+    ResponseEntity<LearningTeamDetailResponse> getTeam(
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
+            @PathVariable("team-id") Long teamId
+    );
+
+    @GetExchange("/teams/{team-id}/member-candidates")
+    ResponseEntity<List<LearningTeamMemberCandidateResponse>> searchTeamMemberCandidates(
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
+            @PathVariable("team-id") Long teamId,
+            @RequestParam String query
+    );
+
+    @PostExchange("/teams/{team-id}/members")
+    ResponseEntity<Void> addTeamMember(
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
+            @PathVariable("team-id") Long teamId,
+            @RequestBody LearningAddTeamMemberRequest request
+    );
+
+    @DeleteExchange("/teams/{team-id}/members/{member-id}")
+    ResponseEntity<Void> kickTeamMember(
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
+            @PathVariable("team-id") Long teamId,
+            @PathVariable("member-id") Long memberId
+    );
+
+    @PostExchange("/teams/{team-id}/leave")
+    ResponseEntity<Void> leaveTeam(
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
+            @PathVariable("team-id") Long teamId
+    );
+
+    @PostExchange("/teams/{team-id}/members/{member-id}/delegate")
+    ResponseEntity<Void> delegateTeamMaster(
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
+            @PathVariable("team-id") Long teamId,
+            @PathVariable("member-id") Long memberId
+    );
+
+    @DeleteExchange("/teams/{team-id}")
+    ResponseEntity<Void> disbandTeam(
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
+            @PathVariable("team-id") Long teamId
+    );
+
     @GetExchange("/spaces")
     ResponseEntity<List<LearningSpaceResponse>> getSpaces(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization
+    );
+
+    @GetExchange("/cohorts/{cohort-id}/spaces/labs")
+    ResponseEntity<List<LearningSelectableLabResponse>> getSelectableLabs(
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
+            @PathVariable("cohort-id") Long cohortId
     );
 
     @PostExchange("/spaces/{spaceId}/occupancies")

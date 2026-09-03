@@ -26,6 +26,9 @@
 .home-overlay {
     width: min(1060px, calc(100vw - 32px));
     max-height: calc(100dvh - 32px);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
     padding: 0 clamp(18px, 3vw, 34px) clamp(20px, 3vw, 34px);
     border: 2px solid rgba(236, 255, 246, 0.88);
     border-radius: clamp(18px, 2.4vw, 26px);
@@ -47,6 +50,7 @@
 }
 
 .home-overlay > .home-overlay-header {
+    flex-shrink: 0;
     position: sticky;
     top: 0;
     z-index: 6;
@@ -122,6 +126,12 @@
 }
 
 .home-overlay-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
     gap: clamp(14px, 2vw, 20px);
 }
 
@@ -768,73 +778,227 @@
     align-content: space-between;
 }
 
-.home-overlay--progress .overlay-leader-list {
-    gap: 0;
-    overflow: hidden;
-    border: 1px solid rgba(255, 255, 255, 0.18);
-    border-radius: 12px;
-    background: rgba(5, 93, 55, 0.4);
+/* ── 랭킹 시상대 ────────────────────────────────────────────────
+ * 진행 오버레이는 짙은 초록 위에 흰 글씨지만 랭킹판만 흰 카드로 뒤집는다.
+ * 그래서 이 블록 안에서는 색을 전부 다시 지정한다. 상속에 기대면 흰 글씨가 흰 배경에 묻는다.
+ */
+.home-overlay--progress .rank-board {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px;
+    border: 1px solid rgba(5, 93, 55, 0.18);
+    border-radius: 16px;
+    background: #ffffff;
+    color: #16281f;
 }
 
-.home-overlay--progress .overlay-leader-list li,
-.home-overlay--progress .overlay-leader-list [data-empty-ranking] {
-    min-height: 64px;
-    padding: 0 16px;
-    border: 0;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 0;
-    background: transparent;
+.home-overlay--progress .rank-empty {
+    margin: 0;
+    padding: 32px 0;
+    color: rgba(22, 40, 31, 0.55);
+    font-size: 13px;
+    text-align: center;
+}
+
+/* 시상대. 마크업 순서가 2위·1위·3위라 1위가 가운데에 온다. */
+.home-overlay--progress .rank-podium {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    align-items: end;
+    gap: 8px;
+}
+
+.home-overlay--progress .rank-podium-slot {
+    min-height: 1px;
+}
+
+.home-overlay--progress .rank-podium-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 12px 8px 14px;
+    border: 1px solid transparent;
+    border-radius: 14px 14px 8px 8px;
+    text-align: center;
+}
+
+.home-overlay--progress .rank-podium-card.is-gold {
+    padding-top: 20px;
+    border-color: rgba(198, 154, 30, 0.45);
+    background: linear-gradient(180deg, rgba(255, 231, 158, 0.55), rgba(255, 231, 158, 0.14));
+}
+
+.home-overlay--progress .rank-podium-card.is-silver {
+    border-color: rgba(140, 150, 158, 0.42);
+    background: linear-gradient(180deg, rgba(220, 226, 231, 0.65), rgba(220, 226, 231, 0.18));
+}
+
+.home-overlay--progress .rank-podium-card.is-bronze {
+    border-color: rgba(176, 118, 68, 0.42);
+    background: linear-gradient(180deg, rgba(238, 200, 168, 0.55), rgba(238, 200, 168, 0.16));
+}
+
+.home-overlay--progress .rank-podium-medal {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
     color: #ffffff;
+    font-size: 12px;
+    font-weight: 900;
+    line-height: 1;
 }
 
-.home-overlay--progress .overlay-leader-list li:last-child {
+.home-overlay--progress .rank-podium-card.is-gold .rank-podium-medal {
+    background: #c69a1e;
+}
+
+.home-overlay--progress .rank-podium-card.is-silver .rank-podium-medal {
+    background: #8c969e;
+}
+
+.home-overlay--progress .rank-podium-card.is-bronze .rank-podium-medal {
+    background: #b07644;
+}
+
+.home-overlay--progress .rank-podium-name {
+    max-width: 100%;
+    overflow: hidden;
+    color: #16281f;
+    font-size: 12px;
+    font-weight: 800;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.home-overlay--progress .rank-podium-time {
+    color: rgba(22, 40, 31, 0.72);
+    font-size: 12px;
+    font-style: normal;
+    font-variant-numeric: tabular-nums;
+    font-weight: 700;
+}
+
+/* 캐릭터 위에 날개를 겹친다. 날개가 없으면 캐릭터만 남는다. */
+.home-overlay--progress .rank-avatar {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 56px;
+    height: 56px;
+}
+
+.home-overlay--progress .rank-podium-card.is-gold .rank-avatar {
+    width: 68px;
+    height: 68px;
+}
+
+.home-overlay--progress .rank-avatar-character {
+    position: relative;
+    z-index: 1;
+    width: 72%;
+    height: auto;
+    image-rendering: pixelated;
+}
+
+.home-overlay--progress .rank-avatar-wing {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    pointer-events: none;
+}
+
+/* 4위 이하 목록 */
+.home-overlay--progress .rank-rest {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    border: 1px solid rgba(5, 93, 55, 0.14);
+    border-radius: 12px;
+    list-style: none;
+}
+
+.home-overlay--progress .rank-row {
+    display: grid;
+    grid-template-columns: 28px 36px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 10px;
+    min-height: 48px;
+    padding: 4px 12px;
+    border-bottom: 1px solid rgba(5, 93, 55, 0.1);
+    background: transparent;
+    color: #16281f;
+}
+
+.home-overlay--progress .rank-row:last-child {
     border-bottom: 0;
 }
 
-.home-overlay--progress .overlay-leader-list li strong {
-    background: rgba(255, 255, 255, 0.12);
-    color: #ffffff !important;
+.home-overlay--progress .rank-row .rank-avatar {
+    width: 36px;
+    height: 36px;
 }
 
-.home-overlay--progress .overlay-leader-list li :is(span, em) {
-    color: #ffffff;
+.home-overlay--progress .rank-row-number {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 22px;
+    height: 22px;
+    padding: 0 6px;
+    border-radius: 7px;
+    background: rgba(5, 93, 55, 0.1);
+    color: #0d5537;
+    font-size: 12px;
+    font-weight: 800;
 }
 
-.home-overlay--progress .overlay-leader-list:not(:has([data-empty-ranking])):has(> li:nth-child(3)) {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 10px;
-    padding: 104px 0 0;
-    overflow: visible;
-    border: 0;
-    background: transparent;
+.home-overlay--progress .rank-row-name {
+    overflow: hidden;
+    color: #16281f;
+    font-size: 13px;
+    font-weight: 700;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
-.home-overlay--progress .overlay-leader-list:not(:has([data-empty-ranking])):has(> li:nth-child(3)) > li:nth-child(-n+3) {
-    min-height: 96px;
-    padding: 52px 12px 14px;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 12px 12px 0 0;
-    background: rgba(5, 93, 55, 0.62);
+.home-overlay--progress .rank-row-time {
+    color: rgba(22, 40, 31, 0.72);
+    font-size: 12px;
+    font-style: normal;
+    font-variant-numeric: tabular-nums;
+    font-weight: 700;
 }
 
-.home-overlay--progress .overlay-leader-list:not(:has([data-empty-ranking])):has(> li:nth-child(3)) > li:nth-child(1) {
-    min-height: 126px;
-    background: rgba(229, 244, 235, 0.24);
-}
+@media (max-width: 480px) {
+    .home-overlay--progress .rank-board {
+        padding: 12px;
+    }
 
-.home-overlay--progress .overlay-leader-list:not(:has([data-empty-ranking])):has(> li:nth-child(3)) > li:nth-child(2) {
-    background: rgba(229, 244, 235, 0.16);
-}
+    .home-overlay--progress .rank-avatar {
+        width: 44px;
+        height: 44px;
+    }
 
-.home-overlay--progress .overlay-leader-list:not(:has([data-empty-ranking])):has(> li:nth-child(3)) > li:nth-child(3) {
-    min-height: 82px;
-    background: rgba(229, 244, 235, 0.1);
-}
+    .home-overlay--progress .rank-podium-card.is-gold .rank-avatar {
+        width: 54px;
+        height: 54px;
+    }
 
-.home-overlay--progress .overlay-leader-list:not(:has([data-empty-ranking])):has(> li:nth-child(3)) > li:nth-child(n+4) {
-    min-height: 58px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
-    background: rgba(5, 93, 55, 0.42);
+    .home-overlay--progress .rank-row {
+        grid-template-columns: 24px 30px minmax(0, 1fr) auto;
+        gap: 8px;
+    }
 }
 
 /* Community */
@@ -1595,97 +1759,6 @@
         min-height: 96px;
     }
 
-    .home-overlay--progress .overlay-leader-list:not(:has([data-empty-ranking])):has(> li:nth-child(3)) {
-        display: grid;
-        grid-template-columns: 1fr;
-        gap: 0;
-        padding: 0;
-        overflow: hidden;
-        border: 1px solid rgba(255, 255, 255, 0.18);
-        border-radius: 12px;
-        background: rgba(5, 93, 55, 0.4);
-    }
-
-    .home-overlay--progress .overlay-leader-list:not(:has([data-empty-ranking])):has(> li:nth-child(3)) > li:nth-child(-n+3),
-    .home-overlay--progress .overlay-leader-list:not(:has([data-empty-ranking])):has(> li:nth-child(3)) > li:nth-child(n+4) {
-        grid-column: 1;
-        min-height: 58px;
-        display: flex !important;
-        flex-direction: row !important;
-        gap: 10px;
-        align-items: center;
-        justify-content: initial;
-        padding: 0 12px;
-        border: 0;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.12);
-        border-radius: 0;
-        background: transparent;
-        color: #ffffff;
-        text-align: left;
-    }
-
-    .home-overlay--progress .overlay-leader-list:not(:has([data-empty-ranking])):has(> li:nth-child(3)) > li:last-child {
-        border-bottom: 0;
-    }
-
-    .home-overlay--progress .overlay-leader-list:not(:has([data-empty-ranking])):has(> li:nth-child(3)) > li > strong {
-        flex: 0 0 32px;
-        width: 32px;
-        height: 32px;
-    }
-
-    .home-overlay--progress .overlay-leader-list:not(:has([data-empty-ranking])):has(> li:nth-child(3)) > li > span {
-        flex: 1 1 auto;
-        min-width: 0;
-    }
-
-    .home-overlay--progress .overlay-leader-list:not(:has([data-empty-ranking])):has(> li:nth-child(3)) > li > em {
-        flex: 0 0 auto;
-    }
-
-    .home-overlay--progress .overlay-leader-list:not(:has([data-empty-ranking])):has(> li:nth-child(3)) > li:nth-child(-n+3)::before {
-        display: none;
-        content: none;
-    }
-
-    .home-overlay--progress .overlay-leader-list:not(:has([data-empty-ranking])):has(> li:nth-child(3)) > li:nth-child(-n+3) :is(strong, span, em) {
-        order: initial;
-    }
-
-    .home-overlay--progress .overlay-leader-list:not(:has([data-empty-ranking])):has(> li:nth-child(3)) > li:nth-child(-n+3) strong {
-        flex: 0 0 32px;
-        width: 32px;
-        height: 32px;
-        display: grid;
-        place-items: center;
-        border-radius: 50%;
-        background: rgba(255, 255, 255, 0.14);
-        color: #ffffff;
-        font-size: 13px;
-        line-height: 1;
-    }
-
-    .home-overlay--progress .overlay-leader-list:not(:has([data-empty-ranking])):has(> li:nth-child(3)) > li:nth-child(-n+3) span {
-        flex: 1 1 auto;
-        width: auto;
-        max-width: 100%;
-        padding: 0;
-        overflow: hidden;
-        border-radius: 0;
-        background: transparent;
-        color: #ffffff;
-        font-size: 13px;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-    }
-
-    .home-overlay--progress .overlay-leader-list:not(:has([data-empty-ranking])):has(> li:nth-child(3)) > li:nth-child(-n+3) em {
-        flex: 0 0 auto;
-        color: rgba(255, 255, 255, 0.78);
-        font-size: 11px;
-        white-space: nowrap;
-    }
-
     .home-overlay--community {
         width: min(560px, 100%);
     }
@@ -1909,6 +1982,7 @@
 .ui-menu-live-panel.home-overlay--progress,
 .ui-menu-live-panel.home-overlay--personal,
 .ui-menu-live-panel.home-overlay--cohort,
+.ui-menu-live-panel.home-overlay--write,
 .ui-menu-live-panel.home-overlay--community,
 .ui-menu-live-panel.home-overlay--settings {
     --overlay-list-surface: #f7fcf9;
@@ -1922,18 +1996,18 @@
     color: var(--overlay-list-ink);
 }
 
-.ui-menu-live-panel:is(.home-overlay--progress, .home-overlay--personal, .home-overlay--cohort, .home-overlay--community, .home-overlay--settings) .ui-menu-live-header {
+.ui-menu-live-panel:is(.home-overlay--progress, .home-overlay--personal, .home-overlay--cohort, .home-overlay--write, .home-overlay--community, .home-overlay--settings) .ui-menu-live-header {
     border-bottom-color: rgba(18, 56, 42, 0.18);
     background: #2fc47c;
     color: #0c3022;
 }
 
-.ui-menu-live-panel:is(.home-overlay--progress, .home-overlay--personal, .home-overlay--cohort, .home-overlay--community, .home-overlay--settings) .ui-menu-live-header :is(h2, p),
-.ui-menu-live-panel:is(.home-overlay--progress, .home-overlay--personal, .home-overlay--cohort, .home-overlay--community, .home-overlay--settings) > .home-overlay-close {
+.ui-menu-live-panel:is(.home-overlay--progress, .home-overlay--personal, .home-overlay--cohort, .home-overlay--write, .home-overlay--community, .home-overlay--settings) .ui-menu-live-header :is(h2, p),
+.ui-menu-live-panel:is(.home-overlay--progress, .home-overlay--personal, .home-overlay--cohort, .home-overlay--write, .home-overlay--community, .home-overlay--settings) > .home-overlay-close {
     color: #0c3022 !important;
 }
 
-.ui-menu-live-panel:is(.home-overlay--progress, .home-overlay--personal, .home-overlay--cohort, .home-overlay--community, .home-overlay--settings) .ui-menu-live-body {
+.ui-menu-live-panel:is(.home-overlay--progress, .home-overlay--personal, .home-overlay--cohort, .home-overlay--write, .home-overlay--community, .home-overlay--settings) .ui-menu-live-body {
     background: var(--overlay-list-surface);
 }
 
@@ -2172,6 +2246,85 @@
     text-align: right;
 }
 
+.home-team-toolbar {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.home-team-cohort-picker {
+    width: min(320px, 100%);
+}
+
+.home-team-cohort-picker select {
+    width: 100%;
+    min-height: 42px;
+    padding: 0 36px 0 12px;
+    border: 1px solid var(--ui-line);
+    border-radius: 12px;
+    background: #ffffff;
+    color: var(--ui-ink);
+    font: inherit;
+    font-size: 13px;
+    font-weight: 800;
+}
+
+.home-team-state {
+    margin: 0;
+    padding: 18px;
+    border: 1px dashed var(--ui-line-strong);
+    border-radius: 14px;
+    background: #ffffff;
+    color: var(--ui-ink-muted);
+    text-align: center;
+}
+
+.home-team-state.is-error {
+    display: grid;
+    justify-items: center;
+    gap: 10px;
+    border-color: #d8aaaa;
+}
+
+.home-team-state.is-error p {
+    margin: 0;
+}
+
+.home-team-member-preview {
+    min-width: 0;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 5px;
+}
+
+.home-team-member-preview > span {
+    max-width: 130px;
+    overflow: hidden;
+    padding: 5px 8px;
+    border-radius: 999px;
+    background: var(--ui-emerald-50);
+    color: var(--ui-emerald-800);
+    font-size: 11px;
+    font-weight: 800;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.home-team-member-preview .home-team-member-empty {
+    color: var(--ui-ink-muted);
+}
+
+.home-overlay--cohort .ui-party-members li {
+    grid-template-columns: minmax(0, 1fr) auto auto;
+}
+
+.home-overlay--cohort .ui-party-members li > strong {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 @media (max-width: 840px) {
     .home-overlay--cohort .ui-cohort-summary__copy {
         grid-template-columns: 1fr auto;
@@ -2190,7 +2343,7 @@
     }
 
     .home-overlay--cohort .ui-party-members li {
-        grid-template-columns: auto minmax(0, 1fr) auto;
+        grid-template-columns: minmax(0, 1fr) auto auto;
     }
 
     .home-overlay--cohort .ui-party-members li > button {
@@ -2199,6 +2352,14 @@
 
     .home-overlay--cohort .ui-party-management {
         grid-template-columns: 1fr;
+    }
+
+    .home-team-toolbar {
+        justify-content: stretch;
+    }
+
+    .home-team-cohort-picker {
+        width: 100%;
     }
 
     .home-overlay--cohort .ui-party-members ul {
@@ -2227,13 +2388,50 @@
     color: #ffffff !important;
 }
 
+.home-overlay--progress .ranking-period-tabs button {
+    border-color: var(--overlay-list-line);
+    background: var(--overlay-list-soft);
+    color: var(--overlay-list-muted);
+}
+
+.home-overlay--progress .ranking-period-tabs button:hover,
+.home-overlay--progress .ranking-period-tabs button:focus-visible {
+    background: #dff2e8;
+    color: var(--overlay-list-ink);
+}
+
+.home-overlay--progress .ranking-period-tabs button.is-active {
+    border-color: #176b46;
+    background: #176b46;
+    color: #ffffff;
+}
+
+.home-overlay--progress .ranking-date-field {
+    color: var(--overlay-list-muted);
+}
+
+.home-overlay--progress .ranking-date-field input {
+    border-color: var(--overlay-list-line);
+    background: var(--overlay-list-soft);
+    color: var(--overlay-list-ink);
+    color-scheme: light;
+}
+
+.home-overlay--progress .ranking-date-field.is-active input {
+    border-color: #176b46;
+    box-shadow: 0 0 0 2px rgba(23, 107, 70, 0.14);
+}
+
+.home-overlay--progress .ranking-aggregation-note {
+    color: var(--overlay-list-muted);
+}
+
 .home-overlay--progress .overlay-section-label :is(strong, em) {
     color: var(--overlay-list-muted) !important;
 }
 
 .overlay-state-list,
 .overlay-metric-list,
-.overlay-empty-state,
 .home-overlay--progress .overlay-leader-list {
     overflow: hidden;
     margin: 0;
@@ -2273,6 +2471,9 @@
     display: grid;
     gap: 4px;
 }
+.overlay-metric-list > div {
+    grid-template-columns: minmax(0, 1fr) auto;
+}
 
 .overlay-state-list :is(strong, p),
 .home-overlay--progress .overlay-leader-list :is(strong, span, em) {
@@ -2301,10 +2502,6 @@
     background: var(--overlay-list-soft);
 }
 
-.overlay-metric-list > div {
-    grid-template-columns: minmax(0, 1fr) auto;
-}
-
 .overlay-metric-list :is(dt, dd) {
     margin: 0;
     color: var(--overlay-list-ink);
@@ -2320,7 +2517,14 @@
     display: grid;
     align-content: center;
     gap: 6px;
+    overflow: hidden;
+    margin: 0;
     padding: 20px;
+    border: 1px solid var(--overlay-list-line) !important;
+    border-radius: 12px;
+    background: var(--overlay-list-row) !important;
+    color: var(--overlay-list-ink);
+    list-style: none;
 }
 
 .overlay-empty-state strong {
@@ -2450,20 +2654,6 @@
 .home-overlay--settings .overlay-settings-open {
     background: var(--overlay-list-soft);
     color: #176b46;
-}
-
-@media (max-width: 760px) {
-    .overlay-state-list li,
-    .overlay-metric-list > div,
-    .home-overlay--progress .overlay-leader-list li,
-    .home-overlay--progress .overlay-leader-list [data-empty-ranking] {
-        min-height: 58px;
-        padding: 10px 12px;
-    }
-
-    .home-overlay--progress .overlay-leader-list li {
-        grid-template-columns: 30px minmax(0, 1fr) auto;
-    }
 }
 
 /* ── AI 추천 퀘스트 강조 카드 ─────────────────────────────────────────────

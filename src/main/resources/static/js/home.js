@@ -1,11 +1,20 @@
 import { createAttendance, hasApprovedCohort } from "./home/attendance.js";
 import { createBgmPlayer } from "./home/bgm.js";
-import { createCharacter } from "./home/character.js";
+import { createCharacter } from "./home/character.js?v=20260902-7";
 import { saveCommunityPost } from "./home/community.js?v=20260831-1";
 import { createLevel } from "./home/level.js";
-import { AI_QUEST_TYPE, loadProgressResources, normalizeDailyQuests } from "./home/questData.js";
+import { isAiRecommendedQuest, loadProgressResources, normalizeDailyQuests } from "./home/questData.js?v=20260902-1";
+import { renderRankingBoard } from "./home/rankingBoard.js?v=20260902-2";
+import {
+    lastClosedRankingDate,
+    normalizeStudyRanking,
+    rankingCoverageLabel,
+    rankingPeriodLabel,
+    requestStudyRanking
+} from "./home/rankingData.js?v=20260903-1";
 import { createStudyRecords } from "./home/studyRecords.js?v=20260825-5";
-import { createTimer } from "./home/timer.js";
+import { createTimer } from "./home/timer.js?v=20260902-1";
+import { promptResumeTimer } from "./home/timerPrompt.js?v=20260902-1";
 import { escapeHtml, formatDuration } from "./home/utils.js";
 
 const timerDisplay = document.querySelector("[data-timer-display]");
@@ -100,11 +109,14 @@ function renderHomeCohortOverlay() {
                     <button class="ui-button ui-button--primary" type="submit">참가 신청</button>
                     <p class="home-cohort-join-message" data-home-cohort-message>유효한 코드를 입력하면 관리자 승인 대기 상태로 등록됩니다.</p>
                 </form>
-                <section class="ui-cohort-party-locked" aria-label="기수 내 파티 비활성 상태">
-                    <div>
-                        <strong>기수 참여 후 파티를 만들 수 있어요.</strong>
-                        <p>승인이 완료되면 같은 기수 멤버와 최대 8명까지 파티를 구성할 수 있습니다.</p>
-                    </div>
+                <section class="ui-cohort-party-zone" aria-labelledby="home-cohort-team-title">
+                    <header>
+                        <div>
+                            <h3 id="home-cohort-team-title">내 팀</h3>
+                            <p>활성 기수별 팀을 확인하거나 새로 만들 수 있어요.</p>
+                        </div>
+                    </header>
+                    <div data-home-party-app></div>
                 </section>
             </div>`;
     }
@@ -125,8 +137,8 @@ function renderHomeCohortOverlay() {
             <section class="ui-cohort-party-zone" aria-labelledby="home-cohort-party-title">
                 <header>
                     <div>
-                        <h3 id="home-cohort-party-title">${escapeHtml(cohortLabel)} 내 파티</h3>
-                        <p>같은 기수 멤버와 최대 8명까지 함께할 수 있어요.</p>
+                        <h3 id="home-cohort-party-title">${escapeHtml(cohortLabel)} 내 팀</h3>
+                        <p>같은 기수 멤버와 팀을 만들고 함께 공부할 수 있어요.</p>
                     </div>
                 </header>
                 <div data-home-party-app></div>
@@ -223,59 +235,11 @@ const bgmPlayer = createBgmPlayer({
 
 let studyRecordsController;
 
-function promptResumeTimer({ elapsedSeconds = 0 } = {}) {
-    return new Promise((resolve) => {
-        const backdrop = document.createElement("section");
-        backdrop.className = "home-confirm-backdrop";
-        backdrop.innerHTML = `
-            <article class="home-confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="home-timer-confirm-title">
-                <h2 id="home-timer-confirm-title">진행 중인 타이머가 있어요</h2>
-                <p>이전에 시작된 학습 타이머가 실행 중입니다.<br />이어서 계속 진행할까요, 아니면 기존 기록을 파기할까요?</p>
-                <div class="home-confirm-actions">
-                    <button type="button" data-timer-discard>파기하기</button>
-                    <button type="button" data-confirm-ok data-timer-resume>계속 진행</button>
-                </div>
-            </article>
-        `;
-
-        function close(action) {
-            document.removeEventListener("keydown", handleKeydown);
-            backdrop.remove();
-            resolve(action);
-        }
-
-        function handleKeydown(event) {
-            if (event.key === "Escape") {
-                close("resume");
-            }
-        }
-
-        backdrop.addEventListener("click", (event) => {
-            const target = event.target;
-            if (!(target instanceof Element)) return;
-
-            if (target.closest("[data-timer-discard]")) {
-                close("discard");
-                return;
-            }
-
-            if (target.closest("[data-timer-resume]")) {
-                close("resume");
-            }
-        });
-
-        document.addEventListener("keydown", handleKeydown);
-        document.body.append(backdrop);
-        backdrop.querySelector("[data-timer-resume]")?.focus();
-    });
-}
-
 const timerController = createTimer({
     display: timerDisplay,
     toggle: timerToggle,
     statusMessage: document.querySelector("[data-timer-status]"),
     api: api?.study,
-    warnOnLeave: true,
     onRunningTimerDetected: promptResumeTimer,
     onStart: ({ restored }) => {
         characterController.setStudyState(true);
@@ -535,7 +499,7 @@ const overlayContent = {
             <summary>4. 공간 이용</summary>
             <div class="help-detail">
                 <ul>
-                    <li><strong>회의실</strong>: 파티를 구성해 제한된 인원으로 이용</li>
+                    <li><strong>회의실</strong>: 점유자가 같은 기수 사용자를 참여자로 추가해 함께 이용</li>
                     <li><strong>도서관</strong>: 개인 또는 조용한 학습 공간</li>
                     <li>사용 중인 회의실은 이용 시간을 연장하거나 반납할 수 있습니다.</li>
                     <li>만실인 회의실은 공실 알림을 신청할 수 있습니다.</li>
@@ -545,13 +509,11 @@ const overlayContent = {
         </details>
 
         <details>
-            <summary>5. 파티와 사용자 목록</summary>
+            <summary>5. 팀과 사용자 목록</summary>
             <div class="help-detail">
                 <ul>
-                    <li>기수 · 팀 메뉴에서 파티를 만들고 관리합니다.</li>
-                    <li>이름 또는 이메일로 같은 기수 사용자를 검색해 파티원으로 초대합니다.</li>
-                    <li>파티를 만든 후 이용 가능한 회의실에 입장합니다.</li>
-                    <li>공간 메뉴에서는 현재 파티의 캐릭터와 닉네임을 확인합니다.</li>
+                    <li>기수 · 팀 메뉴에서 서버에 저장되는 팀을 만들고 확인합니다.</li>
+                    <li>팀과 회의실 참여자는 서로 독립적으로 관리됩니다.</li>
                     <li>실시간 채팅 기능은 사용하지 않습니다. 홈 하단의 같은 자리는 AI 도우미 영역입니다.</li>
                 </ul>
             </div>
@@ -563,7 +525,7 @@ const overlayContent = {
                 <ul>
                     <li><strong>진행</strong>: 퀘스트, 업적, 랭킹, 타임라인, 통계 확인</li>
                     <li><strong>내 정보</strong>: 학습 시간, 출석, 캐릭터 정보 확인</li>
-                    <li><strong>기수 · 팀</strong>: 소속 기수와 파티 생성·관리</li>
+                    <li><strong>기수 · 팀</strong>: 소속 기수와 팀 생성·관리</li>
                     <li><strong>학습 기록</strong>: 월간 달력에서 저장한 기록을 확인·수정·삭제</li>
                     <li><strong>공간</strong>: 회의실과 도서관 이용</li>
                     <li><strong>커뮤</strong>: 공지 및 자유 게시판 이용</li>
@@ -698,10 +660,23 @@ const overlayContent = {
             </ul>
         </section>
         <section class="overlay-tab-panel" role="tabpanel" data-overlay-panel="leaders" hidden>
-            <div class="overlay-section-label"><strong>명예의 전당</strong><span></span><em>전체 학습 시간</em></div>
-            <ol class="overlay-list overlay-leader-list" aria-label="학습 시간 랭킹" data-progress-ranking>
-                <li data-empty-ranking><strong>-</strong><span>랭킹 데이터가 없습니다.</span><em>기록 없음</em></li>
-            </ol>
+            <div class="ranking-filter-bar">
+                <div class="ranking-period-tabs" role="tablist" aria-label="랭킹 기간">
+                    <button class="is-active" type="button" role="tab" aria-selected="true" data-ranking-period="TODAY">오늘</button>
+                    <button type="button" role="tab" aria-selected="false" data-ranking-period="WEEKLY">이번 주</button>
+                    <button type="button" role="tab" aria-selected="false" data-ranking-period="MONTHLY">이번 달</button>
+                </div>
+                <label class="ranking-date-field" data-ranking-date-field>
+                    <span>지난 날짜</span>
+                    <input type="date" data-ranking-date aria-label="과거 일간 랭킹 날짜" />
+                </label>
+            </div>
+            <p class="ranking-aggregation-note">주간·월간 랭킹은 완료된 집계일까지만 반영됩니다. 오늘 기록은 ‘오늘’ 랭킹에서 확인할 수 있습니다.</p>
+            <div class="overlay-section-label"><strong>명예의 전당</strong><span></span><em data-ranking-meta>불러오는 중</em></div>
+            <div class="rank-board" aria-label="학습 시간 랭킹" data-progress-ranking>
+                <p class="rank-empty" data-empty-ranking>랭킹을 불러오는 중입니다.</p>
+            </div>
+            <div class="ranking-my-card" data-progress-my-ranking hidden></div>
         </section>
     `,
     personal: renderPersonalOverlay,
@@ -809,29 +784,39 @@ function questStatusLabel(quest) {
 async function loadProgressOverlay() {
     const questList = homeOverlayRoot?.querySelector("[data-progress-quests]");
     const rankingList = homeOverlayRoot?.querySelector("[data-progress-ranking]");
+    const myRankingCard = homeOverlayRoot?.querySelector("[data-progress-my-ranking]");
+    const rankingMeta = homeOverlayRoot?.querySelector("[data-ranking-meta]");
+    const rankingPeriodButtons = homeOverlayRoot?.querySelectorAll("[data-ranking-period]") ?? [];
+    const rankingDateInput = homeOverlayRoot?.querySelector("[data-ranking-date]");
+    const rankingDateField = homeOverlayRoot?.querySelector("[data-ranking-date-field]");
     const aiSlot = homeOverlayRoot?.querySelector("[data-progress-ai-quest]");
-    if (!questList || !rankingList || !aiSlot) return;
+    // 진행 패널은 탭으로 그려지고, 탭 구현이 비활성 패널을 언마운트하면 그쪽 노드는 없다.
+    // 하나라도 없다고 전체를 포기하면 남은 영역까지 초기 문구로 굳어 조용한 미표시가 된다.
+    // 그래서 전부 없을 때만 중단하고, 이후에는 영역별로 각자 판정한다.
+    if (!questList && !rankingList && !aiSlot) return;
 
     // 랭킹 조회 기수는 서버가 Session 승인 기수에서 확보하므로 Browser가 지정하지 않는다.
     // 승인 기수가 없으면 서버가 업무 오류를 반환하므로, 빈 랭킹으로 표시하고 화면은 유지한다.
     const hasRankingCohort = Boolean(currentProfile.approvedCohort?.cohortId);
     const results = await loadProgressResources(api, hasRankingCohort);
-    const rankings = results.rankings.status === "fulfilled" ? results.rankings.value : null;
     const dailyQuests = results.quests.status === "fulfilled"
         ? normalizeDailyQuests(results.quests.value)
         : null;
     if (dailyQuests === null) {
         // 실패 시 AI 슬롯을 열어 두면 이전 퀘스트가 남아 오해를 준다. 목록 하나로만 알린다.
-        aiSlot.hidden = true;
-        aiSlot.innerHTML = "";
-        questList.innerHTML = `<li><div><strong>퀘스트를 불러오지 못했습니다.</strong><p>잠시 후 다시 시도해 주세요.</p></div><em>오류</em></li>`;
+        if (aiSlot) {
+            aiSlot.hidden = true;
+            aiSlot.innerHTML = "";
+        }
+        if (questList) questList.innerHTML = `<li><div><strong>퀘스트를 불러오지 못했습니다.</strong><p>잠시 후 다시 시도해 주세요.</p></div><em>오류</em></li>`;
     } else {
-        // AI 추천 퀘스트는 서버 정렬과 무관하게 항상 맨 위 카드로 올린다.
-        const aiQuests = dailyQuests.filter((quest) => quest.type === AI_QUEST_TYPE);
-        const routineQuests = dailyQuests.filter((quest) => quest.type !== AI_QUEST_TYPE);
+        // LLM 슬롯의 예측 기반 공부 시간 퀘스트는 서버 정렬과 무관하게 항상 맨 위 카드로 올린다.
+        const aiQuests = dailyQuests.filter(isAiRecommendedQuest);
+        const routineQuests = dailyQuests.filter((quest) => !isAiRecommendedQuest(quest));
 
-        aiSlot.hidden = aiQuests.length === 0;
-        aiSlot.innerHTML = aiQuests.map((quest) => `
+        if (aiSlot) {
+            aiSlot.hidden = aiQuests.length === 0;
+            aiSlot.innerHTML = aiQuests.map((quest) => `
             <article class="quest-ai-card${quest.status === "CLAIMED" ? " is-claimed" : ""}">
                 <span class="quest-ai-badge">AI 추천</span>
                 <div class="quest-ai-body">
@@ -841,11 +826,13 @@ async function loadProgressOverlay() {
                 <div class="quest-ai-action">${questActionHtml(quest)}</div>
             </article>
         `).join("");
+        }
 
         // 이미 받아온 결과를 그대로 쓴다. 배지 때문에 요청을 더 보내지 않는다.
+        // 배지는 DOM 유무와 무관한 정보라 슬롯이 없어도 갱신한다.
         publishMenuAlerts(questAlertOverlays(dailyQuests));
 
-        questList.innerHTML = routineQuests.length ? routineQuests.map((quest) => `
+        if (questList) questList.innerHTML = routineQuests.length ? routineQuests.map((quest) => `
             <li>
                 <div><strong>${escapeHtml(quest.title)}</strong><p>${questProgressText(quest)}</p></div>
                 ${questActionHtml(quest)}
@@ -853,10 +840,86 @@ async function loadProgressOverlay() {
             : `<li><div><strong>등록된 퀘스트가 없습니다.</strong><p>오늘 제공된 퀘스트가 없습니다.</p></div><em>대기</em></li>`;
     }
 
-    const entries = Array.isArray(rankings?.entries) ? rankings.entries : [];
-    rankingList.innerHTML = entries.length ? entries.map((entry) => `
-        <li><strong>${entry.rank}</strong><span>${escapeHtml(entry.displayName || `수강생 (${entry.rank}위)`)}</span><em>${formatDuration(entry.studySeconds)}</em></li>
-    `).join("") : `<li data-empty-ranking><strong>-</strong><span>랭킹 데이터가 없습니다.</span><em>기록 없음</em></li>`;
+    if (!rankingList) return;
+
+    if (rankingDateInput) rankingDateInput.max = lastClosedRankingDate();
+
+    function renderRankingResult(result, period, dailyDate = null) {
+        if (myRankingCard) {
+            myRankingCard.hidden = true;
+            myRankingCard.innerHTML = "";
+        }
+        if (!hasRankingCohort) {
+            if (rankingMeta) rankingMeta.textContent = "기수 미승인";
+            rankingList.innerHTML = `<p class="rank-empty" data-empty-ranking>승인된 기수가 없습니다.</p>`;
+            return;
+        }
+        if (result.status !== "fulfilled") {
+            if (rankingMeta) rankingMeta.textContent = "조회 실패";
+            rankingList.innerHTML = `<p class="rank-empty" data-empty-ranking>랭킹을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.</p>`;
+            return;
+        }
+        const ranking = normalizeStudyRanking(result.value, period);
+        if (ranking === null) {
+            if (rankingMeta) rankingMeta.textContent = "응답 오류";
+            rankingList.innerHTML = `<p class="rank-empty" data-empty-ranking>랭킹 응답을 확인할 수 없습니다.</p>`;
+            return;
+        }
+
+        if (rankingMeta) {
+            rankingMeta.textContent = `${rankingPeriodLabel(period, dailyDate)} · ${rankingCoverageLabel(period, ranking.includedThroughDate)} · ${ranking.rankedMemberCount}명 참여`;
+        }
+        if (ranking.entries.length === 0) {
+            rankingList.innerHTML = `<p class="rank-empty" data-empty-ranking>${rankingPeriodLabel(period, dailyDate)} 학습 기록이 아직 없습니다.</p>`;
+            return;
+        }
+        rankingList.innerHTML = renderRankingBoard(ranking.entries);
+        const mine = ranking.myRanking.ranked ? ranking.myRanking.ranking : null;
+        if (mine !== null && myRankingCard) {
+            myRankingCard.hidden = false;
+            myRankingCard.innerHTML = `<strong>내 순위 ${mine.rank}위</strong><span>${escapeHtml(mine.displayName || "대표 캐릭터 미설정")}</span><em>${formatDuration(mine.studySeconds)}${mine.timerRunning ? " · 진행 중" : ""}</em>`;
+        }
+    }
+
+    renderRankingResult(results.rankings, "TODAY");
+    let rankingRequestSequence = 0;
+    async function loadRankingPeriod(period, dailyDate = null) {
+        const requestSequence = ++rankingRequestSequence;
+        const label = rankingPeriodLabel(period, dailyDate);
+        if (rankingMeta) rankingMeta.textContent = `${label} · 불러오는 중`;
+        rankingList.innerHTML = `<p class="rank-empty" data-empty-ranking>랭킹을 불러오는 중입니다.</p>`;
+        try {
+            const value = await requestStudyRanking(api, period, new Date(), dailyDate);
+            if (requestSequence !== rankingRequestSequence) return;
+            renderRankingResult({status: "fulfilled", value}, period, dailyDate);
+        } catch (error) {
+            if (requestSequence !== rankingRequestSequence) return;
+            renderRankingResult({status: "rejected", reason: error}, period, dailyDate);
+        }
+    }
+
+    rankingPeriodButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+            const period = button.dataset.rankingPeriod;
+            rankingPeriodButtons.forEach((candidate) => {
+                const active = candidate === button;
+                candidate.classList.toggle("is-active", active);
+                candidate.setAttribute("aria-selected", String(active));
+            });
+            rankingDateField?.classList.remove("is-active");
+            loadRankingPeriod(period);
+        });
+    });
+
+    rankingDateInput?.addEventListener("change", () => {
+        if (!rankingDateInput.value) return;
+        rankingPeriodButtons.forEach((button) => {
+            button.classList.remove("is-active");
+            button.setAttribute("aria-selected", "false");
+        });
+        rankingDateField?.classList.add("is-active");
+        loadRankingPeriod("DAILY", rankingDateInput.value);
+    });
 
 }
 
@@ -1173,7 +1236,7 @@ function openHomeOverlay(type) {
     }
 
     if (type === "cohort") {
-        window.OmagotchiSpaceRoom?.mountParty(
+        window.OmagotchiTeam?.mount(
             homeOverlayRoot.querySelector("[data-home-party-app]")
         );
     }
@@ -1307,6 +1370,11 @@ homeOverlayRoot?.addEventListener("click", (event) => {
     }
 
     if (logoutButton) {
+        if (document.querySelector("[data-timer-resume-dialog]")) {
+            event.preventDefault();
+            event.stopPropagation();
+            return;
+        }
         logout(logoutButton);
     }
 });

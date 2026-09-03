@@ -902,6 +902,15 @@ a {
     display: none !important;
 }
 
+/*
+ * 진행 패널 탭은 forceMount로 두 패널을 모두 DOM에 남긴다.
+ * 이때 Radix가 hidden을 붙이지 않으므로 숨김은 data-state가 맡는다.
+ * 이 규칙이 없으면 퀘스트와 랭킹이 한 화면에 동시에 나온다.
+ */
+.overlay-tab-panel[data-state="inactive"] {
+    display: none !important;
+}
+
 .overlay-card-grid,
 /* 내 정보 통계 카드 */
 .overlay-stat-grid {
@@ -1234,6 +1243,10 @@ a {
     background: rgba(0, 0, 0, 0.38);
 }
 
+.home-timer-resume-dialog::backdrop {
+    background: rgba(0, 0, 0, 0.38);
+}
+
 .home-confirm-dialog {
     width: min(360px, calc(100vw - 48px));
     display: grid;
@@ -1281,7 +1294,8 @@ a {
     box-shadow: 0 3px 0 rgba(0, 0, 0, 0.16);
 }
 
-.home-confirm-actions [data-confirm-ok] {
+.home-confirm-actions [data-confirm-ok],
+.home-confirm-actions [data-timer-resume] {
     background: #111111;
     color: #ffffff;
 }
@@ -1492,6 +1506,90 @@ a {
 .overlay-leader-list {
     --rank-row: rgba(238, 255, 246, 0.88);
     --rank-chip: rgba(31, 201, 121, 0.22);
+}
+
+.home-overlay--progress .ranking-filter-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.home-overlay--progress .ranking-period-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.home-overlay--progress .ranking-period-tabs button {
+    min-height: 34px;
+    padding: 0 13px;
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.08);
+    color: #ffffff;
+    font: inherit;
+    font-size: 12px;
+    font-weight: 900;
+    cursor: pointer;
+}
+
+.home-overlay--progress .ranking-period-tabs button.is-active {
+    background: #ffffff;
+    color: #075d37;
+}
+
+.home-overlay--progress .ranking-date-field {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: #ffffff;
+    font-size: 12px;
+    font-weight: 900;
+}
+
+.home-overlay--progress .ranking-date-field input {
+    min-height: 34px;
+    padding: 0 10px;
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.08);
+    color: #ffffff;
+    font: inherit;
+    font-weight: 800;
+    color-scheme: dark;
+}
+
+.home-overlay--progress .ranking-aggregation-note {
+    margin: -4px 0 12px;
+    color: rgba(255, 255, 255, 0.76);
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+.home-overlay--progress .ranking-my-card {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 10px;
+    margin-top: 12px;
+    padding: 14px 16px;
+    border: 1px solid rgba(255, 255, 255, 0.42);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.14);
+    color: #ffffff;
+    font-size: 13px;
+    font-weight: 900;
+}
+
+.home-overlay--progress .ranking-my-card[hidden] {
+    display: none;
+}
+
+.home-overlay--progress .ranking-my-card em {
+    font-style: normal;
 }
 
 .overlay-leader-list li {

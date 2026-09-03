@@ -10,11 +10,13 @@ import site.omagotchi.frontend.attendance.application.port.AttendanceAccessConte
 import site.omagotchi.frontend.attendance.application.port.AttendanceClient;
 import site.omagotchi.frontend.attendance.application.result.AttendancePageResult;
 import site.omagotchi.frontend.attendance.application.result.AttendanceRecordResult;
+import site.omagotchi.frontend.attendance.application.result.CurrentPresenceResult;
 import site.omagotchi.frontend.global.application.result.PageMetadata;
 
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
@@ -93,6 +95,37 @@ class AttendanceBffServiceTest {
         assertThat(result).isSameAs(expected);
         verify(accessContext).resolve();
         verify(attendanceClient).checkOut("Bearer access-token", 7L);
+    }
+
+    @Test
+    @DisplayName("승인 기수 Context를 사용한 현재 위치 조회")
+    void getsCurrentPresenceThroughAttendancePort() {
+        CurrentPresenceResult expected = new CurrentPresenceResult(
+                301L,
+                "PRESENT",
+                Instant.parse("2026-09-02T01:00:00Z")
+        );
+        when(attendanceClient.getCurrentPresence("Bearer access-token", 7L))
+                .thenReturn(Optional.of(expected));
+
+        var result = service.getCurrentPresence();
+
+        assertThat(result).contains(expected);
+        verify(accessContext).resolve();
+        verify(attendanceClient).getCurrentPresence("Bearer access-token", 7L);
+    }
+
+    @Test
+    @DisplayName("승인 기수 Context를 사용한 도서관 입장 처리")
+    void movesToStudySpaceThroughAttendancePort() {
+        when(attendanceClient.moveStudySpace("Bearer access-token", 7L, 301L))
+                .thenReturn(301L);
+
+        Long result = service.moveStudySpace(301L);
+
+        assertThat(result).isEqualTo(301L);
+        verify(accessContext).resolve();
+        verify(attendanceClient).moveStudySpace("Bearer access-token", 7L, 301L);
     }
 
     private static AttendanceRecordResult attendanceRecord() {

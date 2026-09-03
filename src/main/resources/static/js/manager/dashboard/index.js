@@ -76,7 +76,8 @@ async function hydrateDashboard(
                 ? membersResult.value.map((member) => ({
                     ...member,
                     id: member.id ?? member.userId,
-                    name: maskedUserLabel(member.userId),
+                    name: member.nickname || maskedUserLabel(member.userId),
+                    nickname: member.nickname || null,
                     email: "Identity 정보 미연결"
                 }))
                 : [];
@@ -84,7 +85,8 @@ async function hydrateDashboard(
                 applications.push(...applicationsResult.value.map((application) => ({
                     ...application,
                     cohortId: cohort.id,
-                    name: maskedUserLabel(application.userId),
+                    name: application.nickname || maskedUserLabel(application.userId),
+                    nickname: application.nickname || null,
                     email: "Identity 정보 미연결"
                 })));
             }
@@ -327,14 +329,14 @@ window.OmagotchiDashboardPanels.start({
         fetchTodayStats: (cohortId) => (
             window.OmagotchiApi?.manager?.getStudyStatsToday?.(cohortId)
         ),
-        fetchTrendStats: (cohortId, window) => (
-            window.OmagotchiApi?.manager?.getStudyStatsTrend?.(cohortId, window)
+        fetchTrendStats: (cohortId, windowParam) => (
+            window.OmagotchiApi?.manager?.getStudyStatsTrend?.(cohortId, windowParam)
         ),
         fetchMemberStats: (cohortId, query) => (
             window.OmagotchiApi?.manager?.getStudyStatsMembers?.(cohortId, query)
         ),
-        fetchMemberOverview: (cohortId, membershipId, window) => (
-            window.OmagotchiApi?.manager?.getStudyStatsMemberOverview?.(cohortId, membershipId, window)
+        fetchMemberOverview: (cohortId, membershipId, windowParam) => (
+            window.OmagotchiApi?.manager?.getStudyStatsMemberOverview?.(cohortId, membershipId, windowParam)
         ),
         fetchMemberRecords: (cohortId, membershipId, date) => (
             window.OmagotchiApi?.manager?.getStudyStatsMemberDailyRecords?.(cohortId, membershipId, date)

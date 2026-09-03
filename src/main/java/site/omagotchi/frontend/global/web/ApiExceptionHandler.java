@@ -75,7 +75,12 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
             Map.entry("ATTENDANCE_ALREADY_CHECKED_IN", 409),
             Map.entry("ATTENDANCE_ALREADY_CHECKED_OUT", 409),
             Map.entry("ATTENDANCE_CHECK_IN_REQUIRED", 409),
+            Map.entry("ATTENDANCE_ACTIVE_MEETING_EXISTS", 409),
             Map.entry("ATTENDANCE_CHANGE_REASON_REQUIRED", 400),
+            Map.entry("PRESENCE_MEETING_EXIT_REQUIRED", 409),
+            Map.entry("TIMER_RUN_NOT_FOUND", 404),
+            Map.entry("TIMER_ALREADY_RUNNING", 409),
+            Map.entry("TIMER_ALREADY_ENDED", 409),
             Map.entry("COMMUNITY_POST_NOT_FOUND", 404),
             Map.entry("COMMUNITY_INVALID_PAGE_REQUEST", 400),
             Map.entry("COMMUNITY_INVALID_POST_REQUEST", 400),
@@ -112,6 +117,9 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
             Map.entry("SPACE_ACTIVE_DELETE_NOT_ALLOWED", 409),
             Map.entry("SPACE_LAB_ALREADY_ASSIGNED", 409),
             Map.entry("SPACE_LAB_NOT_ASSIGNED", 409),
+            Map.entry("LAB_NOT_SELECTABLE", 409),
+            Map.entry("LAB_CAPACITY_EXCEEDED", 409),
+            Map.entry("STUDY_SPACE_NOT_SELECTABLE", 409),
             Map.entry("OCCUPANCY_NOT_MEETING_ROOM", 400),
             Map.entry("OCCUPANCY_SPACE_INACTIVE", 400),
             Map.entry("OCCUPANCY_DIFFERENT_COHORT", 400),
@@ -136,6 +144,24 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
             Map.entry("OCCUPANCY_EXTENSION_TOO_EARLY", 409),
             Map.entry("OCCUPANCY_EXTENSION_LIMIT_EXCEEDED", 409),
             Map.entry("OCCUPANCY_ALERT_ALREADY_REQUESTED", 409),
+            Map.entry("TEAM_INVALID_NAME", 400),
+            Map.entry("TEAM_INVALID_MEMBER_QUERY", 400),
+            Map.entry("TEAM_COHORT_REQUIRED", 400),
+            Map.entry("TEAM_TARGET_NOT_IN_COHORT", 400),
+            Map.entry("TEAM_MASTER_CANNOT_BE_KICKED", 400),
+            Map.entry("TEAM_CANNOT_DELEGATE_TO_SELF", 400),
+            Map.entry("TEAM_COHORT_ACCESS_DENIED", 403),
+            Map.entry("TEAM_MASTER_REQUIRED", 403),
+            Map.entry("TEAM_NOT_A_MEMBER", 403),
+            Map.entry("TEAM_NOT_FOUND", 404),
+            Map.entry("TEAM_MEMBER_NOT_FOUND", 404),
+            Map.entry("TEAM_ACCOUNT_NOT_FOUND", 404),
+            Map.entry("TEAM_DUPLICATE_NAME", 409),
+            Map.entry("TEAM_ALREADY_IN_TEAM", 409),
+            Map.entry("TEAM_CAPACITY_EXCEEDED", 409),
+            Map.entry("TEAM_ACCOUNT_WITHDRAWN", 409),
+            Map.entry("TEAM_DELEGATION_REQUIRED", 409),
+            Map.entry("TEAM_MASTER_STATE_CONFLICT", 409),
             Map.entry("USER_PROFILE_INVALID_NICKNAME", 400),
             Map.entry("USER_PROFILE_DUPLICATE_NICKNAME", 409),
             Map.entry("TELEGRAM_USER_LINK_NOT_FOUND", 404)
@@ -178,7 +204,7 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
         if (isPublicLearningDownstreamError(exception)) {
             ApiErrorResponse publicResponse = new ApiErrorResponse(
                     downstream.code(),
-                    publicLearningDownstreamMessage(exception.getStatusCode().value()),
+                    publicLearningDownstreamMessage(exception),
                     request.getRequestURI(),
                     downstream.requestId()
             );
@@ -214,7 +240,13 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
                 && approvedStatus == exception.getStatusCode().value();
     }
 
-    private String publicLearningDownstreamMessage(int status) {
+    private String publicLearningDownstreamMessage(
+            LearningDownstreamException exception
+    ) {
+        if ("LAB_CAPACITY_EXCEEDED".equals(exception.getErrorResponse().code())) {
+            return "실습실 정원이 가득 찼습니다.";
+        }
+        int status = exception.getStatusCode().value();
         return switch (status) {
             case 400 -> "요청값이 올바르지 않습니다.";
             case 401 -> "인증이 필요합니다.";

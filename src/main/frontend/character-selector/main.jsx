@@ -86,7 +86,9 @@ function CharacterSelectorApp() {
         colorId
       });
       setCompleted(true);
-      window.setTimeout(() => window.location.assign("/check-in"), 600);
+      // 홈 부트스트랩이 최신 프로필의 승인 기수와 오늘 출석 상태를 판정한다.
+      // 신규 가입자는 승인 기수가 없으므로 홈에서 기수 가입 안내를 받아야 한다.
+      window.setTimeout(() => window.location.assign("/home"), 600);
     } catch (error) {
       setFeedback(error.message || "캐릭터를 저장하지 못했습니다. 잠시 후 다시 시도해 주세요.");
       setLoading(false);

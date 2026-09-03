@@ -44,8 +44,10 @@
         const membershipId = String(member.cohortMembershipId ?? "");
         const name = String(member.name ?? "");
         const email = String(member.email ?? "");
+        const runningBadge = row.querySelector("[data-studystats-running]");
 
         row.querySelector("[data-studystats-member-name]").textContent = name;
+        runningBadge.hidden = !member.isRunning;
         row.querySelector("[data-studystats-member-email]").textContent = email;
         row.querySelector("[data-studystats-today]").textContent = formatDuration(member.todayStudySeconds);
         row.querySelector("[data-studystats-period-total]").textContent = formatDuration(member.periodStudySeconds);
@@ -79,7 +81,7 @@
             totalTime: root.querySelector("[data-kpi-total-time]"),
             participation: root.querySelector("[data-kpi-participation]"),
             averageTime: root.querySelector("[data-kpi-avg-time]"),
-            noRecord: root.querySelector("[data-kpi-no-record]"),
+            runningTimer: root.querySelector("[data-kpi-running-timer]"),
             trendTitle: root.querySelector("[data-trend-chart-title]"),
             topTitle: root.querySelector("[data-top-chart-title]"),
             boundaryNote: root.querySelector("[data-study-boundary-note]"),
@@ -125,8 +127,9 @@
                     || profileByMembershipId.get(String(memberStatistics.cohortMembershipId));
                 return {
                     ...memberStatistics,
-                    name: profile?.name
-                        || `수강생-${String(memberStatistics.userId).slice(0, 8)}`,
+                    name: memberStatistics.nickname
+                        || profile?.nickname
+                        || "닉네임 미설정",
                     email: profile?.email || "-"
                 };
             });
@@ -232,7 +235,7 @@
             elements.totalTime.textContent = formatDuration(todayData?.totalStudySeconds);
             elements.participation.textContent = `${participantCount} / ${activeStudentCount}명 (${participationRate}%)`;
             elements.averageTime.textContent = formatDuration(todayData?.averageParticipantStudySeconds);
-            elements.noRecord.textContent = `${Number(todayData?.noRecordStudentCount) || 0}명`;
+            elements.runningTimer.textContent = `${Number(todayData?.runningTimerCount) || 0}명`;
 
             const periodDays = selectedPeriodDays();
             elements.trendTitle.textContent = `최근 ${periodDays}일 기수 학습량 추이`;

@@ -1,15 +1,20 @@
 package site.omagotchi.frontend.attendance.presentation;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import site.omagotchi.frontend.attendance.application.AttendanceBffService;
 import site.omagotchi.frontend.attendance.application.result.AttendancePageResult;
+import site.omagotchi.frontend.attendance.presentation.request.AttendanceSpaceRequest;
 import site.omagotchi.frontend.attendance.presentation.response.AttendanceRecordResponse;
+import site.omagotchi.frontend.attendance.presentation.response.AttendanceSpaceMoveResponse;
+import site.omagotchi.frontend.attendance.presentation.response.CurrentPresenceResponse;
 import site.omagotchi.frontend.global.application.result.PageMetadata;
 import site.omagotchi.frontend.global.http.response.PageInfo;
 import site.omagotchi.frontend.global.http.response.PageResponse;
@@ -56,6 +61,14 @@ public class AttendanceBffController {
                 .orElseGet(() -> ResponseEntity.noContent().build());
     }
 
+    @GetMapping("/current-presence")
+    public ResponseEntity<CurrentPresenceResponse> getCurrentPresence() {
+        return attendanceBffService.getCurrentPresence()
+                .map(CurrentPresenceResponse::from)
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.noContent().build());
+    }
+
     @PostMapping("/check-in")
     public AttendanceRecordResponse checkIn() {
         return AttendanceRecordResponse.from(attendanceBffService.checkIn());
@@ -64,5 +77,23 @@ public class AttendanceBffController {
     @PostMapping("/check-out")
     public AttendanceRecordResponse checkOut() {
         return AttendanceRecordResponse.from(attendanceBffService.checkOut());
+    }
+
+    @PostMapping("/move-lab")
+    public AttendanceSpaceMoveResponse moveLab(
+            @Valid @RequestBody AttendanceSpaceRequest request
+    ) {
+        return new AttendanceSpaceMoveResponse(
+                attendanceBffService.moveLab(request.spaceId())
+        );
+    }
+
+    @PostMapping("/move-study")
+    public AttendanceSpaceMoveResponse moveStudySpace(
+            @Valid @RequestBody AttendanceSpaceRequest request
+    ) {
+        return new AttendanceSpaceMoveResponse(
+                attendanceBffService.moveStudySpace(request.spaceId())
+        );
     }
 }

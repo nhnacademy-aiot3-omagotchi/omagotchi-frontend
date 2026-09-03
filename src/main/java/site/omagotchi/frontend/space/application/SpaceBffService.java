@@ -18,7 +18,9 @@ import site.omagotchi.frontend.learning.infrastructure.response.LearningSpaceRes
 import site.omagotchi.frontend.learning.infrastructure.response.LearningVacancyAlertResponse;
 import site.omagotchi.frontend.learning.infrastructure.response.LearningParticipantCandidateResponse;
 import site.omagotchi.frontend.learning.infrastructure.response.LearningOccupancyParticipantResponse;
+import site.omagotchi.frontend.learning.infrastructure.response.LearningSelectableLabResponse;
 import site.omagotchi.frontend.space.application.result.OccupancyView;
+import site.omagotchi.frontend.space.application.result.SelectableLabView;
 import site.omagotchi.frontend.space.application.result.SpaceView;
 import site.omagotchi.frontend.space.application.result.VacancyAlertView;
 import site.omagotchi.frontend.space.application.result.ParticipantCandidateView;
@@ -45,6 +47,20 @@ public class SpaceBffService {
         requireStatus(response, HttpStatus.OK, "Space 목록 조회");
         return requireBody(response, "Space 목록 조회").stream()
                 .map(item -> toView(item, userId))
+                .toList();
+    }
+
+    public List<SelectableLabView> findSelectableLabs(HttpServletRequest request) {
+        LearningCohortContext.Resolved context = cohortContext.resolve(request);
+        ResponseEntity<List<LearningSelectableLabResponse>> response = callExecutor.execute(
+                () -> learningHttpService.getSelectableLabs(
+                        context.bearerToken(),
+                        context.cohortId()
+                )
+        );
+        requireStatus(response, HttpStatus.OK, "선택 가능 실습실 목록 조회");
+        return requireBody(response, "선택 가능 실습실 목록 조회").stream()
+                .map(SpaceBffService::toSelectableLabView)
                 .toList();
     }
 
@@ -204,6 +220,31 @@ public class SpaceBffService {
                 requesterUserId.equals(item.occupierUserId()),
                 participants.contains(requesterUserId),
                 item.occupiedBySameCohort() ? participants.size() : null
+        );
+    }
+
+    private static SelectableLabView toSelectableLabView(
+            LearningSelectableLabResponse response
+    ) {
+        if (response == null
+                || response.spaceId() == null
+                || response.spaceId() <= 0L
+                || response.name() == null
+                || response.name().isBlank()
+                || response.capacity() == null
+                || response.capacity() <= 0
+                || response.reservedCount() == null
+                || response.reservedCount() < 0L) {
+            throw new BusinessException(
+                    CommonErrorCode.DOWNSTREAM_INVALID_RESPONSE,
+                    "선택 가능 실습실 응답 누락"
+            );
+        }
+        return new SelectableLabView(
+                response.spaceId(),
+                response.name(),
+                response.capacity(),
+                response.reservedCount()
         );
     }
 

@@ -674,8 +674,9 @@
         overflow: visible;
     }
 
+    /* 배경 알약이 버튼을 딱 감싸도록 내용 폭을 쓴다. 공용 폭을 쓰면 좌우에 빈 여백이 남는다. */
     .home-action-dock {
-        width: var(--home-hud-control-width);
+        width: max-content;
         max-width: 100%;
         margin-inline: auto;
         justify-content: center;

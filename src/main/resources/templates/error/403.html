@@ -22,8 +22,11 @@
         </div>
 
         <div class="error-message">
-            <h1 id="error-title">접근 권한이 없습니다</h1>
-            <p>로그인 상태와 소속 기수 권한을 확인해 주세요.</p>
+            <h1 id="error-title"
+                th:text="${errorTitle != null ? errorTitle : '접근 권한이 없습니다'}">접근 권한이 없습니다</h1>
+            <p th:text="${errorDescription != null ? errorDescription : '로그인 상태와 소속 기수 권한을 확인해 주세요.'}">
+                로그인 상태와 소속 기수 권한을 확인해 주세요.
+            </p>
         </div>
 
         <nav class="error-actions" aria-label="오류 화면 이동">

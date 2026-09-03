@@ -168,6 +168,38 @@
         access: {
             getContext: () => request("/cohorts/me/access-context")
         },
+        teams: {
+            create: (payload) => request("/teams", {
+                method: "POST",
+                body: payload
+            }),
+            mine: () => request("/teams/me"),
+            detail: (teamId) => request(`/teams/${encodeURIComponent(teamId)}`),
+            memberCandidates: (teamId, query) => request(withQuery(
+                `/teams/${encodeURIComponent(teamId)}/member-candidates`,
+                {query}
+            )),
+            addMember: (teamId, targetUserId) => request(
+                `/teams/${encodeURIComponent(teamId)}/members`,
+                {method: "POST", body: {targetUserId}}
+            ),
+            kickMember: (teamId, memberId) => request(
+                `/teams/${encodeURIComponent(teamId)}/members/${encodeURIComponent(memberId)}`,
+                {method: "DELETE"}
+            ),
+            leave: (teamId) => request(
+                `/teams/${encodeURIComponent(teamId)}/leave`,
+                {method: "POST"}
+            ),
+            delegate: (teamId, memberId) => request(
+                `/teams/${encodeURIComponent(teamId)}/members/${encodeURIComponent(memberId)}/delegate`,
+                {method: "POST"}
+            ),
+            disband: (teamId) => request(
+                `/teams/${encodeURIComponent(teamId)}`,
+                {method: "DELETE"}
+            )
+        },
         character: {
             list: () => request("/gamification/characters"),
             saveSelection: (payload) => request("/gamification/characters/representative", {
@@ -178,11 +210,21 @@
         attendance: {
             getHistory: (query = {}) => optional(withQuery("/attendance/history", query)),
             getToday: () => optional("/attendance/today"),
+            getCurrentPresence: () => optional("/attendance/current-presence"),
             checkIn: () => request("/attendance/check-in", { method: "POST" }),
-            checkOut: () => request("/attendance/check-out", { method: "POST" })
+            checkOut: () => request("/attendance/check-out", { method: "POST" }),
+            moveLab: (spaceId) => request("/attendance/move-lab", {
+                method: "POST",
+                body: {spaceId}
+            }),
+            moveStudySpace: (spaceId) => request("/attendance/move-study", {
+                method: "POST",
+                body: {spaceId}
+            })
         },
         spaces: {
             list: () => request("/spaces"),
+            listLabs: () => request("/spaces/labs"),
             startOccupancy: (spaceId) => request(`/spaces/${encodeURIComponent(spaceId)}/occupancies`, {method: "POST"}),
             extendOccupancy: (spaceId) => request(`/spaces/${encodeURIComponent(spaceId)}/occupancies/extend`, {method: "POST"}),
             releaseOccupancy: (spaceId) => request(`/spaces/${encodeURIComponent(spaceId)}/occupancies/release`, {method: "POST"}),
@@ -276,6 +318,9 @@
         gamification: {
             getHome: () => request("/gamification/home"),
             getDailyQuests: () => request("/gamification/quests/daily"),
+            // 예측 공부 시간은 Quest 응답에 포함되지 않으므로 별도로 조회한다.
+            // cohortId는 서버가 Session에서 확보하므로 Browser가 보내지 않는다.
+            getStudyTimePrediction: () => request("/gamification/predictions/study-time"),
             // 서버 계약은 Quest 정의 ID가 아니라 사용자별 일일 Quest 인스턴스 ID를 받는다.
             claimQuest: (userDailyQuestId) => request(
                 `/gamification/quests/${encodeURIComponent(userDailyQuestId)}/claim`,
@@ -345,9 +390,18 @@
         },
         systemAdmin: {
             getUsers: (query = {}) => request(withQuery("/admin/users", query)),
+            getAudits: (query = {}) => request(withQuery("/admin/audits", query)),
             assignManager: (userId, cohortId) => request(
                 `/admin/users/${encodeURIComponent(userId)}/managed-cohorts/${encodeURIComponent(cohortId)}`,
                 {method: "PUT"}
+            ),
+            changeAccountStatus: (userId, status, reason) => request(
+                `/admin/users/${encodeURIComponent(userId)}/status`,
+                {method: "PATCH", body: {status, reason}}
+            ),
+            changeAccountRole: (userId, role, reason) => request(
+                `/admin/users/${encodeURIComponent(userId)}/role`,
+                {method: "PATCH", body: {role, reason}}
             ),
             removeManager: (userId, cohortId) => request(
                 `/admin/users/${encodeURIComponent(userId)}/managed-cohorts/${encodeURIComponent(cohortId)}`,
