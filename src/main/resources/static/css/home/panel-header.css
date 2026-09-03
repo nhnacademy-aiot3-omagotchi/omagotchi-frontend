@@ -3,13 +3,13 @@
  * 홈의 모든 패널이 이 한 벌을 쓴다.
  *   오버레이 8종(도움말·진행·내정보·기수·학습기록·공간·커뮤·설정), AI 도우미, BGM, 출석 현황
  *
- * 이전에는 home-overlay-header / home-ai-panel-heading / quick-panel-header 세 벌로
+ * 이전에는 home-overlay-header / home-ai-panel-heading / quick-ui-panel-header 세 벌로
  * 나뉘어 있었고, 오버레이 안에서도 타입별 분기가 23개 있었다. 여기서 규칙은 하나다.
  *
  * 글자는 검은 계열로 고정한다. 배경이 밝은 초록이라 흰 글씨는 대비가 부족했다.
  */
 
-.panel-header {
+.ui-panel-header {
     position: sticky;
     top: 0;
     z-index: 6;
@@ -24,13 +24,18 @@
     padding: clamp(14px, 1.8vw, 20px) clamp(16px, 2vw, 24px);
 
     border-bottom: 1px solid rgba(12, 48, 34, 0.16);
-    border-radius: inherit inherit 0 0;
+    /* border-radius 단축 속성은 inherit 를 값 하나로만 받는다. "inherit inherit 0 0" 는
+     * 문법 오류라 선언 전체가 버려지고 위쪽 모서리가 각지게 나온다. 그래서 개별 속성으로 쓴다. */
+    border-start-start-radius: inherit;
+    border-start-end-radius: inherit;
+    border-end-start-radius: 0;
+    border-end-end-radius: 0;
     background: #6ec894;
     color: #0c3022;
 }
 
 /* 아이콘 상자 */
-.panel-header-icon {
+.ui-panel-header-icon {
     display: grid;
     place-items: center;
     width: clamp(44px, 4.4vw, 56px);
@@ -40,7 +45,7 @@
     background: #f4fbf7;
 }
 
-.panel-header-icon img {
+.ui-panel-header-icon img {
     width: 60%;
     height: 60%;
     object-fit: contain;
@@ -48,18 +53,18 @@
 }
 
 /* 아이콘이 없으면 상자도 그리지 않는다. 빈 흰 사각형이 남는 걸 막는다. */
-.panel-header-icon:empty {
+.ui-panel-header-icon:empty {
     display: none;
 }
 
 /* 제목과 설명 */
-.panel-header-heading {
+.ui-panel-header-heading {
     min-width: 0;
     display: grid;
     gap: 2px;
 }
 
-.panel-header-heading h2 {
+.ui-panel-header-heading h2 {
     margin: 0;
     overflow: hidden;
     color: #0c3022;
@@ -69,7 +74,7 @@
     white-space: nowrap;
 }
 
-.panel-header-heading p {
+.ui-panel-header-heading p {
     margin: 0;
     overflow: hidden;
     color: rgba(12, 48, 34, 0.78);
@@ -81,13 +86,13 @@
 }
 
 /* 보조 버튼 + 닫기 */
-.panel-header-actions {
+.ui-panel-header-actions {
     display: flex;
     align-items: center;
     gap: 8px;
 }
 
-.panel-header-actions button {
+.ui-panel-header-actions button {
     display: grid;
     place-items: center;
     width: 40px;
@@ -103,33 +108,33 @@
     cursor: pointer;
 }
 
-.panel-header-actions button:hover,
-.panel-header-actions button:focus-visible {
+.ui-panel-header-actions button:hover,
+.ui-panel-header-actions button:focus-visible {
     background: #eaf6ef;
 }
 
-.panel-header-actions button:active {
+.ui-panel-header-actions button:active {
     transform: translateY(1px);
 }
 
 @media (max-width: 760px) {
-    .panel-header {
+    .ui-panel-header {
         min-height: 68px;
         gap: 10px;
         padding: 12px 14px;
     }
 
-    .panel-header-icon {
+    .ui-panel-header-icon {
         width: 40px;
         height: 40px;
         border-radius: 12px;
     }
 
-    .panel-header-heading h2 {
+    .ui-panel-header-heading h2 {
         font-size: clamp(20px, 5.4vw, 26px);
     }
 
-    .panel-header-actions button {
+    .ui-panel-header-actions button {
         width: 36px;
         height: 36px;
         border-width: 2px;
@@ -137,7 +142,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .panel-header-actions button:active {
+    .ui-panel-header-actions button:active {
         transform: none;
     }
 }
