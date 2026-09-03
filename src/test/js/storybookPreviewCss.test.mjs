@@ -10,7 +10,12 @@
  *         "스토리북에서만 스타일이 없는" 상태가 조용히 만들어진다.
  *         (실제 사고: AI 도우미 패널 전체, 파티원 초대 드롭다운(spaceRoom.css))
  *
- * 이 테스트는 그 두 가지가 어긋나는 순간을 잡는다.
+ * 배경 3) 반대 방향도 똑같이 위험하다. preview.jsx 에만 있고 home.html 에 없는 CSS 가 생기면
+ *         "스토리북에서는 멀쩡한데 운영 화면에서만 스타일이 통째로 빠지는" 상태가 된다.
+ *         (실제 사고: 공통 PanelHeader 의 panel-header.css 를 preview.jsx 에만 추가해서
+ *          운영 홈의 8개 오버레이 헤더가 전부 무스타일로 나갔다.)
+ *
+ * 이 테스트는 그 세 가지가 어긋나는 순간을 잡는다.
  */
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -27,6 +32,15 @@ const PREVIEW = path.join(ROOT, ".storybook/preview.jsx");
 /** home.html 이 로드하지만 스토리북에는 의도적으로 넣지 않는 파일이 생기면 여기에 사유와 함께 적는다. */
 const INTENTIONALLY_SKIPPED = new Map([
   // ["예시.css", "사유"],
+]);
+
+/**
+ * preview.jsx 에만 있어도 되는 파일. 홈 화면이 아닌 다른 페이지의 스토리 전용이라 home.html 에 없는 것이 정상이다.
+ * 여기에 등록하지 않은 파일이 preview.jsx 에만 있으면, 운영 화면에서만 스타일이 빠졌다는 뜻이므로 실패시킨다.
+ */
+const STORYBOOK_ONLY = new Map([
+  ["auth.css", "로그인/회원가입 페이지 전용 (pages/auth/*.html 에서 로드)"],
+  ["characterSelector.css", "캐릭터 선택 페이지 전용 (characterSelector 스토리에서만 사용)"]
 ]);
 
 function read(file) {
@@ -62,6 +76,16 @@ function collectHomeUiImports(css) {
     if (target) names.push(`home/${path.posix.normalize(target).replace(/^\.\//, "")}`);
   }
   return names;
+}
+
+/** preview.jsx 의 `import ".../css/xxx.css"` 들을 home.html 과 같은 상대경로 표기로 모은다. */
+function collectPreviewCss(preview) {
+  const found = new Set();
+  for (const match of preview.matchAll(/import\s+["']([^"']+\.css)["']/g)) {
+    const relative = toCssRelativePath(match[1]);
+    if (relative) found.add(relative);
+  }
+  return [...found].sort();
 }
 
 test("preview.jsx 는 home-ui.css 를 직접 import 하지 않는다", () => {
@@ -103,6 +127,28 @@ test("home.html 이 로드하는 CSS 는 preview.jsx 에도 있어야 한다", (
     `home.html 에는 있고 preview.jsx 에는 없는 CSS: ${missing.join(", ")}\n` +
       "→ 스토리북에서만 스타일이 통째로 빠집니다. preview.jsx 에 추가하거나, " +
       "의도적으로 제외한 것이면 INTENTIONALLY_SKIPPED 에 사유와 함께 등록하세요."
+  );
+});
+
+test("preview.jsx 가 import 하는 CSS 는 home.html 에도 있어야 한다", () => {
+  // 배경 3). 이 방향을 검사하지 않으면 "스토리북에서만 예뻐 보이는" 컴포넌트가 만들어진다.
+  const previewCss = collectPreviewCss(read(PREVIEW));
+  assert.ok(previewCss.length > 5, `preview.jsx 에서 CSS import 를 제대로 찾지 못했습니다 (${previewCss.length}개). 정규식을 확인하세요.`);
+
+  const htmlCss = new Set(collectHomeHtmlCss(read(HOME_HTML)));
+  // home.html 은 ui/*.css 를 home-ui.css 의 @import 로 한 번에 로드한다. 위 테스트가 이미 짝을 맞춰 검사한다.
+  const viaHomeUi = new Set(collectHomeUiImports(read(HOME_UI)));
+
+  const missing = previewCss.filter(
+    (relative) => !htmlCss.has(relative) && !viaHomeUi.has(relative) && !STORYBOOK_ONLY.has(relative)
+  );
+
+  assert.deepEqual(
+    missing,
+    [],
+    `preview.jsx 에는 있고 home.html 에는 없는 CSS: ${missing.join(", ")}\n` +
+      "→ 운영 홈 화면에서만 스타일이 통째로 빠집니다. home.html 에 <link> 를 추가하거나, " +
+      "홈이 아닌 다른 페이지 전용이면 STORYBOOK_ONLY 에 사유와 함께 등록하세요."
   );
 });
 

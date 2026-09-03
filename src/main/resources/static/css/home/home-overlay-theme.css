@@ -56,77 +56,17 @@
 }
 
 .home-overlay > .home-overlay-header {
+    /* 생김새(높이·그리드·배경·글자색·sticky)는 전부 panel-header.css 소관이다.
+       여기 남는 건 "오버레이 안에 끼우는 배치" 뿐이다.
+
+       - flex-shrink: .home-overlay 가 세로 flex 라 본문이 길면 머리말이 눌린다.
+       - 음수 margin: .home-overlay 에 좌우 padding 이 있어서, 그걸 거슬러야
+         머리말이 패널 끝까지 채워진다. padding 값과 반드시 같이 움직여야 한다.
+
+       예전에는 여기서 grid 를 2열로 잡는 바람에 닫기 버튼(3번째 자식)이
+       다음 줄로 밀려났다. 그래서 오른쪽에 padding 88px 을 비워두는 편법을 썼다. */
     flex-shrink: 0;
-    position: sticky;
-    top: 0;
-    z-index: 6;
-    min-height: 132px;
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr);
-    justify-content: start;
-    align-items: center;
-    gap: clamp(14px, 2vw, 22px);
     margin: 0 calc(clamp(18px, 3vw, 34px) * -1) clamp(18px, 2.4vw, 26px);
-    padding: clamp(20px, 2.8vw, 30px) clamp(70px, 7vw, 88px) clamp(18px, 2.4vw, 26px) clamp(18px, 3vw, 34px);
-    border-bottom: 1px solid rgba(236, 255, 246, 0.28);
-    background: #23875b;
-}
-
-.home-overlay-icon {
-    width: clamp(50px, 5vw, 64px);
-    height: clamp(50px, 5vw, 64px);
-    display: grid;
-    place-items: center;
-    border: 1px solid rgba(255, 255, 255, 0.64);
-    border-radius: 16px;
-    background: var(--overlay-accent);
-    box-shadow: none;
-}
-
-.home-overlay-icon img {
-    width: 62%;
-    height: 62%;
-    object-fit: contain;
-    image-rendering: pixelated;
-}
-
-.home-overlay-heading {
-    min-width: 0;
-    display: grid;
-    gap: 7px;
-}
-
-.home-overlay .home-overlay-heading h2 {
-    font-size: clamp(30px, 4vw, 50px);
-    line-height: 0.96;
-}
-
-.home-overlay .home-overlay-heading p {
-    margin: 0;
-    color: rgba(255, 255, 255, 0.82);
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    font-size: clamp(12px, 1.2vw, 14px);
-    font-weight: 700;
-}
-
-.home-overlay-close {
-    z-index: 8;
-    width: 46px;
-    height: 46px;
-    border: 2px solid var(--overlay-ink);
-    border-radius: 13px;
-    background: #ffffff;
-    color: var(--overlay-ink);
-    font-family: var(--game-font);
-    font-size: 24px;
-    line-height: 1;
-    box-shadow: none;
-}
-
-.home-overlay-close:hover,
-.home-overlay-close:focus-visible {
-    background: var(--overlay-accent);
-    transform: translateY(-1px);
 }
 
 .home-overlay-body {
@@ -1362,32 +1302,9 @@
     }
 
     .home-overlay > .home-overlay-header {
-        min-height: 108px;
-        gap: 12px;
-        margin: 0 -14px 16px;
-        padding: 16px 58px 14px 14px;
-        border-radius: 14px 14px 0 0;
         flex: 0 0 auto;
-    }
-
-    .home-overlay-icon {
-        width: 46px;
-        height: 46px;
-        border-radius: 13px;
-    }
-
-    .home-overlay .home-overlay-heading h2 {
-        font-size: clamp(26px, 8vw, 36px);
-    }
-
-    .home-overlay .home-overlay-heading p {
-        max-width: 38ch;
-        font-size: 11px;
-    }
-
-    .home-overlay-close {
-        width: 40px;
-        height: 40px;
+        /* .home-overlay 의 좌우 padding 이 14px 로 줄어드는 구간 */
+        margin: 0 -14px 16px;
     }
 
     .overlay-settings-row {
@@ -1439,23 +1356,9 @@
 }
 
 @media (max-width: 430px) {
-    .home-overlay > .home-overlay-header {
-        grid-template-columns: 40px minmax(0, 1fr);
-    }
-
     .overlay-settings-row {
         min-height: 60px;
         padding: 10px 12px;
-    }
-
-    .home-overlay-icon {
-        width: 40px;
-        height: 40px;
-        border-radius: 11px;
-    }
-
-    .home-overlay .home-overlay-heading p {
-        display: none;
     }
 
     .profile-summary-grid {
@@ -1508,11 +1411,8 @@
     }
 
     .home-overlay > .home-overlay-header {
-        min-height: 90px;
         flex: 0 0 auto;
         margin: 0 -14px 12px;
-        padding: 12px 58px 12px 14px;
-        border-radius: 12px 12px 0 0;
     }
 
     .home-overlay > .home-overlay-body {
@@ -1524,23 +1424,6 @@
         overscroll-behavior: contain;
     }
 
-    .home-overlay-icon {
-        width: 42px;
-        height: 42px;
-    }
-
-    .home-overlay .home-overlay-heading h2 {
-        font-size: 28px;
-    }
-
-    .home-overlay .home-overlay-heading p {
-        display: none;
-    }
-
-    .home-overlay-close {
-        width: 38px;
-        height: 38px;
-    }
 }
 
 @media (max-width: 340px) {
@@ -1789,11 +1672,6 @@
 .ui-menu-live-panel *::before,
 .ui-menu-live-panel *::after {
     box-sizing: border-box;
-}
-
-.ui-menu-live-panel .ui-menu-live-header {
-    background: linear-gradient(135deg, var(--ui-emerald-500), #5ed99b);
-    color: var(--ui-ink);
 }
 
 .ui-menu-live-panel .ui-menu-live-body {
@@ -2584,19 +2462,13 @@
    컨테이너를 따라 흐르므로 본문을 내리면 탭도 같이 올라가 사라졌다.
    sticky 로 바꿔 흐름 안에 두고, 스크롤해도 본문 상단에 남게 한다.
    컬럼 수도 5개 고정이었다. 탭이 2개로 줄어 빈 3칸이 배경만 차지했다. */
-/* 헤더는 흘려보내고 탭만 고정한다.
-   헤더와 탭을 동시에 고정하면 둘 다 top:0 이라 탭이 제목을 덮는다. 헤더 높이는
-   clamp(vw) 기반이라 연속적으로 변해서 탭의 top 을 상수로 맞출 수도 없다.
-   제목은 스크롤과 함께 올라가도 되지만 탭은 남아야 하므로 이렇게 나눈다.
-   닫기 버튼은 헤더 밖(.home-overlay 직계)이라 영향을 받지 않는다. */
-.home-overlay--progress > .home-overlay-header {
-    position: static !important;
-}
-
+/* 헤더를 고정하고 탭은 흘려보낸다. 예전과 반대다.
+   예전 주석은 "닫기 버튼은 헤더 밖이라 영향을 받지 않는다"였는데, 그 뒤 닫기 버튼이
+   헤더 안으로 들어왔다(HomeOverlay.jsx). 그래서 헤더를 static 으로 두면 진행 화면에서만
+   닫기 버튼이 스크롤과 함께 사라진다 — 학습기록에서 고쳤던 그 버그가 진행에서 재발한다.
+   탭과 헤더를 동시에 고정하면 둘 다 top:0 이라 겹치므로, 닫기 버튼 쪽을 택했다.
+   탭 고정이 다시 필요하면 헤더 높이를 CSS 변수로 내보내 탭의 top 에 물려야 한다. */
 .home-overlay--progress .overlay-tabs {
-    position: sticky !important;
-    top: 0;
-    z-index: 7;
     right: auto;
     left: auto;
     /* 바는 가로를 채우고 버튼만 내용 폭으로 둔다. 폭을 좁히면 고정된 탭 옆으로
@@ -2616,8 +2488,6 @@
 @media (max-width: 760px) {
     /* 좁은 화면에서는 가로를 채워 탭이 눌리기 쉬운 크기를 유지한다. */
     .home-overlay--progress .overlay-tabs {
-        position: sticky !important;
-        top: 0;
         width: 100% !important;
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }

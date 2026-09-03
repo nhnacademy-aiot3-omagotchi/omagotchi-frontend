@@ -286,16 +286,6 @@
     box-shadow: 0 18px 46px rgba(3, 39, 25, 0.28);
 }
 
-.home-ai-panel-heading {
-    display: grid;
-    grid-template-columns: 44px minmax(0, 1fr) 38px 38px;
-    align-items: center;
-    gap: 10px;
-    padding: 14px;
-    border-bottom: 1px solid #c9dfd4;
-    background: #31c581;
-}
-
 .home-ai-panel-icon {
     width: 44px;
     height: 44px;
@@ -868,11 +858,6 @@
 
     .home-ai-composer-actions {
         grid-template-columns: minmax(0, 1fr) 38px;
-    }
-
-    .home-ai-panel-heading {
-        grid-template-columns: 44px minmax(0, 1fr) 34px 34px;
-        gap: 8px;
     }
 
     .home-ai-panel-help,

@@ -145,19 +145,6 @@
 }
 
 /* Shared quick-panel header */
-.quick-panel-header {
-    min-width: 0;
-    display: grid;
-    grid-template-columns: 48px minmax(0, 1fr) auto;
-    align-items: center;
-    gap: 12px;
-    padding: 14px;
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    border-radius: 14px;
-    background: var(--quick-green);
-    color: #ffffff;
-}
-
 .quick-panel-icon {
     width: 48px;
     height: 48px;
@@ -176,13 +163,6 @@
     image-rendering: pixelated;
 }
 
-.quick-panel-header > div {
-    min-width: 0;
-    display: grid;
-    gap: 4px;
-}
-
-.quick-panel-header > div > span,
 .presence-panel-heading > span {
     width: max-content;
     padding: 4px 7px;
@@ -195,7 +175,6 @@
     letter-spacing: 0.08em;
 }
 
-.quick-panel-header h2,
 .presence-panel .presence-panel-heading h2 {
     overflow: hidden;
     margin: 0;
@@ -421,9 +400,8 @@
 }
 
 .attendance-detail-header {
-    position: sticky;
-    top: 0;
-    z-index: 4;
+    /* 생김새는 panel-header.css. 여기서는 아래 카드와의 간격만 잡는다.
+       sticky/top/z-index 를 다시 쓰면 panel-header 의 z-index 6 보다 낮아져 되레 덮인다. */
     margin-bottom: 12px;
 }
 
@@ -523,18 +501,6 @@
 
 .home-page.is-attendance-panel-open .attendance-detail.ui-attendance:not([hidden]) {
     display: grid;
-}
-
-.attendance-detail .ui-attendance__header {
-    margin-bottom: 0;
-    border: 0;
-    background: linear-gradient(135deg, var(--ui-emerald-500), #48d692);
-}
-
-.attendance-detail .ui-attendance__header-icon img {
-    width: 28px;
-    height: 28px;
-    image-rendering: pixelated;
 }
 
 .attendance-detail .ui-attendance__layout {
@@ -808,7 +774,6 @@
 }
 
 @media (max-width: 430px) {
-    .quick-panel-header,
     .presence-panel > header {
         grid-template-columns: 42px minmax(0, 1fr) auto;
         gap: 9px;
@@ -826,7 +791,6 @@
         height: 26px;
     }
 
-    .quick-panel-header h2,
     .presence-panel .presence-panel-heading h2 {
         font-size: 20px;
     }
