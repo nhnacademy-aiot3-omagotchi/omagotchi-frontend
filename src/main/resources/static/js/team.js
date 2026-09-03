@@ -257,7 +257,13 @@ export function createTeamApp({api, profile = {}}) {
                         <input name="teamCandidateQuery" type="search" autocomplete="off"
                                placeholder="이름 또는 이메일" value="${escapeHtml(state.candidateQuery)}" />
                     </label>
-                    <button class="ui-button ui-button--secondary" type="submit"${state.candidateSearchLoading ? " disabled" : ""}>검색</button>
+                    <div class="home-team-invite-actions">
+                        <button class="ui-button ui-button--secondary" type="submit"${state.candidateSearchLoading ? " disabled" : ""}>검색</button>
+                        <button class="ui-button ui-button--primary" type="button" data-team-add-member${selected && !state.pending ? "" : " disabled"}>
+                            ${state.pending ? "추가 중" : "팀원 추가"}
+                        </button>
+                        <button class="ui-button ui-button--secondary" type="button" data-team-close-invite${state.pending ? " disabled" : ""}>닫기</button>
+                    </div>
                 </form>
                 ${state.candidateValidation ? `<p class="home-team-state is-error" role="alert">${escapeHtml(state.candidateValidation)}</p>` : ""}
                 ${state.candidateSearchLoading ? '<p class="home-team-state" role="status">검색 중입니다.</p>' : ""}
@@ -266,12 +272,6 @@ export function createTeamApp({api, profile = {}}) {
                         ${state.candidates.map(renderCandidate).join("")}
                         ${state.candidates.length ? "" : '<p class="home-team-state" role="status">해당 사용자를 찾을 수 없습니다.</p>'}
                     </div>` : ""}
-                <div class="home-team-invite-actions">
-                    <button class="ui-button ui-button--secondary" type="button" data-team-close-invite${state.pending ? " disabled" : ""}>닫기</button>
-                    <button class="ui-button ui-button--primary" type="button" data-team-add-member${selected && !state.pending ? "" : " disabled"}>
-                        ${state.pending ? "추가 중" : "팀원 추가"}
-                    </button>
-                </div>
             </section>`;
     }
 
@@ -296,11 +296,13 @@ export function createTeamApp({api, profile = {}}) {
                     ${master ? '<span class="ui-menu-chip">마스터</span>' : ""}
                 </header>
                 <section class="ui-party-members" aria-labelledby="home-team-members-title">
-                    <h3 id="home-team-members-title">팀원</h3>
-                    ${master ? `
-                        <button class="ui-button ui-button--primary" type="button" data-team-open-invite${state.pending ? " disabled" : ""}>
-                            팀원 추가
-                        </button>` : ""}
+                    <header class="home-team-members-head">
+                        <h3 id="home-team-members-title">팀원</h3>
+                        ${master ? `
+                            <button class="ui-button ui-button--primary" type="button" data-team-open-invite${state.pending ? " disabled" : ""}>
+                                팀원 추가
+                            </button>` : ""}
+                    </header>
                     ${renderInvite()}
                     <ul>
                         ${detail.members.map((member) => `
