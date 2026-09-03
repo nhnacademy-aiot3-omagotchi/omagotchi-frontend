@@ -54,7 +54,7 @@ export function normalizeRankingEntry(entry, index = 0) {
     return {
         rank,
         name,
-        studyTime: formatDuration(studySeconds),
+        studyTime: `${formatDuration(studySeconds)}${entry.timerRunning ? " · 진행 중" : ""}`,
         characterImage: rankingCharacterImage(entry),
         wingImage: streakWingSrc(entry.attendanceStreakDays)
     };
