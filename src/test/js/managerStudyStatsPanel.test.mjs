@@ -15,118 +15,68 @@ const dashboardTemplate = await readFile(
     new URL("../../main/resources/templates/manager/dashboard/index.html", import.meta.url),
     "utf8"
 );
+const studyStatsTemplate = await readFile(
+    new URL("../../main/resources/templates/manager/dashboard/panels/studyStats.html", import.meta.url),
+    "utf8"
+);
 const dashboardSource = await readFile(
     new URL("../../main/resources/static/js/manager/dashboard/index.js", import.meta.url),
     "utf8"
 );
-
-function eventTarget(value = "") {
-    return {
-        value,
-        textContent: "",
-        hidden: false,
-        addEventListener() {},
-        replaceChildren() {}
-    };
-}
-
-function rowNode() {
-    const fields = new Map();
-    return {
-        querySelector(selector) {
-            if (!fields.has(selector)) fields.set(selector, eventTarget());
-            return fields.get(selector);
-        },
-        querySelectorAll() {
-            return [];
-        }
-    };
-}
+const viteSource = await readFile(new URL("../../../vite.config.js", import.meta.url), "utf8");
+const islandSource = await readFile(
+    new URL("../../main/frontend/manager-dashboard/study-stats-main.jsx", import.meta.url),
+    "utf8"
+).catch(() => "");
+const islandBundle = await readFile(
+    new URL("../../main/resources/static/js/home-react/manager-study-stats-app.js", import.meta.url),
+    "utf8"
+).catch(() => "");
+const studentListSource = await readFile(
+    new URL("../../main/frontend/manager-dashboard/StudyStatsStudentList.jsx", import.meta.url),
+    "utf8"
+);
+const studentListStorySource = await readFile(
+    new URL("../../main/frontend/manager-dashboard/StudyStatsStudentList.stories.jsx", import.meta.url),
+    "utf8"
+);
+const workspaceStorySource = await readFile(
+    new URL("../../main/frontend/manager-dashboard/StudyStatsWorkspace.stories.jsx", import.meta.url),
+    "utf8"
+);
 
 function loadPanel() {
     let registration;
-    const charts = [];
     const calls = { today: [], trend: [], members: [] };
-    const renderedRows = [];
-    const elements = new Map();
-    const selectors = [
-        "[data-studystats-search]",
-        "[data-studystats-period]",
-        "[data-studystats-list]",
-        "[data-page-numbers]",
-        "[data-kpi-total-time]",
-        "[data-kpi-participation]",
-        "[data-kpi-avg-time]",
-        "[data-kpi-running-timer]",
-        "[data-trend-chart-title]",
-        "[data-top-chart-title]",
-        "[data-study-boundary-note]",
-        "#trendChart",
-        "#topStudentsChart",
-        "#durationDistributionChart"
-    ];
-    selectors.forEach((selector) => elements.set(selector, eventTarget(
-        selector === "[data-studystats-period]" ? "7" : ""
-    )));
-
-    const rowTemplate = {
-        content: {
-            firstElementChild: {
-                cloneNode() {
-                    const row = rowNode();
-                    renderedRows.push(row);
-                    return row;
-                }
-            }
-        }
-    };
+    const contexts = [];
+    const detailRequests = [];
+    const reactRoot = {};
     const root = {
         querySelector(selector) {
-            if (selector.endsWith("template]")) return rowTemplate;
-            return elements.get(selector);
-        },
-        querySelectorAll() {
-            return [];
+            return selector === "[data-manager-study-stats-react-root]" ? reactRoot : null;
         }
     };
-    const document = {
-        createDocumentFragment() {
-            return { append() {} };
-        }
-    };
-    class FakeChart {
-        constructor(canvas, config) {
-            this.canvas = canvas;
-            this.config = config;
-            this.destroyed = false;
-            charts.push(this);
-        }
-
-        destroy() {
-            this.destroyed = true;
-        }
-    }
     const window = {
-        Chart: FakeChart,
         OmagotchiDashboardPanels: {
             register(definition) {
                 registration = definition;
+            }
+        },
+        OmagotchiManagerStudyStatsIsland: {
+            render(context) {
+                contexts.push(context);
             }
         }
     };
 
     vm.runInNewContext(panelSource, {
         Array,
-        Date,
-        Intl,
-        Map,
         Math,
         Number,
         Object,
         Promise,
         String,
         console: { error() {} },
-        document,
         window
     });
 
@@ -139,7 +89,6 @@ function loadPanel() {
                 totalStudySeconds: 10800,
                 activeStudentCount: 2,
                 participantCount: 1,
-                noRecordStudentCount: 1,
                 runningTimerCount: 1,
                 averageParticipantStudySeconds: 10800,
                 durationBuckets: [
@@ -176,12 +125,17 @@ function loadPanel() {
         },
         getMemberProfiles: () => [{
             cohortMembershipId: 10,
-            name: "사용자 11111111",
+            nickname: "오마",
             email: "student@example.com"
-        }]
+        }],
+        openMemberDetail: (request) => detailRequests.push(request)
     });
 
-    return { calls, charts, elements, panel, renderedRows };
+    return { calls, contexts, detailRequests, panel };
+}
+
+function nextTask() {
+    return new Promise((resolve) => setImmediate(resolve));
 }
 
 test("로컬 Chart.js 4.5.1 번들이 전역 Chart 생성자를 제공한다", () => {
@@ -190,11 +144,31 @@ test("로컬 Chart.js 4.5.1 번들이 전역 Chart 생성자를 제공한다", (
     assert.equal(typeof context.Chart, "function");
 });
 
-test("Chart.js를 통계 패널보다 먼저 로드한다", () => {
+test("관리자 Dashboard는 실제 StudyStats React 모듈을 로드한다", () => {
     const chartIndex = dashboardTemplate.indexOf("/vendor/chartjs/4.5.1/chart.umd.min.js");
-    const panelIndex = dashboardTemplate.indexOf("/js/manager/dashboard/panels/studyStatsPanel.js");
+    const islandIndex = dashboardTemplate.indexOf("/js/home-react/manager-study-stats-app.js");
+
     assert.ok(chartIndex >= 0);
-    assert.ok(panelIndex > chartIndex);
+    assert.ok(islandIndex > chartIndex);
+    assert.match(studyStatsTemplate, /data-manager-study-stats-react-root/);
+    assert.doesNotMatch(studyStatsTemplate, /data-studystats-row-template|study-running-badge/);
+    assert.match(
+        viteSource,
+        /"manager-study-stats":\s*"src\/main\/frontend\/manager-dashboard\/study-stats-main\.jsx"/
+    );
+    assert.match(islandSource, /<StudyStatsWorkspace/);
+    assert.match(islandBundle, /data-manager-study-stats-react-root/);
+    assert.match(islandBundle, /study-running-light/);
+    assert.match(studentListSource, /className="study-running-light"/);
+    assert.doesNotMatch(studentListSource, /className="study-running-badge"/);
+    assert.match(
+        studentListStorySource,
+        /import \{ StudyStatsStudentList \} from "\.\/StudyStatsStudentList\.jsx"/
+    );
+    assert.match(
+        workspaceStorySource,
+        /import \{ StudyStatsWorkspace \} from "\.\/StudyStatsWorkspace\.jsx"/
+    );
 });
 
 test("관리자 Dashboard는 전체 기수가 아니라 내 관리 기수만 사용한다", () => {
@@ -203,42 +177,67 @@ test("관리자 Dashboard는 전체 기수가 아니라 내 관리 기수만 사
     assert.doesNotMatch(dashboardSource, /api\.cohort\.list\(\)/);
 });
 
-test("통계 계약의 공부 중 인원과 닉네임으로 요약, 구성원, 차트를 표시한다", async () => {
+test("통계 adapter는 실제 조회 결과와 사용자 동작을 React context로 연결한다", async () => {
     const harness = loadPanel();
 
     harness.panel.activate({ cohortId: 7 });
-    await new Promise((resolve) => setImmediate(resolve));
+    await nextTask();
 
     assert.deepEqual(harness.calls.today, [7]);
     assert.deepEqual(harness.calls.trend, [[7, "7d"]]);
     assert.equal(harness.calls.members[0][0], 7);
     assert.equal(harness.calls.members[0][1].window, "7d");
+    assert.equal(harness.calls.members[0][1].page, 0);
+    assert.equal(harness.calls.members[0][1].size, 100);
     assert.equal(harness.calls.members[0][1].sort, "periodStudySeconds,desc");
 
-    const latestByType = new Map(harness.charts.map((chart) => [chart.config.type, chart.config]));
-    assert.deepEqual(latestByType.get("line").data.labels, ["08/24", "08/25"]);
-    assert.deepEqual(latestByType.get("line").data.datasets[0].data, [1, 2]);
-    assert.deepEqual(latestByType.get("bar").data.labels, ["오마"]);
-    assert.deepEqual(latestByType.get("bar").data.datasets[0].data, [3]);
-    assert.deepEqual(latestByType.get("doughnut").data.datasets[0].data, [1, 1]);
-    assert.equal(
-        harness.elements.get("[data-kpi-running-timer]").textContent,
-        "1명"
-    );
+    let context = harness.contexts.at(-1);
+    assert.equal(context.loading, false);
+    assert.equal(context.error, null);
+    assert.equal(context.period, 7);
+    assert.equal(context.todayStats.runningTimerCount, 1);
+    assert.equal(context.membersStats.items[0].nickname, "오마");
+    assert.equal(context.memberProfiles[0].email, "student@example.com");
 
-    const memberRow = harness.renderedRows.at(-1);
-    assert.equal(
-        memberRow.querySelector("[data-studystats-member-name]").textContent,
-        "오마"
-    );
-    assert.equal(
-        memberRow.querySelector("[data-studystats-running]").hidden,
-        false
+    context.onPeriodChange(30);
+    await nextTask();
+
+    assert.deepEqual(harness.calls.trend.at(-1), [7, "30d"]);
+    assert.equal(harness.calls.members.at(-1)[1].window, "30d");
+    context = harness.contexts.at(-1);
+    assert.equal(context.period, 30);
+
+    context.onSelectMember({
+        ...context.membersStats.items[0],
+        name: "오마",
+        email: "student@example.com"
+    });
+    assert.equal(harness.detailRequests.length, 1);
+    assert.equal(harness.detailRequests[0].cohortId, 7);
+    assert.equal(harness.detailRequests[0].cohortMembershipId, "10");
+    assert.equal(harness.detailRequests[0].memberName, "오마");
+    assert.equal(harness.detailRequests[0].memberEmail, "student@example.com");
+    assert.equal(harness.detailRequests[0].currentAggregationDate, "2026-08-25");
+
+    harness.panel.deactivate();
+    const contextCount = harness.contexts.length;
+    harness.panel.invalidate();
+    assert.equal(harness.contexts.length, contextCount + 1);
+    context = harness.contexts.at(-1);
+    assert.equal(context.todayStats, null);
+    assert.equal(context.trendStats, null);
+    assert.equal(context.membersStats, null);
+    assert.equal(context.loading, false);
+});
+
+test("통계 adapter에는 별도 DOM·Chart 렌더링 구현이 남지 않는다", () => {
+    assert.doesNotMatch(
+        panelSource,
+        /createMemberRow|renderTable|renderCharts|data-studystats-row-template|study-running-badge/
     );
 });
 
 test("대시보드 index.js의 fetchTrendStats 및 fetchMemberOverview는 파라미터 섀도잉 없이 window.OmagotchiApi를 호출한다", () => {
-    // window가 파라미터로 섀도잉되지 않는지 검증
     assert.doesNotMatch(dashboardSource, /fetchTrendStats:\s*\(\s*cohortId\s*,\s*window\s*\)\s*=>/);
     assert.doesNotMatch(dashboardSource, /fetchMemberOverview:\s*\(\s*cohortId\s*,\s*membershipId\s*,\s*window\s*\)\s*=>/);
 

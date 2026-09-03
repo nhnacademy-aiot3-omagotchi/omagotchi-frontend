@@ -18,7 +18,8 @@ export default defineConfig({
         home: "src/main/frontend/home-react/main.jsx",
         "character-selector": "src/main/frontend/character-selector/main.jsx",
         "manager-sensors": "src/main/frontend/manager-dashboard/main.jsx",
-        "manager-telegram": "src/main/frontend/manager-dashboard/telegram-main.jsx"
+        "manager-telegram": "src/main/frontend/manager-dashboard/telegram-main.jsx",
+        "manager-study-stats": "src/main/frontend/manager-dashboard/study-stats-main.jsx"
       },
       output: {
         entryFileNames: "[name]-app.js",

@@ -1103,6 +1103,14 @@ td small {
     margin: 0 !important;
 }
 
+.study-stats-island-loading {
+    display: grid;
+    min-height: 240px;
+    place-items: center;
+    color: var(--muted);
+    font-weight: 700;
+}
+
 .study-statistics-controls {
     display: flex !important;
     flex-direction: row !important;
