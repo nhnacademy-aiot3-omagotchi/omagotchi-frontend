@@ -1,13 +1,14 @@
 import React from "react";
 import { expect, userEvent, within } from "storybook/test";
+import "../../resources/static/css/managerDashboard.css";
 import { StudyStatsWorkspace } from "./StudyStatsWorkspace.jsx";
 
 const mockMemberProfiles = [
-  { cohortMembershipId: 2, name: "이열공", email: "student1@omagotchi.site" },
-  { cohortMembershipId: 3, name: "박성실", email: "student2@omagotchi.site" },
-  { cohortMembershipId: 4, name: "최코딩", email: "student3@omagotchi.site" },
-  { cohortMembershipId: 5, name: "정새싹", email: "student4@omagotchi.site" },
-  { cohortMembershipId: 6, name: "강지각", email: "student5@omagotchi.site" }
+  { cohortMembershipId: 2, nickname: "이열공", email: "student1@omagotchi.site" },
+  { cohortMembershipId: 3, nickname: "박성실", email: "student2@omagotchi.site" },
+  { cohortMembershipId: 4, nickname: "최코딩", email: "student3@omagotchi.site" },
+  { cohortMembershipId: 5, nickname: "정새싹", email: "student4@omagotchi.site" },
+  { cohortMembershipId: 6, nickname: "강지각", email: "student5@omagotchi.site" }
 ];
 
 const mockTodayStats = {
@@ -223,7 +224,7 @@ export const Default = {
     trendStats: mock7DaysTrend,
     membersStats: mockMembersStats,
     memberProfiles: mockMemberProfiles,
-    initialPeriod: 7
+    period: 7
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
@@ -271,7 +272,7 @@ export const PartialData = {
     trendStats: mock7DaysPartialTrend,
     membersStats: mockMembersPartialStats,
     memberProfiles: mockMemberProfiles,
-    initialPeriod: 7
+    period: 7
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
@@ -308,7 +309,7 @@ export const ThirtyDays = {
       window: "30d"
     },
     memberProfiles: mockMemberProfiles,
-    initialPeriod: 30
+    period: 30
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
@@ -362,11 +363,11 @@ export const EmptyData = {
       ]
     },
     memberProfiles: [
-      { cohortMembershipId: 2, name: "이열공", email: "student1@omagotchi.site" },
-      { cohortMembershipId: 3, name: "박성실", email: "student2@omagotchi.site" },
-      { cohortMembershipId: 4, name: "최코딩", email: "student3@omagotchi.site" }
+      { cohortMembershipId: 2, nickname: "이열공", email: "student1@omagotchi.site" },
+      { cohortMembershipId: 3, nickname: "박성실", email: "student2@omagotchi.site" },
+      { cohortMembershipId: 4, nickname: "최코딩", email: "student3@omagotchi.site" }
     ],
-    initialPeriod: 7
+    period: 7
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
@@ -397,7 +398,7 @@ export const NoMembers = {
       items: []
     },
     memberProfiles: [],
-    initialPeriod: 7
+    period: 7
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
@@ -410,7 +411,7 @@ export const Loading = {
   name: "로딩 중",
   args: {
     loading: true,
-    initialPeriod: 7
+    period: 7
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
@@ -426,7 +427,7 @@ export const SearchFilter = {
     trendStats: mock7DaysTrend,
     membersStats: mockMembersStats,
     memberProfiles: mockMemberProfiles,
-    initialPeriod: 7
+    period: 7
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
@@ -438,4 +439,3 @@ export const SearchFilter = {
     expect(canvas.queryByText("박성실")).not.toBeInTheDocument();
   }
 };
-

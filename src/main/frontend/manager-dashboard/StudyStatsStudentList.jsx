@@ -1,5 +1,4 @@
 import React, { useEffect, useMemo, useState } from "react";
-import "../../resources/static/css/managerDashboard.css";
 
 const DEFAULT_PAGE_SIZE = 5;
 

@@ -56,8 +56,7 @@ export function StudyStatsWorkspace({
         || profileByMembershipId.get(String(stat.cohortMembershipId));
       const name = stat.nickname
         || profile?.nickname
-        || profile?.name
-        || `수강생-${String(stat.userId || stat.cohortMembershipId).slice(0, 8)}`;
+        || "닉네임 미설정";
       return {
         ...stat,
         name,
