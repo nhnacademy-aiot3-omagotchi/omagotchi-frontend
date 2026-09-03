@@ -180,6 +180,7 @@ export const Default = {
     expect(canvas.getByText("3개 세션")).toBeInTheDocument();
     expect(canvas.getByText("09:10 ~ 11:30")).toBeInTheDocument();
     expect(canvas.getByText("2시간 20분")).toBeInTheDocument();
+    expect(canvas.getByText("2026-09-02 11:30:00")).toBeInTheDocument();
     expect(canvas.getByText("13:00 ~ 15:00")).toBeInTheDocument();
     expect(canvas.getByText("16:30 ~ 17:10")).toBeInTheDocument();
     expect(canvas.getByText("40분")).toBeInTheDocument();
