@@ -60,8 +60,16 @@ async function hydrateDashboard(
             }
             if (noticesResult.status === "rejected") {
                 console.error("관리자 공지 목록을 불러오지 못했습니다.", noticesResult.reason);
-            } else if (Array.isArray(noticesResult.value?.items)) {
-                notices.push(...noticesResult.value.items);
+정            } else {
+                // 고정 공지는 items에서 빠져 pinned로 따로 온다. 사용자 홈은 배너에만 쓰지만
+                // 관리자는 고정 해제도 해야 하므로 목록에 함께 넣는다.
+                const noticePage = noticesResult.value;
+                if (noticePage?.pinned) {
+                    notices.push(noticePage.pinned);
+                }
+                if (Array.isArray(noticePage?.items)) {
+                    notices.push(...noticePage.items);
+                }
             }
 
             const members = membersResult.status === "fulfilled" && Array.isArray(membersResult.value)
