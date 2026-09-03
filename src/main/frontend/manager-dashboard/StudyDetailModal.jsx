@@ -296,9 +296,6 @@ export function StudyDetailModal({
             <h2 id="study-detail-title">
               <span data-detail-name>{memberName}</span> 님의 공부 기록
             </h2>
-            <p className="study-detail-email" data-detail-email>
-              {memberEmail}
-            </p>
           </div>
           <button
             type="button"

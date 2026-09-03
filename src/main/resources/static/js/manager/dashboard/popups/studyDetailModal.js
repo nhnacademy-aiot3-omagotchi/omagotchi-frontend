@@ -290,7 +290,9 @@
 
         function render() {
             elements.name.textContent = state.memberName;
-            elements.email.textContent = state.memberEmail;
+            if (elements.email) {
+                elements.email.textContent = state.memberEmail;
+            }
             elements.period.textContent = `${state.periodDays}일간`;
             elements.periodButtons.forEach((button) => {
                 button.classList.toggle("is-active", Number(button.dataset.detailPeriodDays) === state.periodDays);

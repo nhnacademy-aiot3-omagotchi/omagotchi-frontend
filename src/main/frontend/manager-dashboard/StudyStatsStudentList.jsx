@@ -83,9 +83,7 @@ export function StudyStatsStudentList({
     return members
       .filter((m) => {
         if (!query) return true;
-        const nameMatch = (m.name || "").toLowerCase().includes(query);
-        const emailMatch = (m.email || "").toLowerCase().includes(query);
-        return nameMatch || emailMatch;
+        return (m.name || "").toLowerCase().includes(query);
       })
       .sort((left, right) => {
         const a = selector(left);
@@ -128,13 +126,12 @@ export function StudyStatsStudentList({
       <div className="table-wrap">
         <table>
           <colgroup>
+            <col style={{ width: "18%" }} />
+            <col style={{ width: "16%" }} />
+            <col style={{ width: "18%" }} />
             <col style={{ width: "14%" }} />
-            <col style={{ width: "23%" }} />
-            <col style={{ width: "14%" }} />
-            <col style={{ width: "14%" }} />
-            <col style={{ width: "10%" }} />
-            <col style={{ width: "15%" }} />
-            <col style={{ width: "10%" }} />
+            <col style={{ width: "18%" }} />
+            <col style={{ width: "16%" }} />
           </colgroup>
           <thead>
             <tr>
@@ -144,7 +141,6 @@ export function StudyStatsStudentList({
                 sort={sort}
                 onSort={handleSort}
               />
-              <th>이메일</th>
               <SortableHeader
                 label="오늘 학습"
                 sortKey="today"
@@ -175,19 +171,19 @@ export function StudyStatsStudentList({
           <tbody data-studystats-list>
             {loading ? (
               <tr>
-                <td className="empty-row" colSpan={7}>
+                <td className="empty-row" colSpan={6}>
                   공부 통계를 불러오는 중입니다.
                 </td>
               </tr>
             ) : error ? (
               <tr>
-                <td className="empty-row" colSpan={7}>
+                <td className="empty-row" colSpan={6}>
                   공부 통계를 불러오지 못했습니다.
                 </td>
               </tr>
             ) : currentPageMembers.length === 0 ? (
               <tr>
-                <td className="empty-row" colSpan={7}>
+                <td className="empty-row" colSpan={6}>
                   조회된 수강생이 없습니다.
                 </td>
               </tr>
@@ -212,9 +208,6 @@ export function StudyStatsStudentList({
                           />
                         )}
                       </button>
-                    </td>
-                    <td>
-                      <small data-studystats-member-email>{member.email}</small>
                     </td>
                     <td data-studystats-today>{formatDuration(member.todayStudySeconds)}</td>
                     <td data-studystats-period-total>{formatDuration(member.periodStudySeconds)}</td>

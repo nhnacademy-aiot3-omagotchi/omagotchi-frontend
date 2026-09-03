@@ -149,7 +149,6 @@ export const Default = {
     // 헤더 영역 확인
     expect(canvas.getByText("개인 공부 통계")).toBeInTheDocument();
     expect(canvas.getByText("이열공")).toBeInTheDocument();
-    expect(canvas.getByText("student1@omagotchi.site")).toBeInTheDocument();
 
     // 기간 토글 및 안내 확인
     expect(canvas.getByRole("button", { name: "최근 7일" })).toHaveClass("is-active");
