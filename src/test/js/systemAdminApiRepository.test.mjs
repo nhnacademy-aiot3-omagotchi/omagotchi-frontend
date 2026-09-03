@@ -849,16 +849,17 @@ test("감사 로그 조회가 실패해도 대시보드는 살아 있고 실패 
     assert.deepEqual(dashboard.audits, []);
 });
 
-test("형식이 깨진 감사 한 줄은 버리지 않고 패널 전체를 실패로 만든다", async () => {
-    // Given: 사유가 빠진 행
+test("사유나 이전 값이 없어도 감사 한 줄을 보여 준다", async () => {
+    // Given: 최초 권한 부여라 이전 값이 없고, 사유도 남기지 않은 행
+    // 예전에는 이 셋을 필수로 두어 이런 행 하나에 감사 패널 전체가 오류로 막혔다.
     const fixture = apiFixture({
         audits: [{
-            auditType: "ACCOUNT_STATUS",
-            action: "ACCOUNT_DISABLED",
+            auditType: "ACCOUNT_ROLE",
+            action: "ROLE_GRANTED",
             actorUserId: "00000000-0000-0000-0000-000000000001",
             targetUserId: "00000000-0000-0000-0000-000000000002",
-            beforeValue: "ACTIVE",
-            afterValue: "DISABLED",
+            beforeValue: null,
+            afterValue: "SYSTEM_ADMIN",
             reason: "   ",
             occurredAt: "2026-09-02T05:03:00Z"
         }]
@@ -868,9 +869,36 @@ test("형식이 깨진 감사 한 줄은 버리지 않고 패널 전체를 실�
     // When
     const dashboard = await repository.loadDashboard();
 
-    // Then: 조용히 한 줄만 사라지면 "기록이 없었다"와 구분할 수 없다
-    assert.equal(dashboard.capabilities.audit, false);
-    assert.match(dashboard.auditError, /형식이 올바르지 않습니다/);
+    // Then: 패널은 살아 있고, 없는 값은 없다고 표기한다
+    assert.equal(dashboard.capabilities.audit, true);
+    assert.equal(dashboard.auditError, null);
+    assert.equal(dashboard.audits.length, 1);
+    assert.match(dashboard.audits[0].detail, /— → SYSTEM_ADMIN · 사유 없음/);
+});
+
+test("언제·누가·누구에게·무엇을 중 하나라도 빠지면 패널 전체를 실패로 만든다", async () => {
+    // 이 넷은 감사 한 줄이 성립하는 최소 조건이다. 조용히 한 줄만 빼면
+    // "기록이 없었다"와 "보여 주지 못했다"를 구분할 수 없다.
+    const required = ["action", "actorUserId", "targetUserId", "occurredAt"];
+    for (const field of required) {
+        const row = {
+            auditType: "ACCOUNT_STATUS",
+            action: "ACCOUNT_DISABLED",
+            actorUserId: "00000000-0000-0000-0000-000000000001",
+            targetUserId: "00000000-0000-0000-0000-000000000002",
+            beforeValue: "ACTIVE",
+            afterValue: "DISABLED",
+            reason: "부정 사용 신고",
+            occurredAt: "2026-09-02T05:03:00Z"
+        };
+        delete row[field];
+
+        const repository = createSystemAdminApiRepository(apiFixture({audits: [row]}).api);
+        const dashboard = await repository.loadDashboard();
+
+        assert.equal(dashboard.capabilities.audit, false, `${field} 누락이 통과했습니다.`);
+        assert.match(dashboard.auditError, /올바르지 않습니다/, `${field} 누락`);
+    }
 });
 
 test("이름이 없는 감사는 UUID 로 대체하고 행을 유지한다", () => {

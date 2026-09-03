@@ -144,9 +144,10 @@ class IdentityRestAdminAuditClientTest {
     }
 
     @Test
-    @DisplayName("사유 누락 감사의 잘못된 하류 응답 처리")
-    void rejectsAuditWithoutReasonAsBadGateway() {
-        // Given: 사유가 빠진 Identity 성공 응답
+    @DisplayName("사유와 이전 값이 없어도 감사 한 줄을 통과시킨다")
+    void keepsAuditWithoutReasonAndBeforeValue() {
+        // Given: 최초 권한 부여라 이전 값이 없고 사유도 남기지 않은 Identity 응답.
+        // 이 셋을 필수로 두었더니 이런 행 하나에 감사 패널 전체가 막혔다.
         server.expect(once(), requestTo(BASE_URL + PATH + "?page=0&size=50"))
                 .andRespond(withStatus(HttpStatus.OK)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -157,9 +158,9 @@ class IdentityRestAdminAuditClientTest {
                                     "action": "ROLE_GRANTED",
                                     "actorUserId": "00000000-0000-0000-0000-000000000001",
                                     "targetUserId": "00000000-0000-0000-0000-000000000002",
-                                    "beforeValue": "USER",
+                                    "beforeValue": null,
                                     "afterValue": "SYSTEM_ADMIN",
-                                    "reason": null,
+                                    "reason": "   ",
                                     "occurredAt": "2026-09-02T05:03:00Z"
                                   }],
                                   "page": {
@@ -169,7 +170,43 @@ class IdentityRestAdminAuditClientTest {
                                 }
                                 """));
 
-        // When & Then: 사유 없는 감사는 화면에서 쓸모가 없으므로 계약 위반으로 끊는다
+        // When
+        IdentityAdminAuditPage page = client.findAudits(ACCESS_TOKEN, 0, 50);
+
+        // Then: 행은 남고, 빈 값은 null 로 모아 화면이 표기하게 넘긴다
+        assertThat(page.items()).hasSize(1);
+        assertThat(page.items().getFirst().beforeValue()).isNull();
+        assertThat(page.items().getFirst().reason()).isNull();
+        assertThat(page.items().getFirst().afterValue()).isEqualTo("SYSTEM_ADMIN");
+    }
+
+    @Test
+    @DisplayName("행위가 빠진 감사는 계약 위반으로 끊는다")
+    void rejectsAuditWithoutAction() {
+        // Given: "무엇을" 이 없는 응답. 이건 화면에 그릴 수 없는 행이다.
+        server.expect(once(), requestTo(BASE_URL + PATH + "?page=0&size=50"))
+                .andRespond(withStatus(HttpStatus.OK)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .body("""
+                                {
+                                  "items": [{
+                                    "auditType": "ACCOUNT_ROLE",
+                                    "action": null,
+                                    "actorUserId": "00000000-0000-0000-0000-000000000001",
+                                    "targetUserId": "00000000-0000-0000-0000-000000000002",
+                                    "beforeValue": "USER",
+                                    "afterValue": "SYSTEM_ADMIN",
+                                    "reason": "운영 인수인계",
+                                    "occurredAt": "2026-09-02T05:03:00Z"
+                                  }],
+                                  "page": {
+                                    "number": 0, "size": 50,
+                                    "totalElements": 1, "totalPages": 1
+                                  }
+                                }
+                                """));
+
+        // When & Then
         assertThatThrownBy(() -> client.findAudits(ACCESS_TOKEN, 0, 50))
                 .isInstanceOfSatisfying(BusinessException.class, exception ->
                         assertThat(exception.getErrorCode())
