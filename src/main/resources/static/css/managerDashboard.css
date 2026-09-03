@@ -1196,6 +1196,7 @@ td small {
 .study-detail-dialog {
     min-width: 0;
     width: min(1040px, 100%);
+    height: min(1080px, calc(100vh - 40px));
     height: min(1080px, calc(100dvh - 40px));
     max-height: calc(100vh - 40px);
     display: grid;
