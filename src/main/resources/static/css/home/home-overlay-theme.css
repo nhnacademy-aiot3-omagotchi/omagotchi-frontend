@@ -104,8 +104,6 @@
 }
 
 .home-overlay-close {
-    top: clamp(18px, 2.5vw, 28px);
-    right: clamp(16px, 2.5vw, 28px);
     z-index: 8;
     width: 46px;
     height: 46px;
@@ -525,39 +523,6 @@
     width: min(560px, calc(100vw - 32px));
 }
 
-.home-overlay--settings > .home-overlay-header {
-    min-height: 78px;
-    grid-template-columns: minmax(0, 1fr);
-    gap: 0;
-    margin-bottom: 20px;
-    padding: 18px 56px 14px 22px;
-}
-
-.home-overlay--settings .home-overlay-icon {
-    display: none;
-}
-
-.home-overlay--settings .home-overlay-heading h2 {
-    font-size: clamp(28px, 3vw, 34px);
-    line-height: 1;
-}
-
-.home-overlay--settings > .home-overlay-close {
-    top: 20px;
-    right: 20px;
-    width: 32px;
-    height: 32px;
-    border: 0;
-    background: transparent;
-    color: #ffffff;
-    font-size: 20px;
-}
-
-.home-overlay--settings > .home-overlay-close:hover,
-.home-overlay--settings > .home-overlay-close:focus-visible {
-    background: rgba(255, 255, 255, 0.12);
-}
-
 .overlay-settings-panel,
 .overlay-settings-section {
     display: grid;
@@ -644,54 +609,10 @@
     position: relative;
 }
 
-.home-overlay:not(.home-overlay--help):not(.home-overlay--space) > .home-overlay-header {
-    min-height: 78px;
-    grid-template-columns: minmax(0, 1fr);
-    gap: 0;
-    margin-bottom: 20px;
-    padding: 18px 60px 14px 22px;
-}
-
-.home-overlay:not(.home-overlay--help):not(.home-overlay--space) .home-overlay-icon {
-    display: none;
-}
-
-.home-overlay:not(.home-overlay--help):not(.home-overlay--space) .home-overlay-heading h2 {
-    font-size: clamp(28px, 3vw, 36px);
-    line-height: 1;
-}
-
-.home-overlay:not(.home-overlay--help):not(.home-overlay--space) .home-overlay-heading p {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    overflow: hidden;
-    clip-path: inset(50%);
-    white-space: nowrap;
-    border: 0;
-}
-
-.home-overlay:not(.home-overlay--help):not(.home-overlay--space) > .home-overlay-close {
-    top: 19px;
-    right: 18px;
-    width: 40px;
-    height: 40px;
-    border: 0;
-    background: transparent;
-    color: #ffffff;
-    font-size: 20px;
-}
-
 /* Progress */
 .home-overlay--progress {
     width: min(980px, calc(100vw - 32px)) !important;
     min-height: min(680px, calc(100dvh - 32px));
-}
-
-.home-overlay--progress > .home-overlay-header {
-    margin-bottom: 24px !important;
-    border-bottom: 0;
 }
 
 .home-overlay--progress > .home-overlay-body {
@@ -1459,23 +1380,6 @@
     }
 
     .home-overlay-close {
-        top: 14px;
-        right: 12px;
-        width: 40px;
-        height: 40px;
-    }
-
-    .home-overlay--settings > .home-overlay-header {
-        min-height: 72px;
-        grid-template-columns: minmax(0, 1fr);
-        gap: 0;
-        margin-bottom: 16px;
-        padding: 16px 56px 12px 14px;
-    }
-
-    .home-overlay--settings > .home-overlay-close {
-        top: 12px;
-        right: 10px;
         width: 40px;
         height: 40px;
     }
@@ -1531,20 +1435,6 @@
 @media (max-width: 430px) {
     .home-overlay > .home-overlay-header {
         grid-template-columns: 40px minmax(0, 1fr);
-    }
-
-    .home-overlay--settings > .home-overlay-header {
-        min-height: 72px;
-        grid-template-columns: minmax(0, 1fr);
-        margin-bottom: 16px;
-        padding: 16px 56px 12px 14px;
-    }
-
-    .home-overlay--settings > .home-overlay-close {
-        top: 12px;
-        right: 10px;
-        width: 40px;
-        height: 40px;
     }
 
     .overlay-settings-row {
@@ -1642,25 +1532,8 @@
     }
 
     .home-overlay-close {
-        top: 12px;
-        right: 12px;
         width: 38px;
         height: 38px;
-    }
-
-    .home-overlay--settings > .home-overlay-header {
-        min-height: 64px;
-        grid-template-columns: minmax(0, 1fr);
-        gap: 0;
-        margin-bottom: 12px;
-        padding: 12px 46px 10px 14px;
-    }
-
-    .home-overlay--settings > .home-overlay-close {
-        top: 8px;
-        right: 8px;
-        width: 40px;
-        height: 40px;
     }
 }
 
@@ -1687,32 +1560,10 @@
 
 /* Compact progress layout must win over the legacy mobile shell rules above. */
 @media (max-width: 760px) {
-    .home-overlay:not(.home-overlay--help):not(.home-overlay--space) > .home-overlay-header {
-        min-height: 68px;
-        grid-template-columns: minmax(0, 1fr);
-        gap: 0;
-        margin: 0 -14px 14px;
-        padding: 17px 56px 13px 14px;
-    }
-
-    .home-overlay:not(.home-overlay--help):not(.home-overlay--space) .home-overlay-heading h2 {
-        font-size: clamp(25px, 8vw, 30px);
-    }
-
-    .home-overlay:not(.home-overlay--help):not(.home-overlay--space) > .home-overlay-close {
-        top: 12px;
-        right: 10px;
-        width: 40px;
-        height: 40px;
-    }
 
     .home-overlay--progress {
         width: min(560px, 100%) !important;
         min-height: 0;
-    }
-
-    .home-overlay--progress > .home-overlay-header {
-        margin-bottom: 10px !important;
     }
 
     .home-overlay--progress > .home-overlay-body {
@@ -1898,12 +1749,6 @@
         width: min(760px, calc(100vw - 16px)) !important;
     }
 
-    .home-overlay--progress > .home-overlay-header {
-        min-height: 60px;
-        margin-bottom: 8px !important;
-        padding-block: 14px 10px;
-    }
-
     .home-overlay--progress > .home-overlay-body {
         max-height: calc(100dvh - 86px);
     }
@@ -1994,17 +1839,6 @@
     border-color: #b9d6c6;
     background: var(--overlay-list-surface);
     color: var(--overlay-list-ink);
-}
-
-.ui-menu-live-panel:is(.home-overlay--progress, .home-overlay--personal, .home-overlay--cohort, .home-overlay--write, .home-overlay--community, .home-overlay--settings) .ui-menu-live-header {
-    border-bottom-color: rgba(18, 56, 42, 0.18);
-    background: #2fc47c;
-    color: #0c3022;
-}
-
-.ui-menu-live-panel:is(.home-overlay--progress, .home-overlay--personal, .home-overlay--cohort, .home-overlay--write, .home-overlay--community, .home-overlay--settings) .ui-menu-live-header :is(h2, p),
-.ui-menu-live-panel:is(.home-overlay--progress, .home-overlay--personal, .home-overlay--cohort, .home-overlay--write, .home-overlay--community, .home-overlay--settings) > .home-overlay-close {
-    color: #0c3022 !important;
 }
 
 .ui-menu-live-panel:is(.home-overlay--progress, .home-overlay--personal, .home-overlay--cohort, .home-overlay--write, .home-overlay--community, .home-overlay--settings) .ui-menu-live-body {

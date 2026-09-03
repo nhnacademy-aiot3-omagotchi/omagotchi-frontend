@@ -72,7 +72,10 @@ const fallbackCharacterImage = "/images/characters/study/study.png";
 const fallbackCharacterAnimatedImage = "/images/characters/study/study_eye.gif";
 
 const selectedCharacterImage = selectedCharacterAssetKey
-    ? `/images/characters/${selectedCharacterAssetKey}.png`
+    // 서버가 준 assetKey 로 직접 만든 경로도 캐시 버전을 붙인다.
+    // getPng 를 안 거치므로 빠뜨리면 이 경로만 옛 그림으로 남는다.
+    ? characterAssets?.versioned?.(`/images/characters/${selectedCharacterAssetKey}.png`)
+        ?? `/images/characters/${selectedCharacterAssetKey}.png`
     : characterAssets?.getPng(selectedCharacterId, selectedCharacterColorId) ?? fallbackCharacterImage;
 const selectedCharacterAnimatedImage = characterAssets
     ?.getEyeGif(selectedCharacterId, selectedCharacterColorId) ?? fallbackCharacterAnimatedImage;

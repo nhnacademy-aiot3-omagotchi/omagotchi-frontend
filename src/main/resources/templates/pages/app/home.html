@@ -29,13 +29,18 @@
 
     <section class="attendance-detail ui-attendance" id="attendance-detail" aria-labelledby="attendance-title"
              data-ui-state="ready" hidden>
-        <header class="quick-panel-header attendance-detail-header ui-attendance__header">
-            <span class="quick-panel-icon ui-attendance__header-icon" aria-hidden="true"><img src="/images/app/calendar.png" alt="" /></span>
-            <div class="ui-attendance__header-copy">
+        <!-- 머리말 구조는 PanelHeader(React)와 동일하게 맞춘다.
+             여기는 Thymeleaf라 컴포넌트를 쓸 수 없으므로 클래스 계약만 일치시킨다.
+             한쪽만 바꾸면 같은 자리가 화면마다 다르게 보인다. -->
+        <header class="panel-header quick-panel-header attendance-detail-header ui-attendance__header">
+            <span class="panel-header-icon quick-panel-icon ui-attendance__header-icon" aria-hidden="true"><img src="/images/app/calendar.png" alt="" /></span>
+            <div class="panel-header-heading ui-attendance__header-copy">
                 <h2>출석 현황</h2>
                 <p>오늘의 출석과 이번 달 학습 흐름을 확인하세요.</p>
             </div>
-            <button class="quick-panel-close ui-attendance__close" type="button" data-attendance-panel-close aria-label="출석부 닫기">×</button>
+            <div class="panel-header-actions">
+                <button class="quick-panel-close ui-attendance__close" type="button" data-attendance-panel-close aria-label="출석부 닫기">×</button>
+            </div>
         </header>
         <p class="ui-state-message" data-attendance-state-message role="status" hidden></p>
         <div class="attendance-layout ui-attendance__layout">

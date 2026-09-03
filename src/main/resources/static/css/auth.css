@@ -1038,3 +1038,93 @@ body {
         padding: 12px;
     }
 }
+
+/* ── 로그인·회원가입 좌측 히어로 ──────────────────────────────────────
+ *
+ * 예전에는 큰 제목 두 줄 + 설명 + 해시태그 배지를 넣었다. 픽셀 폰트가 좁은 폭에서
+ * "새로운 학습 여 / 정을" 처럼 어색하게 끊겼고 아래 절반이 빈 채로 남았다.
+ * 이제 캐릭터 하나와 한 줄만 둔다. 문구가 짧아 줄바꿈이 깨질 일이 없다.
+ *
+ * 뒤로가기 버튼은 position:absolute 라 흐름 밖이다. 흐름에 남는 것은 캐릭터와
+ * 문구 둘뿐이라 이 둘을 한 덩어리로 묶어 세로 중앙에 세운다. 처음에는
+ * grid-template-rows: auto 1fr auto 로 두었는데 캐릭터가 위로 붙고 문구 아래가
+ * 텅 비어 무게중심이 위로 쏠렸다.
+ *
+ * 선택자에 두 클래스를 겹친 이유는 .ui-auth-aside 의 align-content: space-between 을
+ * 확실히 덮기 위해서다. 특이도가 같으면 CSS 파일 로드 순서에 기대게 된다.
+ *
+ * 캐릭터는 장식이라 aria-hidden 이고, 페이지 제목은 오른쪽 폼의 h1 이 갖는다.
+ */
+.ui-auth-aside.auth-hero {
+    align-content: center;
+    justify-items: center;
+    gap: clamp(18px, 3vh, 30px);
+    text-align: center;
+}
+
+.auth-hero-stage {
+    position: relative;
+    display: grid;
+    justify-items: center;
+    gap: 10px;
+}
+
+.auth-hero-character {
+    width: clamp(120px, 22vw, 190px);
+    height: auto;
+    /* 픽셀 아트라 보간을 끄지 않으면 뭉개진다. */
+    image-rendering: pixelated;
+    animation: auth-hero-bob 3.2s ease-in-out infinite;
+}
+
+/* 그림자가 같이 커졌다 작아져야 떠 있는 것처럼 보인다. */
+.auth-hero-shadow {
+    width: clamp(64px, 12vw, 100px);
+    height: 10px;
+    border-radius: 50%;
+    background: rgba(8, 39, 28, 0.18);
+    filter: blur(3px);
+    animation: auth-hero-shadow 3.2s ease-in-out infinite;
+}
+
+.auth-hero-copy {
+    display: grid;
+    gap: 6px;
+}
+
+.auth-hero-line {
+    margin: 0;
+    color: rgba(8, 39, 28, 0.78);
+    font-size: clamp(13px, 1.4vw, 15px);
+    font-weight: 800;
+    line-height: 1.5;
+}
+
+@keyframes auth-hero-bob {
+    0%, 100% { transform: translateY(0); }
+    50%      { transform: translateY(-9px); }
+}
+
+@keyframes auth-hero-shadow {
+    0%, 100% { transform: scaleX(1);    opacity: .28; }
+    50%      { transform: scaleX(.82);  opacity: .16; }
+}
+
+/* 좁은 화면에서는 캐릭터를 줄이고 위아래 여백을 좁힌다. */
+@media (max-width: 860px) {
+    .ui-auth-aside.auth-hero {
+        gap: 12px;
+    }
+
+    .auth-hero-character {
+        width: clamp(88px, 26vw, 120px);
+    }
+}
+
+/* 움직임을 줄이도록 설정한 사용자에게는 애니메이션을 끈다. */
+@media (prefers-reduced-motion: reduce) {
+    .auth-hero-character,
+    .auth-hero-shadow {
+        animation: none;
+    }
+}

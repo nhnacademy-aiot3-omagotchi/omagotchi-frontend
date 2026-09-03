@@ -1,5 +1,24 @@
 // 캐릭터 PNG와 눈 깜빡임 GIF의 파일명 차이를 한 곳에서 관리합니다.
 window.OmagotchiCharacterAssets = (() => {
+    /*
+     * 캐릭터 이미지 캐시 버전.
+     *
+     * 이미지 URL에는 JS처럼 빌드 해시가 붙지 않는데, 운영 응답은
+     * Cache-Control: max-age=14400 (4시간)이다. 그래서 파일명을 그대로 두고
+     * 내용만 바꾸면 최대 4시간 동안 옛 그림이 그대로 보인다.
+     *
+     * 예전에는 새 파일명(_eye3.gif)을 만들어 이 문제를 피했지만,
+     * 캐릭터마다 예외 표가 늘어나 규칙이 무너졌다. 대신 여기 한 줄을 올린다.
+     *
+     * 캐릭터 이미지를 교체하면 이 값을 반드시 갱신할 것. 안 올리면 화면이 안 바뀐다.
+     */
+    const ASSET_VERSION = "20260903-1";
+
+    /** 정적 이미지 경로에 캐시 버전을 붙인다. */
+    function versioned(path) {
+        return `${path}?v=${ASSET_VERSION}`;
+    }
+
     const defaultGifNames = {
         pistachio: "Pistachio_eye.gif",
         cyan: "Cyan_eye.gif",
@@ -37,7 +56,7 @@ window.OmagotchiCharacterAssets = (() => {
             ? `${characterId}.png`
             : `${colorId}.png`;
 
-        return `/images/characters/${characterId}/${fileName}`;
+        return versioned(`/images/characters/${characterId}/${fileName}`);
     }
 
     function getEyeGif(characterId, colorId = "original") {
@@ -46,11 +65,13 @@ window.OmagotchiCharacterAssets = (() => {
             : gifNameOverrides[characterId]?.[colorId] || defaultGifNames[colorId];
 
         return fileName
-            ? `/images/characters/${characterId}/${fileName}`
+            ? versioned(`/images/characters/${characterId}/${fileName}`)
             : getPng(characterId, colorId);
     }
 
     return {
+        ASSET_VERSION,
+        versioned,
         getPng,
         getEyeGif
     };
