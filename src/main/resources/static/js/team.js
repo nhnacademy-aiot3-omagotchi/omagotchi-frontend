@@ -298,7 +298,7 @@ export function createTeamApp({api, profile = {}}) {
                 <section class="ui-party-members" aria-labelledby="home-team-members-title">
                     <header class="home-team-members-head">
                         <h3 id="home-team-members-title">팀원</h3>
-                        ${master ? `
+                        ${master && !state.inviteOpen ? `
                             <button class="ui-button ui-button--primary" type="button" data-team-open-invite${state.pending ? " disabled" : ""}>
                                 팀원 추가
                             </button>` : ""}
