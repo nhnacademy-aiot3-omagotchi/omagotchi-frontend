@@ -205,6 +205,10 @@ class BrowserSessionRedisIT {
         // Given: Redis에 저장된 인증 세션
         given(identityAuthClient.login("user@example.com", "password-passphrase"))
                 .willReturn(tokenBundle());
+        given(identityAccountClient.withdraw(
+                ACCESS_JWT,
+                "current-password-passphrase"
+        )).willReturn(Instant.parse("2026-10-03T00:00:00Z"));
         EntityExchangeResult<String> loginPageResponse = sendGet("/login", null);
         EntityExchangeResult<String> loginResponse = sendLogin(
                 csrfToken(loginPageResponse),
@@ -224,7 +228,9 @@ class BrowserSessionRedisIT {
         );
 
         // Then: Identity에는 세션의 Access JWT와 현재 비밀번호만 전달
-        assertThat(withdrawalResponse.getStatus().value()).isEqualTo(204);
+        assertThat(withdrawalResponse.getStatus().value()).isEqualTo(200);
+        assertThat(withdrawalResponse.getResponseBody())
+                .contains("\"recoveryDeadline\":\"2026-10-03T00:00:00Z\"");
         verify(identityAccountClient).withdraw(
                 ACCESS_JWT,
                 "current-password-passphrase"

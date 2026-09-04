@@ -13,8 +13,10 @@ public record AdminAccountResponse(
         String role,
         String status,
         short failedLoginAttempts,
+        boolean locked,
         Instant lockedUntil,
-        Instant withdrawnAt,
+        Instant statusChangedAt,
+        Instant recoveryDeadline,
         Instant createdAt,
         List<AdminManagedCohortResponse> managedCohorts
 ) {
@@ -31,8 +33,10 @@ public record AdminAccountResponse(
                 account.role(),
                 account.status(),
                 account.failedLoginAttempts(),
+                account.locked(),
                 account.lockedUntil(),
-                account.withdrawnAt(),
+                account.statusChangedAt(),
+                account.recoveryDeadline(),
                 account.createdAt(),
                 account.managedCohorts().stream()
                         .map(AdminManagedCohortResponse::from)

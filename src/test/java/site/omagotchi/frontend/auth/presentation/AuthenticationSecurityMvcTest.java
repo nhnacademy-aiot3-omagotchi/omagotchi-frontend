@@ -178,6 +178,33 @@ class AuthenticationSecurityMvcTest {
     }
 
     @Test
+    @DisplayName("계정 탈퇴 안내에 서버 계산 복구 마감 시각 표시")
+    void rendersAccountRecoveryDeadline() throws Exception {
+        mockMvc.perform(get("/login")
+                        .param("notice", "account-withdrawn")
+                        .param("recoveryDeadline", "2026-10-03T00:00:00Z"))
+                .andExpectAll(
+                        status().isOk(),
+                        model().attribute("authFeedbackType", "success"),
+                        content().string(containsString("2026년 10월 3일 09:00까지")),
+                        content().string(containsString("공부 기록을 복구할 수 있습니다."))
+                );
+    }
+
+    @Test
+    @DisplayName("잘못된 복구 마감 시각은 고정 계정 탈퇴 안내로 대체")
+    void ignoresMalformedAccountRecoveryDeadline() throws Exception {
+        mockMvc.perform(get("/login")
+                        .param("notice", "account-withdrawn")
+                        .param("recoveryDeadline", "not-an-instant"))
+                .andExpectAll(
+                        status().isOk(),
+                        content().string(containsString("계정 탈퇴를 완료했습니다.")),
+                        content().string(not(containsString("not-an-instant")))
+                );
+    }
+
+    @Test
     @DisplayName("허용된 Session 만료 안내 Code의 Login Page 표시")
     void rendersSessionExpiredNotice() throws Exception {
         // When: 허용된 Session 만료 안내 Code의 Login Page 요청

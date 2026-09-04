@@ -7,7 +7,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.service.annotation.HttpExchange;
 import org.springframework.web.service.annotation.PatchExchange;
+import org.springframework.web.service.annotation.PostExchange;
 import site.omagotchi.frontend.account.infrastructure.request.IdentityChangeAccountStatusRequest;
+import site.omagotchi.frontend.account.infrastructure.request.IdentityLoginUnlockRequest;
 
 import java.util.UUID;
 
@@ -26,5 +28,12 @@ public interface IdentityAdminAccountStatusHttpService {
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
             @PathVariable("user-id") UUID userId,
             @RequestBody IdentityChangeAccountStatusRequest request
+    );
+
+    @PostExchange("/{user-id}/login-lock/unlock")
+    ResponseEntity<Void> unlockLogin(
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
+            @PathVariable("user-id") UUID userId,
+            @RequestBody IdentityLoginUnlockRequest request
     );
 }

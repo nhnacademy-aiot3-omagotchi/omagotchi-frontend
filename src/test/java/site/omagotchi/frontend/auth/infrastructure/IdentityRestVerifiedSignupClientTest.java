@@ -1,5 +1,6 @@
 package site.omagotchi.frontend.auth.infrastructure;
 
+import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -119,6 +120,19 @@ class IdentityRestVerifiedSignupClientTest {
         server.verify();
     }
 
+    @Test
+    @DisplayName("v2 탈퇴 계정 복구의 200 응답 변환")
+    void mapsRecoveredAccountResponse() {
+        server.expect(once(), requestTo(BASE_URL + SIGNUP_PATH))
+                .andExpect(method(HttpMethod.POST))
+                .andRespond(withStatus(HttpStatus.OK));
+
+        SignupResult result = client.signUp(verifiedSignupCommand());
+
+        assertThat(result).isEqualTo(new SignupResult.Recovered());
+        server.verify();
+    }
+
     @ParameterizedTest
     @ValueSource(strings = {"1", "42"})
     @DisplayName("v2 회원가입 OTP 재요청 제한의 Retry-After 보존")
@@ -176,6 +190,25 @@ class IdentityRestVerifiedSignupClientTest {
         server.verify();
     }
 
+    @Test
+    @DisplayName("복구 대기 계정의 이메일 인증 요청 오류 변환")
+    void mapsPurgePendingSignupEmailOtpError() {
+        // Given: 개인정보 파기 대기 계정의 이메일 인증 요청 오류
+        expectError(
+                EMAIL_OTP_PATH,
+                HttpStatus.CONFLICT,
+                "ACCOUNT_PURGE_PENDING"
+        );
+
+        // When: 회원가입 이메일 인증 요청
+        ThrowingCallable action =
+                () -> client.requestEmailVerification(signupEmailChallengeCommand());
+
+        // Then: 복구 대기 오류 보존
+        assertBusinessError(action, AccountErrorCode.PURGE_PENDING);
+        server.verify();
+    }
+
     @ParameterizedTest
     @MethodSource("invalidChallengeResponses")
     @DisplayName("OTP 성공 응답의 상태·Challenge·만료 시간 계약 검증")
@@ -194,17 +227,20 @@ class IdentityRestVerifiedSignupClientTest {
 
     @ParameterizedTest(name = "{0}")
     @MethodSource("expectedVerifiedSignupResults")
-    @DisplayName("v2 회원가입 공개 거절의 Application 결과 변환")
+    @DisplayName("v2 회원가입 공개 오류의 애플리케이션 결과 변환")
     void mapsExpectedVerifiedSignupResults(
-            String ignoredDescription,
+            String testCase,
             HttpStatus status,
             String code,
             ErrorCode expectedErrorCode
     ) {
+        // Given: Identity가 공개한 회원가입 오류
         expectError(SIGNUP_PATH, status, code);
 
+        // When: 이메일 인증을 마친 최종 회원가입
         SignupResult result = client.signUp(verifiedSignupCommand());
 
+        // Then: 오류별 애플리케이션 결과 보존
         assertThat(result).isEqualTo(new SignupResult.Rejected(expectedErrorCode));
         server.verify();
     }
@@ -333,6 +369,12 @@ class IdentityRestVerifiedSignupClientTest {
                         HttpStatus.CONFLICT,
                         "ACCOUNT_DUPLICATE_EMAIL",
                         AccountErrorCode.DUPLICATE_EMAIL
+                ),
+                Arguments.of(
+                        "복구 기간 만료 계정",
+                        HttpStatus.CONFLICT,
+                        "ACCOUNT_PURGE_PENDING",
+                        AccountErrorCode.PURGE_PENDING
                 )
         );
     }

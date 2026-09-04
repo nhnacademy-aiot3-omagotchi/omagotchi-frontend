@@ -383,8 +383,12 @@ export function initializeAccountSettings(root = document.querySelector("[data-a
         setSubmitting(withdrawalFieldset, withdrawalButton, true, "계정 탈퇴");
         setFeedback(withdrawalFeedback, "");
         try {
-            await api.withdraw(currentPassword);
-            window.location.assign("/login?notice=account-withdrawn");
+            const result = await api.withdraw(currentPassword);
+            const query = new URLSearchParams({notice: "account-withdrawn"});
+            if (result?.recoveryDeadline) {
+                query.set("recoveryDeadline", result.recoveryDeadline);
+            }
+            window.location.assign(`/login?${query}`);
         } catch (error) {
             if (handleAuthenticationFailure(error)) return;
             const message = error?.status == null || error.status >= 500

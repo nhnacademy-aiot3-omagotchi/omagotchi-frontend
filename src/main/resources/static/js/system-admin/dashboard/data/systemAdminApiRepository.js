@@ -5,6 +5,7 @@ function requireApi(api) {
         || !api?.systemAdmin?.getUsers
         || !api?.systemAdmin?.getAudits
         || !api?.systemAdmin?.changeAccountStatus
+        || !api?.systemAdmin?.unlockLogin
         || !api?.systemAdmin?.changeAccountRole
         || !api?.systemAdmin?.assignManager
         || !api?.systemAdmin?.removeManager) {
@@ -12,6 +13,9 @@ function requireApi(api) {
     }
     return api;
 }
+
+const ACCOUNT_ROLES = new Set(["USER", "SYSTEM_ADMIN"]);
+const ACCOUNT_STATUSES = new Set(["ACTIVE", "DISABLED", "WITHDRAWN"]);
 
 function normalizeCohort(cohort) {
     return {
@@ -28,15 +32,24 @@ function normalizeUser(account) {
         || typeof account.accountId !== "string" || !account.accountId.trim()
         || typeof account.email !== "string" || !account.email.trim()
         || typeof account.name !== "string" || !account.name.trim()
-        || typeof account.role !== "string" || !account.role.trim()
-        || typeof account.status !== "string" || !account.status.trim()
+        || !ACCOUNT_ROLES.has(account.role)
+        || !ACCOUNT_STATUSES.has(account.status)
         || !Number.isInteger(account.failedLoginAttempts) || account.failedLoginAttempts < 0
+        || typeof account.locked !== "boolean"
         || (account.lockedUntil != null
             && (typeof account.lockedUntil !== "string"
                 || Number.isNaN(Date.parse(account.lockedUntil))))
-        || (account.withdrawnAt != null
-            && (typeof account.withdrawnAt !== "string"
-                || Number.isNaN(Date.parse(account.withdrawnAt))))
+        || typeof account.statusChangedAt !== "string"
+        || Number.isNaN(Date.parse(account.statusChangedAt))
+        || (account.recoveryDeadline != null
+            && (typeof account.recoveryDeadline !== "string"
+                || Number.isNaN(Date.parse(account.recoveryDeadline))))
+        || (account.locked && (account.status !== "ACTIVE" || account.lockedUntil == null))
+        || (account.status !== "ACTIVE"
+            && (account.failedLoginAttempts !== 0
+                || account.locked
+                || account.lockedUntil != null))
+        || ((account.status === "WITHDRAWN") !== (account.recoveryDeadline != null))
         || typeof account.createdAt !== "string" || Number.isNaN(Date.parse(account.createdAt))
         || !Array.isArray(account.managedCohorts)
         || account.managedCohorts.some((cohort) => cohort?.cohortId == null)) {
@@ -49,8 +62,10 @@ function normalizeUser(account) {
         globalRole: account.role,
         status: account.status,
         failedLoginAttempts: account.failedLoginAttempts,
+        locked: account.locked,
         lockedUntil: account.lockedUntil ?? null,
-        withdrawnAt: account.withdrawnAt ?? null,
+        statusChangedAt: account.statusChangedAt,
+        recoveryDeadline: account.recoveryDeadline ?? null,
         joinedAt: String(account.createdAt || "-").slice(0, 10),
         managerCohortIds: account.managedCohorts.map((cohort) => String(cohort.cohortId))
     };
@@ -78,6 +93,7 @@ function requireAccountPage(response, expectedPageNumber) {
 const AUDIT_ACTION_LABELS = {
     ACCOUNT_DISABLED: "계정 비활성화",
     ACCOUNT_UNLOCKED: "계정 잠금 해제",
+    LOGIN_LOCK_RELEASED: "로그인 잠금 해제",
     ACCOUNT_REACTIVATED: "계정 재활성화",
     ROLE_GRANTED: "시스템 관리자 권한 부여",
     ROLE_REVOKED: "시스템 관리자 권한 회수"
@@ -268,9 +284,10 @@ export function createSystemAdminApiRepository(api = window.OmagotchiApi) {
                 capabilities: {
                     identity: true,
                     managerWrite: true,
-                    // Identity 에 계정 상태 변경 API가 있어 열어 둔다.
+                    // Identity에 계정 상태 변경 API가 있어 열어 둔다.
                     accountStatusWrite: true,
-                    // Identity 에 전역 역할 변경 API가 생겨 열어 둔다.
+                    loginLockWrite: true,
+                    // Identity에 전역 역할 변경 API가 생겨 열어 둔다.
                     identityWrite: true,
                     // 조회에 성공했을 때만 연다. 실패하면 화면이 오류를 말한다.
                     audit: auditResult.error === null,
@@ -284,11 +301,11 @@ export function createSystemAdminApiRepository(api = window.OmagotchiApi) {
          * 계정 상태·전역 역할·기수 권한을 한 번에 반영한다.
          *
          * 순서가 중요하다.
-         * 1) Identity 는 ACTIVE·LOCKED 계정의 역할만 바꿔 준다. 그래서 활성화는 역할
+         * 1) Identity는 ACTIVE 계정의 역할만 바꿔 준다. 그래서 활성화는 역할
          *    변경 앞에, 비활성화는 역할 변경 뒤에 둔다. 한 방향으로 고정하면
          *    "활성화하며 관리자 부여" 또는 "관리자 회수하며 비활성화" 중 하나가 반드시
          *    깨진다.
-         * 2) Identity 작업이 모두 끝난 뒤에 Learning 의 기수 권한을 건드린다. 앞이
+         * 2) Identity 작업이 모두 끝난 뒤에 Learning의 기수 권한을 건드린다. 앞이
          *    실패하면 기수 권한은 손대지 않아 아무것도 변하지 않는다.
          *
          * 서로 다른 서비스라 원자성은 없다. 그래서 어디까지 반영됐는지를 오류에 실어
@@ -327,7 +344,7 @@ export function createSystemAdminApiRepository(api = window.OmagotchiApi) {
                     throw roleError;
                 }
             }
-            // 비활성화는 마지막이다. 먼저 하면 뒤따르는 역할 변경이 Identity 에서 막힌다.
+            // 비활성화는 마지막이다. 먼저 하면 뒤따르는 역할 변경이 Identity에서 막힌다.
             if (disabling) {
                 try {
                     await changeStatus();
@@ -386,6 +403,10 @@ export function createSystemAdminApiRepository(api = window.OmagotchiApi) {
                 operationError.roleApplied = roleApplied;
                 throw operationError;
             }
+        },
+
+        async unlockLogin(userId, reason) {
+            await client.systemAdmin.unlockLogin(userId, reason);
         },
 
         /**

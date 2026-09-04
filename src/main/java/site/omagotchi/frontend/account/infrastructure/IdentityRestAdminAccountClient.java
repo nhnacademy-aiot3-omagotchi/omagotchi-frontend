@@ -1,5 +1,6 @@
 package site.omagotchi.frontend.account.infrastructure;
 
+import jakarta.validation.Validator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -10,6 +11,7 @@ import site.omagotchi.frontend.account.application.result.IdentityAdminAccount;
 import site.omagotchi.frontend.account.application.result.IdentityAdminAccountPage;
 import site.omagotchi.frontend.account.infrastructure.request.IdentityChangeAccountRoleRequest;
 import site.omagotchi.frontend.account.infrastructure.request.IdentityChangeAccountStatusRequest;
+import site.omagotchi.frontend.account.infrastructure.request.IdentityLoginUnlockRequest;
 import site.omagotchi.frontend.account.infrastructure.response.IdentityAdminAccountResponse;
 import site.omagotchi.frontend.global.application.result.PageMetadata;
 import site.omagotchi.frontend.global.exception.BusinessException;
@@ -34,12 +36,14 @@ public class IdentityRestAdminAccountClient implements IdentityAdminAccountClien
     private final IdentityAdminAccountRoleHttpService roleHttpService;
     private final RestClientCallExecutor callExecutor;
     private final ApiErrorContractResolver errorResolver;
+    private final Validator validator;
 
     @Override
     public IdentityAdminAccountPage findAccounts(
             String accessToken,
             String query,
             String status,
+            Boolean locked,
             String role,
             Integer page,
             Integer size,
@@ -50,6 +54,7 @@ public class IdentityRestAdminAccountClient implements IdentityAdminAccountClien
                         "Bearer " + accessToken,
                         query,
                         status,
+                        locked,
                         role,
                         page,
                         size,
@@ -77,7 +82,15 @@ public class IdentityRestAdminAccountClient implements IdentityAdminAccountClien
                 );
 
         List<IdentityAdminAccount> items = body.items().stream()
-                .map(IdentityRestAdminAccountClient::toAccount)
+                .map(account -> {
+                    if (account == null) {
+                        throw new BusinessException(
+                                CommonErrorCode.DOWNSTREAM_INVALID_RESPONSE,
+                                "Identity 관리자 계정 항목 응답 누락"
+                        );
+                    }
+                    return account.toResult(validator);
+                })
                 .toList();
         PageInfo pageInfo = body.page();
         return new IdentityAdminAccountPage(
@@ -153,34 +166,28 @@ public class IdentityRestAdminAccountClient implements IdentityAdminAccountClien
         );
     }
 
-    private static IdentityAdminAccount toAccount(IdentityAdminAccountResponse account) {
-        if (account == null
-                || account.accountId() == null
-                || account.email() == null
-                || account.email().isBlank()
-                || account.name() == null
-                || account.name().isBlank()
-                || account.role() == null
-                || account.role().isBlank()
-                || account.status() == null
-                || account.status().isBlank()
-                || account.failedLoginAttempts() < 0
-                || account.createdAt() == null) {
-            throw new BusinessException(
-                    CommonErrorCode.DOWNSTREAM_INVALID_RESPONSE,
-                    "Identity 관리자 계정 항목 응답 누락"
-            );
-        }
-        return new IdentityAdminAccount(
-                account.accountId(),
-                account.email(),
-                account.name(),
-                account.role(),
-                account.status(),
-                account.failedLoginAttempts(),
-                account.lockedUntil(),
-                account.withdrawnAt(),
-                account.createdAt()
+    @Override
+    public void unlockLogin(String accessToken, UUID userId, String reason) {
+        ResponseEntity<Void> response = callExecutor.execute(
+                () -> statusHttpService.unlockLogin(
+                        "Bearer " + accessToken,
+                        userId,
+                        new IdentityLoginUnlockRequest(reason)
+                ),
+                exception -> {
+                    throw new BusinessException(errorResolver.resolve(
+                            exception,
+                            SecurityErrorCode.AUTHENTICATION_REQUIRED,
+                            SecurityErrorCode.ACCESS_DENIED,
+                            CommonErrorCode.INVALID_REQUEST,
+                            AdminAccountErrorCode.ADMIN_ACCESS_NOT_ALLOWED
+                    ), exception);
+                }
+        );
+        HttpResponseContractValidator.requireStatus(
+                response,
+                HttpStatus.NO_CONTENT,
+                "Identity 관리자 로그인 잠금 해제"
         );
     }
 }

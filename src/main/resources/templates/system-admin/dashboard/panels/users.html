@@ -6,7 +6,8 @@
     <article class="system-card system-table-card">
         <div class="system-toolbar">
             <label class="system-search"><span class="sr-only">사용자 검색</span><i aria-hidden="true">⌕</i><input type="search" placeholder="이름 또는 이메일 검색" data-user-search /></label>
-            <label class="system-filter"><span>계정 상태</span><select data-account-status-filter><option value="all">전체 상태</option><option value="ACTIVE">ACTIVE</option><option value="LOCKED">LOCKED</option><option value="DISABLED">DISABLED</option><option value="WITHDRAWN">WITHDRAWN</option></select></label>
+            <label class="system-filter"><span>계정 상태</span><select data-account-status-filter><option value="all">전체 상태</option><option value="ACTIVE">ACTIVE</option><option value="DISABLED">DISABLED</option><option value="WITHDRAWN">WITHDRAWN</option></select></label>
+            <label class="system-filter"><span>로그인 잠금</span><select data-login-lock-filter><option value="all">전체</option><option value="true">잠금</option><option value="false">잠금 아님</option></select></label>
             <label class="system-filter"><span>권한</span><select data-role-filter><option value="all">전체 권한</option><option value="system">SYSTEM_ADMIN</option><option value="manager">COHORT_MANAGER</option><option value="user">일반 사용자</option></select></label>
             <strong data-user-result-count>0명</strong>
         </div>

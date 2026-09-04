@@ -5,6 +5,8 @@ import org.springframework.stereotype.Service;
 import site.omagotchi.frontend.account.application.port.IdentityAccountClient;
 import site.omagotchi.frontend.account.application.result.AccountSettings;
 
+import java.time.Instant;
+
 @Service
 @RequiredArgsConstructor
 public class AccountSettingsBffService {
@@ -31,7 +33,7 @@ public class AccountSettingsBffService {
         );
     }
 
-    public void withdraw(String accessToken, String currentPassword) {
-        identityAccountClient.withdraw(accessToken, currentPassword);
+    public Instant withdraw(String accessToken, String currentPassword) {
+        return identityAccountClient.withdraw(accessToken, currentPassword);
     }
 }

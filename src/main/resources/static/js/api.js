@@ -411,6 +411,10 @@
                 `/admin/users/${encodeURIComponent(userId)}/status`,
                 {method: "PATCH", body: {status, reason}}
             ),
+            unlockLogin: (userId, reason) => request(
+                `/admin/users/${encodeURIComponent(userId)}/login-lock/unlock`,
+                {method: "POST", body: {reason}}
+            ),
             changeAccountRole: (userId, role, reason) => request(
                 `/admin/users/${encodeURIComponent(userId)}/role`,
                 {method: "PATCH", body: {role, reason}}

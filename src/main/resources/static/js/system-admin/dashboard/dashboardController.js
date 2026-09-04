@@ -1,15 +1,16 @@
 import {validateAttendancePolicyDraft} from "./data/systemAdminApiRepository.js";
 
 const STATUS_LABELS = {PREPARING: "준비 중", ACTIVE: "운영 중", CLOSED: "종료"};
-const ACCOUNT_STATUS_LABELS = {ACTIVE: "활성", LOCKED: "잠금", DISABLED: "비활성화", WITHDRAWN: "탈퇴"};
-// Identity 가 관리자 지정으로 받는 값. LOCKED 는 로그인 실패 누적, WITHDRAWN 은 본인 탈퇴로만 도달한다.
+const STATUS_CLASSES = {PREPARING: "preparing", ACTIVE: "active", CLOSED: "closed"};
+const ACCOUNT_STATUS_LABELS = {ACTIVE: "활성", DISABLED: "비활성화", WITHDRAWN: "탈퇴"};
+const ACCOUNT_STATUS_CLASSES = {ACTIVE: "active", DISABLED: "disabled", WITHDRAWN: "withdrawn"};
+// Identity가 관리자 지정으로 받는 값. WITHDRAWN은 본인 탈퇴로만 도달한다.
 const ACCOUNT_STATUS_SELECTABLE = new Set(["ACTIVE", "DISABLED"]);
-// Identity 의 Account.isGlobalRoleChangeAllowed 와 같은 조건. DISABLED·WITHDRAWN 은 거부된다.
-const ROLE_CHANGEABLE_STATUSES = new Set(["ACTIVE", "LOCKED"]);
-// Identity·Learning 이 돌려주는 오류 코드를 화면 문구로 옮긴다.
+// Identity의 Account.isGlobalRoleChangeAllowed와 같은 조건. DISABLED·WITHDRAWN은 거부된다.
+const ROLE_CHANGEABLE_STATUSES = new Set(["ACTIVE"]);
+// Identity·Learning이 돌려주는 오류 코드를 화면 문구로 옮긴다.
 // 목록에 없는 코드는 원문을 노출하지 않고 일반 문구로 떨어뜨린다.
 const PERMISSION_ERROR_MESSAGES = {
-    ACCOUNT_STATUS_CHANGE_INVALID_REASON: "변경 사유는 공백을 제외하고 1~500자여야 합니다.",
     ACCOUNT_LAST_SYSTEM_ADMIN: "마지막 시스템 관리자는 비활성화하거나 권한을 회수할 수 없습니다.",
     ACCOUNT_SELF_DISABLE_NOT_ALLOWED: "자신의 계정은 비활성화할 수 없습니다.",
     ACCOUNT_SELF_ROLE_CHANGE_NOT_ALLOWED: "자신의 전역 권한은 변경할 수 없습니다.",
@@ -19,7 +20,14 @@ const PERMISSION_ERROR_MESSAGES = {
     ACCOUNT_NOT_FOUND: "대상 계정을 찾을 수 없습니다. 목록을 새로고침해 주세요."
 };
 const USER_PAGE_SIZE = 20;
+const SEOUL_DATE_FORMATTER = new Intl.DateTimeFormat("ko-KR", {
+    timeZone: "Asia/Seoul",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+});
 
+// 아래 innerHTML 템플릿의 외부 문자열 인코딩 전용
 function escapeHtml(value) {
     return String(value ?? "").replace(/[&<>'"]/g, (character) => ({
         "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;"
@@ -28,6 +36,17 @@ function escapeHtml(value) {
 
 function formatDate(value) {
     return String(value || "-").replaceAll("-", ".");
+}
+
+export function formatTimestampDate(value) {
+    const timestamp = new Date(value);
+    if (Number.isNaN(timestamp.getTime())) return "-";
+
+    const parts = Object.fromEntries(
+        SEOUL_DATE_FORMATTER.formatToParts(timestamp)
+            .map(({type, value: part}) => [type, part])
+    );
+    return `${parts.year}.${parts.month}.${parts.day}`;
 }
 
 function periodsOverlap(first, second) {
@@ -54,6 +73,7 @@ export async function initializeSystemAdminDashboard(root = document, repository
         // 계정 상태와 전역 역할은 Identity API가 각각 따로 있다.
         // 저장소가 실제 클라이언트 유무를 보고 켜 주므로 기본값은 닫아 둔다.
         accountStatusWrite: false,
+        loginLockWrite: false,
         identityWrite: false,
         audit: false,
         cohortDelete: true,
@@ -62,7 +82,7 @@ export async function initializeSystemAdminDashboard(root = document, repository
     });
 
     // 다이얼로그를 열 이유가 하나라도 있는지. 예전엔 기수 권한만 보고 판단해서
-    // Identity 만 열려 있는 상황에서 버튼이 잠기는 구멍이 있었다.
+    // Identity만 열려 있는 상황에서 버튼이 잠기는 구멍이 있었다.
     /**
      * 감사 패널이 목록 대신 보여 줄 문구.
      *
@@ -83,7 +103,8 @@ export async function initializeSystemAdminDashboard(root = document, repository
         const capability = capabilities();
         return capability.managerWrite
             || capability.identityWrite
-            || capability.accountStatusWrite;
+            || capability.accountStatusWrite
+            || capability.loginLockWrite;
     }
 
     function showToast(message, isError = false) {
@@ -116,6 +137,7 @@ export async function initializeSystemAdminDashboard(root = document, repository
         find("[data-summary-managers]").textContent = identityConnected ? state.users.filter((user) => user.managerCohortIds.length).length : "연동 대기";
         find("[data-summary-cohorts]").textContent = state.cohorts.filter((cohort) => cohort.status === "ACTIVE").length;
         find("[data-summary-cohort-detail]").textContent = `전체 ${state.cohorts.length}개 기수`;
+        // 외부 응답 문자열이 포함된 요약 HTML의 escapeHtml 인코딩
         find("[data-privileged-user-list]").innerHTML = identityConnected ? privileged.slice(0, 5).map((user) => `
             <li><b>${escapeHtml(user.name.slice(0, 1))}</b><div><strong>${escapeHtml(user.name)}</strong><small>${escapeHtml(user.email)}</small></div>
             <span class="system-chip ${user.globalRole === "SYSTEM_ADMIN" ? "is-system" : ""}">${user.globalRole === "SYSTEM_ADMIN" ? "SYSTEM_ADMIN" : `${user.managerCohortIds.length}개 기수 관리`}</span></li>
@@ -135,10 +157,12 @@ export async function initializeSystemAdminDashboard(root = document, repository
         const query = find("[data-user-search]")?.value.trim().toLowerCase() || "";
         const filter = find("[data-role-filter]")?.value || "all";
         const accountStatus = find("[data-account-status-filter]")?.value || "all";
+        const loginLock = find("[data-login-lock-filter]")?.value || "all";
         const users = state.users.filter((user) => {
             const matchesQuery = !query || `${user.name} ${user.email}`.toLowerCase().includes(query);
             return matchesQuery && (filter === "all" || userRole(user) === filter)
-                && (accountStatus === "all" || user.status === accountStatus);
+                && (accountStatus === "all" || user.status === accountStatus)
+                && (loginLock === "all" || String(user.locked) === loginLock);
         });
         const totalPages = Math.max(1, Math.ceil(users.length / USER_PAGE_SIZE));
         currentUserPage = Math.min(currentUserPage, totalPages);
@@ -149,6 +173,7 @@ export async function initializeSystemAdminDashboard(root = document, repository
             ? "조건에 맞는 사용자가 없습니다."
             : "Identity 관리자 API 연동 후 사용자 목록과 권한 관리 기능이 활성화됩니다.";
         find("[data-user-empty]").hidden = users.length > 0;
+        // 외부 응답 문자열 인코딩과 상태 CSS 클래스 허용 목록 적용
         find("[data-user-table-body]").innerHTML = pageUsers.map((user) => {
             const cohortBadges = user.managerCohortIds.length
                 ? user.managerCohortIds.map((id) => `<span class="system-chip">${escapeHtml(cohortName(id))}</span>`).join("")
@@ -156,14 +181,21 @@ export async function initializeSystemAdminDashboard(root = document, repository
             const globalRole = user.globalRole === "SYSTEM_ADMIN"
                 ? '<span class="system-chip is-system">SYSTEM_ADMIN</span>'
                 : '<span class="system-muted">일반 사용자</span>';
-            // 다이얼로그가 계정 상태·전역 권한·기수 권한을 모두 다룬다.
-            // 그래서 셋 중 하나라도 쓸 수 있으면 연다.
+            // 다이얼로그가 계정 상태·로그인 잠금·전역 권한·기수 권한을 모두 다룬다.
+            // 그래서 하나라도 쓸 수 있으면 연다.
             const permissionWrite = canWritePermissions();
-            return `<tr><th scope="row" data-label="사용자"><div class="system-user-cell"><b>${escapeHtml(user.name.slice(0, 1))}</b><span><strong>${escapeHtml(user.name)}</strong><small>${escapeHtml(user.email)}</small></span></div></th><td data-label="계정 상태"><span class="system-account-status is-${user.status.toLowerCase()}">${escapeHtml(ACCOUNT_STATUS_LABELS[user.status] || user.status)}</span></td><td data-label="전역 권한">${globalRole}</td><td data-label="기수 운영 권한"><div class="system-chip-list">${cohortBadges}</div></td><td data-label="가입일">${escapeHtml(user.joinedAt)}</td><td><button class="system-row-button" type="button" data-open-permission="${escapeHtml(user.id)}" ${permissionWrite ? "" : "disabled"} title="${permissionWrite ? "계정 상태·전역 권한·기수 운영 권한 관리" : "권한 변경 API 연동 대기"}">${permissionWrite ? "권한 관리" : "조회 전용"}</button></td></tr>`;
+            const loginLockBadge = user.locked
+                ? '<span class="system-account-status is-locked">로그인 잠금</span>'
+                : '';
+            const recoveryDeadline = user.recoveryDeadline
+                ? `<small class="system-muted">복구 마감 · ${escapeHtml(formatTimestampDate(user.recoveryDeadline))}</small>`
+                : '';
+            const accountStatusClass = ACCOUNT_STATUS_CLASSES[user.status];
+            return `<tr><th scope="row" data-label="사용자"><div class="system-user-cell"><b>${escapeHtml(user.name.slice(0, 1))}</b><span><strong>${escapeHtml(user.name)}</strong><small>${escapeHtml(user.email)}</small></span></div></th><td data-label="계정 상태"><div class="system-account-state"><div><span class="system-account-status is-${accountStatusClass}">${escapeHtml(ACCOUNT_STATUS_LABELS[user.status])}</span>${loginLockBadge}</div><small class="system-muted">상태 변경 · ${escapeHtml(formatTimestampDate(user.statusChangedAt))}</small>${recoveryDeadline}</div></td><td data-label="전역 권한">${globalRole}</td><td data-label="기수 운영 권한"><div class="system-chip-list">${cohortBadges}</div></td><td data-label="가입일">${escapeHtml(user.joinedAt)}</td><td><button class="system-row-button" type="button" data-open-permission="${escapeHtml(user.id)}" ${permissionWrite ? "" : "disabled"} title="${permissionWrite ? "계정 상태·전역 권한·기수 운영 권한 관리" : "권한 변경 API 연동 대기"}">${permissionWrite ? "권한 관리" : "조회 전용"}</button></td></tr>`;
         }).join("");
         find("[data-user-page-range]").textContent = `${users.length}명`;
         find("[data-user-pagination-footer]").hidden = users.length === 0;
-        [find("[data-user-search]"), find("[data-role-filter]"), find("[data-account-status-filter]")]
+        [find("[data-user-search]"), find("[data-role-filter]"), find("[data-account-status-filter]"), find("[data-login-lock-filter]")]
             .filter(Boolean)
             .forEach((control) => { control.disabled = !identityConnected; });
         find("[data-user-pagination]").innerHTML = [
@@ -182,6 +214,7 @@ export async function initializeSystemAdminDashboard(root = document, repository
         });
         find("[data-cohort-result-count]").textContent = `${cohorts.length}개`;
         find("[data-cohort-empty]").hidden = cohorts.length > 0;
+        // 외부 응답 문자열 인코딩과 기수 상태 CSS 클래스 허용 목록 적용
         find("[data-cohort-grid]").innerHTML = cohorts.map((cohort) => {
             const managers = (cohort.managerUserIds || []).map(userName);
             const managerAssignmentKnown = cohort.managerAssignmentKnown !== false;
@@ -194,11 +227,14 @@ export async function initializeSystemAdminDashboard(root = document, repository
             const managerCount = managerAssignmentKnown ? `${managers.length}명` : "연동 대기";
             const managerNames = managerAssignmentKnown ? (managers.join(" · ") || "미배정") : "상세 API 연동 대기";
             const canDelete = capabilities().cohortDelete && cohort.status === "PREPARING";
-            return `<article class="system-cohort-card"><header><span class="system-status is-${cohort.status.toLowerCase()}">${STATUS_LABELS[cohort.status]}</span><span>${escapeHtml(cohort.status)}</span></header><h2>${escapeHtml(cohort.name)}</h2><p>${escapeHtml(cohort.description)}</p><strong class="system-cohort-period">${formatDate(cohort.startDate)} – ${formatDate(cohort.endDate)}</strong><dl><div><dt>구성원</dt><dd>${memberCount}</dd></div><div><dt>기수 관리자</dt><dd>${managerCount}</dd></div></dl><footer><div><span>담당</span><strong>${escapeHtml(managerNames)}</strong></div><div class="system-cohort-actions"><button type="button" data-open-attendance-policy="${escapeHtml(cohort.id)}">출결 정책</button>${statusAction}<button class="is-danger" type="button" data-delete-cohort="${escapeHtml(cohort.id)}" ${canDelete ? "" : "disabled"}>삭제</button></div></footer></article>`;
+            const statusClass = STATUS_CLASSES[cohort.status] || "unknown";
+            const statusLabel = STATUS_LABELS[cohort.status] || cohort.status;
+            return `<article class="system-cohort-card"><header><span class="system-status is-${statusClass}">${escapeHtml(statusLabel)}</span><span>${escapeHtml(cohort.status)}</span></header><h2>${escapeHtml(cohort.name)}</h2><p>${escapeHtml(cohort.description)}</p><strong class="system-cohort-period">${escapeHtml(formatDate(cohort.startDate))} – ${escapeHtml(formatDate(cohort.endDate))}</strong><dl><div><dt>구성원</dt><dd>${escapeHtml(memberCount)}</dd></div><div><dt>기수 관리자</dt><dd>${escapeHtml(managerCount)}</dd></div></dl><footer><div><span>담당</span><strong>${escapeHtml(managerNames)}</strong></div><div class="system-cohort-actions"><button type="button" data-open-attendance-policy="${escapeHtml(cohort.id)}">출결 정책</button>${statusAction}<button class="is-danger" type="button" data-delete-cohort="${escapeHtml(cohort.id)}" ${canDelete ? "" : "disabled"}>삭제</button></div></footer></article>`;
         }).join("");
     }
 
     function renderAudits() {
+        // 감사 응답 문자열이 포함된 HTML의 escapeHtml 인코딩
         find("[data-system-audit-list]").innerHTML = state.audits.length
             ? state.audits.map((audit) => `<li><time>${escapeHtml(audit.time)}</time><i aria-hidden="true"></i><div><span>${escapeHtml(audit.action)}</span><strong>${escapeHtml(audit.detail)}</strong><small>실행자 · ${escapeHtml(audit.actor)}</small></div></li>`).join("")
             : `<li class="system-integration-message">${escapeHtml(auditPlaceholder())}</li>`;
@@ -208,6 +244,7 @@ export async function initializeSystemAdminDashboard(root = document, repository
         renderSummary(); renderUsers(); renderCohorts(); renderAudits();
         const options = find("[data-manager-options]");
         if (options) {
+            // 사용자 이름·이메일이 포함된 option HTML의 escapeHtml 인코딩
             options.innerHTML = capabilities().identity
                 ? '<option value="">나중에 배정</option>' + state.users.filter((user) => user.globalRole !== "SYSTEM_ADMIN").map((user) => `<option value="${escapeHtml(user.id)}">${escapeHtml(user.name)} · ${escapeHtml(user.email)}</option>`).join("")
                 : '<option value="">Identity API 연동 후 배정</option>';
@@ -264,7 +301,7 @@ export async function initializeSystemAdminDashboard(root = document, repository
         const reasonRow = dialog.querySelector("[data-permission-reason-row]");
         const reasonInput = dialog.querySelector("[data-permission-reason]");
 
-        // LOCKED·WITHDRAWN 은 관리자가 지정할 수 없다. 선택지에 없으므로 읽기 전용으로 알린다.
+        // WITHDRAWN은 관리자가 지정할 수 없다. 선택지에 없으므로 읽기 전용으로 알린다.
         const selectable = ACCOUNT_STATUS_SELECTABLE.has(user.status);
         statusSelect.disabled = !capabilities().accountStatusWrite || !selectable;
         statusSelect.value = selectable ? user.status : "ACTIVE";
@@ -273,7 +310,7 @@ export async function initializeSystemAdminDashboard(root = document, repository
             ? ""
             : `현재 상태(${ACCOUNT_STATUS_LABELS[user.status] || user.status})는 관리자가 직접 바꿀 수 없습니다.`;
 
-        // Identity 는 탈퇴·비활성 계정의 전역 역할을 바꿔 주지 않는다. 미리 잠가서
+        // Identity는 탈퇴·비활성 계정의 전역 역할을 바꿔 주지 않는다. 미리 잠가서
         // 눌러 봐야 서버가 거부하는 조작을 만들지 않는다.
         const roleChangeable = ROLE_CHANGEABLE_STATUSES.has(user.status);
         roleToggle.checked = user.globalRole === "SYSTEM_ADMIN";
@@ -284,11 +321,16 @@ export async function initializeSystemAdminDashboard(root = document, repository
             : `현재 상태(${ACCOUNT_STATUS_LABELS[user.status] || user.status})에서는 전역 권한을 바꿀 수 없습니다.`;
 
         reasonInput.value = "";
-        reasonRow.hidden = true;
+        reasonRow.hidden = !user.locked || !capabilities().loginLockWrite;
+
+        const unlockButton = dialog.querySelector("[data-unlock-login]");
+        unlockButton.hidden = !user.locked;
+        unlockButton.disabled = !capabilities().loginLockWrite;
 
         dialog.querySelector("[data-permission-error]").hidden = true;
         // 기수 배정만 막힌 경우에도 나머지 항목은 쓸 수 있어야 한다.
-        dialog.querySelector("[data-dialog-cohort-options]").innerHTML = state.cohorts.filter((cohort) => cohort.status !== "CLOSED").map((cohort) => `<label data-cohort-option="${escapeHtml(cohort.id)}"><input type="checkbox" value="${escapeHtml(cohort.id)}" ${user.managerCohortIds.includes(cohort.id) ? "checked" : ""}><span><strong>${escapeHtml(cohort.name)}</strong><small>${formatDate(cohort.startDate)} – ${formatDate(cohort.endDate)} · ${STATUS_LABELS[cohort.status]}</small><em data-cohort-conflict hidden>선택한 기수와 운영 기간 중복</em></span></label>`).join("");
+        // 기수 응답 문자열이 포함된 option HTML의 escapeHtml 인코딩
+        dialog.querySelector("[data-dialog-cohort-options]").innerHTML = state.cohorts.filter((cohort) => cohort.status !== "CLOSED").map((cohort) => `<label data-cohort-option="${escapeHtml(cohort.id)}"><input type="checkbox" value="${escapeHtml(cohort.id)}" ${user.managerCohortIds.includes(cohort.id) ? "checked" : ""}><span><strong>${escapeHtml(cohort.name)}</strong><small>${escapeHtml(formatDate(cohort.startDate))} – ${escapeHtml(formatDate(cohort.endDate))} · ${escapeHtml(STATUS_LABELS[cohort.status] || cohort.status)}</small><em data-cohort-conflict hidden>선택한 기수와 운영 기간 중복</em></span></label>`).join("");
         syncCohortAssignmentOptions(dialog);
         setDialogOpen(dialog, true);
     }
@@ -356,6 +398,7 @@ export async function initializeSystemAdminDashboard(root = document, repository
     find("[data-user-search]")?.addEventListener("input", resetUserPageAndRender);
     find("[data-role-filter]")?.addEventListener("change", resetUserPageAndRender);
     find("[data-account-status-filter]")?.addEventListener("change", resetUserPageAndRender);
+    find("[data-login-lock-filter]")?.addEventListener("change", resetUserPageAndRender);
     find("[data-cohort-search]")?.addEventListener("input", renderCohorts);
     find("[data-user-pagination]")?.addEventListener("click", (event) => {
         const button = event.target.closest("[data-user-page]");
@@ -368,17 +411,42 @@ export async function initializeSystemAdminDashboard(root = document, repository
         const button = event.target.closest("[data-open-permission]");
         if (button) openPermissionDialog(button.dataset.openPermission);
     });
-    // 상태나 전역 역할을 실제로 바꿀 때만 사유를 받는다. 둘 다 그대로면 서버도 호출하지 않는다.
+    // 상태·전역 역할 변경이나 로그인 잠금 해제에 필요할 때만 사유를 받는다.
     function syncReasonRow() {
         const dialog = find("[data-permission-dialog]");
         const reasonRow = dialog?.querySelector("[data-permission-reason-row]");
         if (!reasonRow) return;
         const user = state.users.find((item) => item.id === selectedUserId);
-        reasonRow.hidden = !readPermissionChanges(dialog, user).identityChanged;
+        const loginUnlockAvailable = capabilities().loginLockWrite && user?.locked;
+        reasonRow.hidden = !readPermissionChanges(dialog, user).identityChanged
+            && !loginUnlockAvailable;
     }
 
     find("[data-account-status-select]")?.addEventListener("change", syncReasonRow);
     find("[data-system-admin-toggle]")?.addEventListener("change", syncReasonRow);
+    find("[data-unlock-login]")?.addEventListener("click", async () => {
+        const dialog = find("[data-permission-dialog]");
+        const reasonInput = dialog.querySelector("[data-permission-reason]");
+        const errorMessage = dialog.querySelector("[data-permission-error]");
+        const reason = reasonInput.value.trim();
+        if (!reason) {
+            errorMessage.textContent = "로그인 잠금을 해제하려면 사유를 입력해 주세요.";
+            errorMessage.hidden = false;
+            reasonInput.focus();
+            return;
+        }
+        try {
+            await repository.unlockLogin(selectedUserId, reason);
+            state = await repository.loadDashboard();
+            renderAll();
+            setDialogOpen(dialog, false);
+            showToast("로그인 잠금을 해제했습니다.");
+        } catch (error) {
+            errorMessage.textContent = PERMISSION_ERROR_MESSAGES[error.code]
+                || "로그인 잠금을 해제하지 못했습니다.";
+            errorMessage.hidden = false;
+        }
+    });
     find("[data-dialog-cohort-options]")?.addEventListener("change", (event) => {
         if (event.target.matches('input[type="checkbox"]')) syncCohortAssignmentOptions(find("[data-permission-dialog]"));
     });
