@@ -112,7 +112,7 @@ button {
 }
 
 .manager-account button,
-.panel-heading button,
+.panel-heading button:not(.help-toggle),
 .cohort-edit-form button,
 .notice-form button,
 .manager-dialog button {
@@ -392,13 +392,23 @@ button {
     height: 60px;
 }
 
-.panel-heading-actions {
+/*
+ * 아래 `.panel-heading > div`(제목 열 스택)보다 명시도가 낮으면 이 행도 세로로 서서
+ * 도움말 버튼이 날짜 입력 밑으로 떨어진다. 그래서 자식 결합자로 명시도를 맞춘다.
+ */
+.panel-heading > .panel-heading-actions {
     display: flex;
-    align-items: center;
+    flex-direction: row;
+    /* 날짜 필드는 라벨이 위에 붙어 더 높다. 버튼은 입력칸 아랫줄에 맞춘다. */
+    align-items: flex-end;
     gap: 10px;
 }
 
-.panel-heading > div {
+.panel-heading > .panel-heading-actions > .help-toggle {
+    margin-bottom: 6px;
+}
+
+.panel-heading > div:not(.panel-heading-actions) {
      display: flex;
      flex-direction: column;
      justify-content: center;
@@ -819,6 +829,10 @@ td small {
     line-height: 1.6;
 }
 
+.manager-dialog label[hidden] {
+    display: none;
+}
+
 .manager-dialog label {
     display: grid;
     gap: 6px;
@@ -1033,7 +1047,7 @@ td small {
         align-items: flex-end;
     }
 
-    .panel-heading-actions {
+    .panel-heading > .panel-heading-actions {
         width: 100%;
         justify-content: space-between;
     }
