@@ -21,6 +21,7 @@ import org.springframework.security.web.servlet.util.matcher.PathPatternRequestM
 import org.springframework.security.web.util.matcher.AnyRequestMatcher;
 import org.springframework.security.web.util.matcher.RequestMatcher;
 import site.omagotchi.frontend.auth.application.AuthenticationService;
+import site.omagotchi.frontend.auth.presentation.bff.PasswordResetBffPaths;
 import site.omagotchi.frontend.auth.presentation.bff.SignupBffPaths;
 import site.omagotchi.frontend.auth.presentation.security.AuthenticatedLoginRequestFilter;
 import site.omagotchi.frontend.auth.presentation.security.AuthenticatedLandingPage;
@@ -68,6 +69,7 @@ public class SecurityConfig {
                                 "/index",
                                 "/login",
                                 "/register",
+                                "/password-reset",
                                 "/password-change"
                         ).permitAll() // 로그인·일반 가입 진입용 공개 Page
                         .requestMatchers(
@@ -80,6 +82,14 @@ public class SecurityConfig {
                                 SignupBffPaths.SIGNUP,
                                 SignupBffPaths.EMAIL_OTP
                         ).permitAll() // 익명 Browser의 이메일 인증 기반 회원가입 BFF
+                        .requestMatchers(
+                                HttpMethod.POST,
+                                PasswordResetBffPaths.EMAIL_OTP
+                        ).permitAll() // 익명 Browser의 비밀번호 재설정 OTP 발급 BFF
+                        .requestMatchers(
+                                HttpMethod.PATCH,
+                                PasswordResetBffPaths.PASSWORD_RESET
+                        ).permitAll() // 익명 Browser의 OTP 기반 비밀번호 재설정 BFF
                         .requestMatchers("/system-admin-dashboard").hasRole("SYSTEM_ADMIN")
                         // 인가가 Security 밖(ManagerDashboardPageController)에 있음.
                         // 기수 관리자는 Learning DB 사실이라 로그인 Authentication에 없어
