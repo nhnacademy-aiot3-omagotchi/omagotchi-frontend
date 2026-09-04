@@ -77,7 +77,10 @@ async function hydrateDashboard(
             const members = membersResult.status === "fulfilled" && Array.isArray(membersResult.value)
                 ? membersResult.value.map((member) => ({
                     ...member,
-                    id: member.id ?? member.userId,
+                    // 출결 행은 소속(cohortMembership) 식별자로만 온다. 목록이 그 키를 잃으면
+                    // 이름을 이어 붙일 수 없어 화면이 "구성원 정보를 불러오지 못했습니다"가 된다.
+                    cohortMembershipId: member.cohortMembershipId ?? member.membershipId ?? member.id ?? null,
+                    id: member.cohortMembershipId ?? member.membershipId ?? member.id ?? member.userId,
                     name: member.nickname || maskedUserLabel(member.userId),
                     nickname: member.nickname || null,
                     email: "Identity 정보 미연결"
@@ -97,16 +100,36 @@ async function hydrateDashboard(
                 : [];
             // 출결 행은 소속 식별자만 갖고 오므로 구성원 목록과 이어 붙여야 이름을 그릴 수 있다.
             // 멤버 조회가 실패하면 members가 빈 배열이라 조회는 그대로 실패하고 이름만 빠진다.
-            const membersByMembershipId = new Map(
-                members.map((member) => [String(member.id), member])
-            );
-            const membersByUserId = new Map(
-                members.filter((member) => member.userId).map((member) => [String(member.userId), member])
-            );
+            // 목록이 어떤 이름으로 소속 식별자를 주든 이어 붙는다. 한쪽 키만 믿으면
+            // 백엔드가 필드명을 바꾸는 순간 이름 열이 통째로 빈다.
+            const membersByMembershipId = new Map();
+            const membersByUserId = new Map();
+            for (const member of members) {
+                for (const key of [member.cohortMembershipId, member.membershipId, member.id]) {
+                    if (key == null || key === "") continue;
+                    if (!membersByMembershipId.has(String(key))) {
+                        membersByMembershipId.set(String(key), member);
+                    }
+                }
+                if (member.userId != null && member.userId !== "") {
+                    membersByUserId.set(String(member.userId), member);
+                }
+            }
             const attendance = Array.isArray(attendanceItems)
                 ? attendanceItems.map((record) => {
-                    const member = membersByMembershipId.get(String(record.cohortMembershipId))
-                        || membersByUserId.get(String(record.userId));
+                    const membershipKey = record.cohortMembershipId ?? record.membershipId;
+                    const member = (membershipKey == null
+                        ? undefined
+                        : membersByMembershipId.get(String(membershipKey)))
+                        || (record.userId ? membersByUserId.get(String(record.userId)) : undefined);
+                    // 이어 붙이지 못한 행은 원인을 남긴다. 화면에는 대체 표기만 남아
+                    // 서버가 어떤 키를 줬는지 알 수 없기 때문이다.
+                    if (!member && !record.nickname) {
+                        console.warn(
+                            "출결 기록에 구성원을 이어 붙이지 못했습니다.",
+                            { recordId: record.id, keys: Object.keys(record), membershipKey, userId: record.userId }
+                        );
+                    }
                     return {
                         ...record,
                         date: record.attendanceDate,
@@ -115,9 +138,10 @@ async function hydrateDashboard(
                         // 서버 닉네임 > 구성원 목록 닉네임 > 마스킹 순으로 내려간다.
                         memberName: record.nickname
                             || member?.nickname
+                            || member?.name
                             || (record.userId ? maskedUserLabel(record.userId) : ""),
                         memberRole: member?.role || "",
-                        cohortMembershipId: record.cohortMembershipId ?? member?.id ?? null
+                        cohortMembershipId: membershipKey ?? member?.cohortMembershipId ?? member?.id ?? null
                     };
                 })
                 : [];
@@ -220,18 +244,33 @@ function setDialogError(message) {
  * 정해진 값 중 하나를 고르는 입력을 텍스트로 받으면 오타가 그대로 요청 실패가 된다.
  */
 function openDialog(
-    { title, message, inputLabel, inputType = "text", initialValue = "", confirmText = "확인", options = null },
+    {
+        title,
+        message,
+        inputLabel,
+        inputType = "text",
+        initialValue = "",
+        confirmText = "확인",
+        options = null,
+        // select와 함께 받는 보조 자유 입력(예: 변경 사유). 라벨을 주지 않으면 아예 그리지 않는다.
+        // 라벨 없는 빈 칸을 띄우면 무엇을 적으라는 것인지 알 수 없다.
+        noteLabel = "",
+        notePlaceholder = "",
+        noteInitialValue = ""
+    },
     callback
 ) {
     const useSelect = Array.isArray(options) && options.length > 0;
+    const showNote = useSelect && Boolean(noteLabel);
     elements.dialogTitle.textContent = title;
     elements.dialogMessage.textContent = message;
     setDialogError("");
 
-    elements.dialogInputWrap.hidden = useSelect || !inputLabel;
-    elements.dialogInputLabel.textContent = useSelect ? "" : (inputLabel || "");
-    elements.dialogInput.type = inputType;
-    elements.dialogInput.value = useSelect ? "" : initialValue;
+    elements.dialogInputWrap.hidden = useSelect ? !showNote : !inputLabel;
+    elements.dialogInputLabel.textContent = useSelect ? (noteLabel || "") : (inputLabel || "");
+    elements.dialogInput.type = useSelect ? "text" : inputType;
+    elements.dialogInput.value = useSelect ? (noteInitialValue || "") : initialValue;
+    elements.dialogInput.placeholder = useSelect ? (notePlaceholder || "") : "";
 
     if (elements.dialogSelectWrap) {
         elements.dialogSelectWrap.hidden = !useSelect;
@@ -273,6 +312,13 @@ function readDialogValue() {
         return elements.dialogSelect.value;
     }
     return elements.dialogInputWrap.hidden ? "" : elements.dialogInput.value;
+}
+
+/** select와 함께 띄운 보조 입력값. select가 없으면 그 값이 곧 readDialogValue라 빈 문자열을 준다. */
+function readDialogNote() {
+    if (!elements.dialogSelectWrap || elements.dialogSelectWrap.hidden) return "";
+    if (elements.dialogInputWrap.hidden) return "";
+    return elements.dialogInput.value;
 }
 
 function renderSession() {
@@ -351,7 +397,7 @@ elements.cohortSelect.addEventListener("change", () => {
 
 document.querySelector("[data-dialog-confirm]").addEventListener("click", () => {
     if (!dialogCallback) return closeDialog();
-    const accepted = dialogCallback(readDialogValue());
+    const accepted = dialogCallback(readDialogValue(), { note: readDialogNote() });
     // false는 "입력이 유효하지 않다"는 뜻이다. 예전에는 조용히 멈춰 사용자가 이유를 알 수 없었다.
     if (accepted === false) {
         setDialogError("입력한 값을 처리할 수 없습니다. 값을 확인해 주세요.");

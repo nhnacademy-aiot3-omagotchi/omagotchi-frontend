@@ -51,14 +51,15 @@
     <section class="manager-dialog" role="dialog" aria-modal="true" aria-labelledby="dialog-title">
         <h2 id="dialog-title" data-dialog-title>확인</h2>
         <p data-dialog-message></p>
-        <label data-dialog-input-wrap hidden>
-            <span data-dialog-input-label>사유</span>
-            <input data-dialog-input />
-        </label>
         <!-- 정해진 값 중 하나를 고르는 입력. 자유 입력으로 두면 사용자가 enum을 타이핑해야 한다. -->
+        <!-- 선택이 먼저다. 자유 입력(사유)은 선택에 딸린 보조 입력이므로 아래에 둔다. -->
         <label data-dialog-select-wrap hidden>
             <span data-dialog-select-label>선택</span>
             <select data-dialog-select></select>
+        </label>
+        <label data-dialog-input-wrap hidden>
+            <span data-dialog-input-label>사유</span>
+            <input data-dialog-input />
         </label>
         <p class="dialog-error" data-dialog-error role="alert" hidden></p>
         <div>
