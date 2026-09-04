@@ -1,6 +1,6 @@
 # AI 도우미 연동 Prompt
 
-- 상태: 연동 진행 중 (날씨 조회 Tool 기준 연결 완료), 계약 확장 시 보호 규칙
+- 상태: 연동 완료 (날씨 + 학습 계열 Tool 여섯 개, 운영 확인됨), 계약 확장 시 보호 규칙
 - 적용 대상: View BFF와 `learning-service`(ChatClient·Tool) 연동을 작업하는 사람과 AI Agent
 - 선행 문서: [Backend Integration AI 공통 보호 규칙](공통-보호규칙.md)
 - UI 문서: [Home AI 도우미 구현 Prompt](AI-도우미.md)
@@ -13,7 +13,7 @@ BFF와 `learning-service`의 책임을 구분한다. 이 문서는 AI 창의 디
 사용자 승인이 필요한지와 오류를 어디까지 공개할지를 규정한다.
 
 Tool을 별도로 배포하거나 중계하는 서버는 존재하지 않는다. `learning-service` 하나가
-Spring AI `ChatClient`로 Gemini를 호출하고, 같은 프로세스 안의 `@Tool` 메서드(로컬
+Spring AI `ChatClient`로 Gemini 또는 Ollama를 호출하고, 같은 프로세스 안의 `@Tool` 메서드(로컬
 함수 호출)를 직접 실행한다. Tool을 배포하거나 등록하는 별도 인프라는 없다 — 새 Tool은
 `learning-service`의 해당 feature 패키지에 `@Tool` 메서드를 추가하고
 `AiToolProvider` 마커 인터페이스를 구현하면 자동으로 `ChatClient`에 등록된다.
@@ -27,8 +27,10 @@ AiAssistantPanel (React)
   → 세션 인증 확인 (LearningSessionAuthorization)
   → AiChatBffService
   → LearningAiChatClient (WebClient 기반 HTTP Service Client, SSE 스트리밍)
+     ※ Discovery(lb://learning-service) 직접 호출. Gateway를 거치지 않는다
+     ※ 이 그룹만 읽기 타임아웃 30초 (전역 5초와 분리)
   → learning-service ChatController (/api/v1/chat, JWT 인증)
-  → ChatClient.prompt().stream() (Spring AI, Gemini 호출 + Tool 실행)
+  → ChatClient.prompt().stream() (Spring AI, Gemini 또는 Ollama 호출 + Tool 실행)
 ```
 
 - Browser는 `learning-service`, LLM Provider(Gemini) 또는 다른 Domain Service를 직접 호출하지 않는다.
@@ -76,23 +78,31 @@ AiAssistantPanel (React)
   재사용한다.
 - Tool 성공 응답은 화면에 필요한 최소 Field만 반환한다.
 - 내부 예외, SQL, Stack Trace, JWT와 개인 식별 정보를 Tool 결과에 포함하지 않는다.
-- **현재 Tool 메서드에는 인증된 사용자 식별자가 전달되지 않는다.** 날씨 조회처럼 사용자와
-  무관한 Tool은 문제없지만, 사용자 개인 데이터(내 기수, 내 학습 기록 등)를 다루는 Tool을
-  추가하려면 먼저 `ChatController`가 `ChatClient.prompt().toolContext(...)`로 인증된
-  `userId`를 Tool 쪽에 전달하는 배선을 만들어야 한다. LLM이 `@ToolParam`으로 `userId`나
-  `cohortId`를 직접 받게 해서는 안 된다 (다른 사용자 사칭 위험).
+- **`ToolContext` 배선은 구현되어 있다.** `ChatController`가
+  `ChatClient.prompt().toolContext(Map.of("userId", ...))`로 JWT에서 꺼낸 `userId`를
+  Tool에 전달하며, 학습 계열 Tool이 이 통로를 쓴다. 이 값은 LLM에게 보이는 Tool 스키마에
+  포함되지 않는 서버 전용 통로다.
+- LLM이 `@ToolParam`으로 `userId`나 `cohortId`를 직접 받게 해서는 안 된다 (다른 사용자
+  사칭 위험). LLM이 채우는 인자(`periodDays` 등)도 서버가 범위를 검증하고 미지정이면
+  기본값을 확정한다 — 모델이 보낸 값을 그대로 조회 조건으로 쓰지 않는다
+  (`docs` 저장소 ADR `ai-assistant/0010`).
 
 ## Tool 분류와 승인 규칙
 
 | 분류 | 예시 | 실행 조건 |
 | --- | --- | --- |
-| 읽기 | 날씨 조회(구현됨), 내 학습 기록 조회, 오늘 출석 상태 조회 | 로그인·조회 권한 확인 후 실행 |
+| 읽기 | 날씨 조회, 학습 시간 요약, 학습 패턴, 상위권 비교, 학습 리포트, 현재 공간 환경 (여섯 개 모두 구현됨) | 로그인·조회 권한 확인 후 실행 |
 | 제안 | 학습 계획 초안, 질문 예시 생성 | 사용자 데이터 변경 없이 결과만 표시 |
 | 쓰기 | 타이머 종료, 닉네임 변경, 가입·탈퇴 | 실행 직전 명시적 사용자 승인 필수 |
 | 금지 | 권한 변경, 임의 출석 생성, 관리자 기능 우회 | Tool로 등록하지 않음 |
 
-현재 등록된 Tool(날씨 조회)은 전부 읽기 분류다. 아래 승인 규칙은 **쓰기 Tool을 처음
+등록된 Tool 여섯 개는 전부 읽기 분류다. 아래 승인 규칙은 **쓰기 Tool을 처음
 추가할 때부터 적용**한다.
+
+Tool별 상세 계약(전제조건, 기간 파라미터, 상태값, 지표 정의, 익명성 임계값, 환경
+데이터의 개인정보 경계)은 `docs` 저장소의
+`10-specifications/11-ai-assistant/03-학습-코칭-Tool-계약.md`가 소유한다. 이 문서에서
+다시 정의하지 않는다.
 
 - 쓰기 승인 화면에는 수행 작업, 대상, 변경되는 값과 취소 방법을 표시한다.
 - 이전 메시지에서 받은 승인을 다음 요청에 재사용하지 않는다.
@@ -101,8 +111,9 @@ AiAssistantPanel (React)
 
 기수 scoped 데이터를 다루는 Tool은 `CohortAccessService`(또는 해당 기능이 이미 갖고
 있는 기수 권한 검증)를 반드시 거쳐야 한다. Tool이 `cohortId`를 LLM이나 Browser로부터
-직접 받지 않고, 인증된 `userId`로 서버가 활성 기수를 직접 조회하게 한다
-(`CohortMembershipQueryService.findActiveMemberships(userId)` 등).
+직접 받지 않고, 인증된 `userId`로 서버가 활성 기수를 직접 조회하게 한다 —
+현재 학습 계열 Tool은 모두 `CohortAccessService.requireCurrentActiveMembership(userId)`를
+거친다.
 
 ## 사용자 Context와 개인정보
 
@@ -129,8 +140,15 @@ AiAssistantPanel (React)
   `learning-service`가 `INFO`에 남기지 않는다. `DEBUG`로만 남기며, 로컬(`application-local.yaml`)
   에서만 켜서 확인한다. 이 스택에는 별도 액세스 로그나 프록시가 없어 질문이 기록되는
   지점은 이 `DEBUG` 한 줄뿐이다 (`ChatController` 참고).
-- 대화는 서버 메모리(Caffeine)에 최대 1시간, 마지막 대화 후 자동 만료로만 보관한다.
-  DB나 외부 저장소에 영구 저장하지 않는다.
+- 대화는 **Redis**에 TTL 1시간으로 보관한다(키 `omagotchi:chat:memory:{userId}`).
+  `learning-service`가 여러 인스턴스로 뜨므로 프로세스 메모리(과거 Caffeine)가 아니라
+  인스턴스 밖 공용 저장소를 쓴다. DB나 외부 저장소에 영구 저장하지 않는다
+  (`docs` 저장소 ADR `ai-assistant/0012`).
+- 보관 대상에는 **Tool이 반환한 값**도 포함된다. 학습 계열 Tool을 쓴 대화라면 본인 학습
+  통계와 기수 상위권 익명 집계가 최대 1시간 동안 Redis에 남는다.
+- **정상적으로 끝난 턴만 저장된다.** 호출이 실패하면 그 턴은 통째로 남지 않는다 — 답 없는
+  질문이 남으면 다음 턴에서 모델이 그것까지 마저 답해 버리기 때문이다
+  (`docs` 저장소 ADR `ai-assistant/0013`).
 - 대화 내용을 `localStorage`나 `sessionStorage`에 Source of Truth로 저장하지 않는다.
 
 ## Prompt Injection과 출력 보호
@@ -142,7 +160,11 @@ AiAssistantPanel (React)
   생략하지 않는다).
 - AI가 생성한 HTML을 `innerHTML` 또는 `dangerouslySetInnerHTML`로 직접 삽입하지 않는다
   (현재 `AiAssistantPanel`은 React의 기본 텍스트 렌더링만 사용하며, 이 규칙을 지키고 있다).
-- Markdown Link와 URL은 허용 Scheme을 검사하고 외부 이동임을 사용자에게 알린다.
+- **마크다운을 렌더링하지 않는다.** 답변은 평문으로 표시하므로 모델이 만든 문자열이
+  링크·HTML로 해석되는 경로 자체가 없다(`docs` 저장소 ADR `ai-assistant/0015`).
+  마크다운 렌더러나 링크 자동 변환을 도입하려면 그 순간 **허용 Scheme 검사와 외부 이동
+  안내를 먼저 갖춰야 한다** — 지금 그 규칙이 없는 것은 대상이 없기 때문이지 면제가
+  아니다.
 - Tool 결과와 AI 설명을 시각적으로 구분해 사용자가 실제 실행 결과를 알아볼 수 있게 한다.
 
 ## 전송과 Stream 계약
@@ -160,16 +182,38 @@ Stream은 구조화된 Event(예: `answer.delta`, `tool.started`)를 쓰지 않�
 
 - SSE 프레임 안에 개행이 포함되면 `data:` 줄이 여러 개로 나뉘어 온다. Browser 쪽
   파서(`aiAssistantClient.js`)는 이를 전부 모아 원래 줄바꿈으로 복원해야 한다 (한 줄만
-  읽으면 개행 이후 내용이 소실된다 — 실제로 있었던 버그).
+  읽으면 개행 이후 내용이 소실된다 — 실제로 있었던 버그). 답변의 줄바꿈을 화면에서
+  살리는 것은 CSS `white-space: pre-wrap`이 맡는다 — 파서가 복원해도 CSS가 없으면
+  문단이 붙어 보인다. 둘은 짝이다.
+- 파서는 `\n\n`으로 프레임을 자르고 **마지막 조각은 버퍼에 남긴다.** 스트림이 끝날 때
+  남은 버퍼는 흘려보내지 않으므로, 서버가 항상 `\n\n`으로 프레임을 닫는다는 데 의존한다
+  (Spring의 SSE 인코딩이 그렇게 한다). 서버 쪽 응답 방식을 바꾸면 이 가정을 먼저
+  확인한다.
 - `EventSource`는 이 계약과 맞지 않는다. `EventSource`는 연결이 끊기면 원인과 무관하게
   자동 재연결을 시도하는데, 서버가 "완료" 신호 없이 그냥 스트림을 닫기 때문에 같은
   질문이 자동으로 재전송되는 문제가 생긴다. 그래서 Browser는 `fetch` +
   `ReadableStream`으로 직접 스트림을 읽는다. 이 전송 방식을 다른 방식(`EventSource`,
   WebSocket)으로 바꾸려면 `learning-service`의 완료 신호 계약부터 먼저 정의해야 한다.
-- 질문을 보낼 때마다 이전 요청을 취소한다 (`AbortController`). 패널을 닫아도 진행
-  중인 요청은 취소한다.
+- **진행 중에는 새 질문을 받지 않는다.** `handleSubmit`이 `submitting`·`streaming`
+  상태에서 곧바로 반환하므로 요청이 겹치지 않는다 — "새 질문이 이전 요청을 취소한다"가
+  아니라 애초에 전송이 잠긴다. 중단 버튼이 생기면 이 규칙을 다시 정해야 한다.
+- `AbortController`로 취소하는 경우는 두 가지다: **패널을 닫을 때**와 **컴포넌트가
+  언마운트될 때**. 취소는 `AbortError`로 도착하며, 이때는 오류 문구를 띄우지 않는다
+  (사용자가 스스로 닫은 것이므로).
 - 최대 질문 크기는 `learning-service`의 `ChatController`가 `@Size(max = 1000)`으로
-  제한한다. 응답 크기, Timeout 제한은 아직 서버에 명시적으로 없다.
+  제한한다. 응답 크기 제한과 **서버 측** 응답 시간 상한은 아직 없다.
+- **읽기 타임아웃은 AI 채팅만 따로 잡는다.** 모델 1차 호출 → Tool 실행 → 모델 2차 호출을
+  거쳐야 첫 글자가 나오므로 그동안 읽히는 바이트가 없고, 전역 5초로는 응답이 시작되기
+  전에 끊긴다(실제 운영 장애의 원인이었다). `AiChatHttpServiceConfig`가 이 그룹의
+  WebClient에만 30초를 건다(`AI_CHAT_READ_TIMEOUT`).
+  - **커넥터를 빈으로 노출하지 않는다.** `ClientHttpConnector` 타입 빈이 있으면 Boot의
+    전역 커넥터가 물러나고 그것이 **모든** WebClient에 적용된다 — identity 등 다른
+    호출까지 30초가 된다.
+  - **적용 순서가 0보다 뒤여야 한다.** Boot이 order 0에서 전역 커넥터를 다시 걸기
+    때문이다. `spring.http.serviceclient.<group>.read-timeout` 프로퍼티가 듣지 않는
+    이유도 같다(그쪽은 order `Integer.MIN_VALUE`).
+  - 이 값들은 "응답 완료 시한"이 아니라 **읽기 사이의 유휴 한도**다. 상한 체인과 근거는
+    `docs` 저장소 `11-ai-assistant/01-AI-채팅-API-계약.md` §4.1이 소유한다.
 
 ## 오류 공개 규칙
 
@@ -216,8 +260,8 @@ AI에 전달 가능한 Context Field:
 - Browser가 `learning-service` 또는 LLM Provider를 직접 호출해야 한다는 요구가 들어온다.
 - JWT, Session Cookie, 이메일 또는 내부 ID를 Prompt에 넣어야만 구현할 수 있다.
 - 쓰기 Tool인데 사용자 승인 방식이나 중복 방지 정책이 없다.
-- 기수 scoped 데이터를 다루는 Tool인데 `ToolContext`로 사용자 식별자를 전달하는 배선이
-  아직 없다.
+- 기수 scoped 데이터를 다루는 Tool인데 `ToolContext`로 사용자 식별자를 전달하지 않고
+  LLM이 채운 인자로 대상을 특정하려 한다.
 - Domain Service의 권한 판정을 View나 모델이 대신해야 한다.
 - 하류 오류 원문을 사용자에게 공개해야 한다는 요구가 들어온다.
 

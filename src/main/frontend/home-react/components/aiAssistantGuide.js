@@ -3,16 +3,29 @@
  *
  * 원본은 learning-service 의 아래 파일들이다. 서버에서 Tool 이 추가/삭제되거나
  * @Tool description 의 지원 범위(기간, 기본값 등)가 바뀌면 여기도 반드시 함께 고칠 것.
- *   - chat/application/ChatSystemPrompt.java        (할 수 있는 일 / 아직 못 하는 일)
- *   - weather/presentation/WeatherTools.java        (날씨)
- *   - study/presentation/StudyPatternTools.java     (내 학습 패턴)
- *   - study/presentation/TopLearnerPatternTools.java(상위권 비교)
- *   - study/presentation/StudySpaceConditionTools.java (지금 공부할 공간)
- *   - study/presentation/LearningReportTools.java   (기간 학습 리포트)
+ *   - chat/application/ChatSystemPrompt.java                 (할 수 있는 일 / 아직 못 하는 일)
+ *   - weather/presentation/tool/WeatherTools.java            (날씨)
+ *   - study/presentation/tool/StudyTimeSummaryTools.java     (학습 시간 요약)
+ *   - study/presentation/tool/StudyPatternTools.java         (내 학습 패턴)
+ *   - study/presentation/tool/TopLearnerPatternTools.java    (상위권 비교)
+ *   - study/presentation/tool/StudySpaceConditionTools.java  (지금 공부할 공간)
+ *   - study/presentation/tool/LearningReportTools.java       (기간 학습 리포트)
+ *
+ * 계약 문서는 docs 저장소 10-specifications/11-ai-assistant 아래에 있다
+ * (README.md 의 "등록된 Tool", 03-학습-코칭-Tool-계약.md).
  */
 
 /** 물어보면 실제로 답해주는 것들. 순서는 패널에 보이는 순서다. */
 export const AI_ASSISTANT_TOOLS = [
+    {
+        id: "study-time-summary",
+        icon: "⏱️",
+        title: "공부한 시간",
+        summary: "정해진 기간 동안 몇 시간 공부했는지, 며칠 공부했는지 딱 숫자로 알려줘요. "
+            + "공부한 날 기준으로 하루 평균이 얼마인지도 같이 봐요.",
+        hint: "따로 말 안 하면 최근 7일치를 봐요. 지금 돌아가는 타이머는 아직 안 세요",
+        examples: ["오늘 몇 시간 공부했어?", "최근 일주일 동안 얼마나 했어?"]
+    },
     {
         id: "study-pattern",
         icon: "📈",
