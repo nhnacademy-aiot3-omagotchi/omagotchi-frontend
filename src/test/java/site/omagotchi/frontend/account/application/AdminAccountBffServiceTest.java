@@ -50,7 +50,7 @@ class AdminAccountBffServiceTest {
         UUID managerId = UUID.randomUUID();
         UUID userId = UUID.randomUUID();
         when(identityAccountClient.findAccounts(
-                ACCESS_TOKEN, "kim", "ACTIVE", null, 0, 20, "CREATED_AT_DESC"
+                ACCESS_TOKEN, "kim", "ACTIVE", null, null, 0, 20, "CREATED_AT_DESC"
         )).thenReturn(page(List.of(
                 account(managerId, "manager@example.com"),
                 account(userId, "user@example.com")
@@ -65,7 +65,7 @@ class AdminAccountBffServiceTest {
 
         // When: 시스템 관리자 사용자 목록 조회
         AdminAccountPage result = service.findAccounts(
-                ACCESS_TOKEN, "kim", "ACTIVE", null, 0, 20, "CREATED_AT_DESC");
+                ACCESS_TOKEN, "kim", "ACTIVE", null, null, 0, 20, "CREATED_AT_DESC");
 
         // Then: Identity 페이지 정보를 유지한 화면용 사용자 목록 반환
         assertThat(result.page().totalElements()).isEqualTo(2);
@@ -85,7 +85,7 @@ class AdminAccountBffServiceTest {
     void skipsLearningLookupForEmptyIdentityPage() {
         // Given: 조회 항목이 없는 Identity 계정 페이지
         when(identityAccountClient.findAccounts(
-                ACCESS_TOKEN, null, null, null, 3, 20, null
+                ACCESS_TOKEN, null, null, null, null, 3, 20, null
         )).thenReturn(new IdentityAdminAccountPage(
                 List.of(),
                 new PageMetadata(3, 20, 0, 0)
@@ -93,7 +93,7 @@ class AdminAccountBffServiceTest {
 
         // When: 빈 사용자 페이지 조회
         AdminAccountPage result = service.findAccounts(
-                ACCESS_TOKEN, null, null, null, 3, 20, null);
+                ACCESS_TOKEN, null, null, null, null, 3, 20, null);
 
         // Then: 빈 결과를 반환하고 Learning을 호출하지 않음
         assertThat(result.items()).isEmpty();
@@ -144,7 +144,9 @@ class AdminAccountBffServiceTest {
                 "USER",
                 "ACTIVE",
                 (short) 0,
+                false,
                 null,
+                Instant.parse("2026-08-31T07:00:00Z"),
                 null,
                 Instant.parse("2026-08-31T07:00:00Z")
         );

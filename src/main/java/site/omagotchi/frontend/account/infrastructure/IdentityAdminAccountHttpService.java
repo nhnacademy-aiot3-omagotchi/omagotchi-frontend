@@ -18,6 +18,7 @@ public interface IdentityAdminAccountHttpService {
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
             @RequestParam(required = false) String query,
             @RequestParam(required = false) String status,
+            @RequestParam(required = false) Boolean locked,
             @RequestParam(required = false) String role,
             @RequestParam(required = false) Integer page,
             @RequestParam(required = false) Integer size,

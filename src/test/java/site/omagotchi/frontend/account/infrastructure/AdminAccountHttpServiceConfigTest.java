@@ -83,7 +83,7 @@ class AdminAccountHttpServiceConfigTest {
 
         // When: 관리자 계정 목록 HTTP Service 호출
         ResponseEntity<PageResponse<IdentityAdminAccountResponse>> response = identityHttpService.getUsers(
-                BEARER, "kim", null, null, 0, 20, "NAME_ASC");
+                BEARER, "kim", null, null, null, 0, 20, "NAME_ASC");
 
         // Then: Identity 주소와 공통 페이지 응답 계약 사용
         assertThat(response.getBody()).isNotNull();

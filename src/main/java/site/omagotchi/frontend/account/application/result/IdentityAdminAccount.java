@@ -11,8 +11,10 @@ public record IdentityAdminAccount(
         String role,
         String status,
         short failedLoginAttempts,
+        boolean locked,
         Instant lockedUntil,
-        Instant withdrawnAt,
+        Instant statusChangedAt,
+        Instant recoveryDeadline,
         Instant createdAt
 ) {
 }

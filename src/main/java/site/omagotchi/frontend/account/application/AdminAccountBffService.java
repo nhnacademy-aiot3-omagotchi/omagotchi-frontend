@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-/** Identity 계정 페이지와 Learning 기수 관리자 배정을 결합하는 BFF Use Case. */
+/** Identity 계정 페이지와 Learning 기수 관리자 배정을 결합하는 BFF 유스케이스. */
 @Service
 @RequiredArgsConstructor
 public class AdminAccountBffService {
@@ -26,6 +26,7 @@ public class AdminAccountBffService {
             String accessToken,
             String query,
             String status,
+            Boolean locked,
             String role,
             Integer page,
             Integer size,
@@ -35,6 +36,7 @@ public class AdminAccountBffService {
                 accessToken,
                 query,
                 status,
+                locked,
                 role,
                 page,
                 size,
@@ -49,7 +51,7 @@ public class AdminAccountBffService {
                 : cohortManagerClient.findManagedCohorts(accessToken, accountIds);
 
         List<AdminAccountView> items = accounts.items().stream()
-                .map(account -> toView(
+                .map(account -> AdminAccountView.from(
                         account,
                         managedCohortsByUser.getOrDefault(account.accountId(), List.of())))
                 .toList();
@@ -94,22 +96,7 @@ public class AdminAccountBffService {
         identityAccountClient.changeRole(accessToken, userId, role, reason);
     }
 
-    private static AdminAccountView toView(
-            IdentityAdminAccount account,
-            List<AdminManagedCohort> managedCohorts
-    ) {
-        return new AdminAccountView(
-                account.accountId(),
-                account.email(),
-                account.name(),
-                account.role(),
-                account.status(),
-                account.failedLoginAttempts(),
-                account.lockedUntil(),
-                account.withdrawnAt(),
-                account.createdAt(),
-                managedCohorts
-        );
+    public void unlockLogin(String accessToken, UUID userId, String reason) {
+        identityAccountClient.unlockLogin(accessToken, userId, reason);
     }
-
 }
