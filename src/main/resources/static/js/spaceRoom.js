@@ -16,6 +16,7 @@ import {
 } from "./space/participantActions.js";
 import {
     clampLabPage,
+    describeEnvironment,
     getLabPageCount,
     isLabFull,
     renderLabPanel
@@ -632,19 +633,31 @@ import {
         };
     }
 
-    function renderSensor(sensor = {}) {
-        const values = [
-            ["CO₂", sensor.co2 == null ? "확인 불가" : `${sensor.co2}ppm`],
-            ["온도", sensor.temperature == null ? "확인 불가" : `${sensor.temperature}℃`],
-            ["습도", sensor.humidity == null ? "확인 불가" : `${sensor.humidity}%`]
-        ];
+    /**
+     * 회의실 상세의 실내 환경. 실습실 카드와 같은 값·같은 문구를 쓴다.
+     * 값이 왜 없는지(센서 없음·측정 대기)도 카드와 같은 규칙으로 알린다.
+     */
+    function renderSensor(room) {
+        const { metrics, caption } = describeEnvironment(room?.sensor);
 
-        return values.map(([label, value]) => `
+        const cards = metrics.map((metric) => `
             <article class="space-room-sensor">
-                <span>${label}</span>
-                <strong>${value}</strong>
+                <span>${metric.label}</span>
+                <strong>${escapeHtml(metric.value)}<small>${metric.unit}</small></strong>
             </article>
         `).join("");
+
+        return `
+            <section class="space-room-detail-environment" aria-label="${escapeHtml(room?.name || "")} 환경 정보">
+                <header class="space-room-environment-head">
+                    <h4>실내 환경</h4>
+                    ${caption ? `<span class="space-room-environment-time">${escapeHtml(caption)}</span>` : ""}
+                </header>
+                <div class="space-room-detail-sensors">
+                    ${cards}
+                </div>
+            </section>
+        `;
     }
 
     function renderLab() {
@@ -796,9 +809,7 @@ import {
                     ` : ""}
                 </header>
 
-                <div class="space-room-detail-sensors" aria-label="${escapeHtml(room.name)} 환경 정보">
-                    ${renderSensor(room.sensor)}
-                </div>
+                ${renderSensor(room)}
 
                 ${view.key === "available" ? `
                     <section class="space-room-empty-state">

@@ -99,12 +99,26 @@ export function formatMeasuredAt(value) {
     return `${hours}:${minutes} 기준`;
 }
 
-function renderEnvironment(sensor = {}) {
-    const values = ENVIRONMENT_METRICS.map((metric) => ({
-        metric,
-        value: toMetricNumber(sensor?.[metric.key])
-    }));
-    const measured = values.some((item) => Number.isFinite(item.value));
+실/**
+ * 실내 환경을 화면 문구로 옮긴다.
+ *
+ * 실습실 카드와 회의실 상세가 같은 반올림·같은 문구를 쓰도록 여기 한 곳에서 만든다.
+ * 한쪽만 고치면 같은 센서가 화면마다 다르게 읽힌다.
+ */
+export function describeEnvironment(sensor = {}) {
+    const metrics = ENVIRONMENT_METRICS.map((metric) => {
+        const value = toMetricNumber(sensor?.[metric.key]);
+        const known = Number.isFinite(value);
+        return {
+            key: metric.key,
+            label: metric.label,
+            value: known ? metric.format(value) : "—",
+            unit: known ? metric.unit : "",
+            known
+        };
+    });
+
+    const measured = metrics.some((metric) => metric.known);
     // 값이 없는 이유를 구분해 말한다. 센서가 없는 공간에 "측정 대기"라고 하면
     // 곧 값이 올 것처럼 읽히는데, 설치 전에는 영영 오지 않는다.
     // deviceCount 를 주지 않는 하류(예전 버전)면 이유를 모르므로 측정 대기로 둔다.
@@ -112,25 +126,28 @@ function renderEnvironment(sensor = {}) {
         ? formatMeasuredAt(sensor?.measuredAt)
         : (sensor?.deviceCount === 0 ? "센서 없음" : "측정 대기");
 
-    const metrics = values.map(({ metric, value }) => {
-        const known = Number.isFinite(value);
-        return `
+    return { metrics, caption, measured };
+}
+
+function renderEnvironment(sensor = {}) {
+    const { metrics: values, caption } = describeEnvironment(sensor);
+
+    const metrics = values.map((metric) => `
             <article class="space-room-lab-metric">
                 <span class="space-room-lab-metric__label">${metric.label}</span>
                 <strong class="space-room-lab-metric__value">
-                    ${known ? escapeHtml(metric.format(value)) : "—"}
-                    <small>${known ? metric.unit : ""}</small>
+                    ${escapeHtml(metric.value)}
+                    <small>${metric.unit}</small>
                 </strong>
             </article>
-        `;
-    }).join("");
+        `).join("");
 
     return `
         <section class="space-room-lab-environment">
-            <header class="space-room-lab-environment__head">
+            <header class="space-room-environment-head space-room-lab-environment__head">
                 <h5>실내 환경</h5>
                 ${caption
-                    ? `<span class="space-room-lab-environment__time">${escapeHtml(caption)}</span>`
+                    ? `<span class="space-room-environment-time">${escapeHtml(caption)}</span>`
                     : ""}
             </header>
             <div class="space-room-lab-metrics">

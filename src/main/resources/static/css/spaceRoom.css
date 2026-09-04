@@ -610,6 +610,21 @@
     font-size: 17px;
 }
 
+.space-room-sensor strong small {
+    margin-left: 2px;
+    color: var(--room-muted);
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.space-room-detail-environment {
+    margin: 14px 0;
+}
+
+.space-room-detail-environment .space-room-detail-sensors {
+    margin: 0;
+}
+
 .space-room-lab-stage {
     min-width: 0;
     display: grid;
@@ -706,7 +721,8 @@
     padding: 13px 16px 6px;
 }
 
-.space-room-lab-environment__head {
+/* 실습실 카드와 회의실 상세가 같은 머리말을 쓴다. */
+.space-room-environment-head {
     display: flex;
     align-items: baseline;
     justify-content: space-between;
@@ -714,15 +730,16 @@
     margin-bottom: 9px;
 }
 
-.space-room-lab-environment__head h5 {
+.space-room-environment-head h4,
+.space-room-environment-head h5 {
     margin: 0;
     color: var(--room-muted);
     font-size: 12px;
     font-weight: 800;
 }
 
-/* 좋다·나쁘다는 붙이지 않는다. 언제 잰 값인지만 알린다. */
-.space-room-lab-environment__time {
+/* 좋다·나쁘다는 붙이지 않는다. 언제 잰 값인지, 왜 없는지만 알린다. */
+.space-room-environment-time {
     color: #8ba396;
     font-size: 11px;
     font-weight: 700;
