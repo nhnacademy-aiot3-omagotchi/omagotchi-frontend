@@ -34,6 +34,7 @@ import static org.springframework.test.web.client.match.MockRestRequestMatchers.
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.method;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withStatus;
+import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
 
 class IdentityRestAccountClientTest {
 
@@ -143,13 +144,18 @@ class IdentityRestAccountClientTest {
                 .andExpect(header("Authorization", BEARER_TOKEN))
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(content().json("{\"currentPassword\":\"current-password\"}"))
-                .andRespond(withStatus(HttpStatus.NO_CONTENT));
+                .andRespond(withSuccess(
+                        "{\"recoveryDeadline\":\"2026-10-03T00:00:00Z\"}",
+                        MediaType.APPLICATION_JSON
+                ));
 
         // When: 인증 사용자 계정 탈퇴
-        client.withdraw(ACCESS_TOKEN, "current-password");
+        var result = client.withdraw(ACCESS_TOKEN, "current-password");
 
         // Then: Identity 계정 탈퇴 HTTP 요청 계약
         server.verify();
+        assertThat(result)
+                .isEqualTo(java.time.Instant.parse("2026-10-03T00:00:00Z"));
     }
 
     @ParameterizedTest(name = "{0}")

@@ -178,7 +178,8 @@ class AccountSettingsBffControllerTest {
                         .contentType("application/json")
                         .content("{\"currentPassword\":\"current-password\"}"))
                 .andExpectAll(
-                        status().isNoContent(),
+                        status().isOk(),
+                        jsonPath("$.recoveryDeadline").value("2026-10-03T00:00:00Z"),
                         header().string("Cache-Control", "no-store")
                 )
                 .andReturn();
@@ -352,12 +353,13 @@ class AccountSettingsBffControllerTest {
         }
 
         @Override
-        public void withdraw(String accessToken, String currentPassword) {
+        public Instant withdraw(String accessToken, String currentPassword) {
             if (withdrawalFailure != null) {
                 throw withdrawalFailure;
             }
             this.accessToken = accessToken;
             this.withdrawalCurrentPassword = currentPassword;
+            return Instant.parse("2026-10-03T00:00:00Z");
         }
     }
 }

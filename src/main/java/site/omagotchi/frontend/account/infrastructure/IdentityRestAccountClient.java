@@ -12,12 +12,15 @@ import site.omagotchi.frontend.account.infrastructure.request.IdentityChangePass
 import site.omagotchi.frontend.account.infrastructure.request.IdentityUpdateNameRequest;
 import site.omagotchi.frontend.account.infrastructure.request.IdentityWithdrawAccountRequest;
 import site.omagotchi.frontend.account.infrastructure.response.IdentityAccountResponse;
+import site.omagotchi.frontend.account.infrastructure.response.IdentityAccountWithdrawalResponse;
 import site.omagotchi.frontend.global.exception.BusinessException;
 import site.omagotchi.frontend.global.exception.CommonErrorCode;
 import site.omagotchi.frontend.global.exception.ErrorCode;
 import site.omagotchi.frontend.global.http.ApiErrorContractResolver;
 import site.omagotchi.frontend.global.http.RestClientCallExecutor;
 import site.omagotchi.frontend.global.security.SecurityErrorCode;
+
+import java.time.Instant;
 
 @Component
 @RequiredArgsConstructor
@@ -103,8 +106,8 @@ public class IdentityRestAccountClient implements IdentityAccountClient {
     }
 
     @Override
-    public void withdraw(String accessToken, String currentPassword) {
-        ResponseEntity<Void> response = callExecutor.execute(
+    public Instant withdraw(String accessToken, String currentPassword) {
+        ResponseEntity<IdentityAccountWithdrawalResponse> response = callExecutor.execute(
                 () -> httpService.withdraw(
                         "Bearer " + accessToken,
                         new IdentityWithdrawAccountRequest(currentPassword)
@@ -121,7 +124,15 @@ public class IdentityRestAccountClient implements IdentityAccountClient {
                     throw new BusinessException(errorCode, exception);
                 }
         );
-        requireStatus(response, HttpStatus.NO_CONTENT, "Account withdrawal");
+        requireStatus(response, HttpStatus.OK, "Account withdrawal");
+        IdentityAccountWithdrawalResponse body = response.getBody();
+        if (body == null || body.recoveryDeadline() == null) {
+            throw new BusinessException(
+                    CommonErrorCode.DOWNSTREAM_INVALID_RESPONSE,
+                    "Identity Account withdrawal 성공 응답 필수 필드 누락"
+            );
+        }
+        return body.recoveryDeadline();
     }
 
     private static void requireStatus(
