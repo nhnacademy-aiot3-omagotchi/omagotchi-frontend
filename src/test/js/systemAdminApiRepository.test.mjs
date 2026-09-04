@@ -83,7 +83,7 @@ function apiFixture({
                             reason: "운영 인수인계",
                             occurredAt: "2026-09-02T05:03:00Z"
                         }],
-                        page: {number: 0, size: 50, totalElements: 1, totalPages: 1}
+                        page: {number: query.page, size: query.size, totalElements: 1, totalPages: 1}
                     };
                 },
                 async changeAccountRole(userId, role, reason) {
@@ -182,7 +182,7 @@ test("Identity 계정과 Learning 기수 운영 권한을 정규화하고 생략
     assert.deepEqual(fixture.calls, [
         ["getUsers", {page: 0, size: 100, sort: "CREATED_AT_DESC"}],
         ["getCohorts"],
-        ["getAudits", {page: 0, size: 50}]
+        ["getAudits", {page: 0, size: 20}]
     ]);
     assert.deepEqual(dashboard.users, [{
         id: "019d2a48-80c0-4d6a-9a15-0b16d2dd74f1",
@@ -910,10 +910,69 @@ test("감사 로그를 불러오면 audit 기능을 열고 화면 모델로 옮�
     // Then
     assert.equal(dashboard.capabilities.audit, true);
     assert.equal(dashboard.auditError, null);
+    assert.deepEqual(dashboard.auditPage, {
+        number: 0,
+        size: 20,
+        totalElements: 1,
+        totalPages: 1
+    });
     assert.equal(dashboard.audits.length, 1);
     assert.equal(dashboard.audits[0].action, "시스템 관리자 권한 부여");
     assert.match(dashboard.audits[0].detail, /^문재민 · USER → SYSTEM_ADMIN · 운영 인수인계$/);
     assert.equal(dashboard.audits[0].actor, "시스템 관리자");
+});
+
+test("감사 로그의 요청 페이지와 페이지 정보를 보존한다", async () => {
+    // Given: 두 번째 감사 로그 페이지 응답
+    const fixture = apiFixture();
+    fixture.api.systemAdmin.getAudits = async (query) => {
+        fixture.calls.push(["getAudits", query]);
+        return {
+            items: [{
+                auditType: "ACCOUNT_STATUS",
+                action: "ACCOUNT_DISABLED",
+                actorUserId: "00000000-0000-0000-0000-000000000001",
+                actorName: "시스템 관리자",
+                targetUserId: "00000000-0000-0000-0000-000000000002",
+                targetName: "대상 사용자",
+                beforeValue: "ACTIVE",
+                afterValue: "DISABLED",
+                reason: "운영 정책 위반",
+                occurredAt: "2026-09-02T05:03:00Z"
+            }],
+            page: {number: query.page, size: query.size, totalElements: 21, totalPages: 2}
+        };
+    };
+    const repository = createSystemAdminApiRepository(fixture.api);
+
+    // When: 두 번째 페이지 조회
+    const loaded = await repository.loadAuditPage(1);
+
+    // Then: 감사 로그만 해당 페이지로 조회하고 페이지 정보를 유지
+    assert.deepEqual(fixture.calls, [["getAudits", {page: 1, size: 20}]]);
+    assert.equal(loaded.items[0].action, "계정 비활성화");
+    assert.deepEqual(loaded.page, {
+        number: 1,
+        size: 20,
+        totalElements: 21,
+        totalPages: 2
+    });
+});
+
+test("요청과 다른 감사 로그 페이지 응답을 거부한다", async () => {
+    // Given: 요청과 다른 페이지 번호를 반환하는 Identity 응답
+    const fixture = apiFixture();
+    fixture.api.systemAdmin.getAudits = async (query) => ({
+        items: [],
+        page: {number: query.page - 1, size: query.size, totalElements: 21, totalPages: 2}
+    });
+    const repository = createSystemAdminApiRepository(fixture.api);
+
+    // When: 두 번째 페이지 조회
+    const loadAuditPage = repository.loadAuditPage(1);
+
+    // Then: 감사 로그 응답 계약 위반 처리
+    await assert.rejects(loadAuditPage, /감사 로그 응답 형식이 올바르지 않습니다/);
 });
 
 test("감사 로그 조회가 실패해도 대시보드는 살아 있고 실패 사유를 남긴다", async () => {
