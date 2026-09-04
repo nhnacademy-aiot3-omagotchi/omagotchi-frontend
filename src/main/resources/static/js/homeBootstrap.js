@@ -55,7 +55,7 @@ async function bootstrapHome() {
 
     try {
         await import("./team.js?v=20260902-3");
-        await import("./spaceRoom.js?v=20260902-6");
+        await import("./spaceRoom.js?v=20260903-1");
         await import("./home.js?v=20260903-1");
     } catch (error) {
         const toast = document.querySelector("[data-home-toast]");
