@@ -115,6 +115,7 @@ function TeamPanel({ teams, detail, cohorts, candidates }) {
             profile: { approvedCohort: { cohortId: COHORT.cohortId } }
         });
         app.mount(root);
+        return () => app.unmount(root);
     }, [teams, detail, cohorts, candidates]);
 
     return (
