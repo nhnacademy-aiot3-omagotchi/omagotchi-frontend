@@ -1,8 +1,14 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
+import vm from "node:vm";
 
-import {saveCommunityPost} from "../../main/resources/static/js/home/community.js";
+import {
+    formatCommunityAttachmentSize,
+    renderCommunityAttachmentPreviews,
+    renderCommunitySelectedAttachmentPreviews,
+    saveCommunityPost
+} from "../../main/resources/static/js/home/community.js";
 
 const overlayCss = await readFile(
     new URL("../../main/resources/static/css/home/home-overlay-theme.css", import.meta.url),
@@ -10,6 +16,10 @@ const overlayCss = await readFile(
 );
 const toastCss = await readFile(
     new URL("../../main/resources/static/css/home/ui/toast.css", import.meta.url),
+    "utf8"
+);
+const apiSource = await readFile(
+    new URL("../../main/resources/static/js/api.js", import.meta.url),
     "utf8"
 );
 
@@ -127,4 +137,66 @@ test("커뮤니티 목록 행은 버튼 전체 폭을 쓰고 버튼 내부에서
 test("홈 토스트는 모바일 오버레이보다 위에 표시된다", () => {
     const zIndex = Number(toastCss.match(/\.home-toast\s*\{[^}]*z-index:\s*(\d+)/s)?.[1]);
     assert.ok(zIndex > 1000, `home toast z-index가 너무 낮습니다: ${zIndex}`);
+});
+
+test("상세 첨부파일은 이미지 미리보기와 다운로드 동작을 함께 제공한다", () => {
+    const html = renderCommunityAttachmentPreviews([
+        {
+            attachmentId: 29,
+            originalFileName: "학습 인증.png",
+            sizeBytes: 24 * 1024
+        }
+    ], {
+        previewUrlFor: () => "/preview/29",
+        downloadUrlFor: () => "/download/29"
+    });
+
+    assert.match(html, /src="\/preview\/29"/);
+    assert.match(html, /alt="학습 인증\.png 미리보기"/);
+    assert.match(html, /href="\/download\/29"/);
+    assert.match(html, /download="학습 인증\.png"/);
+    assert.match(html, />24KB</);
+});
+
+test("선택한 첨부파일은 로컬 미리보기 카드로 그린다", () => {
+    const html = renderCommunitySelectedAttachmentPreviews(
+        [{name: "새 이미지.png", size: 1536}],
+        ["blob:preview-image"]
+    );
+
+    assert.match(html, /src="blob:preview-image"/);
+    assert.match(html, /alt="새 이미지\.png 선택 미리보기"/);
+    assert.match(html, />2KB</);
+    assert.equal(formatCommunityAttachmentSize(1.5 * 1024 * 1024), "1.5MB");
+});
+
+test("첨부 이미지 미리보기는 인증된 BFF 응답을 Blob으로 받는다", async () => {
+    const imageBlob = new Blob(["image"], {type: "image/png"});
+    const calls = [];
+    const window = {location: {pathname: "/home", replace() {}}};
+    vm.runInNewContext(apiSource, {
+        Blob,
+        FormData,
+        URLSearchParams,
+        document: {documentElement: {dataset: {}}},
+        fetch: async (url, options) => {
+            calls.push({url, options});
+            return {
+                ok: true,
+                status: 200,
+                headers: {get: () => "image/png"},
+                blob: async () => imageBlob
+            };
+        },
+        window
+    });
+
+    const result = await window.OmagotchiApi.community.getAttachmentBlob("post/1", "file/2");
+
+    assert.equal(result, imageBlob);
+    assert.deepEqual(
+        [calls[0].url, calls[0].options.method, calls[0].options.headers.Accept],
+        ["/bff/v1/community/posts/post%2F1/attachments/file%2F2", "GET", "image/*"]
+    );
+    assert.equal(calls[0].options.credentials, "same-origin");
 });

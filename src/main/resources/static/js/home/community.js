@@ -1,3 +1,79 @@
+import { escapeHtml } from "./utils.js";
+
+export function formatCommunityAttachmentSize(sizeBytes) {
+    const bytes = Number(sizeBytes);
+    if (!Number.isFinite(bytes) || bytes <= 0) {
+        return "0KB";
+    }
+    if (bytes < 1024 * 1024) {
+        return `${Math.max(1, Math.ceil(bytes / 1024))}KB`;
+    }
+    const megabytes = bytes / (1024 * 1024);
+    return `${megabytes >= 10 ? Math.round(megabytes) : megabytes.toFixed(1)}MB`;
+}
+
+function attachmentName(attachment) {
+    return attachment?.originalFileName || attachment?.name || "첨부 이미지";
+}
+
+/**
+ * 서버 첨부 이미지와 사용자가 방금 선택한 로컬 이미지를 같은 카드 모양으로 그린다.
+ * 실제 상세 화면은 previewUrl을 비워 둔 뒤 인증된 Blob을 받아 img src를 채운다.
+ */
+export function renderCommunityAttachmentPreviews(
+    attachments,
+    { downloadUrlFor = () => "#", previewUrlFor = () => "" } = {}
+) {
+    const items = Array.from(attachments || []);
+    if (!items.length) {
+        return '<p class="overlay-community-empty-attachments">첨부파일이 없습니다.</p>';
+    }
+
+    return `
+        <ul class="overlay-community-attachment-list">
+            ${items.map((attachment, index) => {
+                const name = attachmentName(attachment);
+                const previewUrl = previewUrlFor(attachment, index) || "";
+                const downloadUrl = downloadUrlFor(attachment, index) || "#";
+                const attachmentId = attachment?.attachmentId ?? index;
+                return `
+                    <li class="overlay-community-attachment-card${previewUrl ? " is-ready" : ""}" data-community-attachment-card data-community-attachment-id="${escapeHtml(attachmentId)}">
+                        <div class="overlay-community-attachment-media">
+                            <img${previewUrl ? ` src="${escapeHtml(previewUrl)}"` : ""} alt="${escapeHtml(name)} 미리보기" loading="lazy"${previewUrl ? "" : " hidden"} />
+                            <span class="overlay-community-attachment-status"${previewUrl ? " hidden" : ""}>이미지 불러오는 중…</span>
+                        </div>
+                        <div class="overlay-community-attachment-info">
+                            <span class="overlay-community-attachment-name" title="${escapeHtml(name)}">${escapeHtml(name)}</span>
+                            <em>${formatCommunityAttachmentSize(attachment?.sizeBytes)}</em>
+                            <a class="overlay-community-attachment-download" href="${escapeHtml(downloadUrl)}" download="${escapeHtml(name)}">다운로드</a>
+                        </div>
+                    </li>
+                `;
+            }).join("")}
+        </ul>
+    `;
+}
+
+export function renderCommunitySelectedAttachmentPreviews(files, previewUrls) {
+    const items = Array.from(files || []);
+    const urls = Array.from(previewUrls || []);
+    if (!items.length) {
+        return "";
+    }
+
+    return items.map((file, index) => `
+        <li class="overlay-community-selected-preview">
+            <div class="overlay-community-attachment-media">
+                <img src="${escapeHtml(urls[index] || "")}" alt="${escapeHtml(attachmentName(file))} 선택 미리보기" />
+            </div>
+            <div class="overlay-community-attachment-info">
+                <span class="overlay-community-attachment-name" title="${escapeHtml(attachmentName(file))}">${escapeHtml(attachmentName(file))}</span>
+                <em>${formatCommunityAttachmentSize(file?.size)}</em>
+            </div>
+        </li>
+    `).join("");
+}
+
 function setCommunitySubmitPending(form, submitButton, pending, idleLabel, pendingLabel) {
     if (pending) {
         form.dataset.communitySubmitting = "true";

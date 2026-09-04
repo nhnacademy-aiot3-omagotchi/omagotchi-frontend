@@ -365,6 +365,13 @@
             downloadUrl: (postId, attachmentId) => toUrl(
                 `/community/posts/${encodeURIComponent(postId)}/attachments/${encodeURIComponent(attachmentId)}`
             ),
+            getAttachmentBlob: async (postId, attachmentId) => {
+                const response = await requestResponse(
+                    `/community/posts/${encodeURIComponent(postId)}/attachments/${encodeURIComponent(attachmentId)}`,
+                    {headers: {Accept: "image/*"}}
+                );
+                return response.blob();
+            },
             createPost: (payload) => request("/community/posts", {method: "POST", body: payload}),
             createPostWithAttachments: (post, attachments) => request("/community/posts", {
                 method: "POST",

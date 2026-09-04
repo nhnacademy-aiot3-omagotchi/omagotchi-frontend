@@ -1,7 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { expect, userEvent, waitFor, within } from "storybook/test";
-import { saveCommunityPost } from "../../../resources/static/js/home/community.js";
+import {
+  renderCommunityAttachmentPreviews,
+  renderCommunitySelectedAttachmentPreviews,
+  saveCommunityPost
+} from "../../../resources/static/js/home/community.js";
 import { escapeHtml } from "../../../resources/static/js/home/utils.js";
 import { HomeOverlay } from "./HomeOverlay.jsx";
 
@@ -39,10 +43,25 @@ const initialPosts = [
     postId: 30,
     type: "FREE",
     title: "첨부파일이 있는 자유글",
-    content: "이미지는 작성 화면의 버튼으로 선택하고, 상세 화면에서는 파일 목록으로 확인합니다.",
+    content: "이미지는 작성 화면에서 선택 즉시 확인하고, 상세 화면에서도 미리볼 수 있습니다.",
     authorNickname: "옆자리",
     createdLabel: "2026. 8. 31. 오후 5:31:39",
-    attachments: [{ name: "storybook.png", sizeLabel: "24KB" }],
+    attachments: [
+      {
+        attachmentId: 301,
+        originalFileName: "학습실-인증.png",
+        contentType: "image/png",
+        sizeBytes: 24576,
+        previewUrl: "/images/characters/study/study.png"
+      },
+      {
+        attachmentId: 302,
+        originalFileName: "오늘의-오마고치.gif",
+        contentType: "image/gif",
+        sizeBytes: 86240,
+        previewUrl: "/images/characters/study/study_eye.gif"
+      }
+    ],
     canManage: false
   },
   {
@@ -59,6 +78,13 @@ const initialPosts = [
 
 function authorLabel(post) {
   return escapeHtml(post?.authorNickname || "알 수 없음");
+}
+
+async function storyImageFile(canvasElement, name, path) {
+  const storyWindow = canvasElement.ownerDocument.defaultView;
+  const response = await storyWindow.fetch(path);
+  const blob = await response.blob();
+  return new storyWindow.File([blob], name, { type: blob.type || "image/png" });
 }
 
 function renderCommunityList(posts, filter, keyword, pinned) {
@@ -155,6 +181,7 @@ function renderCommunityComposer(post = null) {
           <label for="${attachmentInputId}" class="overlay-community-file-button">이미지 선택</label>
           <span class="overlay-community-file-summary" data-community-file-summary>첨부할 이미지를 선택하세요.</span>
         </div>
+        <ul class="overlay-community-selected-preview-list" data-community-selected-previews aria-label="선택한 이미지 미리보기" hidden></ul>
       </section>
       <footer>
         <button type="button" data-community-close>취소</button>
@@ -184,7 +211,10 @@ function renderCommunityDetail(post) {
       </div>
       <section class="overlay-community-form-field" aria-label="첨부파일">
         <span>첨부파일</span>
-        ${attachments.length ? `<ul class="overlay-community-attachment-list">${attachments.map((attachment) => `<li><a href="#download-${post.postId}-${escapeHtml(attachment.name)}"><span aria-hidden="true">▧</span>${escapeHtml(attachment.name)}</a><em>${escapeHtml(attachment.sizeLabel)}</em></li>`).join("")}</ul>` : `<p class="overlay-community-empty-attachments">첨부파일이 없습니다.</p>`}
+        ${renderCommunityAttachmentPreviews(attachments, {
+          downloadUrlFor: (attachment) => `#download-${post.postId}-${attachment.attachmentId}`,
+          previewUrlFor: (attachment) => attachment.previewUrl
+        })}
       </section>
       <footer>
         <button type="button" data-community-list>목록</button>
@@ -200,6 +230,7 @@ function renderCommunityDetail(post) {
 function CommunityOverlayStory() {
   const hostRef = useRef(null);
   const toastTimerRef = useRef(null);
+  const attachmentPreviewUrlsRef = useRef(new Set());
   const [isOpen, setIsOpen] = useState(true);
   const [mode, setMode] = useState("list");
   const [posts, setPosts] = useState(initialPosts);
@@ -216,7 +247,11 @@ function CommunityOverlayStory() {
     toastTimerRef.current = window.setTimeout(() => setToast(""), 3200);
   }, []);
 
-  useEffect(() => () => window.clearTimeout(toastTimerRef.current), []);
+  useEffect(() => () => {
+    window.clearTimeout(toastTimerRef.current);
+    attachmentPreviewUrlsRef.current.forEach((url) => window.URL.revokeObjectURL(url));
+    attachmentPreviewUrlsRef.current.clear();
+  }, []);
 
   useEffect(() => {
     const host = hostRef.current;
@@ -276,14 +311,31 @@ function CommunityOverlayStory() {
       const attachmentInput = event.target.closest("input[name='attachments']");
       if (!attachmentInput) return;
 
-      const summary = attachmentInput.closest(".overlay-community-file-picker")
-        ?.querySelector("[data-community-file-summary]");
+      const field = attachmentInput.closest(".overlay-community-form-field");
+      const summary = field?.querySelector("[data-community-file-summary]");
+      const previewList = field?.querySelector("[data-community-selected-previews]");
       const files = Array.from(attachmentInput.files || []);
       if (summary) {
         summary.textContent = files.length
           ? `${files.length}개 파일 선택됨 · ${files.map((file) => file.name).join(", ")}`
           : "첨부할 이미지를 선택하세요.";
       }
+      attachmentPreviewUrlsRef.current.forEach((url) => window.URL.revokeObjectURL(url));
+      attachmentPreviewUrlsRef.current.clear();
+      if (!previewList) return;
+      if (!files.length) {
+        previewList.replaceChildren();
+        previewList.hidden = true;
+        return;
+      }
+
+      const previewUrls = files.map((file) => {
+        const url = window.URL.createObjectURL(file);
+        attachmentPreviewUrlsRef.current.add(url);
+        return url;
+      });
+      previewList.innerHTML = renderCommunitySelectedAttachmentPreviews(files, previewUrls);
+      previewList.hidden = false;
     };
     const handleSubmit = async (event) => {
       const form = event.target.closest("[data-community-compose]");
@@ -292,6 +344,7 @@ function CommunityOverlayStory() {
       event.preventDefault();
       let savedPost;
       let attachmentCount = 0;
+      const selectedFiles = Array.from(form.querySelector("input[name='attachments']")?.files || []);
       try {
         const result = await saveCommunityPost({
           form,
@@ -330,7 +383,15 @@ function CommunityOverlayStory() {
           authorNickname: existingStoryPost?.authorNickname || "박지우",
           createdLabel: "방금 전",
           attachments: attachmentCount
-            ? [{ name: `${attachmentCount}개 이미지`, sizeLabel: "선택됨" }]
+            ? selectedFiles.map((file, index) => ({
+              attachmentId: `storybook-${index}`,
+              originalFileName: file.name,
+              contentType: file.type,
+              sizeBytes: file.size,
+              previewUrl: index % 2 === 0
+                ? "/images/characters/study/study.png"
+                : "/images/characters/study/study_eye.gif"
+            }))
             : existingStoryPost?.attachments || [],
           canManage: true
         };
@@ -368,6 +429,8 @@ function CommunityOverlayStory() {
 
   // 화면을 바꾸면 본문 스크롤을 맨 위로 되돌린다. 실제 화면도 같게 동작한다.
   useEffect(() => {
+    attachmentPreviewUrlsRef.current.forEach((url) => window.URL.revokeObjectURL(url));
+    attachmentPreviewUrlsRef.current.clear();
     const body = hostRef.current?.querySelector(".home-overlay-body");
     if (body) body.scrollTop = 0;
   }, [mode, selectedPostId, editingPostId]);
@@ -447,6 +510,20 @@ export const DetailNavigation = {
   }
 };
 
+export const AttachmentDetailPreview = {
+  name: "첨부 이미지 상세 미리보기",
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByRole("button", { name: "첨부파일이 있는 자유글 상세 보기" }));
+
+    const firstPreview = canvas.getByRole("img", { name: "학습실-인증.png 미리보기" });
+    const animatedPreview = canvas.getByRole("img", { name: "오늘의-오마고치.gif 미리보기" });
+    expect(firstPreview).toHaveAttribute("src", "/images/characters/study/study.png");
+    expect(animatedPreview).toHaveAttribute("src", "/images/characters/study/study_eye.gif");
+    expect(canvas.getAllByRole("link", { name: "다운로드" })).toHaveLength(2);
+  }
+};
+
 export const ComposerCancel = {
   name: "글쓰기 취소 후 닫기",
   play: async ({ canvasElement }) => {
@@ -491,8 +568,11 @@ export const RegistrationCompleteWithAttachment = {
     await userEvent.type(canvas.getByPlaceholderText("게시글 제목을 입력하세요"), "첨부파일 등록 테스트");
     await userEvent.type(canvas.getByPlaceholderText("기수 구성원과 공유할 내용을 입력하세요"), "첨부파일 API mock을 확인합니다.");
 
-    const StoryFile = canvasElement.ownerDocument.defaultView.File;
-    const attachment = new StoryFile(["storybook image"], "storybook.png", { type: "image/png" });
+    const attachment = await storyImageFile(
+      canvasElement,
+      "storybook.png",
+      "/images/characters/study/study.png"
+    );
     await userEvent.upload(canvas.getByLabelText("이미지 선택"), attachment);
     expect(canvas.getByText("1개 파일 선택됨 · storybook.png")).toBeInTheDocument();
     await userEvent.click(canvas.getByRole("button", { name: "등록하기" }));
@@ -503,6 +583,24 @@ export const RegistrationCompleteWithAttachment = {
     );
     expect(canvas.getByText("첨부파일 등록 테스트")).toBeInTheDocument();
     expect(within(canvasElement.ownerDocument.body).getByRole("status")).toHaveTextContent("게시글이 등록되었습니다.");
+  }
+};
+
+export const SelectedAttachmentPreview = {
+  name: "선택한 이미지 즉시 미리보기",
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByRole("button", { name: "글쓰기" }));
+    const attachment = await storyImageFile(
+      canvasElement,
+      "내-학습실.png",
+      "/images/characters/study/study.png"
+    );
+
+    await userEvent.upload(canvas.getByLabelText("이미지 선택"), attachment);
+    const preview = canvas.getByRole("img", { name: "내-학습실.png 선택 미리보기" });
+    expect(preview.getAttribute("src")).toMatch(/^blob:/);
+    expect(canvas.getByText("1개 파일 선택됨 · 내-학습실.png")).toBeInTheDocument();
   }
 };
 
