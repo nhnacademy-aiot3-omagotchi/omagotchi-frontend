@@ -305,7 +305,7 @@ button {
 /* 운영 현황 요약 카드 */
 .summary-grid {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 12px;
     margin: 18px 0;
 }
@@ -827,7 +827,7 @@ td small {
     font-weight: 800;
 }
 
-.manager-dialog > div {
+.manager-dialog:not(.study-detail-dialog) > div {
     display: flex;
     justify-content: flex-end;
     gap: 8px;
@@ -957,7 +957,6 @@ td small {
         white-space: nowrap;
     }
 
-    .summary-grid,
     .sensor-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
@@ -1014,7 +1013,7 @@ td small {
     }
 
     .summary-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-columns: 1fr;
     }
 
     .summary-grid article {
@@ -1196,13 +1195,39 @@ td small {
 .study-detail-dialog {
     min-width: 0;
     width: min(1040px, 100%);
-    height: min(1080px, calc(100vh - 40px));
-    height: min(1080px, calc(100dvh - 40px));
     max-height: calc(100vh - 40px);
-    display: grid;
-    gap: 18px;
-    padding: 24px;
+    max-height: calc(100dvh - 40px);
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    overflow: hidden;
+    scrollbar-gutter: stable;
+}
+
+.study-detail-header-wrap {
+    flex-shrink: 0;
+    position: sticky;
+    top: 0;
+    z-index: 6;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: 24px 24px 16px;
+    background: #fff;
+    border-bottom: 1px solid var(--line);
+}
+
+.study-detail-body {
+    flex: 1 1 auto;
+    min-height: 0;
     overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    padding: 20px 24px 24px;
 }
 
 .study-detail-header,
@@ -1334,7 +1359,8 @@ td small {
     max-width: 100%;
     margin: 0;
     padding: 18px;
-    overflow: hidden;
+    height: auto;
+    min-height: fit-content;
 }
 
 .study-detail-chart-card .study-detail-section-heading h3,
@@ -1684,8 +1710,12 @@ td small {
         grid-column: auto;
     }
 
-    .study-detail-dialog {
-        padding: 18px;
+    .study-detail-header-wrap {
+        padding: 18px 18px 14px;
+    }
+
+    .study-detail-body {
+        padding: 16px 18px 18px;
     }
 
     .study-detail-kpi-grid {
@@ -1747,8 +1777,17 @@ td small {
 
     .study-detail-dialog {
         max-height: calc(100vh - 16px);
+        max-height: calc(100dvh - 16px);
+    }
+
+    .study-detail-header-wrap {
+        padding: 15px 15px 12px;
+        gap: 10px;
+    }
+
+    .study-detail-body {
         gap: 14px;
-        padding: 15px;
+        padding: 12px 15px 15px;
     }
 
     .manager-dialog .study-detail-header h2 {
@@ -1823,4 +1862,131 @@ td small {
     .study-detail-record > div:last-child {
         grid-column: 2;
     }
+}
+
+/* 화면 높이가 낮을 때(노트북, 작은 뷰포트) 컴팩트 조정 */
+@media (max-height: 780px) {
+    .study-detail-header-wrap {
+        padding: 16px 20px 12px;
+        gap: 10px;
+    }
+
+    .manager-dialog .study-detail-header h2 {
+        font-size: 20px;
+    }
+
+    .study-detail-toolbar {
+        padding: 8px 12px;
+    }
+
+    .study-detail-body {
+        gap: 12px;
+        padding: 14px 20px 20px;
+    }
+
+    .study-detail-kpi-grid {
+        gap: 6px;
+    }
+
+    .study-detail-kpi-grid article {
+        padding: 8px 12px;
+        gap: 2px;
+    }
+
+    .study-detail-kpi-grid span {
+        font-size: 10px;
+    }
+
+    .study-detail-kpi-grid strong {
+        font-size: 16px;
+    }
+
+    .study-detail-chart-card {
+        padding: 12px;
+    }
+
+    .study-detail-chart-container {
+        height: 130px;
+        margin-top: 8px;
+    }
+
+    .study-detail-day-card {
+        padding: 14px;
+    }
+}
+
+/* 출결 판정 기준 안내 */
+.help-toggle {
+    flex: 0 0 auto;
+    width: 26px;
+    height: 26px;
+    padding: 0;
+    border: 1px solid var(--line);
+    border-radius: 50%;
+    background: var(--surface);
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 800;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.help-toggle:hover,
+.help-toggle[aria-expanded="true"] {
+    border-color: var(--green-700);
+    background: var(--green-700);
+    color: #fff;
+}
+
+.help-panel {
+    margin: -8px 0 20px;
+    padding: 16px 18px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--surface);
+    color: var(--ink);
+    font-size: 12px;
+    line-height: 1.7;
+}
+
+.help-panel h3 {
+    margin: 0 0 10px;
+    font-size: 13px;
+}
+
+.help-panel-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 8px 16px;
+    margin: 0 0 12px;
+}
+
+.help-panel-list > div {
+    display: grid;
+    gap: 2px;
+}
+
+.help-panel-list dt {
+    color: var(--muted);
+    font-size: 10px;
+    font-weight: 800;
+}
+
+.help-panel-list dd {
+    margin: 0;
+    font-weight: 700;
+}
+
+.help-panel-notes {
+    margin: 0 0 10px;
+    padding-left: 18px;
+}
+
+.help-panel-notes li + li {
+    margin-top: 4px;
+}
+
+.help-panel-note {
+    margin: 0;
+    color: var(--muted);
 }

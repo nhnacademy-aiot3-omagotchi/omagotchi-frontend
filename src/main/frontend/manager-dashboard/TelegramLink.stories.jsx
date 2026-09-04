@@ -22,17 +22,17 @@ const summaryCard = {
  * 바탕(--canvas) 위에 그대로 얹힌다. 위에 얹은 요약 카드 줄은 실제 .summary-grid 를
  * 흉내 낸 fixture 로, 텔레그램 카드가 같은 폭으로 끝나는지 보기 위한 것이다. 값은 의미 없다.
  */
-// 실제 .summary-grid 는 980px 이하에서 2칸으로 접힌다. inline style 로는 표현할 수 없어
-// fixture 전용 class 로 같은 분기를 준다.
+// 실제 .summary-grid 는 680px 이하에서 한 줄에 한 장씩 쌓인다. inline style 로는 표현할 수
+// 없어 fixture 전용 class 로 같은 분기를 준다.
 const summaryGridCss = `
 .sb-summary-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
   margin: 0 0 18px;
 }
-@media (max-width: 980px) {
-  .sb-summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (max-width: 680px) {
+  .sb-summary-grid { grid-template-columns: 1fr; }
 }
 `;
 
@@ -40,7 +40,7 @@ const dashboardCanvas = (Story) => (
   <div style={{ padding: 24, background: "#eef6f1" }}>
     <style>{summaryGridCss}</style>
     <div className="sb-summary-grid">
-      {["활성 구성원", "승인 대기", "오늘 출석", "실습실 CO₂"].map((label) => (
+      {["활성 구성원", "승인 대기", "오늘 출석"].map((label) => (
         <article key={label} style={summaryCard}>
           <span style={{ color: "#66736c", fontSize: 11, fontWeight: 800 }}>{label}</span>
           <strong style={{ fontSize: 26 }}>--</strong>

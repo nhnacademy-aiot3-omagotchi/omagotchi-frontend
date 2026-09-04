@@ -1,7 +1,6 @@
 (() => {
 const store = window.OmagotchiDashboardStore.create();
 let dialogCallback = null;
-const SENSOR_LOCATION_ORDER = Object.freeze(["LAB", "OFFICE", "MEETING_ROOM"]);
 
 function maskedUserLabel(userId) {
     const value = String(userId || "");
@@ -96,13 +95,31 @@ async function hydrateDashboard(
             const attendanceItems = attendanceResult.status === "fulfilled"
                 ? (Array.isArray(attendanceResult.value) ? attendanceResult.value : attendanceResult.value?.items)
                 : [];
+            // 출결 행은 소속 식별자만 갖고 오므로 구성원 목록과 이어 붙여야 이름을 그릴 수 있다.
+            // 멤버 조회가 실패하면 members가 빈 배열이라 조회는 그대로 실패하고 이름만 빠진다.
+            const membersByMembershipId = new Map(
+                members.map((member) => [String(member.id), member])
+            );
+            const membersByUserId = new Map(
+                members.filter((member) => member.userId).map((member) => [String(member.userId), member])
+            );
             const attendance = Array.isArray(attendanceItems)
-                ? attendanceItems.map((record) => ({
-                    ...record,
-                    date: record.attendanceDate,
-                    checkIn: timeLabel(record.checkedInAt),
-                    checkOut: timeLabel(record.checkedOutAt)
-                }))
+                ? attendanceItems.map((record) => {
+                    const member = membersByMembershipId.get(String(record.cohortMembershipId))
+                        || membersByUserId.get(String(record.userId));
+                    return {
+                        ...record,
+                        date: record.attendanceDate,
+                        checkIn: timeLabel(record.checkedInAt),
+                        checkOut: timeLabel(record.checkedOutAt),
+                        // 서버 닉네임 > 구성원 목록 닉네임 > 마스킹 순으로 내려간다.
+                        memberName: record.nickname
+                            || member?.nickname
+                            || (record.userId ? maskedUserLabel(record.userId) : ""),
+                        memberRole: member?.role || "",
+                        cohortMembershipId: record.cohortMembershipId ?? member?.id ?? null
+                    };
+                })
                 : [];
             const joinCode = joinCodeResult.status === "fulfilled" ? joinCodeResult.value : null;
             return {
@@ -154,7 +171,11 @@ const elements = {
     dialogMessage: document.querySelector("[data-dialog-message]"),
     dialogInputWrap: document.querySelector("[data-dialog-input-wrap]"),
     dialogInput: document.querySelector("[data-dialog-input]"),
-    dialogInputLabel: document.querySelector("[data-dialog-input-label]")
+    dialogInputLabel: document.querySelector("[data-dialog-input-label]"),
+    dialogSelectWrap: document.querySelector("[data-dialog-select-wrap]"),
+    dialogSelect: document.querySelector("[data-dialog-select]"),
+    dialogSelectLabel: document.querySelector("[data-dialog-select-label]"),
+    dialogError: document.querySelector("[data-dialog-error]")
 };
 
 function statusLabel(status) {
@@ -179,29 +200,6 @@ function statusLabel(status) {
     }[status] || status;
 }
 
-function labSensorFor(cohort) {
-    const fallback = cohort.sensor || {};
-    let source = [];
-    if (Array.isArray(fallback.locations)) source = fallback.locations;
-    else if (Array.isArray(cohort.sensors)) source = cohort.sensors;
-    else if (Array.isArray(cohort.sensorReadings)) source = cohort.sensorReadings;
-    if (!source.length) return fallback;
-
-    for (let index = 0; index < source.length; index += 1) {
-        const sensor = source[index];
-        const location = String(
-            sensor.location
-            || sensor.locationType
-            || sensor.place
-            || sensor.roomType
-            || SENSOR_LOCATION_ORDER[index]
-            || ""
-        ).toUpperCase();
-        if (location === "LAB") return sensor;
-    }
-    return {};
-}
-
 function setBubble(message) {
     const fragment = document.createDocumentFragment();
     String(message ?? "").split("\n").forEach((line, index) => {
@@ -211,22 +209,70 @@ function setBubble(message) {
     elements.bubble.replaceChildren(fragment);
 }
 
-function openDialog({ title, message, inputLabel, inputType = "text", initialValue = "", confirmText = "확인" }, callback) {
+function setDialogError(message) {
+    if (!elements.dialogError) return;
+    elements.dialogError.textContent = message || "";
+    elements.dialogError.hidden = !message;
+}
+
+/**
+ * options를 주면 자유 입력 대신 select를 띄운다.
+ * 정해진 값 중 하나를 고르는 입력을 텍스트로 받으면 오타가 그대로 요청 실패가 된다.
+ */
+function openDialog(
+    { title, message, inputLabel, inputType = "text", initialValue = "", confirmText = "확인", options = null },
+    callback
+) {
+    const useSelect = Array.isArray(options) && options.length > 0;
     elements.dialogTitle.textContent = title;
     elements.dialogMessage.textContent = message;
-    elements.dialogInputWrap.hidden = !inputLabel;
-    elements.dialogInputLabel.textContent = inputLabel || "";
+    setDialogError("");
+
+    elements.dialogInputWrap.hidden = useSelect || !inputLabel;
+    elements.dialogInputLabel.textContent = useSelect ? "" : (inputLabel || "");
     elements.dialogInput.type = inputType;
-    elements.dialogInput.value = initialValue;
+    elements.dialogInput.value = useSelect ? "" : initialValue;
+
+    if (elements.dialogSelectWrap) {
+        elements.dialogSelectWrap.hidden = !useSelect;
+        elements.dialogSelectLabel.textContent = useSelect ? (inputLabel || "선택") : "";
+        if (useSelect) {
+            const fragment = document.createDocumentFragment();
+            options.forEach(({ value, label }) => {
+                const option = document.createElement("option");
+                option.value = String(value);
+                option.textContent = label ?? String(value);
+                fragment.append(option);
+            });
+            elements.dialogSelect.replaceChildren(fragment);
+            // 현재 값이 목록에 없으면 브라우저가 첫 항목을 고른다. 임의 값으로 덮어쓰지 않는다.
+            elements.dialogSelect.value = String(initialValue ?? "");
+            if (!elements.dialogSelect.value && options.length) {
+                elements.dialogSelect.value = String(options[0].value);
+            }
+        } else {
+            elements.dialogSelect.replaceChildren();
+        }
+    }
+
     document.querySelector("[data-dialog-confirm]").textContent = confirmText;
     elements.dialog.hidden = false;
     dialogCallback = callback;
-    if (inputLabel) elements.dialogInput.focus();
+    if (useSelect) elements.dialogSelect?.focus();
+    else if (inputLabel) elements.dialogInput.focus();
 }
 
 function closeDialog() {
     elements.dialog.hidden = true;
+    setDialogError("");
     dialogCallback = null;
+}
+
+function readDialogValue() {
+    if (elements.dialogSelectWrap && !elements.dialogSelectWrap.hidden) {
+        return elements.dialogSelect.value;
+    }
+    return elements.dialogInputWrap.hidden ? "" : elements.dialogInput.value;
 }
 
 function renderSession() {
@@ -250,21 +296,23 @@ function renderCohortSelect({ cohorts, selectedCohortId }) {
 
 function renderSummary(state) {
     const cohort = state.currentCohort;
-    const sensor = labSensorFor(cohort);
     const activeMembers = cohort.members.filter((member) => member.status === "ACTIVE");
     const pending = state.applications.filter(
         (item) => item.cohortId === cohort.id && item.status === "PENDING"
     );
+    // 카드가 세는 것은 "입실 완료 인원"이다. 입실 시각이 있어도 결석으로 정정된 건은 빼야
+    // 하므로 시각 유무만으로 세지 않는다. 정시 입실은 퇴실 전까지 PENDING이라 상태
+    // 화이트리스트로 세면 정시 입실자가 통째로 빠진다.
     const attendance = cohort.attendance.filter(
-        (item) => item.date === state.today && item.checkIn !== "-"
+        (item) => item.date === state.today
+            && item.checkIn !== "-"
+            && item.finalStatus !== "ABSENT"
     );
 
     elements.cohortTitle.textContent = cohort.name;
     document.querySelector("[data-summary-members]").textContent = activeMembers.length;
     document.querySelector("[data-summary-applications]").textContent = pending.length;
     document.querySelector("[data-summary-attendance]").textContent = attendance.length;
-    document.querySelector("[data-summary-co2]").textContent = sensor.co2 == null ? "--" : `${sensor.co2}ppm`;
-    document.querySelector("[data-summary-sensor-status]").textContent = sensor.updatedAt || "수신 데이터 없음";
 }
 
 function renderShell() {
@@ -303,8 +351,17 @@ elements.cohortSelect.addEventListener("change", () => {
 
 document.querySelector("[data-dialog-confirm]").addEventListener("click", () => {
     if (!dialogCallback) return closeDialog();
-    const accepted = dialogCallback(elements.dialogInputWrap.hidden ? "" : elements.dialogInput.value);
-    if (accepted !== false) closeDialog();
+    const accepted = dialogCallback(readDialogValue());
+    // false는 "입력이 유효하지 않다"는 뜻이다. 예전에는 조용히 멈춰 사용자가 이유를 알 수 없었다.
+    if (accepted === false) {
+        setDialogError("입력한 값을 처리할 수 없습니다. 값을 확인해 주세요.");
+        return;
+    }
+    if (accepted && typeof accepted === "object" && accepted.ok === false) {
+        setDialogError(accepted.message || "입력한 값을 처리할 수 없습니다.");
+        return;
+    }
+    closeDialog();
 });
 document.querySelector("[data-dialog-cancel]").addEventListener("click", closeDialog);
 elements.dialog.addEventListener("click", (event) => {
@@ -328,6 +385,7 @@ window.OmagotchiDashboardPanels.start({
     shared: {
         statusLabel,
         openDialog,
+        setDialogError,
         setBubble,
         fetchTodayStats: (cohortId) => (
             window.OmagotchiApi?.manager?.getStudyStatsToday?.(cohortId)

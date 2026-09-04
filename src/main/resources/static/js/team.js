@@ -64,6 +64,7 @@ export function teamErrorMessage(error, fallback) {
 
 export function createTeamApp({api, profile = {}}) {
     const roots = new Set();
+    const listeners = new Map();
     const state = {
         accessCohorts: [],
         teams: [],
@@ -298,7 +299,7 @@ export function createTeamApp({api, profile = {}}) {
                 <section class="ui-party-members" aria-labelledby="home-team-members-title">
                     <header class="home-team-members-head">
                         <h3 id="home-team-members-title">팀원</h3>
-                        ${master ? `
+                        ${master && !state.inviteOpen ? `
                             <button class="ui-button ui-button--primary" type="button" data-team-open-invite${state.pending ? " disabled" : ""}>
                                 팀원 추가
                             </button>` : ""}
@@ -723,16 +724,37 @@ export function createTeamApp({api, profile = {}}) {
         }
         roots.add(root);
         if (!root.dataset.teamMounted) {
-            root.addEventListener("click", (event) => void handleClick(event));
-            root.addEventListener("submit", (event) => void handleSubmit(event));
-            root.addEventListener("change", (event) => void handleChange(event));
+            const onClick = (event) => void handleClick(event);
+            const onSubmit = (event) => void handleSubmit(event);
+            const onChange = (event) => void handleChange(event);
+            root.addEventListener("click", onClick);
+            root.addEventListener("submit", onSubmit);
+            root.addEventListener("change", onChange);
             root.dataset.teamMounted = "true";
+            listeners.set(root, {onClick, onSubmit, onChange});
         }
         renderAll();
         void refresh();
     }
 
-    return {mount, refresh};
+    /** 같은 root에 새 createTeamApp 인스턴스를 다시 마운트하기 전에 호출해,
+     * 이전 인스턴스의 리스너가 최신 상태 대신 계속 반응하는 것을 막는다. */
+    function unmount(root) {
+        if (!root) {
+            return;
+        }
+        roots.delete(root);
+        const bound = listeners.get(root);
+        if (bound) {
+            root.removeEventListener("click", bound.onClick);
+            root.removeEventListener("submit", bound.onSubmit);
+            root.removeEventListener("change", bound.onChange);
+            listeners.delete(root);
+        }
+        delete root.dataset.teamMounted;
+    }
+
+    return {mount, unmount, refresh};
 }
 
 if (globalThis.window) {

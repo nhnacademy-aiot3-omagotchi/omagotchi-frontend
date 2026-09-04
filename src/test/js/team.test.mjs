@@ -373,6 +373,24 @@ test("이미 소속된 후보는 목록에 보이되 추가 대상으로 선택�
     assert.doesNotMatch(root.innerHTML, /data-team-candidate="u-1"[^>]*disabled/);
 });
 
+test("초대 패널이 열려 있는 동안에는 머리말의 팀원 추가 버튼을 감춘다", async () => {
+    // 같은 이름 버튼이 둘이면 어느 쪽이 지금 동작하는지 알 수 없다.
+    const {root} = await mountTeamApp(masterApi({
+        memberCandidates: async () => []
+    }));
+
+    assert.match(root.innerHTML, /data-team-open-invite/);
+
+    root.dispatch("click", target({"[data-team-open-invite]": {}}));
+    await settle();
+    assert.match(root.innerHTML, /home-team-invite/);
+    assert.doesNotMatch(root.innerHTML, /data-team-open-invite/);
+
+    root.dispatch("click", target({"[data-team-close-invite]": {}}));
+    await settle();
+    assert.match(root.innerHTML, /data-team-open-invite/);
+});
+
 test("후보 검색부터 추가까지 이어지고 성공하면 상세를 다시 조회한다", async () => {
     const added = [];
     let detailRequests = 0;

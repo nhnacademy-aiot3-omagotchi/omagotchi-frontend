@@ -1,7 +1,7 @@
 import { resolveHomeEntry } from "./homeEntry.js";
 
 async function bootstrapHome() {
-    await import("./home-react/home-app.js?v=20260902-7");
+    await import("./home-react/home-app.js?v=20260904-1");
 
     let profile = null;
 
@@ -54,9 +54,9 @@ async function bootstrapHome() {
     }
 
     try {
-        await import("./team.js?v=20260902-3");
-        await import("./spaceRoom.js?v=20260902-6");
-        await import("./home.js?v=20260903-1");
+        await import("./team.js?v=20260903-1");
+        await import("./spaceRoom.js?v=20260904-1");
+        await import("./home.js?v=20260904-3");
     } catch (error) {
         const toast = document.querySelector("[data-home-toast]");
         if (toast) {

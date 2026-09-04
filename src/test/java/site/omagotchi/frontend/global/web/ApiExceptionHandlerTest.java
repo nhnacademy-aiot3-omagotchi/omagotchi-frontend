@@ -259,6 +259,36 @@ class ApiExceptionHandlerTest {
     }
 
     @Test
+    @DisplayName("존재하지 않는 커뮤니티 첨부파일 오류를 404로 전달")
+    void forwardsCommunityAttachmentNotFound() {
+        LearningDownstreamException exception = new LearningDownstreamException(
+                HttpStatus.NOT_FOUND,
+                new ApiErrorResponse(
+                        "COMMUNITY_ATTACHMENT_NOT_FOUND",
+                        "내부 첨부파일 경로",
+                        "/api/v1/cohorts/7/community/posts/11/attachments/29",
+                        "learning-attachment-not-found"
+                ),
+                new IllegalStateException("attachment not found")
+        );
+
+        ResponseEntity<ApiErrorResponse> response = handler.handleLearningDownstreamException(
+                exception,
+                new MockHttpServletRequest("DELETE", "/bff/v1/community/posts/11/attachments/29"),
+                new MockHttpServletResponse()
+        );
+
+        assertSoftly(softly -> {
+            softly.assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+            softly.assertThat(response.getBody()).isNotNull().satisfies(body -> {
+                softly.assertThat(body.code()).isEqualTo("COMMUNITY_ATTACHMENT_NOT_FOUND");
+                softly.assertThat(body.message()).isEqualTo("요청한 정보를 찾을 수 없습니다.");
+                softly.assertThat(body.path()).isEqualTo("/bff/v1/community/posts/11/attachments/29");
+            });
+        });
+    }
+
+    @Test
     @DisplayName("Learning 하류 5xx 오류는 상세 정보를 기록하고 공통 500으로 은닉")
     void hidesLearningDownstreamServerError(CapturedOutput output) throws Exception {
         // Given: REST Controller에서 내부 저장소 정보를 포함한 Learning 5xx가 발생

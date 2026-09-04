@@ -1,23 +1,26 @@
 <th:block th:fragment="modal">
     <div class="manager-dialog-backdrop" data-study-detail-dialog hidden>
         <section class="manager-dialog study-detail-dialog" role="dialog" aria-modal="true" aria-labelledby="study-detail-title">
-            <header class="study-detail-header">
-                <div>
-                    <span class="study-detail-eyebrow">개인 공부 통계</span>
-                    <h2 id="study-detail-title"><span data-detail-name>수강생</span> 님의 공부 기록</h2>
-                </div>
-                <button type="button" class="study-detail-close" data-detail-close aria-label="상세 보기 닫기">×</button>
-            </header>
+            <div class="study-detail-header-wrap">
+                <header class="study-detail-header">
+                    <div>
+                        <span class="study-detail-eyebrow">개인 공부 통계</span>
+                        <h2 id="study-detail-title"><span data-detail-name>수강생</span> 님의 공부 기록</h2>
+                    </div>
+                    <button type="button" class="study-detail-close" data-detail-close aria-label="상세 보기 닫기">×</button>
+                </header>
 
-            <section class="study-detail-toolbar" aria-label="개인 통계 조회 조건">
-                <div class="study-detail-period-tabs" role="group" aria-label="조회 기간">
-                    <button type="button" data-detail-period-days="7" aria-pressed="true">최근 7일</button>
-                    <button type="button" data-detail-period-days="30" aria-pressed="false">최근 30일</button>
-                </div>
-                <p data-detail-period>최근 7일의 학습 기록입니다.</p>
-            </section>
+                <section class="study-detail-toolbar" aria-label="개인 통계 조회 조건">
+                    <div class="study-detail-period-tabs" role="group" aria-label="조회 기간">
+                        <button type="button" data-detail-period-days="7" aria-pressed="true">최근 7일</button>
+                        <button type="button" data-detail-period-days="30" aria-pressed="false">최근 30일</button>
+                    </div>
+                    <p data-detail-period>최근 7일의 학습 기록입니다.</p>
+                </section>
+            </div>
 
-            <p class="study-detail-status" data-detail-status role="status" aria-live="polite"></p>
+            <div class="study-detail-body">
+                <p class="study-detail-status" data-detail-status role="status" aria-live="polite"></p>
 
             <section class="study-detail-kpi-grid" aria-label="개인 공부 통계 요약">
                 <article>
@@ -125,6 +128,7 @@
             <footer class="study-detail-footer">
                 <button type="button" data-detail-close>닫기</button>
             </footer>
+            </div>
         </section>
     </div>
 </th:block>

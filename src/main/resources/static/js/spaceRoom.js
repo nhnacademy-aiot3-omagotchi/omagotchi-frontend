@@ -14,6 +14,13 @@ import {
     removeParticipantAndRefresh,
     searchParticipantCandidates
 } from "./space/participantActions.js";
+import {
+    clampLabPage,
+    describeEnvironment,
+    getLabPageCount,
+    isLabFull,
+    renderLabPanel
+} from "./space/labPanel.js";
 
 (() => {
     const stateKey = "omagotchiSpaceState";
@@ -27,6 +34,7 @@ import {
         selectedRoomId: "",
         vacancyAlerts: [],
         roomPage: 0,
+        labPage: 0,
         labs: [],
         studySpaces: [],
         rooms: [],
@@ -60,6 +68,9 @@ import {
     let spaceLoadPromise = null;
     let currentContextLoadPromise = null;
     let vacancyAlertLoadPromise = null;
+    let environmentLoadPromise = null;
+    // 공간 id별 최근 실내 환경. 공간 목록을 다시 불러도 살아남아야 카드가 깜빡이지 않는다.
+    let spaceEnvironments = new Map();
     let refreshingExpiredRoom = false;
     let roomActionPending = false;
 
@@ -107,7 +118,8 @@ import {
                 activeTab: ["lab", "meeting", "library"].includes(saved.activeTab)
                     ? saved.activeTab
                     : "meeting",
-                roomPage: Math.max(0, Number(saved.roomPage) || 0)
+                roomPage: Math.max(0, Number(saved.roomPage) || 0),
+                labPage: Math.max(0, Number(saved.labPage) || 0)
             };
         } catch {
             return cloneInitialState();
@@ -414,6 +426,7 @@ import {
                 .filter((space) => space.type === "MEETING")
                 .map(mapMeetingRoom);
             state.rooms = await Promise.all(rooms.map(loadRoomParticipants));
+            applySpaceEnvironments();
             if (!state.rooms.some((room) => room.id === state.selectedRoomId)) {
                 state.selectedRoomId = state.rooms[0]?.id || "";
             }
@@ -427,6 +440,8 @@ import {
         } finally {
             state.roomsLoading = false;
             renderAll(successMessage && !state.roomsError ? successMessage : "");
+            // 센서 조회 실패는 화면을 막지 않는다. 값이 없는 항목은 "측정 대기"로 남는다.
+            void refreshSpaceEnvironments().catch(() => {});
         }
     }
 
@@ -438,6 +453,66 @@ import {
             spaceLoadPromise = null;
         });
         return spaceLoadPromise;
+    }
+
+    function toSensor(environment) {
+        return {
+            co2: environment?.co2 ?? null,
+            temperature: environment?.temperature ?? null,
+            humidity: environment?.humidity ?? null,
+            measuredAt: environment?.measuredAt || null,
+            // 센서 미설치와 값 지연을 카드가 구분해 말하는 근거다
+            deviceCount: environment?.deviceCount ?? null
+        };
+    }
+
+    /** 받아 둔 실내 환경을 현재 목록에 입힌다. 값이 없는 공간은 그대로 둔다. */
+    function applySpaceEnvironments() {
+        if (!spaceEnvironments.size) {
+            return;
+        }
+        state.labs = state.labs.map((lab) => {
+            const sensor = spaceEnvironments.get(String(lab.spaceId));
+            return sensor ? { ...lab, sensor } : lab;
+        });
+        state.rooms = state.rooms.map((room) => {
+            const sensor = spaceEnvironments.get(String(room.id));
+            return sensor ? { ...room, sensor } : room;
+        });
+    }
+
+    /**
+     * 실내 환경은 공간마다 측정 항목 수만큼 하류 호출이 필요해 목록보다 느리다.
+     * 목록 조회를 붙잡지 않고 따로 불러와, 도착하면 카드만 다시 그린다.
+     */
+    async function loadSpaceEnvironments() {
+        const listEnvironment = window.OmagotchiApi?.spaces?.listEnvironment;
+        if (typeof listEnvironment !== "function") {
+            return;
+        }
+
+        const environments = await listEnvironment();
+        if (!Array.isArray(environments)) {
+            return;
+        }
+
+        spaceEnvironments = new Map(
+            environments
+                .filter((item) => item?.spaceId !== undefined && item?.spaceId !== null)
+                .map((item) => [String(item.spaceId), toSensor(item)])
+        );
+        applySpaceEnvironments();
+        renderAll();
+    }
+
+    function refreshSpaceEnvironments() {
+        if (environmentLoadPromise) {
+            return environmentLoadPromise;
+        }
+        environmentLoadPromise = loadSpaceEnvironments().finally(() => {
+            environmentLoadPromise = null;
+        });
+        return environmentLoadPromise;
     }
 
     async function loadVacancyAlerts() {
@@ -558,139 +633,47 @@ import {
         };
     }
 
-    function renderSensor(sensor = {}) {
-        const values = [
-            ["CO₂", sensor.co2 == null ? "확인 불가" : `${sensor.co2}ppm`],
-            ["온도", sensor.temperature == null ? "확인 불가" : `${sensor.temperature}℃`],
-            ["습도", sensor.humidity == null ? "확인 불가" : `${sensor.humidity}%`]
-        ];
+    /**
+     * 회의실 상세의 실내 환경. 실습실 카드와 같은 값·같은 문구를 쓴다.
+     * 값이 왜 없는지(센서 없음·측정 대기)도 카드와 같은 규칙으로 알린다.
+     */
+    function renderSensor(room) {
+        const { metrics, caption } = describeEnvironment(room?.sensor);
 
-        return values.map(([label, value]) => `
+        const cards = metrics.map((metric) => `
             <article class="space-room-sensor">
-                <span>${label}</span>
-                <strong>${value}</strong>
+                <span>${metric.label}</span>
+                <strong>${escapeHtml(metric.value)}<small>${metric.unit}</small></strong>
             </article>
         `).join("");
-    }
 
-    function getLabReservedCount(lab) {
-        if (lab?.reservedCount == null) {
-            return null;
-        }
-        const reservedCount = Number(lab?.reservedCount);
-        return Number.isInteger(reservedCount) && reservedCount >= 0
-            ? reservedCount
-            : null;
-    }
-
-    function isLabFull(lab) {
-        const reservedCount = getLabReservedCount(lab);
-        return reservedCount != null && reservedCount >= lab.capacity;
+        return `
+            <section class="space-room-detail-environment" aria-label="${escapeHtml(room?.name || "")} 환경 정보">
+                <header class="space-room-environment-head">
+                    <h4>실내 환경</h4>
+                    ${caption ? `<span class="space-room-environment-time">${escapeHtml(caption)}</span>` : ""}
+                </header>
+                <div class="space-room-detail-sensors">
+                    ${cards}
+                </div>
+            </section>
+        `;
     }
 
     function renderLab() {
-        const checkedIn = isCheckedIn();
-        const inMeeting = isInMeeting();
+        // 목록이 줄어든 뒤에도 이전 페이지 번호가 남아 빈 화면이 나오지 않게 먼저 맞춘다.
+        state.labPage = clampLabPage(state.labPage, getLabPageCount(state.labs.length));
 
-        if (state.roomsLoading) {
-            return `
-                <section class="space-room-lab" aria-labelledby="space-lab-title">
-                    <p class="space-room-empty-state" role="status">실습실 정보를 불러오는 중입니다.</p>
-                </section>
-            `;
-        }
-
-        if (state.roomsError) {
-            return `
-                <section class="space-room-lab" aria-labelledby="space-lab-title">
-                    <div class="space-room-empty-state" role="alert">
-                        <h3 id="space-lab-title">실습실 정보를 불러오지 못했습니다</h3>
-                        <p>${escapeHtml(state.roomsError)}</p>
-                        <button type="button" data-space-retry>다시 시도</button>
-                    </div>
-                </section>
-            `;
-        }
-
-        const assignedLabs = state.labs.map((lab) => {
-            const active = lab.operationalStatus === "ACTIVE";
-            const current = sameId(lab.spaceId, currentPresence?.spaceId);
-            const reservedCount = getLabReservedCount(lab);
-            const capacityKnown = reservedCount != null;
-            const full = isLabFull(lab);
-            const selectable = active && checkedIn && !inMeeting && !current && !full;
-            const selectionStatus = active
-                ? current
-                    ? "현재 이용 중"
-                    : full
-                        ? "정원 마감"
-                        : inMeeting
-                            ? "회의 종료 후 선택 가능"
-                            : (checkedIn ? "선택 가능" : "체크인 후 선택 가능")
-                : "선택 불가";
-            const capacityDetail = capacityKnown
-                ? `${reservedCount} / ${lab.capacity}명`
-                : `정원 ${lab.capacity}명`;
-            return `
-            <article class="space-room-lab-stage${active ? "" : " is-inactive"}" role="listitem">
-                <div class="space-room-lab-stage__identity">
-                    <span class="space-room-status ${active ? "is-active" : "is-inactive"}">
-                        ${active ? "운영 중" : "운영 중지"}
-                    </span>
-                    <strong>${escapeHtml(lab.name)}</strong>
-                    ${lab.inactiveReason
-                        ? `<small>${escapeHtml(lab.inactiveReason)}</small>`
-                        : ""}
-                </div>
-                <div class="space-room-lab-stage__meta">
-                    <strong>${capacityDetail}</strong>
-                    <span class="${full ? "is-full" : selectable ? "is-selectable" : ""}">
-                        ${selectionStatus}
-                    </span>
-                </div>
-                <button type="button" data-space-lab-move="${lab.spaceId}"${selectable ? "" : " disabled"}>
-                    ${current ? "현재 이용 중" : full ? "정원 마감" : "이 실습실로 이동"}
-                </button>
-            </article>
-        `;
-        }).join("");
-
-        const emptyTitle = currentUser.cohortId == null
-            ? "참여 중인 기수가 없습니다"
-            : "배정된 실습실이 없습니다";
-        const emptyDescription = currentUser.cohortId == null
-            ? "승인된 기수에 참여하면 배정된 실습실을 확인할 수 있습니다."
-            : "활성 기수에 LAB이 배정되면 이 영역에 표시됩니다.";
-
-        return `
-            <section class="space-room-lab" aria-labelledby="space-lab-title">
-                <header class="space-room-section-head">
-                    <div>
-                        <span class="space-room-kicker">MY COHORT LAB</span>
-                        <h3 id="space-lab-title">실습실</h3>
-                    </div>
-                    <span class="space-room-status ${state.labs.length ? "is-active" : ""}">
-                        ${state.labs.length ? `${state.labs.length}곳 배정` : "미배정"}
-                    </span>
-                </header>
-                ${state.labs.length ? `
-                    <section class="space-room-lab-list" aria-labelledby="space-lab-list-title">
-                        <header>
-                            <h4 id="space-lab-list-title">실습실 목록</h4>
-                            <span>${state.labs.length}개</span>
-                        </header>
-                        <div class="space-room-lab-grid" role="list" aria-label="실습실 목록" tabindex="0">
-                            ${assignedLabs}
-                        </div>
-                    </section>
-                ` : `
-                    <div class="space-room-empty-state">
-                        <h4>${emptyTitle}</h4>
-                        <p>${emptyDescription}</p>
-                    </div>
-                `}
-            </section>
-        `;
+        return renderLabPanel({
+            labs: state.labs,
+            page: state.labPage,
+            loading: state.roomsLoading,
+            error: state.roomsError,
+            hasCohort: currentUser.cohortId != null,
+            checkedIn: isCheckedIn(),
+            inMeeting: isInMeeting(),
+            currentSpaceId: currentPresence?.spaceId ?? null
+        });
     }
 
     function renderRoomList() {
@@ -826,9 +809,7 @@ import {
                     ` : ""}
                 </header>
 
-                <div class="space-room-detail-sensors" aria-label="${escapeHtml(room.name)} 환경 정보">
-                    ${renderSensor(room.sensor)}
-                </div>
+                ${renderSensor(room)}
 
                 ${view.key === "available" ? `
                     <section class="space-room-empty-state">
@@ -1207,6 +1188,7 @@ import {
 
     async function handleAction(event, root) {
         const tab = event.target.closest("[data-space-tab]");
+        const labPage = event.target.closest("[data-space-lab-page]");
         const labMove = event.target.closest("[data-space-lab-move]");
         const roomSelect = event.target.closest("[data-space-select-room]");
         const occupy = event.target.closest("[data-space-occupy]");
@@ -1249,6 +1231,19 @@ import {
             }
         } else if (retry) {
             await refreshSpaces();
+        } else if (labPage) {
+            const pageCount = getLabPageCount(state.labs.length);
+            const target = labPage.dataset.spaceLabPage;
+            const requested = target === "prev"
+                ? state.labPage - 1
+                : target === "next"
+                    ? state.labPage + 1
+                    : Number(target);
+            const nextPage = clampLabPage(requested, pageCount);
+            if (nextPage !== state.labPage) {
+                state.labPage = nextPage;
+                renderAll();
+            }
         } else if (tab) {
             state.activeTab = tab.dataset.spaceTab;
             renderAll();

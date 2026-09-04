@@ -1,6 +1,8 @@
 package site.omagotchi.frontend.global.learning.infrastructure;
 
 import tools.jackson.databind.JsonNode;
+import site.omagotchi.frontend.attendance.infrastructure.response.LearningAttendanceRecordResponse;
+import site.omagotchi.frontend.global.http.response.PageResponse;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpEntity;
@@ -254,6 +256,22 @@ public interface LearningHttpService {
             @PathVariable("attachment-id") Long attachmentId
     );
 
+    @GetExchange("/cohorts/{cohort-id}/community/posts/{post-id}/attachments/{attachment-id}/thumbnail")
+    ResponseEntity<Resource> previewCommunityAttachment(
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
+            @PathVariable("cohort-id") Long cohortId,
+            @PathVariable("post-id") Long postId,
+            @PathVariable("attachment-id") Long attachmentId
+    );
+
+    @DeleteExchange("/cohorts/{cohort-id}/community/posts/{post-id}/attachments/{attachment-id}")
+    ResponseEntity<Void> deleteCommunityAttachment(
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
+            @PathVariable("cohort-id") Long cohortId,
+            @PathVariable("post-id") Long postId,
+            @PathVariable("attachment-id") Long attachmentId
+    );
+
     @PostExchange(value = "/cohorts/{cohort-id}/community/posts", contentType = MediaType.APPLICATION_JSON_VALUE)
     JsonNode createCommunityPost(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
@@ -398,7 +416,7 @@ public interface LearningHttpService {
     );
 
     @GetExchange("/cohorts/{cohort-id}/attendance-records")
-    JsonNode getAttendanceRecords(
+    PageResponse<LearningAttendanceRecordResponse> getAttendanceRecords(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
             @PathVariable("cohort-id") Long cohortId,
             @RequestParam String date,

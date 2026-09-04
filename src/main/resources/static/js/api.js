@@ -225,6 +225,7 @@
         spaces: {
             list: () => request("/spaces"),
             listLabs: () => request("/spaces/labs"),
+            listEnvironment: () => request("/spaces/environment"),
             startOccupancy: (spaceId) => request(`/spaces/${encodeURIComponent(spaceId)}/occupancies`, {method: "POST"}),
             extendOccupancy: (spaceId) => request(`/spaces/${encodeURIComponent(spaceId)}/occupancies/extend`, {method: "POST"}),
             releaseOccupancy: (spaceId) => request(`/spaces/${encodeURIComponent(spaceId)}/occupancies/release`, {method: "POST"}),
@@ -363,6 +364,17 @@
             getPost: (postId) => request(`/community/posts/${encodeURIComponent(postId)}`),
             downloadUrl: (postId, attachmentId) => toUrl(
                 `/community/posts/${encodeURIComponent(postId)}/attachments/${encodeURIComponent(attachmentId)}`
+            ),
+            getAttachmentThumbnailBlob: async (postId, attachmentId, {signal} = {}) => {
+                const response = await requestResponse(
+                    `/community/posts/${encodeURIComponent(postId)}/attachments/${encodeURIComponent(attachmentId)}/thumbnail`,
+                    {headers: {Accept: "image/*"}, signal}
+                );
+                return response.blob();
+            },
+            deleteAttachment: (postId, attachmentId) => request(
+                `/community/posts/${encodeURIComponent(postId)}/attachments/${encodeURIComponent(attachmentId)}`,
+                {method: "DELETE"}
             ),
             createPost: (payload) => request("/community/posts", {method: "POST", body: payload}),
             createPostWithAttachments: (post, attachments) => request("/community/posts", {
