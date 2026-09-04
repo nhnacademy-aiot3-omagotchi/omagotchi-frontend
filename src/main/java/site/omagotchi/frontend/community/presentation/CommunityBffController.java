@@ -66,6 +66,27 @@ public class CommunityBffController {
                 .downloadCommunityAttachment(context.bearerToken(), cohortId, postId, attachmentId));
     }
 
+    @GetMapping("/{post-id}/attachments/{attachment-id}/thumbnail")
+    public ResponseEntity<Resource> previewAttachment(
+            HttpServletRequest request,
+            @PathVariable("post-id") Long postId,
+            @PathVariable("attachment-id") Long attachmentId
+    ) {
+        return proxy.executeWithCohort(request, (context, cohortId) -> context.service()
+                .previewCommunityAttachment(context.bearerToken(), cohortId, postId, attachmentId));
+    }
+
+    @DeleteMapping("/{post-id}/attachments/{attachment-id}")
+    public ResponseEntity<Void> deleteAttachment(
+            HttpServletRequest request,
+            @PathVariable("post-id") Long postId,
+            @PathVariable("attachment-id") Long attachmentId
+    ) {
+        proxy.executeWithCohort(request, (context, cohortId) -> context.service()
+                .deleteCommunityAttachment(context.bearerToken(), cohortId, postId, attachmentId));
+        return ResponseEntity.noContent().build();
+    }
+
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
     public JsonNode createJson(HttpServletRequest request, @RequestBody JsonNode body) {
         return proxy.executeWithCohort(request, (context, cohortId) -> context.service()

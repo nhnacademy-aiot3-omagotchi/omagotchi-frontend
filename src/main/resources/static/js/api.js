@@ -365,6 +365,17 @@
             downloadUrl: (postId, attachmentId) => toUrl(
                 `/community/posts/${encodeURIComponent(postId)}/attachments/${encodeURIComponent(attachmentId)}`
             ),
+            getAttachmentThumbnailBlob: async (postId, attachmentId, {signal} = {}) => {
+                const response = await requestResponse(
+                    `/community/posts/${encodeURIComponent(postId)}/attachments/${encodeURIComponent(attachmentId)}/thumbnail`,
+                    {headers: {Accept: "image/*"}, signal}
+                );
+                return response.blob();
+            },
+            deleteAttachment: (postId, attachmentId) => request(
+                `/community/posts/${encodeURIComponent(postId)}/attachments/${encodeURIComponent(attachmentId)}`,
+                {method: "DELETE"}
+            ),
             createPost: (payload) => request("/community/posts", {method: "POST", body: payload}),
             createPostWithAttachments: (post, attachments) => request("/community/posts", {
                 method: "POST",
