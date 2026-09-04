@@ -1,8 +1,33 @@
 <section class="dashboard-panel" data-dashboard-panel="attendance" th:fragment="panel">
     <div class="panel-heading">
         <div><span>출결 관리</span><h2>오늘의 출결</h2></div>
-        <label class="date-field"><span>조회일</span><input type="date" data-attendance-date /></label>
+        <div class="panel-heading-actions">
+            <label class="date-field"><span>조회일</span><input type="date" data-attendance-date /></label>
+            <button type="button" class="help-toggle" data-attendance-policy-help
+                    aria-expanded="false" aria-controls="attendance-policy-help"
+                    title="출결 판정 기준 보기" aria-label="출결 판정 기준 보기">?</button>
+        </div>
     </div>
+
+    <!-- 판정 기준은 기수마다 다르다. 고정 문구 대신 이 기수의 정책을 읽어 채운다. -->
+    <section class="help-panel" id="attendance-policy-help" data-attendance-policy-panel hidden>
+        <h3>출결 판정 기준</h3>
+        <p class="help-panel-note" data-attendance-policy-state>기준을 불러오는 중입니다.</p>
+        <dl class="help-panel-list" data-attendance-policy-rules hidden>
+            <div><dt>기준 시간대</dt><dd data-policy-timezone>-</dd></div>
+            <div><dt>지각 기준</dt><dd data-policy-late>-</dd></div>
+            <div><dt>조퇴 기준</dt><dd data-policy-early>-</dd></div>
+            <div><dt>허용 자리비움</dt><dd data-policy-away>-</dd></div>
+        </dl>
+        <ul class="help-panel-notes" data-attendance-policy-notes hidden>
+            <li>입실 시각이 <b>지각 기준</b>보다 늦으면 <b>지각</b>입니다. 그보다 이른 입실은 시각과 무관하게 정상이며, 입실만으로는 막히지 않습니다.</li>
+            <li>퇴실 시각이 <b>조퇴 기준</b>보다 이르면 <b>조퇴</b>입니다. 지각과 조퇴가 겹치면 <b>지각·조퇴</b>가 됩니다.</li>
+            <li>자리비움이 허용 시간을 넘기거나 조퇴 기준 전에 돌아오지 않으면 조퇴로 판정합니다.</li>
+            <li>정시 입실은 퇴실 전까지 <b>대기</b>로 남습니다. <b>정상</b>은 퇴실 시각까지 확인해야 확정됩니다.</li>
+            <li>판정은 입실·퇴실 시점에 계산해 저장합니다. <b>정책을 바꿔도 이미 쌓인 기록은 다시 계산되지 않으므로</b> 지난 기록은 상태 변경으로 정정해야 합니다.</li>
+        </ul>
+        <p class="help-panel-note">기준값 변경은 시스템 관리자의 <b>출결 정책 설정</b>에서 합니다.</p>
+    </section>
     <div class="table-wrap">
         <table>
             <colgroup>
@@ -19,7 +44,7 @@
     </div>
     <template data-attendance-row-template>
         <tr>
-            <td><strong data-attendance-member-name></strong><small data-attendance-member-email></small></td>
+            <td><strong data-attendance-member-name></strong><small data-attendance-member-meta></small></td>
             <td data-attendance-check-in></td>
             <td data-attendance-check-out></td>
             <td data-attendance-auto-status></td>
