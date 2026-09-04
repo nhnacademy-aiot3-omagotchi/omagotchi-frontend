@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 import site.omagotchi.frontend.global.learning.application.LearningProxyBffService;
+import site.omagotchi.frontend.global.web.DownstreamBinaryRelay;
 
 import java.util.Arrays;
 import java.util.List;
@@ -62,8 +63,8 @@ public class CommunityBffController {
             @PathVariable("post-id") Long postId,
             @PathVariable("attachment-id") Long attachmentId
     ) {
-        return proxy.executeWithCohort(request, (context, cohortId) -> context.service()
-                .downloadCommunityAttachment(context.bearerToken(), cohortId, postId, attachmentId));
+        return DownstreamBinaryRelay.relay(proxy.executeWithCohort(request, (context, cohortId) -> context.service()
+                .downloadCommunityAttachment(context.bearerToken(), cohortId, postId, attachmentId)));
     }
 
     @GetMapping("/{post-id}/attachments/{attachment-id}/thumbnail")
@@ -72,8 +73,8 @@ public class CommunityBffController {
             @PathVariable("post-id") Long postId,
             @PathVariable("attachment-id") Long attachmentId
     ) {
-        return proxy.executeWithCohort(request, (context, cohortId) -> context.service()
-                .previewCommunityAttachment(context.bearerToken(), cohortId, postId, attachmentId));
+        return DownstreamBinaryRelay.relay(proxy.executeWithCohort(request, (context, cohortId) -> context.service()
+                .previewCommunityAttachment(context.bearerToken(), cohortId, postId, attachmentId)));
     }
 
     @DeleteMapping("/{post-id}/attachments/{attachment-id}")
