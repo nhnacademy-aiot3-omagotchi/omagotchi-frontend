@@ -10,6 +10,9 @@ public sealed interface SignupResult {
     record Created() implements SignupResult {
     }
 
+    record Recovered() implements SignupResult {
+    }
+
     record Rejected(ErrorCode errorCode) implements SignupResult {
 
         public Rejected {

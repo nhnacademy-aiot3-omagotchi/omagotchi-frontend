@@ -146,7 +146,42 @@ class SignupBffMvcTest {
                                 """))
                 .andExpectAll(
                         status().isCreated(),
-                        header().string(HttpHeaders.CACHE_CONTROL, "no-store")
+                        header().string(HttpHeaders.CACHE_CONTROL, "no-store"),
+                        jsonPath("$.outcome").value("CREATED")
+                );
+        verify(verifiedSignupService).signUp(command);
+        verifyNoInteractions(accessTokenRefreshInterceptor);
+    }
+
+    @Test
+    @DisplayName("탈퇴 계정 복구 완료는 200과 RECOVERED 결과를 반환")
+    void completesAccountRecoveryAnonymously() throws Exception {
+        VerifiedSignupCommand command = new VerifiedSignupCommand(
+                "user@example.com",
+                "new-password-passphrase",
+                "새 이름",
+                "recovery-challenge-id",
+                "654321"
+        );
+        given(verifiedSignupService.signUp(command))
+                .willReturn(new SignupResult.Recovered());
+
+        mockMvc.perform(post("/bff/v2/auth/signup")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "email": "user@example.com",
+                                  "password": "new-password-passphrase",
+                                  "name": "새 이름",
+                                  "challengeId": "recovery-challenge-id",
+                                  "code": "654321"
+                                }
+                                """))
+                .andExpectAll(
+                        status().isOk(),
+                        header().string(HttpHeaders.CACHE_CONTROL, "no-store"),
+                        jsonPath("$.outcome").value("RECOVERED")
                 );
         verify(verifiedSignupService).signUp(command);
         verifyNoInteractions(accessTokenRefreshInterceptor);

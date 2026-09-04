@@ -119,6 +119,19 @@ class IdentityRestVerifiedSignupClientTest {
         server.verify();
     }
 
+    @Test
+    @DisplayName("v2 탈퇴 계정 복구의 200 응답 변환")
+    void mapsRecoveredAccountResponse() {
+        server.expect(once(), requestTo(BASE_URL + SIGNUP_PATH))
+                .andExpect(method(HttpMethod.POST))
+                .andRespond(withStatus(HttpStatus.OK));
+
+        SignupResult result = client.signUp(verifiedSignupCommand());
+
+        assertThat(result).isEqualTo(new SignupResult.Recovered());
+        server.verify();
+    }
+
     @ParameterizedTest
     @ValueSource(strings = {"1", "42"})
     @DisplayName("v2 회원가입 OTP 재요청 제한의 Retry-After 보존")
