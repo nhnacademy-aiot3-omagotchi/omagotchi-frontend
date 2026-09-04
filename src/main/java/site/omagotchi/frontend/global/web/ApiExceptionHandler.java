@@ -86,6 +86,7 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
             Map.entry("COMMUNITY_INVALID_POST_REQUEST", 400),
             Map.entry("COMMUNITY_POST_ACCESS_DENIED", 403),
             Map.entry("COMMUNITY_INVALID_ATTACHMENT", 400),
+            Map.entry("COMMUNITY_ATTACHMENT_NOT_FOUND", 404),
             Map.entry("REPRESENTATIVE_CHARACTER_NOT_FOUND", 404),
             Map.entry("GAME_CHARACTER_NOT_FOUND", 404),
             Map.entry("REPRESENTATIVE_CHARACTER_ALREADY_EXISTS", 409),

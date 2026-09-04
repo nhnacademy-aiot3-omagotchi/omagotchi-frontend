@@ -1196,14 +1196,44 @@
     font-style: normal;
 }
 
-.home-overlay--community .overlay-community-attachment-download {
+.home-overlay--community .overlay-community-attachment-actions {
     grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.home-overlay--community .overlay-community-attachment-download {
     width: fit-content;
     color: var(--overlay-accent-strong);
     font-size: 11px;
     font-weight: 900;
     text-decoration: underline;
     text-underline-offset: 3px;
+}
+
+.home-overlay--community .overlay-community-attachment-delete {
+    min-height: 28px;
+    padding: 0 9px;
+    border: 1px solid rgba(155, 56, 56, 0.35);
+    border-radius: 8px;
+    background: #fff6f6;
+    color: #9b3838;
+    font: inherit;
+    font-size: 11px;
+    font-weight: 900;
+    cursor: pointer;
+}
+
+.home-overlay--community .overlay-community-attachment-delete:hover:not(:disabled) {
+    background: #fde8e8;
+}
+
+.home-overlay--community .overlay-community-attachment-delete:disabled,
+.home-overlay--community .overlay-community-attachment-card.is-deleting {
+    cursor: wait;
+    opacity: 0.65;
 }
 
 .home-overlay--community :is(.overlay-community-detail, .overlay-community-compose) > footer {

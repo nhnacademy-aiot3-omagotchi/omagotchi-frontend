@@ -5,7 +5,7 @@ import {
     renderCommunityAttachmentPreviews,
     renderCommunitySelectedAttachmentPreviews,
     saveCommunityPost
-} from "./home/community.js?v=20260904-1";
+} from "./home/community.js?v=20260904-2";
 import { createLevel } from "./home/level.js";
 import { isAiRecommendedQuest, loadProgressResources, normalizeDailyQuests } from "./home/questData.js?v=20260902-1";
 import { renderRankingBoard } from "./home/rankingBoard.js?v=20260902-2";
@@ -1251,7 +1251,8 @@ async function openCommunityDetail(postId) {
             <section class="overlay-community-form-field" aria-label="첨부파일">
                 <span>첨부파일</span>
                 ${renderCommunityAttachmentPreviews(attachments, {
-                    downloadUrlFor: (attachment) => api.community.downloadUrl(post.postId, attachment.attachmentId)
+                    downloadUrlFor: (attachment) => api.community.downloadUrl(post.postId, attachment.attachmentId),
+                    canDelete: Boolean(post.canManage)
                 })}
             </section>
             <footer>
@@ -1369,6 +1370,37 @@ function deleteCommunityPost(button) {
         });
 }
 
+async function deleteCommunityAttachment(button) {
+    const detail = button.closest("[data-community-detail]");
+    const card = button.closest("[data-community-attachment-card]");
+    const postId = detail?.dataset.communityDetail;
+    const attachmentId = button.dataset.communityAttachmentDelete;
+    if (!postId || !attachmentId || !card) return;
+
+    const attachmentName = card.querySelector(".overlay-community-attachment-name")?.textContent?.trim()
+        || "선택한 첨부파일";
+    if (!globalThis.confirm(`“${attachmentName}” 첨부파일을 삭제하시겠습니까?`)) return;
+
+    const idleLabel = button.textContent;
+    button.disabled = true;
+    button.textContent = "삭제 중…";
+    card.classList.add("is-deleting");
+    try {
+        await api.community.deleteAttachment(postId, attachmentId);
+        const opened = await openCommunityDetail(postId);
+        if (opened) {
+            showHomeToast("첨부파일이 삭제되었습니다.");
+        }
+    } catch (error) {
+        if (button.isConnected) {
+            button.disabled = false;
+            button.textContent = idleLabel;
+            card.classList.remove("is-deleting");
+        }
+        showHomeToast(error.message || "첨부파일을 삭제하지 못했습니다.");
+    }
+}
+
 async function claimDailyQuest(button) {
     button.disabled = true;
     try {
@@ -1400,6 +1432,7 @@ homeOverlayRoot?.addEventListener("click", (event) => {
     const communityListButton = event.target.closest("[data-community-list]");
     const communityPostButton = event.target.closest("[data-community-post]");
     const communityEditButton = event.target.closest("[data-community-edit]");
+    const communityAttachmentDeleteButton = event.target.closest("[data-community-attachment-delete]");
     const communityDeleteButton = event.target.closest("[data-community-delete]");
 
     if (closeTarget && (event.target === closeTarget || closeTarget.matches("button, a"))) {
@@ -1433,6 +1466,11 @@ homeOverlayRoot?.addEventListener("click", (event) => {
 
     if (communityEditButton && activeCommunityPost) {
         openCommunityComposer(activeCommunityPost);
+        return;
+    }
+
+    if (communityAttachmentDeleteButton) {
+        deleteCommunityAttachment(communityAttachmentDeleteButton);
         return;
     }
 

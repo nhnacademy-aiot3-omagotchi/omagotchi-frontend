@@ -22,7 +22,7 @@ function attachmentName(attachment) {
  */
 export function renderCommunityAttachmentPreviews(
     attachments,
-    { downloadUrlFor = () => "#", previewUrlFor = () => "" } = {}
+    { downloadUrlFor = () => "#", previewUrlFor = () => "", canDelete = false } = {}
 ) {
     const items = Array.from(attachments || []);
     if (!items.length) {
@@ -45,7 +45,10 @@ export function renderCommunityAttachmentPreviews(
                         <div class="overlay-community-attachment-info">
                             <span class="overlay-community-attachment-name" title="${escapeHtml(name)}">${escapeHtml(name)}</span>
                             <em>${formatCommunityAttachmentSize(attachment?.sizeBytes)}</em>
-                            <a class="overlay-community-attachment-download" href="${escapeHtml(downloadUrl)}" download="${escapeHtml(name)}">다운로드</a>
+                            <div class="overlay-community-attachment-actions">
+                                <a class="overlay-community-attachment-download" href="${escapeHtml(downloadUrl)}" download="${escapeHtml(name)}">다운로드</a>
+                                ${canDelete ? `<button class="overlay-community-attachment-delete" type="button" data-community-attachment-delete="${escapeHtml(attachmentId)}" aria-label="${escapeHtml(name)} 삭제">삭제</button>` : ""}
+                            </div>
                         </div>
                     </li>
                 `;

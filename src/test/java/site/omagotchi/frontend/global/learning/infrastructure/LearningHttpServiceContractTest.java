@@ -148,6 +148,21 @@ class LearningHttpServiceContractTest {
                     .isEqualTo("attachment-content");
             server.verify();
         }
+
+        @Test
+        @DisplayName("첨부파일 삭제 경로와 인증 계약을 사용한다")
+        void deletesAttachment() {
+            server.expect(once(), requestTo(BASE_URL
+                            + "/api/v1/cohorts/7/community/posts/11/attachments/29"))
+                    .andExpect(method(HttpMethod.DELETE))
+                    .andExpect(header(HttpHeaders.AUTHORIZATION, BEARER))
+                    .andRespond(withNoContent());
+
+            ResponseEntity<Void> response = service.deleteCommunityAttachment(BEARER, 7L, 11L, 29L);
+
+            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+            server.verify();
+        }
     }
 
     @Nested

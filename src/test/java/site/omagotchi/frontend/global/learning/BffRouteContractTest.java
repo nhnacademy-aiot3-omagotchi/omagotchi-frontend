@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import site.omagotchi.frontend.global.learning.application.LearningProxyBffService;
+import site.omagotchi.frontend.community.presentation.CommunityBffController;
 import site.omagotchi.frontend.ranking.presentation.RankingBffController;
 import site.omagotchi.frontend.statistics.presentation.AdminStudyStatisticsBffController;
 import site.omagotchi.frontend.study.application.StudyRecordBffService;
@@ -27,6 +28,7 @@ import java.util.List;
 import java.util.function.BiFunction;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -52,7 +54,8 @@ class BffRouteContractTest {
                 new RankingBffController(proxy),
                 new StudyRecordBffController(studyRecordBffService),
                 new StudyTimerBffController(studyTimerBffService),
-                new AdminStudyStatisticsBffController(proxy)
+                new AdminStudyStatisticsBffController(proxy),
+                new CommunityBffController(proxy)
         ).build();
     }
 
@@ -142,6 +145,18 @@ class BffRouteContractTest {
             mockMvc.perform(get("/bff/v1/admin/cohorts/1/study-statistics/members/10/records")
                             .param("date", "2026-08-25"))
                     .andExpect(status().isOk());
+        }
+    }
+
+    @Nested
+    @DisplayName("커뮤니티 BFF 경로")
+    class CommunityRoutes {
+
+        @Test
+        @DisplayName("첨부파일 삭제 엔드포인트를 제공한다")
+        void exposesAttachmentDeleteRoute() throws Exception {
+            mockMvc.perform(delete("/bff/v1/community/posts/11/attachments/29"))
+                    .andExpect(status().isNoContent());
         }
     }
 

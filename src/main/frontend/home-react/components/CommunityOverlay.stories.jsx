@@ -36,7 +36,15 @@ const initialPosts = [
     content: "커뮤니티 상세 화면의 읽기 쉬운 구성을 확인하는 예시 글입니다.",
     authorNickname: "박지우",
     createdLabel: "2026. 8. 31. 오후 7:10:34",
-    attachments: [],
+    attachments: [
+      {
+        attachmentId: 311,
+        originalFileName: "내-학습-인증.png",
+        contentType: "image/png",
+        sizeBytes: 32768,
+        previewUrl: "/images/characters/study/study.png"
+      }
+    ],
     canManage: true
   },
   {
@@ -213,7 +221,8 @@ function renderCommunityDetail(post) {
         <span>첨부파일</span>
         ${renderCommunityAttachmentPreviews(attachments, {
           downloadUrlFor: (attachment) => `#download-${post.postId}-${attachment.attachmentId}`,
-          previewUrlFor: (attachment) => attachment.previewUrl
+          previewUrlFor: (attachment) => attachment.previewUrl,
+          canDelete: Boolean(post.canManage)
         })}
       </section>
       <footer>
@@ -295,6 +304,22 @@ function CommunityOverlayStory() {
       if (target.closest("[data-community-edit]") && selectedPost) {
         setEditingPostId(selectedPost.postId);
         setMode("compose");
+        return;
+      }
+      const attachmentDeleteButton = target.closest("[data-community-attachment-delete]");
+      if (attachmentDeleteButton && selectedPost) {
+        const attachmentId = attachmentDeleteButton.dataset.communityAttachmentDelete;
+        setPosts((current) => current.map((post) => (
+          String(post.postId) === String(selectedPost.postId)
+            ? {
+              ...post,
+              attachments: post.attachments.filter((attachment) => (
+                String(attachment.attachmentId) !== String(attachmentId)
+              ))
+            }
+            : post
+        )));
+        showToast("첨부파일이 삭제되었습니다.");
         return;
       }
       if (target.closest("[data-community-delete]") && selectedPost) {
@@ -524,6 +549,20 @@ export const AttachmentDetailPreview = {
   }
 };
 
+export const AttachmentDeleteComplete = {
+  name: "작성자 첨부파일 삭제 완료",
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByRole("button", { name: "박지우 테스트 글입니다 상세 보기" }));
+    await userEvent.click(canvas.getByRole("button", { name: "내-학습-인증.png 삭제" }));
+
+    expect(canvas.getByText("첨부파일이 없습니다.")).toBeInTheDocument();
+    expect(canvas.getByRole("button", { name: "목록" })).toBeInTheDocument();
+    expect(within(canvasElement.ownerDocument.body).getByRole("status"))
+      .toHaveTextContent("첨부파일이 삭제되었습니다.");
+  }
+};
+
 export const ComposerCancel = {
   name: "글쓰기 취소 후 닫기",
   play: async ({ canvasElement }) => {
@@ -675,6 +714,7 @@ export const ManagePermission = {
     });
     await expect(canvasElement.querySelector("[data-community-edit]")).toBeNull();
     await expect(canvasElement.querySelector("[data-community-delete]")).toBeNull();
+    await expect(canvasElement.querySelector("[data-community-attachment-delete]")).toBeNull();
   }
 };
 

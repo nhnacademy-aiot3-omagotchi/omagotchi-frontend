@@ -148,14 +148,53 @@ test("상세 첨부파일은 이미지 미리보기와 다운로드 동작을 �
         }
     ], {
         previewUrlFor: () => "/preview/29",
-        downloadUrlFor: () => "/download/29"
+        downloadUrlFor: () => "/download/29",
+        canDelete: true
     });
 
     assert.match(html, /src="\/preview\/29"/);
     assert.match(html, /alt="학습 인증\.png 미리보기"/);
     assert.match(html, /href="\/download\/29"/);
     assert.match(html, /download="학습 인증\.png"/);
+    assert.match(html, /data-community-attachment-delete="29"/);
+    assert.match(html, /aria-label="학습 인증\.png 삭제"/);
     assert.match(html, />24KB</);
+});
+
+test("첨부파일 삭제는 CSRF 토큰과 함께 인증된 BFF DELETE 경로를 호출한다", async () => {
+    const calls = [];
+    const window = {location: {pathname: "/home", replace() {}}};
+    vm.runInNewContext(apiSource, {
+        Blob,
+        FormData,
+        URLSearchParams,
+        document: {documentElement: {dataset: {}}},
+        fetch: async (url, options) => {
+            calls.push({url, options});
+            if (url === "/bff/v1/csrf") {
+                return {
+                    ok: true,
+                    status: 200,
+                    headers: {get: () => "application/json"},
+                    json: async () => ({headerName: "X-CSRF-TOKEN", token: "csrf-token"})
+                };
+            }
+            return {
+                ok: true,
+                status: 204,
+                headers: {get: () => null}
+            };
+        },
+        window
+    });
+
+    const result = await window.OmagotchiApi.community.deleteAttachment("post/1", "file/2");
+
+    assert.equal(result, null);
+    assert.deepEqual(
+        [calls[1].url, calls[1].options.method, calls[1].options.headers["X-CSRF-TOKEN"]],
+        ["/bff/v1/community/posts/post%2F1/attachments/file%2F2", "DELETE", "csrf-token"]
+    );
 });
 
 test("선택한 첨부파일은 로컬 미리보기 카드로 그린다", () => {

@@ -372,6 +372,10 @@
                 );
                 return response.blob();
             },
+            deleteAttachment: (postId, attachmentId) => request(
+                `/community/posts/${encodeURIComponent(postId)}/attachments/${encodeURIComponent(attachmentId)}`,
+                {method: "DELETE"}
+            ),
             createPost: (payload) => request("/community/posts", {method: "POST", body: payload}),
             createPostWithAttachments: (post, attachments) => request("/community/posts", {
                 method: "POST",
