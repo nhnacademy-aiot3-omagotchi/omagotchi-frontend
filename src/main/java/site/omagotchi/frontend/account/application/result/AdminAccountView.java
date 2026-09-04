@@ -11,13 +11,35 @@ public record AdminAccountView(
         String role,
         String status,
         short failedLoginAttempts,
+        boolean locked,
         Instant lockedUntil,
-        Instant withdrawnAt,
+        Instant statusChangedAt,
+        Instant recoveryDeadline,
         Instant createdAt,
         List<AdminManagedCohort> managedCohorts
 ) {
 
     public AdminAccountView {
         managedCohorts = managedCohorts == null ? List.of() : List.copyOf(managedCohorts);
+    }
+
+    public static AdminAccountView from(
+            IdentityAdminAccount account,
+            List<AdminManagedCohort> managedCohorts
+    ) {
+        return new AdminAccountView(
+                account.accountId(),
+                account.email(),
+                account.name(),
+                account.role(),
+                account.status(),
+                account.failedLoginAttempts(),
+                account.locked(),
+                account.lockedUntil(),
+                account.statusChangedAt(),
+                account.recoveryDeadline(),
+                account.createdAt(),
+                managedCohorts
+        );
     }
 }

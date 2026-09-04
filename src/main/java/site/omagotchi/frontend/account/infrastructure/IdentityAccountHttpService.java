@@ -12,6 +12,7 @@ import site.omagotchi.frontend.account.infrastructure.request.IdentityChangePass
 import site.omagotchi.frontend.account.infrastructure.request.IdentityUpdateNameRequest;
 import site.omagotchi.frontend.account.infrastructure.request.IdentityWithdrawAccountRequest;
 import site.omagotchi.frontend.account.infrastructure.response.IdentityAccountResponse;
+import site.omagotchi.frontend.account.infrastructure.response.IdentityAccountWithdrawalResponse;
 
 @HttpExchange("/api/v1/users/me")
 public interface IdentityAccountHttpService {
@@ -34,7 +35,7 @@ public interface IdentityAccountHttpService {
     );
 
     @DeleteExchange
-    ResponseEntity<Void> withdraw(
+    ResponseEntity<IdentityAccountWithdrawalResponse> withdraw(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String bearerToken,
             @RequestBody IdentityWithdrawAccountRequest request
     );

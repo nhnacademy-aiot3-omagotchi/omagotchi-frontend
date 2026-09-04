@@ -18,6 +18,7 @@ import site.omagotchi.frontend.account.presentation.request.ChangeAccountPasswor
 import site.omagotchi.frontend.account.presentation.request.UpdateAccountNameRequest;
 import site.omagotchi.frontend.account.presentation.request.WithdrawAccountRequest;
 import site.omagotchi.frontend.account.presentation.response.AccountSettingsResponse;
+import site.omagotchi.frontend.account.presentation.response.AccountWithdrawalResponse;
 import site.omagotchi.frontend.global.security.BrowserSessionInvalidator;
 
 @RestController
@@ -80,15 +81,17 @@ public class AccountSettingsBffController {
     }
 
     @DeleteMapping
-    public ResponseEntity<Void> withdraw(
+    public ResponseEntity<AccountWithdrawalResponse> withdraw(
             HttpServletRequest servletRequest,
             HttpServletResponse servletResponse,
             Authentication authentication,
             @Valid @RequestBody WithdrawAccountRequest request
     ) {
-        accountSettingsService.withdraw(
-                authorization.accessToken(servletRequest),
-                request.currentPassword()
+        AccountWithdrawalResponse response = new AccountWithdrawalResponse(
+                accountSettingsService.withdraw(
+                        authorization.accessToken(servletRequest),
+                        request.currentPassword()
+                )
         );
         // Identity 탈퇴 성공 뒤 현재 브라우저 인증 상태 폐기
         sessionInvalidator.invalidate(
@@ -96,8 +99,8 @@ public class AccountSettingsBffController {
                 servletResponse,
                 authentication
         );
-        return ResponseEntity.noContent()
+        return ResponseEntity.ok()
                 .cacheControl(CacheControl.noStore())
-                .build();
+                .body(response);
     }
 }

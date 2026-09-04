@@ -20,7 +20,7 @@ import site.omagotchi.frontend.global.exception.CommonErrorCode;
 import site.omagotchi.frontend.global.exception.ErrorCode;
 import site.omagotchi.frontend.global.http.RestClientCallExecutor;
 
-// Identity v2 회원가입 응답을 Application 결과로 변환하는 Outbound Adapter
+// Identity v2 회원가입 응답의 Frontend 인증 결과 변환
 @Component
 @RequiredArgsConstructor
 public class IdentityRestVerifiedSignupClient implements IdentityVerifiedSignupClient {
@@ -46,6 +46,7 @@ public class IdentityRestVerifiedSignupClient implements IdentityVerifiedSignupC
                                     AccountErrorCode.INVALID_PASSWORD,
                                     AccountErrorCode.INVALID_NAME,
                                     AccountErrorCode.DUPLICATE_EMAIL,
+                                    AccountErrorCode.PURGE_PENDING,
                                     AuthErrorCode.EMAIL_VERIFICATION_COOLDOWN_ACTIVE
                             );
                         }
@@ -61,8 +62,17 @@ public class IdentityRestVerifiedSignupClient implements IdentityVerifiedSignupC
                     ResponseEntity<Void> response = httpService.signUp(
                             IdentityVerifiedSignupRequest.from(command)
                     );
-                    requireStatus(response, HttpStatus.CREATED, "Verified signup");
-                    return new SignupResult.Created();
+                    if (response.getStatusCode().value() == HttpStatus.CREATED.value()) {
+                        return new SignupResult.Created();
+                    }
+                    if (response.getStatusCode().value() == HttpStatus.OK.value()) {
+                        return new SignupResult.Recovered();
+                    }
+                    throw new BusinessException(
+                            CommonErrorCode.DOWNSTREAM_INVALID_RESPONSE,
+                            "Identity Verified signup 성공 응답 Status 불일치 expected=201|200, actual="
+                                    + response.getStatusCode().value()
+                    );
                 },
                 exception -> {
                     ErrorCode errorCode = errorResolver.resolve(
@@ -72,6 +82,7 @@ public class IdentityRestVerifiedSignupClient implements IdentityVerifiedSignupC
                             AccountErrorCode.INVALID_PASSWORD,
                             AccountErrorCode.INVALID_NAME,
                             AccountErrorCode.DUPLICATE_EMAIL,
+                            AccountErrorCode.PURGE_PENDING,
                             AuthErrorCode.EMAIL_VERIFICATION_INVALID
                     );
                     return new SignupResult.Rejected(errorCode);

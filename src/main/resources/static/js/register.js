@@ -247,7 +247,7 @@ if (form) {
         setFeedback("인증번호를 확인하고 계정을 생성하고 있어요.");
 
         try {
-            await postJson(
+            const signupResult = await postJson(
                 form.dataset.signupPath,
                 buildVerifiedSignupPayload(details, state.challengeId, codeInput.value)
             );
@@ -255,7 +255,12 @@ if (form) {
             state.issuedEmail = null;
             passwordInput.value = "";
             codeInput.value = "";
-            setFeedback("계정이 생성됐습니다. 로그인 화면으로 이동합니다.", "success");
+            setFeedback(
+                signupResult?.outcome === "RECOVERED"
+                    ? "기존 계정과 공부 기록을 복구했습니다. 새 비밀번호로 로그인해 주세요."
+                    : "계정이 생성됐습니다. 로그인 화면으로 이동합니다.",
+                "success"
+            );
             window.setTimeout(() => window.location.assign(form.dataset.loginPath), 600);
         } catch (error) {
             setFeedback(

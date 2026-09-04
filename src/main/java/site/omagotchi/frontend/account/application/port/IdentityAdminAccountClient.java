@@ -10,6 +10,7 @@ public interface IdentityAdminAccountClient {
             String accessToken,
             String query,
             String status,
+            Boolean locked,
             String role,
             Integer page,
             Integer size,
@@ -41,4 +42,7 @@ public interface IdentityAdminAccountClient {
             String role,
             String reason
     );
+
+    /** 로그인 실패 누적 잠금만 해제하고 생명주기 상태는 변경하지 않는다. */
+    void unlockLogin(String accessToken, UUID userId, String reason);
 }

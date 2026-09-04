@@ -34,6 +34,7 @@ import static org.springframework.test.web.client.match.MockRestRequestMatchers.
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.method;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withStatus;
+import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
 
 class IdentityRestAccountClientTest {
 
@@ -143,13 +144,18 @@ class IdentityRestAccountClientTest {
                 .andExpect(header("Authorization", BEARER_TOKEN))
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(content().json("{\"currentPassword\":\"current-password\"}"))
-                .andRespond(withStatus(HttpStatus.NO_CONTENT));
+                .andRespond(withSuccess(
+                        "{\"recoveryDeadline\":\"2026-10-03T00:00:00Z\"}",
+                        MediaType.APPLICATION_JSON
+                ));
 
         // When: 인증 사용자 계정 탈퇴
-        client.withdraw(ACCESS_TOKEN, "current-password");
+        var result = client.withdraw(ACCESS_TOKEN, "current-password");
 
         // Then: Identity 계정 탈퇴 HTTP 요청 계약
         server.verify();
+        assertThat(result)
+                .isEqualTo(java.time.Instant.parse("2026-10-03T00:00:00Z"));
     }
 
     @ParameterizedTest(name = "{0}")
@@ -232,9 +238,29 @@ class IdentityRestAccountClientTest {
     }
 
     @Test
-    @DisplayName("계정 탈퇴의 예상하지 않은 성공 상태 502 변환")
+    @DisplayName("계정 탈퇴의 계약 외 성공 상태 변환")
     void rejectsUnexpectedWithdrawalSuccessStatusAsBadGateway() {
-        // Given: 204가 아닌 Identity 계정 탈퇴 성공 응답
+        // Given: 계정 탈퇴 계약에 포함되지 않은 204 응답
+        server.expect(once(), requestTo(BASE_URL + ACCOUNT_PATH))
+                .andExpect(method(HttpMethod.DELETE))
+                .andExpect(header("Authorization", BEARER_TOKEN))
+                .andRespond(withStatus(HttpStatus.NO_CONTENT));
+
+        // When: 인증 사용자 계정 탈퇴
+        ThrowingCallable action = () -> client.withdraw(
+                ACCESS_TOKEN,
+                "current-password"
+        );
+
+        // Then: 호출 대상 성공 응답 계약 위반 변환
+        assertError(action, CommonErrorCode.DOWNSTREAM_INVALID_RESPONSE);
+        server.verify();
+    }
+
+    @Test
+    @DisplayName("계정 탈퇴의 성공 응답 본문 누락 변환")
+    void rejectsMissingWithdrawalSuccessBodyAsBadGateway() {
+        // Given: 복구 기한 본문이 없는 200 응답
         server.expect(once(), requestTo(BASE_URL + ACCOUNT_PATH))
                 .andExpect(method(HttpMethod.DELETE))
                 .andExpect(header("Authorization", BEARER_TOKEN))

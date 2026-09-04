@@ -29,6 +29,7 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -61,6 +62,7 @@ class AdminAccountBffControllerTest {
                 eq("admin-token"),
                 eq("kim"),
                 eq("ACTIVE"),
+                eq(true),
                 eq("USER"),
                 eq(0),
                 eq(20),
@@ -73,7 +75,9 @@ class AdminAccountBffControllerTest {
                         "USER",
                         "ACTIVE",
                         (short) 2,
+                        true,
                         Instant.parse("2026-08-31T08:00:00Z"),
+                        Instant.parse("2026-08-31T07:30:00Z"),
                         null,
                         Instant.parse("2026-08-31T07:00:00Z"),
                         List.of(new AdminManagedCohort(3L, "AIoT 3기", "MANAGER"))
@@ -85,6 +89,7 @@ class AdminAccountBffControllerTest {
         mockMvc.perform(get("/bff/v1/admin/users")
                         .param("query", "kim")
                         .param("status", "ACTIVE")
+                        .param("locked", "true")
                         .param("role", "USER")
                         .param("page", "0")
                         .param("size", "20")
@@ -95,8 +100,9 @@ class AdminAccountBffControllerTest {
                         jsonPath("$.items[0].accountId").value(accountId.toString()),
                         jsonPath("$.items[0].managedCohorts[0].cohortId").value(3),
                         jsonPath("$.items[0].failedLoginAttempts").value(2),
+                        jsonPath("$.items[0].locked").value(true),
                         jsonPath("$.items[0].lockedUntil").value("2026-08-31T08:00:00Z"),
-                        jsonPath("$.items[0].withdrawnAt").doesNotExist(),
+                        jsonPath("$.items[0].statusChangedAt").value("2026-08-31T07:30:00Z"),
                         jsonPath("$.page.number").value(0),
                         jsonPath("$.page.totalElements").value(1)
                 );
@@ -105,6 +111,7 @@ class AdminAccountBffControllerTest {
                 eq("admin-token"),
                 eq("kim"),
                 eq("ACTIVE"),
+                eq(true),
                 eq("USER"),
                 eq(0),
                 eq(20),
@@ -131,6 +138,48 @@ class AdminAccountBffControllerTest {
     }
 
     @Test
+    @DisplayName("로그인 잠금 해제 요청의 Application Service 위임")
+    void unlocksLogin() throws Exception {
+        UUID userId = UUID.randomUUID();
+        String reason = "가".repeat(500);
+
+        mockMvc.perform(post("/bff/v1/admin/users/{user-id}/login-lock/unlock", userId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"reason\":\"" + reason + "\"}"))
+                .andExpect(status().isNoContent());
+
+        // Then: 검증을 통과한 최대 길이 사유를 그대로 위임
+        verify(service).unlockLogin("admin-token", userId, reason);
+    }
+
+    @Test
+    @DisplayName("공백 사유의 로그인 잠금 해제 요청 거부")
+    void rejectsLoginUnlockWithoutReason() throws Exception {
+        UUID userId = UUID.randomUUID();
+
+        mockMvc.perform(post("/bff/v1/admin/users/{user-id}/login-lock/unlock", userId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"reason\":\"   \"}"))
+                .andExpect(status().isBadRequest());
+
+        verify(service, never()).unlockLogin(anyString(), any(), anyString());
+    }
+
+    @Test
+    @DisplayName("최대 길이를 초과한 로그인 잠금 해제 사유 거부")
+    void rejectsTooLongLoginUnlockReason() throws Exception {
+        UUID userId = UUID.randomUUID();
+        String reason = "가".repeat(501);
+
+        mockMvc.perform(post("/bff/v1/admin/users/{user-id}/login-lock/unlock", userId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"reason\":\"" + reason + "\"}"))
+                .andExpect(status().isBadRequest());
+
+        verify(service, never()).unlockLogin(anyString(), any(), anyString());
+    }
+
+    @Test
     @DisplayName("전역 역할 변경 요청의 Application Service 위임")
     void changesAccountRole() throws Exception {
         // Given: 관리자 권한 부여 대상 사용자
@@ -150,12 +199,12 @@ class AdminAccountBffControllerTest {
     }
 
     @Test
-    @DisplayName("Identity 가 받지 않는 역할 값의 요청 단계 거부")
+    @DisplayName("Identity가 받지 않는 역할 값의 요청 단계 거부")
     void rejectsUnsupportedGlobalRole() throws Exception {
         // Given: 전역 역할이 아닌 기수 관리자 값
         UUID userId = UUID.randomUUID();
 
-        // When & Then: Identity 에 닿기 전에 400으로 끊는다
+        // When & Then: Identity에 닿기 전에 400으로 끊는다
         mockMvc.perform(patch("/bff/v1/admin/users/{user-id}/role", userId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""

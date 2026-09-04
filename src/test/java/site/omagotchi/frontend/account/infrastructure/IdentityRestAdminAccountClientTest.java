@@ -1,5 +1,7 @@
 package site.omagotchi.frontend.account.infrastructure;
 
+import jakarta.validation.Validation;
+import jakarta.validation.ValidatorFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -47,6 +49,7 @@ class IdentityRestAdminAccountClientTest {
 
     private IdentityRestAdminAccountClient client;
     private MockRestServiceServer server;
+    private ValidatorFactory validatorFactory;
 
     @BeforeEach
     void setUp() {
@@ -55,18 +58,21 @@ class IdentityRestAdminAccountClientTest {
         HttpServiceProxyFactory proxyFactory = HttpServiceProxyFactory
                 .builderFor(RestClientAdapter.create(builder.build()))
                 .build();
+        validatorFactory = Validation.buildDefaultValidatorFactory();
         client = new IdentityRestAdminAccountClient(
                 proxyFactory.createClient(IdentityAdminAccountHttpService.class),
                 proxyFactory.createClient(IdentityAdminAccountStatusHttpService.class),
                 proxyFactory.createClient(IdentityAdminAccountRoleHttpService.class),
                 new RestClientCallExecutor(),
-                new ApiErrorContractResolver(new ApiErrorResponseDecoder())
+                new ApiErrorContractResolver(new ApiErrorResponseDecoder()),
+                validatorFactory.getValidator()
         );
     }
 
     @AfterEach
     void verifyServer() {
         server.verify();
+        validatorFactory.close();
     }
 
     @Test
@@ -87,8 +93,10 @@ class IdentityRestAdminAccountClientTest {
                                     "role": "SYSTEM_ADMIN",
                                     "status": "ACTIVE",
                                     "failedLoginAttempts": 2,
+                                    "locked": true,
                                     "lockedUntil": "2026-08-31T08:00:00Z",
-                                    "withdrawnAt": null,
+                                    "statusChangedAt": "2026-08-31T07:30:00Z",
+                                    "recoveryDeadline": null,
                                     "createdAt": "2026-08-31T07:00:00Z"
                                   }],
                                   "page": {
@@ -102,7 +110,7 @@ class IdentityRestAdminAccountClientTest {
 
         // When: Identity 관리자 계정 페이지 조회
         IdentityAdminAccountPage result = client.findAccounts(
-                ACCESS_TOKEN, null, null, null, 0, 20, null);
+                ACCESS_TOKEN, null, null, null, null, 0, 20, null);
 
         // Then: Application 계정 결과와 페이지 정보로 변환
         assertThat(result.items()).singleElement().satisfies(account -> {
@@ -110,7 +118,9 @@ class IdentityRestAdminAccountClientTest {
             assertThat(account.failedLoginAttempts()).isEqualTo((short) 2);
             assertThat(account.lockedUntil())
                     .isEqualTo(Instant.parse("2026-08-31T08:00:00Z"));
-            assertThat(account.withdrawnAt()).isNull();
+            assertThat(account.locked()).isTrue();
+            assertThat(account.statusChangedAt())
+                    .isEqualTo(Instant.parse("2026-08-31T07:30:00Z"));
         });
         assertThat(result.page()).isEqualTo(new PageMetadata(0, 20, 1, 1));
     }
@@ -128,7 +138,7 @@ class IdentityRestAdminAccountClientTest {
 
         // When & Then: Frontend의 동일 공개 오류로 변환
         assertThatThrownBy(() -> client.findAccounts(
-                ACCESS_TOKEN, null, null, null, 0, 20, null
+                ACCESS_TOKEN, null, null, null, null, 0, 20, null
         )).isInstanceOfSatisfying(BusinessException.class, exception ->
                 assertThat(exception.getErrorCode())
                         .isEqualTo(expectedErrorCode));
@@ -143,7 +153,7 @@ class IdentityRestAdminAccountClientTest {
 
         // When & Then: 하류 장애를 Frontend 503 계약으로 변환
         assertThatThrownBy(() -> client.findAccounts(
-                ACCESS_TOKEN, null, null, null, 0, 20, null
+                ACCESS_TOKEN, null, null, null, null, 0, 20, null
         )).isInstanceOfSatisfying(BusinessException.class, exception ->
                 assertThat(exception.getErrorCode())
                         .isEqualTo(CommonErrorCode.SERVICE_UNAVAILABLE));
@@ -177,7 +187,44 @@ class IdentityRestAdminAccountClientTest {
 
         // When & Then: 잘못된 하류 응답 오류로 거부
         assertThatThrownBy(() -> client.findAccounts(
-                ACCESS_TOKEN, null, null, null, 0, 20, null
+                ACCESS_TOKEN, null, null, null, null, 0, 20, null
+        )).isInstanceOfSatisfying(BusinessException.class, exception ->
+                        assertThat(exception.getErrorCode())
+                                .isEqualTo(CommonErrorCode.DOWNSTREAM_INVALID_RESPONSE));
+    }
+
+    @Test
+    @DisplayName("탈퇴 계정의 복구 기한 누락 응답 거부")
+    void rejectsWithdrawnAccountWithoutRecoveryDeadline() {
+        server.expect(once(), requestTo(BASE_URL + PATH + "?page=0&size=20"))
+                .andRespond(withStatus(HttpStatus.OK)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .body("""
+                                {
+                                  "items": [{
+                                    "accountId": "00000000-0000-0000-0000-000000000001",
+                                    "email": "withdrawn@example.com",
+                                    "name": "탈퇴 사용자",
+                                    "role": "USER",
+                                    "status": "WITHDRAWN",
+                                    "failedLoginAttempts": 0,
+                                    "locked": false,
+                                    "lockedUntil": null,
+                                    "statusChangedAt": "2026-08-31T07:30:00Z",
+                                    "recoveryDeadline": null,
+                                    "createdAt": "2026-08-01T07:00:00Z"
+                                  }],
+                                  "page": {
+                                    "number": 0,
+                                    "size": 20,
+                                    "totalElements": 1,
+                                    "totalPages": 1
+                                  }
+                                }
+                                """));
+
+        assertThatThrownBy(() -> client.findAccounts(
+                ACCESS_TOKEN, null, null, null, null, 0, 20, null
         )).isInstanceOfSatisfying(BusinessException.class, exception ->
                 assertThat(exception.getErrorCode())
                         .isEqualTo(CommonErrorCode.DOWNSTREAM_INVALID_RESPONSE));
@@ -196,7 +243,7 @@ class IdentityRestAdminAccountClientTest {
 
         // When & Then: 잘못된 하류 응답 오류로 거부
         assertThatThrownBy(() -> client.findAccounts(
-                ACCESS_TOKEN, null, null, null, 0, 20, null
+                ACCESS_TOKEN, null, null, null, null, 0, 20, null
         )).isInstanceOfSatisfying(BusinessException.class, exception ->
                 assertThat(exception.getErrorCode())
                         .isEqualTo(CommonErrorCode.DOWNSTREAM_INVALID_RESPONSE));
@@ -205,7 +252,7 @@ class IdentityRestAdminAccountClientTest {
     @Test
     @DisplayName("계정 상태 변경 204 응답의 정상 종료")
     void changesAccountStatusOnNoContent() {
-        // Given: Identity 가 204로 응답하는 상태 변경
+        // Given: Identity가 204로 응답하는 상태 변경
         server.expect(once(), requestTo(BASE_URL + ACCOUNT_PATH + "/" + TARGET_ID + "/status"))
                 .andExpect(method(HttpMethod.PATCH))
                 .andExpect(header("Authorization", "Bearer " + ACCESS_TOKEN))
@@ -222,7 +269,7 @@ class IdentityRestAdminAccountClientTest {
     @Test
     @DisplayName("전역 역할 변경 204 응답의 정상 종료")
     void changesAccountRoleOnNoContent() {
-        // Given: Identity 가 204로 응답하는 역할 변경
+        // Given: Identity가 204로 응답하는 역할 변경
         server.expect(once(), requestTo(BASE_URL + ACCOUNT_PATH + "/" + TARGET_ID + "/role"))
                 .andExpect(method(HttpMethod.PATCH))
                 .andExpect(header("Authorization", "Bearer " + ACCESS_TOKEN))
@@ -237,9 +284,25 @@ class IdentityRestAdminAccountClientTest {
     }
 
     @Test
+    @DisplayName("로그인 잠금 해제 204 응답의 정상 종료")
+    void unlocksLoginOnNoContent() {
+        server.expect(once(), requestTo(
+                        BASE_URL + ACCOUNT_PATH + "/" + TARGET_ID + "/login-lock/unlock"))
+                .andExpect(method(HttpMethod.POST))
+                .andExpect(header("Authorization", "Bearer " + ACCESS_TOKEN))
+                .andExpect(content().json("""
+                        {"reason": "본인 확인 완료"}
+                        """))
+                .andRespond(withStatus(HttpStatus.NO_CONTENT));
+
+        client.unlockLogin(
+                ACCESS_TOKEN, UUID.fromString(TARGET_ID), "본인 확인 완료");
+    }
+
+    @Test
     @DisplayName("전역 역할 변경의 마지막 관리자 충돌 보존")
     void preservesLastSystemAdminConflictOnRoleChange() {
-        // Given: 마지막 이용 가능 관리자 강등을 Identity 가 409로 거부
+        // Given: 마지막 이용 가능 관리자 강등을 Identity가 409로 거부
         server.expect(once(), requestTo(BASE_URL + ACCOUNT_PATH + "/" + TARGET_ID + "/role"))
                 .andRespond(withStatus(HttpStatus.CONFLICT)
                         .contentType(MediaType.APPLICATION_JSON)

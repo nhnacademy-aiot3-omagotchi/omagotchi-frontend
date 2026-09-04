@@ -2,6 +2,8 @@ package site.omagotchi.frontend.account.application.port;
 
 import site.omagotchi.frontend.account.application.result.AccountSettings;
 
+import java.time.Instant;
+
 public interface IdentityAccountClient {
 
     AccountSettings getCurrentAccount(String accessToken);
@@ -14,5 +16,5 @@ public interface IdentityAccountClient {
             String newPassword
     );
 
-    void withdraw(String accessToken, String currentPassword);
+    Instant withdraw(String accessToken, String currentPassword);
 }

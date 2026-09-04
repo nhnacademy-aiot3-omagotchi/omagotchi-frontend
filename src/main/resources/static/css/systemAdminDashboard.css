@@ -68,6 +68,8 @@ body.system-admin-preview #storybook-root { min-height: 100%; }
 .system-user-cell > b { flex: 0 0 36px; }
 .system-row-button { min-height: 32px; border-color: var(--line); background: #fff; color: var(--ink); }
 .system-muted { color: var(--muted); font-size: 10px; }
+.system-account-state { display: grid; gap: 4px; }
+.system-account-state > div { display: flex; flex-wrap: wrap; gap: 4px; }
 .system-account-status { display: inline-flex; padding: 5px 8px; border-radius: 999px; font-size: 9px; font-weight: 900; }
 .system-account-status.is-active { background: var(--green-100); color: var(--green-800); }
 .system-account-status.is-locked { background: #fff1d6; color: #8b5700; }

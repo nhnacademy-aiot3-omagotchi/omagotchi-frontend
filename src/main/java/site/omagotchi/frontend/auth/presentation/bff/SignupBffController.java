@@ -15,6 +15,7 @@ import site.omagotchi.frontend.auth.application.result.SignupResult;
 import site.omagotchi.frontend.auth.presentation.bff.request.SignupEmailChallengeRequest;
 import site.omagotchi.frontend.auth.presentation.bff.request.VerifiedSignupRequest;
 import site.omagotchi.frontend.auth.presentation.bff.response.EmailVerificationChallengeResponse;
+import site.omagotchi.frontend.auth.presentation.bff.response.SignupResponse;
 import site.omagotchi.frontend.global.exception.BusinessException;
 import site.omagotchi.frontend.global.exception.ErrorCode;
 
@@ -37,7 +38,7 @@ public class SignupBffController {
     }
 
     @PostMapping
-    public ResponseEntity<Void> signUp(
+    public ResponseEntity<SignupResponse> signUp(
             @Valid @RequestBody VerifiedSignupRequest request
     ) {
         SignupResult result = verifiedSignupService.signUp(request.toCommand());
@@ -45,7 +46,11 @@ public class SignupBffController {
             case SignupResult.Created ignored -> ResponseEntity
                     .status(HttpStatus.CREATED)
                     .cacheControl(CacheControl.noStore())
-                    .build();
+                    .body(SignupResponse.created());
+            case SignupResult.Recovered ignored -> ResponseEntity
+                    .ok()
+                    .cacheControl(CacheControl.noStore())
+                    .body(SignupResponse.recovered());
             case SignupResult.Rejected(ErrorCode errorCode) ->
                     throw new BusinessException(errorCode);
         };
