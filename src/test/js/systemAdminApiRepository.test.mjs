@@ -5,7 +5,15 @@ import {
     formatAuditTime,
     normalizeAudit
 } from "../../main/resources/static/js/system-admin/dashboard/data/systemAdminApiRepository.js";
-import {mergeManagerCohortSelection} from "../../main/resources/static/js/system-admin/dashboard/dashboardController.js";
+import {
+    formatTimestampDate,
+    mergeManagerCohortSelection
+} from "../../main/resources/static/js/system-admin/dashboard/dashboardController.js";
+
+test("UTC 타임스탬프를 서울 날짜로 표시한다", () => {
+    assert.equal(formatTimestampDate("2026-09-03T15:30:00Z"), "2026.09.04");
+    assert.equal(formatTimestampDate("invalid"), "-");
+});
 
 function apiFixture({
     missingPolicyFor = [],
@@ -31,6 +39,10 @@ function apiFixture({
                             role: "USER",
                             status: "ACTIVE",
                             failedLoginAttempts: 0,
+                            locked: false,
+                            lockedUntil: null,
+                            statusChangedAt: "2026-08-31T07:00:00Z",
+                            recoveryDeadline: null,
                             createdAt: "2026-08-31T07:00:00Z",
                             managedCohorts: [{cohortId: 3, cohortName: "AIoT 3기", role: "MANAGER"}]
                         }],
@@ -49,6 +61,9 @@ function apiFixture({
                         error.code = "ACCOUNT_LAST_SYSTEM_ADMIN";
                         throw error;
                     }
+                },
+                async unlockLogin(userId, reason) {
+                    calls.push(["unlockLogin", userId, reason]);
                 },
                 async getAudits(query) {
                     calls.push(["getAudits", query]);
@@ -176,8 +191,10 @@ test("Identity 계정과 Learning 기수 운영 권한을 정규화하고 생략
         globalRole: "USER",
         status: "ACTIVE",
         failedLoginAttempts: 0,
+        locked: false,
         lockedUntil: null,
-        withdrawnAt: null,
+        statusChangedAt: "2026-08-31T07:00:00Z",
+        recoveryDeadline: null,
         joinedAt: "2026-08-31",
         managerCohortIds: ["3"]
     }]);
@@ -202,8 +219,10 @@ test("계정이 100명을 넘으면 Identity의 모든 페이지를 이어서 �
                 role: "USER",
                 status: "ACTIVE",
                 failedLoginAttempts: 0,
+                locked: false,
                 lockedUntil: null,
-                withdrawnAt: null,
+                statusChangedAt: "2026-08-31T07:00:00Z",
+                recoveryDeadline: null,
                 createdAt: "2026-08-31T07:00:00Z",
                 managedCohorts: []
             }],
@@ -275,6 +294,70 @@ test("Identity 사용자 필수 필드가 없으면 잘못된 응답으로 거�
 
     // Then
     await assert.rejects(loadDashboard, /사용자 목록 응답 형식이 올바르지 않습니다/);
+});
+
+test("탈퇴 계정의 복구 기한이 없으면 잘못된 응답으로 거부한다", async () => {
+    // Given
+    const fixture = apiFixture();
+    fixture.api.systemAdmin.getUsers = async () => ({
+        items: [{
+            accountId: "account-id",
+            email: "withdrawn@example.com",
+            name: "탈퇴 사용자",
+            role: "USER",
+            status: "WITHDRAWN",
+            failedLoginAttempts: 0,
+            locked: false,
+            lockedUntil: null,
+            statusChangedAt: "2026-08-31T07:00:00Z",
+            recoveryDeadline: null,
+            createdAt: "2026-08-01T07:00:00Z",
+            managedCohorts: []
+        }],
+        page: {
+            number: 0,
+            size: 100,
+            totalElements: 1,
+            totalPages: 1
+        }
+    });
+    const repository = createSystemAdminApiRepository(fixture.api);
+
+    // When & Then
+    await assert.rejects(
+        repository.loadDashboard(),
+        /사용자 목록 응답 형식이 올바르지 않습니다/
+    );
+});
+
+test("계정 역할·상태 허용 목록과 비활성 계정 잠금 불변식을 검증한다", async () => {
+    const invalidAccounts = [
+        {role: "COHORT_MANAGER"},
+        {status: 'ACTIVE\" onmouseover=\"alert(1)'},
+        {
+            status: "DISABLED",
+            failedLoginAttempts: 5,
+            locked: true,
+            lockedUntil: "2026-09-01T08:00:00Z"
+        }
+    ];
+
+    for (const invalidAccount of invalidAccounts) {
+        const fixture = apiFixture();
+        const getUsers = fixture.api.systemAdmin.getUsers;
+        fixture.api.systemAdmin.getUsers = async (query) => {
+            const response = await getUsers(query);
+            return {
+                ...response,
+                items: [{...response.items[0], ...invalidAccount}]
+            };
+        };
+
+        await assert.rejects(
+            createSystemAdminApiRepository(fixture.api).loadDashboard(),
+            /사용자 목록 응답 형식이 올바르지 않습니다/
+        );
+    }
 });
 
 test("기수 생성 요청에는 현재 Learning 계약 필드만 보내고 관리자는 후속 호출한다", async () => {

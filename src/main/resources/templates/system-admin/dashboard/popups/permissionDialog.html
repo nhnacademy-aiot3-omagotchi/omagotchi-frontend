@@ -8,21 +8,22 @@
         <section class="system-permission-section">
             <div><h3>계정 상태</h3><p>관리자가 직접 지정할 수 있는 값은 활성과 비활성화뿐입니다.</p></div>
             <label class="system-select-row"><span>AccountStatus</span><select data-account-status-select><option value="ACTIVE">ACTIVE · 활성</option><option value="DISABLED">DISABLED · 전역 비활성화</option></select></label>
-            <!-- LOCKED 는 로그인 실패 누적으로, WITHDRAWN 은 본인 탈퇴로만 도달한다. 관리자가 지정하면 Identity 가 거부한다. -->
+            <!-- 로그인 잠금은 상태와 별도이며, WITHDRAWN은 본인 탈퇴로만 도달한다. -->
             <p class="system-readonly-status" data-account-status-readonly hidden></p>
+            <button type="button" class="secondary-button" data-unlock-login hidden>로그인 잠금 해제</button>
         </section>
         <section class="system-permission-section">
             <div><h3>전역 시스템 권한</h3><p>모든 사용자와 기수를 관리할 수 있는 최고 권한입니다.</p></div>
             <label class="system-switch-row"><span><strong>SYSTEM_ADMIN</strong><small>Omagotchi 전체 시스템 관리</small></span><input type="checkbox" data-system-admin-toggle /><i aria-hidden="true"></i></label>
-            <!-- DISABLED·WITHDRAWN 계정의 역할은 Identity 가 거부한다. 자기 자신도 바꿀 수 없다. -->
+            <!-- DISABLED·WITHDRAWN 계정의 역할은 Identity가 거부한다. 자기 자신도 바꿀 수 없다. -->
             <p class="system-readonly-status" data-system-admin-readonly hidden></p>
         </section>
-        <!-- 계정 상태나 전역 권한이 실제로 바뀔 때만 열린다. 기수 권한만 손대면 사유가 필요 없다. -->
+        <!-- 계정 상태·전역 권한 변경이나 로그인 잠금 해제 때 열린다. -->
         <section class="system-permission-section" data-permission-reason-row hidden>
-            <div><h3>변경 사유</h3><p>계정 상태와 전역 권한 변경은 감사 기록에 사유가 그대로 남습니다.</p></div>
+            <div><h3>변경 사유</h3><p>계정 상태·전역 권한 변경과 로그인 잠금 해제는 감사 기록에 사유가 그대로 남습니다.</p></div>
             <label class="system-select-row is-wide">
                 <span>변경 사유 *</span>
-                <input type="text" data-permission-reason maxlength="500" placeholder="예: 부정 사용 신고 접수" />
+                <input type="text" maxlength="500" data-permission-reason placeholder="예: 부정 사용 신고 접수" />
             </label>
         </section>
         <section class="system-permission-section">
