@@ -10,7 +10,11 @@ import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.support.RestClientAdapter;
 import org.springframework.web.service.invoker.HttpServiceProxyFactory;
+import site.omagotchi.frontend.learning.infrastructure.response.LearningSpaceEnvironmentResponse;
 import tools.jackson.databind.JsonNode;
+
+import java.time.Instant;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.client.ExpectedCount.once;
@@ -63,6 +67,43 @@ class SensorHttpServiceContractTest {
         assertThat(response.get("sensorCount").asInt()).isEqualTo(2);
 
         // 등록해둔 기대 요청이 실제로 왔는지 최종 확인
+        server.verify();
+    }
+
+    @Test
+    @DisplayName("공간 현재 환경 조회는 인증 헤더를 붙여 기수 경로로 한 번만 나간다")
+    void mapsEnvironmentRequestToSensorEndpoint() {
+        // given
+        server.expect(once(), requestToUriTemplate(
+                        BASE_URL + "/api/v1/cohorts/3/sensors/environment"))
+                .andExpect(method(HttpMethod.GET))
+                .andExpect(header(HttpHeaders.AUTHORIZATION, BEARER))
+                .andRespond(withSuccess("""
+                        [
+                          {"spaceId": 101, "co2": 612.4, "temperature": 23.4,
+                           "humidity": 48.0, "measuredAt": "2026-09-04T10:25:00Z",
+                           "deviceCount": 2},
+                          {"spaceId": 102, "co2": null, "temperature": null,
+                           "humidity": null, "measuredAt": null, "deviceCount": 0}
+                        ]
+                        """, MediaType.APPLICATION_JSON));
+
+        // when
+        List<LearningSpaceEnvironmentResponse> response = service.getSpaceEnvironments(BEARER, 3L);
+
+        // then
+        assertThat(response).hasSize(2);
+        assertThat(response.getFirst().spaceId()).isEqualTo(101L);
+        assertThat(response.getFirst().co2()).isEqualTo(612.4);
+        assertThat(response.getFirst().measuredAt())
+                .isEqualTo(Instant.parse("2026-09-04T10:25:00Z"));
+        assertThat(response.getFirst().deviceCount()).isEqualTo(2);
+        // 측정이 없는 공간은 값이 비어 온다 — 0 으로 채워 오지 않는다
+        assertThat(response.get(1).co2()).isNull();
+        assertThat(response.get(1).measuredAt()).isNull();
+        // 센서가 없어서 비었다는 사실은 기기 수로 구분된다
+        assertThat(response.get(1).deviceCount()).isZero();
+
         server.verify();
     }
 }

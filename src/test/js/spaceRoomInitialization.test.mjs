@@ -114,6 +114,98 @@ test("lab tab appears before meeting and lists only the current cohort labs", as
     }, api);
 });
 
+test("lab cards show the sensor values that the environment endpoint returns", async () => {
+    let environmentCalls = 0;
+    const api = {
+        attendance: {
+            async getToday() {
+                return { checkedInAt: "2026-09-01T09:00:00Z", checkedOutAt: null };
+            },
+            async getCurrentPresence() {
+                return null;
+            }
+        },
+        spaces: {
+            async list() {
+                return [
+                    { spaceId: 101, name: "AIoT 실습실", type: "LAB", capacity: 50, operationalStatus: "ACTIVE", cohortId: 3 },
+                    { spaceId: 102, name: "로봇 실습실", type: "LAB", capacity: 30, operationalStatus: "ACTIVE", cohortId: 3 }
+                ];
+            },
+            async listEnvironment() {
+                environmentCalls += 1;
+                // 센서가 없는 공간은 항목이 비어 온다. 그때는 값 자리를 비워 둔다.
+                return [
+                    { spaceId: 101, co2: 612.4, temperature: 23.42, humidity: 48.1, measuredAt: "2026-09-03T10:00:00Z", deviceCount: 2 },
+                    { spaceId: 102, co2: null, temperature: null, humidity: null, measuredAt: null, deviceCount: 0 }
+                ];
+            },
+            async getMyVacancyAlerts() {
+                return [];
+            }
+        }
+    };
+
+    await withSpaceRoom(async (spaceRoom) => {
+        const root = createRoot();
+        spaceRoom.mount(root);
+        await new Promise(setImmediate);
+        await new Promise(setImmediate);
+
+        assert.equal(environmentCalls, 1);
+        // 소수점은 화면에서 정리한다: CO₂·습도는 반올림, 온도는 한 자리.
+        assert.match(root.innerHTML, /612\s*<small>ppm/);
+        assert.match(root.innerHTML, /23\.4\s*<small>℃/);
+        assert.match(root.innerHTML, /48\s*<small>%/);
+        assert.match(root.innerHTML, /\d{2}:\d{2} 기준/);
+        // 센서가 없는 실습실은 그 사실을 밝힌다
+        assert.match(root.innerHTML, /센서 없음/);
+        // 근거가 없는 등급 문구는 붙이지 않는다
+        assert.doesNotMatch(root.innerHTML, /쾌적|보통|주의/);
+    }, { activeTab: "lab" }, {
+        approvedCohort: { cohortId: 3, name: "3기" }
+    }, api);
+});
+
+test("a sensor lookup failure leaves the lab list usable", async () => {
+    const api = {
+        attendance: {
+            async getToday() {
+                return { checkedInAt: "2026-09-01T09:00:00Z", checkedOutAt: null };
+            },
+            async getCurrentPresence() {
+                return null;
+            }
+        },
+        spaces: {
+            async list() {
+                return [
+                    { spaceId: 101, name: "AIoT 실습실", type: "LAB", capacity: 50, operationalStatus: "ACTIVE", cohortId: 3 }
+                ];
+            },
+            async listEnvironment() {
+                throw new Error("센서 조회 실패");
+            },
+            async getMyVacancyAlerts() {
+                return [];
+            }
+        }
+    };
+
+    await withSpaceRoom(async (spaceRoom) => {
+        const root = createRoot();
+        spaceRoom.mount(root);
+        await new Promise(setImmediate);
+        await new Promise(setImmediate);
+
+        assert.match(root.innerHTML, /AIoT 실습실/);
+        assert.match(root.innerHTML, /측정 대기/);
+        assert.match(root.innerHTML, /data-space-lab-move="101"/);
+    }, { activeTab: "lab" }, {
+        approvedCohort: { cohortId: 3, name: "3기" }
+    }, api);
+});
+
 test("a full lab shows its reserved capacity and disables movement", async () => {
     const moves = [];
     const api = {
@@ -791,7 +883,10 @@ test("participant keeps seeing the current participant list", async () => {
         }] });
 
         assert.match(root.innerHTML, /점유자 · 점유자/);
-        assert.match(root.innerHTML, /500ppm|24℃|40%/);
+        // 값과 단위는 실습실 카드와 같은 모양으로 나눠 그린다
+        assert.match(root.innerHTML, /500\s*<small>ppm/);
+        assert.match(root.innerHTML, /24\.0\s*<small>℃/);
+        assert.match(root.innerHTML, /40\s*<small>%/);
     }, { selectedRoomId: "room-1" });
 });
 
@@ -813,6 +908,91 @@ test("same-cohort non-participant sees only the participant count", async () => 
         assert.doesNotMatch(root.innerHTML, /같은 기수의 참여 인원만 표시합니다/);
         assert.doesNotMatch(root.innerHTML, /비공개 점유자/);
     }, { selectedRoomId: "room-1" });
+});
+
+test("meeting detail fills its sensor boxes from the environment endpoint", async () => {
+    const api = {
+        attendance: {
+            async getToday() {
+                return { checkedInAt: "2026-09-04T09:00:00Z", checkedOutAt: null };
+            },
+            async getCurrentPresence() {
+                return null;
+            }
+        },
+        spaces: {
+            async list() {
+                return [
+                    { spaceId: 301, name: "회의실 1", type: "MEETING", capacity: 8, operationalStatus: "ACTIVE", status: "AVAILABLE" }
+                ];
+            },
+            async listEnvironment() {
+                // 회의실은 기수 미배정 공용 공간이라 실습실과 같은 응답에 함께 실려 온다
+                return [
+                    { spaceId: 301, co2: 704.2, temperature: 23.1, humidity: 44.0, measuredAt: "2026-09-04T10:20:00Z", deviceCount: 1 }
+                ];
+            },
+            async getMyVacancyAlerts() {
+                return [];
+            }
+        }
+    };
+
+    await withSpaceRoom(async (spaceRoom) => {
+        const root = createRoot();
+        spaceRoom.mount(root);
+        await new Promise(setImmediate);
+        await new Promise(setImmediate);
+
+        assert.match(root.innerHTML, /space-room-detail-sensors/);
+        assert.match(root.innerHTML, /704\s*<small>ppm/);
+        assert.match(root.innerHTML, /23\.1\s*<small>℃/);
+        assert.match(root.innerHTML, /44\s*<small>%/);
+        assert.match(root.innerHTML, /\d{2}:\d{2} 기준/);
+    }, { activeTab: "meeting", selectedRoomId: "301" }, {
+        approvedCohort: { cohortId: 3, name: "3기" }
+    }, api);
+});
+
+test("meeting detail says 센서 없음 when the room has no device", async () => {
+    const api = {
+        attendance: {
+            async getToday() {
+                return { checkedInAt: "2026-09-04T09:00:00Z", checkedOutAt: null };
+            },
+            async getCurrentPresence() {
+                return null;
+            }
+        },
+        spaces: {
+            async list() {
+                return [
+                    { spaceId: 301, name: "회의실 1", type: "MEETING", capacity: 8, operationalStatus: "ACTIVE", status: "AVAILABLE" }
+                ];
+            },
+            async listEnvironment() {
+                return [
+                    { spaceId: 301, co2: null, temperature: null, humidity: null, measuredAt: null, deviceCount: 0 }
+                ];
+            },
+            async getMyVacancyAlerts() {
+                return [];
+            }
+        }
+    };
+
+    await withSpaceRoom(async (spaceRoom) => {
+        const root = createRoot();
+        spaceRoom.mount(root);
+        await new Promise(setImmediate);
+        await new Promise(setImmediate);
+
+        // 실습실 카드와 같은 문구를 쓴다
+        assert.match(root.innerHTML, /센서 없음/);
+        assert.doesNotMatch(root.innerHTML, /측정 대기/);
+    }, { activeTab: "meeting", selectedRoomId: "301" }, {
+        approvedCohort: { cohortId: 3, name: "3기" }
+    }, api);
 });
 
 test("available meeting shows the shared sensor information", async () => {
@@ -837,7 +1017,7 @@ test("available meeting shows the shared sensor information", async () => {
 
         assert.doesNotMatch(root.innerHTML, /MY PARTY/);
         assert.match(root.innerHTML, /space-room-detail-sensors/);
-        assert.match(root.innerHTML, /CO₂|500ppm|24℃|40%/);
+        assert.match(root.innerHTML, /CO₂/);
         assert.match(root.innerHTML, /회의실 1/);
         assert.match(root.innerHTML, /8인실/);
         assert.match(root.innerHTML, /회의실 사용/);
