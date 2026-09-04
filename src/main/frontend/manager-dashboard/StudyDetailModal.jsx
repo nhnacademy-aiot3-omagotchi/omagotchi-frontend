@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, {useEffect, useRef, useState} from "react";
 
 export function addDays(isoDate, amount) {
   if (!isoDate) return "";
@@ -103,6 +103,7 @@ export function StudyDetailModal({
   isOpen = true,
   onClose,
   memberName = "수강생",
+  memberEmail = "",
   periodDays: controlledPeriod,
   onPeriodChange,
   selectedDate: controlledDate,
@@ -183,7 +184,8 @@ export function StudyDetailModal({
       chartInstanceRef.current = null;
     }
 
-    if (!Chart || !chartCanvasRef.current) return;
+    const canvas = chartCanvasRef.current;
+    if (!Chart || !canvas || !canvas.ownerDocument) return;
 
     const totals = (overview?.dailyTotals || []).map((item) => ({
       date: item.aggregationDate,
@@ -193,7 +195,7 @@ export function StudyDetailModal({
     const hasRecords = totals.some((item) => item.seconds > 0);
     if (!hasRecords) return;
 
-    chartInstanceRef.current = new Chart(chartCanvasRef.current, {
+    chartInstanceRef.current = new Chart(canvas, {
       type: "bar",
       data: {
         labels: totals.map((item) => formatChartDate(item.date)),
@@ -202,7 +204,7 @@ export function StudyDetailModal({
             label: "학습 시간",
             data: totals.map((item) => Number((item.seconds / 3600).toFixed(2))),
             backgroundColor: totals.map((item) =>
-              item.date === currentDate ? "#176044" : "#9ad9ba"
+                item.date === currentDate ? "#176044" : "#9ad9ba"
             ),
             hoverBackgroundColor: "#20b978",
             borderRadius: 5,
@@ -213,7 +215,7 @@ export function StudyDetailModal({
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        resizeDelay: 100,
+        resizeDelay: 0,
         onClick: (_event, activeElements) => {
           const selected = activeElements[0];
           if (!selected) return;
@@ -221,7 +223,7 @@ export function StudyDetailModal({
           handleSelectDate(clickedDate);
         },
         plugins: {
-          legend: { display: false },
+          legend: {display: false},
           tooltip: {
             callbacks: {
               title: (items) => formatDateLabel(totals[items[0].dataIndex].date),
@@ -231,7 +233,7 @@ export function StudyDetailModal({
         },
         scales: {
           x: {
-            grid: { display: false },
+            grid: {display: false},
             ticks: {
               autoSkip: true,
               color: "#66736c",
@@ -241,7 +243,7 @@ export function StudyDetailModal({
           },
           y: {
             beginAtZero: true,
-            grid: { color: "#edf2ee" },
+            grid: {color: "#edf2ee"},
             ticks: {
               color: "#66736c",
               callback: (val) => `${val}h`
@@ -252,8 +254,10 @@ export function StudyDetailModal({
     });
 
     return () => {
-      chartInstanceRef.current?.destroy();
-      chartInstanceRef.current = null;
+      if (chartInstanceRef.current) {
+        chartInstanceRef.current.destroy();
+        chartInstanceRef.current = null;
+      }
     };
   }, [isOpen, overview, currentDate, currentPeriod]);
 
@@ -288,56 +292,65 @@ export function StudyDetailModal({
         aria-modal="true"
         aria-labelledby="study-detail-title"
       >
-        {/* 헤더 */}
-        <header className="study-detail-header">
-          <div>
-            <span className="study-detail-eyebrow">개인 공부 통계</span>
-            <h2 id="study-detail-title">
-              <span data-detail-name>{memberName}</span> 님의 공부 기록
-            </h2>
-          </div>
-          <button
-            type="button"
-            className="study-detail-close"
-            data-detail-close
-            aria-label="상세 보기 닫기"
-            onClick={onClose}
-          >
-            ×
-          </button>
-        </header>
-
-        {/* 조회 기간 툴바 */}
-        <section className="study-detail-toolbar" aria-label="개인 통계 조회 조건">
-          <div className="study-detail-period-tabs" role="group" aria-label="조회 기간">
+        {/* 상단 고정 헤더 래퍼 (HomeOverlay와 동일한 Sticky 구조) */}
+        <div className="study-detail-header-wrap">
+          <header className="study-detail-header">
+            <div>
+              <span className="study-detail-eyebrow">개인 공부 통계</span>
+              <h2 id="study-detail-title">
+                <span data-detail-name>{memberName}</span> 님의 공부 기록
+              </h2>
+              {memberEmail && (
+                <p className="study-detail-email" data-detail-email>
+                  {memberEmail}
+                </p>
+              )}
+            </div>
             <button
               type="button"
-              className={currentPeriod === 7 ? "is-active" : ""}
-              data-detail-period-days="7"
-              aria-pressed={currentPeriod === 7}
-              onClick={() => handlePeriodClick(7)}
+              className="study-detail-close"
+              data-detail-close
+              aria-label="상세 보기 닫기"
+              onClick={onClose}
             >
-              최근 7일
+              ×
             </button>
-            <button
-              type="button"
-              className={currentPeriod === 30 ? "is-active" : ""}
-              data-detail-period-days="30"
-              aria-pressed={currentPeriod === 30}
-              onClick={() => handlePeriodClick(30)}
-            >
-              최근 30일
-            </button>
-          </div>
-          <p data-detail-period>{`최근 ${currentPeriod}일의 학습 기록입니다.`}</p>
-        </section>
+          </header>
 
-        {/* 상태 메시지 */}
-        {(isLoading || error) && (
-          <p className="study-detail-status" data-detail-status role="status" aria-live="polite">
-            {isLoading ? "개인 공부 통계를 불러오는 중입니다." : error}
-          </p>
-        )}
+          {/* 조회 기간 툴바 */}
+          <section className="study-detail-toolbar" aria-label="개인 통계 조회 조건">
+            <div className="study-detail-period-tabs" role="group" aria-label="조회 기간">
+              <button
+                type="button"
+                className={currentPeriod === 7 ? "is-active" : ""}
+                data-detail-period-days="7"
+                aria-pressed={currentPeriod === 7}
+                onClick={() => handlePeriodClick(7)}
+              >
+                최근 7일
+              </button>
+              <button
+                type="button"
+                className={currentPeriod === 30 ? "is-active" : ""}
+                data-detail-period-days="30"
+                aria-pressed={currentPeriod === 30}
+                onClick={() => handlePeriodClick(30)}
+              >
+                최근 30일
+              </button>
+            </div>
+            <p data-detail-period>{`최근 ${currentPeriod}일의 학습 기록입니다.`}</p>
+          </section>
+        </div>
+
+        {/* 본문 스크롤 영역 (HomeOverlay와 동일한 flex: 1; overflow-y: auto) */}
+        <div className="study-detail-body">
+          {/* 상태 메시지 */}
+          {(isLoading || error) && (
+            <p className="study-detail-status" data-detail-status role="status" aria-live="polite">
+              {isLoading ? "개인 공부 통계를 불러오는 중입니다." : error}
+            </p>
+          )}
 
         {/* KPI 요약 그리드 */}
         <section className="study-detail-kpi-grid" aria-label="개인 공부 통계 요약">
@@ -534,6 +547,7 @@ export function StudyDetailModal({
             닫기
           </button>
         </footer>
+        </div>
       </section>
     </div>
   );

@@ -55,6 +55,12 @@
             <span data-dialog-input-label>사유</span>
             <input data-dialog-input />
         </label>
+        <!-- 정해진 값 중 하나를 고르는 입력. 자유 입력으로 두면 사용자가 enum을 타이핑해야 한다. -->
+        <label data-dialog-select-wrap hidden>
+            <span data-dialog-select-label>선택</span>
+            <select data-dialog-select></select>
+        </label>
+        <p class="dialog-error" data-dialog-error role="alert" hidden></p>
         <div>
             <button type="button" data-dialog-confirm>확인</button>
             <button class="secondary-button" type="button" data-dialog-cancel>취소</button>

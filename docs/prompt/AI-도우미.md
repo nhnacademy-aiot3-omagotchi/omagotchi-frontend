@@ -1,6 +1,6 @@
 # Home AI 도우미 구현 Prompt
 
-- 상태: 연결 완료 (날씨 조회 도구 기준), 추가 Tool·기능 확장 시 구현 규칙
+- 상태: 연결 완료 (운영에서 확인됨 — 날씨·학습 계열 Tool 전부), 추가 Tool·기능 확장 시 구현 규칙
 - 적용 대상: Home 하단 AI 도우미 UI를 작업하는 사람과 AI Agent
 - 선행 문서: [Backend Integration AI 공통 보호 규칙](공통-보호규칙.md)
 - 연동 문서: [AI 도우미 연동 Prompt](AI-연동.md)
@@ -8,8 +8,8 @@
 ## 목적
 
 실시간 채팅이 사용하던 Home 하단 자리를 AI 도우미로 전환했다. 현재는 실제로 질문을
-전송하고, `learning-service`가 스트리밍으로 보내는 답변을 받아 표시한다 (날씨 조회
-도구 기준으로 연결 확인됨). 이 문서의 규칙은 기존 Home UI를 보호하고 AI 도우미의
+전송하고, `learning-service`가 스트리밍으로 보내는 답변을 받아 표시한다 (날씨 조회와
+학습 계열 Tool까지 운영에서 확인됨). 이 문서의 규칙은 기존 Home UI를 보호하고 AI 도우미의
 화면 상태와 접근성 계약을 정한다. 연동 경계, 인증, 개인정보와 오류 공개 규칙은 별도
 연동 문서를 따른다.
 
@@ -18,6 +18,7 @@
 ```text
 src/main/frontend/home-react/components/AiAssistantPanel.jsx
 src/main/frontend/home-react/components/aiAssistantClient.js
+src/main/frontend/home-react/components/aiAssistantGuide.js
 src/main/frontend/home-react/components/AiAssistantPanel.stories.jsx
 src/main/frontend/home-react/components/ActionDock.jsx
 src/main/frontend/home-react/components/HomeStage.jsx
@@ -39,10 +40,40 @@ src/main/resources/static/js/home.js
   "답변 준비 중" 말풍선도 대화 목록 맨 아래에 같은 형식(아바타+말풍선)으로 표시된다.
 - 사용자 메시지와 AI 답변은 `home-ai-message`에 각각 `is-user`/`is-assistant`
   class를 붙여 좌우로 구분해 표시한다 (`character-chat.css`의 `.home-ai-message.is-user`).
+- **답변은 평문으로 표시한다. 마크다운을 렌더링하지 않는다.** 서버가 시스템 프롬프트로
+  마크다운을 쓰지 않도록 지시하고, 그래도 새어 나온 기호는 표시 직전에
+  `toPlainText`(`**`, `^#{1,6}\s+`, `^\s*---+\s*$`)로 제거한다. 이 걸러내기는
+  **assistant 메시지에만** 적용한다 — 사용자가 입력한 `**`가 사라지면 안 된다.
+  줄바꿈은 `.home-ai-message p`의 `white-space: pre-wrap`으로 살리고,
+  긴 URL·식별자는 `overflow-wrap: anywhere`로 말풍선을 밀어내지 않게 한다.
+  자세한 배경은 `docs` 저장소의 ADR `ai-assistant/0015`.
 - AI 메시지 패널은 데스크톱에서 화면 오른쪽 Drawer, 모바일에서 안전 여백을 둔 전체폭 Drawer로 표시한다.
 - `home-chat-toggle` CSS 이름은 기존 하단 Dock 호환을 위해 버튼에만 내부 훅으로 남아 있다.
 - 사용자에게 보이는 문구, 접근성 이름과 Storybook 이름에는 `채팅`을 사용하지 않는다.
 - `omagotchi:home-ai-close` 이벤트로 BGM, 출석부, 재실 인원, Home 오버레이와 상호 배타적으로 닫힌다.
+
+### 사용법 가이드 패널
+
+패널 헤더의 도움말 버튼(`.home-ai-panel-help`)으로 "AI 도우미 사용법"을 열고 닫는다.
+내용은 `aiAssistantGuide.js`의 세 상수에서 온다.
+
+| 상수 | 내용 |
+| --- | --- |
+| `AI_ASSISTANT_TOOLS` | 실제로 답해주는 기능 목록 (아이콘·설명·주의·예시 질문) |
+| `AI_ASSISTANT_UPCOMING` | 아직 도구가 없어 "모른다"고 답하는 것들 |
+| `AI_ASSISTANT_TIPS` | 기간 표현, 질문 길이, 기억 범위 같은 사용 규칙 |
+
+- **이 상수들은 서버 계약의 사본이다.** `learning-service`에서 Tool이 추가·삭제되거나
+  `@Tool` description의 지원 범위(기간, 기본값 등)가 바뀌면 **여기도 반드시 함께 고친다.**
+  서버가 바뀌어도 이 파일은 조용히 남아 사용자에게 잘못된 안내를 계속한다 — 자동으로
+  드러나지 않는 종류의 어긋남이다. 원본 목록은 `docs` 저장소의
+  `11-ai-assistant/README.md`(등록된 Tool)와 `03-학습-코칭-Tool-계약.md`가 소유한다.
+- 가이드가 열리면 대화 영역에 `inert`를 걸어 뒤쪽을 조작할 수 없게 한다.
+- 열 때 가이드로 Focus를 옮기고, 닫을 때는 입력창으로 되돌린다 (단 요청 진행 중이면
+  입력창이 잠겨 있으므로 되돌리지 않는다).
+- `Escape`로 닫는다. 버튼은 `aria-expanded`와 `aria-controls="home-ai-guide"`로 패널과
+  연결하고, 접근성 이름을 열림 상태에 맞게 `AI 도우미 사용법`/`AI 도우미 사용법 닫기`로 바꾼다.
+- 패널 자체가 닫히면 가이드 상태도 함께 초기화한다.
 
 호환용 `home-chat-*` 클래스 이름만 보고 실시간 채팅 기능이 남아 있다고 판단하거나 관련
 GLOBAL·COHORT 탭과 메시지 입력창을 복원하지 않는다. 클래스 이름 정리는 Home 하단 반응형
@@ -83,7 +114,7 @@ Source of Truth까지 함께 바꾸지 않는다. 배치 변경은 CSS와 열림
 별도 AI 화면으로 복제하지 않는다.
 
 변경 후 Storybook의 `Home/AiAssistantPanel`에서 최소한 `Desktop`, `Mobile`, `Preparing`,
-`Closed`를 확인한다. 320px 모바일, 모바일 가로, 1440×900 PC, 낮은 높이의 노트북 화면에서
+`Guide`, `Closed`를 확인한다. 320px 모바일, 모바일 가로, 1440×900 PC, 낮은 높이의 노트북 화면에서
 잘림·배경 조작·Focus 복귀·내부 스크롤을 검증한 뒤 실제 `/home`에서도 다른 패널과 함께 확인한다.
 
 ## 제품 범위
@@ -103,16 +134,18 @@ Source of Truth까지 함께 바꾸지 않는다. 배치 변경은 CSS와 열림
 - 답변 중단, 재시도
 - 허용된 도구 목록과 도구 실행 결과의 별도 시각적 표시 (현재는 도구 실행 결과가 답변
   텍스트에 자연스럽게 녹아 나올 뿐, UI가 "어떤 도구를 썼다"를 구분해서 보여주지 않는다)
-- 사용자 확인이 필요한 쓰기 작업의 승인 Dialog (현재 등록된 Tool은 날씨 조회뿐이며 전부
-  읽기 전용이라 승인 절차가 필요한 사례가 아직 없다)
-- 대화 이력 조회·삭제 정책 (서버는 Caffeine 캐시로 1시간 미사용 시 자동 삭제하지만,
-  사용자가 직접 삭제하는 기능은 없다)
+- 사용자 확인이 필요한 쓰기 작업의 승인 Dialog (등록된 Tool 여섯 개가 전부 읽기 전용이라
+  승인 절차가 필요한 사례가 아직 없다)
+- 대화 이력 조회·삭제 정책 (서버는 Redis에 TTL 1시간으로 보관하고 마지막 대화 뒤 자동
+  삭제되지만, 사용자가 직접 삭제하는 기능은 없다)
+- 마크다운 서식 표현 (평문으로 확정 — 위 구현 기준선 참고. 표·강조가 필요한 답변은
+  현재 지원하지 않는다)
 
 ### 결정: 상태 세분화하지 않음
 
 `empty`/`offline`/`forbidden`을 `error`와 별도 화면으로 나누지 않기로 결정했다.
-세션 만료, 게이트웨이 장애, 모델 응답 실패 모두 사용자가 취할 행동이 "잠시 후 다시
-시도"로 동일하고, `character-selector/main.jsx`·`SensorWorkspace.jsx` 등 다른 화면도
+세션 만료, `learning-service` 장애, 모델 응답 실패, 읽기 타임아웃 모두 사용자가 취할
+행동이 "잠시 후 다시 시도"로 동일하고, `character-selector/main.jsx`·`SensorWorkspace.jsx` 등 다른 화면도
 실패 원인을 구분하지 않고 통합 오류 문구를 쓰는 것이 이 레포의 기존 컨벤션이다.
 재검토하지 않는다.
 
@@ -139,19 +172,25 @@ Source of Truth까지 함께 바꾸지 않는다. 배치 변경은 CSS와 열림
 | `submitting` | 중복 전송을 막고 요청 중임을 표시 | 구현됨 |
 | `streaming` | 답변을 점진적으로 표시 | 구현됨 (중단 버튼은 아직 없음) |
 | `error` | 일반 사용자 문구 표시, 내부 오류는 서버 로그에 기록 | 구현됨 |
-| `empty` | 대화가 없음을 오류처럼 표현하지 않고 예시 질문 제공 | 구현됨 (빈 대화 목록에 안내 문구와 예시 질문 표시) |
+| `empty` | 대화가 없음을 오류처럼 표현하지 않고 예시 질문 제공 | 구현됨 (빈 대화 목록에 안내 문구와 예시 하나를 문장 안에 표시. 기능별 예시 질문 목록은 [사용법 가이드 패널](#사용법-가이드-패널)이 담당한다) |
 | `offline` | 연결할 수 없음과 다시 시도 제공, 가짜 답변을 생성하지 않음 | `error`로 통합 (세분화하지 않기로 결정, 위 참고) |
 | `forbidden` | 권한 부족 안내, 로그인·권한 판정을 Browser에서 추측하지 않음 | `error`로 통합 (세분화하지 않기로 결정, 위 참고) |
 
 - 응답이 없거나 실패했을 때 성공 예시와 Mock 답변을 실제 화면에 표시하지 않는다.
 - 전송 버튼은 요청 중 중복 실행되지 않아야 한다.
 - 패널을 닫으면 진행 중인 요청은 취소한다 (`AbortController` 사용, 현재 정책).
+  언마운트 때도 같다. 취소로 끊긴 요청(`AbortError`)에는 오류 문구를 띄우지 않는다.
+- 답변이 오는 동안에는 전송이 잠긴다 (`submitting`·`streaming`에서 `handleSubmit`이
+  곧바로 반환). 새 질문이 이전 요청을 대체하는 구조가 아니므로, 중단 버튼을 추가할 때
+  이 규칙을 함께 정해야 한다.
 - 새 메시지가 와도 사용자가 과거 답변을 읽고 있다면 스크롤을 강제로 아래로 이동시키지 않는다.
 
 ## 접근성·반응형 규칙
 
 - 버튼의 접근성 이름은 `AI 도우미 열기`와 `AI 도우미 닫기`로 상태에 맞게 바꾼다.
 - 패널은 버튼의 `aria-controls`와 연결하고 열림 상태는 `aria-expanded`로 전달한다.
+- 사용법 가이드도 같은 계약을 따른다 (위 [사용법 가이드 패널](#사용법-가이드-패널) 참고).
+  가이드가 열린 동안 대화 영역은 `inert`이므로 스크린리더·키보드가 뒤쪽으로 새지 않는다.
 - 캐릭터 부유·점 애니메이션은 `prefers-reduced-motion`에서 정지한다.
 - 스트리밍 전체를 매 글자마다 Live Region으로 읽지 않는다. 문장 또는 응답 완료 단위로
   알린다 (현재 구현은 "답변 준비 중" 상태만 Live Region으로 안내하고, 스트리밍되는
@@ -168,6 +207,7 @@ Source of Truth까지 함께 바꾸지 않는다. 배치 변경은 CSS와 열림
 ```text
 Closed
 Preparing (Ready)
+Guide (사용법 패널 열림)
 Desktop
 Mobile
 ```
@@ -179,6 +219,9 @@ Mobile
 - 버튼 클릭 시 `aria-expanded`와 패널 표시가 함께 바뀌는지 검사한다.
 - BGM, 출석부, 재실 인원, Home 오버레이를 열면 AI 패널이 닫히는지 검사한다.
 - 긴 한글 질문, 긴 영문 URL, 줄바꿈, 모바일 가상 키보드와 스크롤을 검사한다.
+- 답변에 줄바꿈이 포함될 때 문단이 붙지 않고 그대로 보이는지 검사한다(`pre-wrap`).
+- 답변에 `**`, `###`, `---`가 섞여 와도 화면에 기호가 노출되지 않는지, 반대로 **사용자가
+  입력한** 같은 기호는 그대로 보이는지 함께 검사한다.
 
 ## 연동 전 확인할 계약
 
@@ -191,7 +234,7 @@ Mobile
 1. 연결한 BFF와 `learning-service` Endpoint
 2. 사용한 Request·Response·Stream 계약
 3. AI에 전달하는 사용자 Context Field
-4. 등록된 Tool과 쓰기 승인 방식 (현재는 날씨 조회 하나, 읽기 전용)
+4. 등록된 Tool과 쓰기 승인 방식 (현재 여섯 개, 전부 읽기 전용)
 5. Loading·Streaming·Error 처리와 아직 세분화하지 않은 상태
 6. 개인정보 마스킹과 로그 정책
 7. PC·모바일·키보드·스크린리더 검증 결과
