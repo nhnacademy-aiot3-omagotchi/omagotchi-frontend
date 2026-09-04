@@ -87,7 +87,12 @@
             if (helpPanel && !helpPanel.hidden) loadPolicy();
         }
 
-        function submitStatus(value) {
+        // 사유는 감사 로그에 그대로 남는다. 비워 두면 "누가 왜 고쳤는지"가 사라지므로
+        // 관리자가 적지 않았을 때만 기본 문구로 대신한다.
+        const DEFAULT_REASON = "관리자 화면에서 수동 정정";
+        const REASON_MAX_LENGTH = 200;
+
+        function submitStatus(value, { note = "" } = {}) {
             if (!pendingEdit) return { ok: false, message: "변경 대상을 찾지 못했습니다. 다시 시도해 주세요." };
             // 더블클릭으로 같은 정정이 두 번 나가는 것을 막는다.
             if (submitting) return { ok: false, message: "변경을 처리하는 중입니다." };
@@ -100,13 +105,18 @@
                 return { ok: false, message: "현재 상태와 동일합니다." };
             }
 
+            const reason = String(note ?? "").trim();
+            if (reason.length > REASON_MAX_LENGTH) {
+                return { ok: false, message: `사유는 ${REASON_MAX_LENGTH}자 이내로 적어 주세요.` };
+            }
+
             submitting = true;
             const target = pendingEdit;
             globalThis.OmagotchiApi.manager.updateAttendanceStatus(
                 getCohort().id,
                 target.recordId,
                 nextStatus,
-                "관리자 화면에서 수동 정정"
+                reason || DEFAULT_REASON
             ).then(() => refreshDashboard(target.date))
                 .then(() => {
                     // 조회일이 그대로일 때만 목록을 다시 그린다. 그 사이 날짜를 바꿨다면
@@ -144,6 +154,9 @@
                 message: `${date} · ${labels.name}의 최종 상태를 선택하세요.`
                     + (currentStatus ? ` 현재 상태는 "${statusLabel(currentStatus)}"입니다.` : ""),
                 inputLabel: "최종 상태",
+                // 라벨 없는 빈 칸이 떠 있어 무엇을 적는 칸인지 알 수 없었다. 이제 사유 칸임을 밝힌다.
+                noteLabel: "변경 사유 (선택)",
+                notePlaceholder: "예: 병원 진료 확인서 제출",
                 // 현재 상태를 기본값으로 둔다. 예전에는 항상 PRESENT라 실수로 정상 처리되기 쉬웠다.
                 initialValue: currentStatus || STATUS_OPTIONS[0],
                 options: STATUS_OPTIONS.map((status) => ({
