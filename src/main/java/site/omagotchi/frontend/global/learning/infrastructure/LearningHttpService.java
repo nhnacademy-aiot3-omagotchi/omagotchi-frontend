@@ -256,6 +256,14 @@ public interface LearningHttpService {
             @PathVariable("attachment-id") Long attachmentId
     );
 
+    @GetExchange("/cohorts/{cohort-id}/community/posts/{post-id}/attachments/{attachment-id}/thumbnail")
+    ResponseEntity<Resource> previewCommunityAttachment(
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
+            @PathVariable("cohort-id") Long cohortId,
+            @PathVariable("post-id") Long postId,
+            @PathVariable("attachment-id") Long attachmentId
+    );
+
     @DeleteExchange("/cohorts/{cohort-id}/community/posts/{post-id}/attachments/{attachment-id}")
     ResponseEntity<Void> deleteCommunityAttachment(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,

@@ -7,6 +7,9 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import site.omagotchi.frontend.global.learning.application.LearningProxyBffService;
 import site.omagotchi.frontend.community.presentation.CommunityBffController;
 import site.omagotchi.frontend.ranking.presentation.RankingBffController;
@@ -30,6 +33,7 @@ import java.util.function.BiFunction;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 class BffRouteContractTest {
@@ -158,6 +162,15 @@ class BffRouteContractTest {
             mockMvc.perform(delete("/bff/v1/community/posts/11/attachments/29"))
                     .andExpect(status().isNoContent());
         }
+
+        @Test
+        @DisplayName("첨부파일 썸네일 엔드포인트를 제공한다")
+        void exposesAttachmentThumbnailRoute() throws Exception {
+            mockMvc.perform(get("/bff/v1/community/posts/11/attachments/29/thumbnail"))
+                    .andExpect(status().isOk())
+                    .andExpect(content().contentType(MediaType.IMAGE_JPEG))
+                    .andExpect(content().bytes(new byte[]{1, 2, 3}));
+        }
     }
 
     private static final class StubLearningProxyBffService extends LearningProxyBffService {
@@ -175,6 +188,11 @@ class BffRouteContractTest {
                 HttpServletRequest request,
                 BiFunction<AuthorizedLearningRequest, Long, T> operation
         ) {
+            if (request.getRequestURI().endsWith("/thumbnail")) {
+                return (T) ResponseEntity.ok()
+                        .contentType(MediaType.IMAGE_JPEG)
+                        .body(new ByteArrayResource(new byte[]{1, 2, 3}));
+            }
             return (T) response;
         }
 

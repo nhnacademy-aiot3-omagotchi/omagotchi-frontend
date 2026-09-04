@@ -67,7 +67,8 @@ const initialPosts = [
         originalFileName: "오늘의-오마고치.gif",
         contentType: "image/gif",
         sizeBytes: 86240,
-        previewUrl: "/images/characters/study/study_eye.gif"
+        // 실제 API도 GIF 원본의 첫 프레임을 정적 JPEG 썸네일로 반환한다.
+        previewUrl: "/images/characters/caffeine/caffeine.png"
       }
     ],
     canManage: false
@@ -415,7 +416,7 @@ function CommunityOverlayStory() {
               sizeBytes: file.size,
               previewUrl: index % 2 === 0
                 ? "/images/characters/study/study.png"
-                : "/images/characters/study/study_eye.gif"
+                : "/images/characters/caffeine/caffeine.png"
             }))
             : existingStoryPost?.attachments || [],
           canManage: true
@@ -536,7 +537,7 @@ export const DetailNavigation = {
 };
 
 export const AttachmentDetailPreview = {
-  name: "첨부 이미지 상세 미리보기",
+  name: "썸네일 API 기반 첨부 미리보기",
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await userEvent.click(canvas.getByRole("button", { name: "첨부파일이 있는 자유글 상세 보기" }));
@@ -544,7 +545,8 @@ export const AttachmentDetailPreview = {
     const firstPreview = canvas.getByRole("img", { name: "학습실-인증.png 미리보기" });
     const animatedPreview = canvas.getByRole("img", { name: "오늘의-오마고치.gif 미리보기" });
     expect(firstPreview).toHaveAttribute("src", "/images/characters/study/study.png");
-    expect(animatedPreview).toHaveAttribute("src", "/images/characters/study/study_eye.gif");
+    expect(animatedPreview).toHaveAttribute("src", "/images/characters/caffeine/caffeine.png");
+    expect(firstPreview).toHaveAttribute("loading", "lazy");
     expect(canvas.getAllByRole("link", { name: "다운로드" })).toHaveLength(2);
   }
 };

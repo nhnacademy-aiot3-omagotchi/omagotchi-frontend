@@ -66,6 +66,16 @@ public class CommunityBffController {
                 .downloadCommunityAttachment(context.bearerToken(), cohortId, postId, attachmentId));
     }
 
+    @GetMapping("/{post-id}/attachments/{attachment-id}/thumbnail")
+    public ResponseEntity<Resource> previewAttachment(
+            HttpServletRequest request,
+            @PathVariable("post-id") Long postId,
+            @PathVariable("attachment-id") Long attachmentId
+    ) {
+        return proxy.executeWithCohort(request, (context, cohortId) -> context.service()
+                .previewCommunityAttachment(context.bearerToken(), cohortId, postId, attachmentId));
+    }
+
     @DeleteMapping("/{post-id}/attachments/{attachment-id}")
     public ResponseEntity<Void> deleteAttachment(
             HttpServletRequest request,

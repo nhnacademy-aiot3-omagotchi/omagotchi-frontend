@@ -209,6 +209,8 @@ let communityPosts = [];
 let communityPinned = null;
 let activeCommunityPost = null;
 const communityAttachmentPreviewUrls = new Set();
+const communityAttachmentPreviewControllers = new Set();
+let communityAttachmentPreviewObserver = null;
 // 상세를 불러오는 동안 목록으로 돌아가면 늦게 도착한 응답이 목록을 덮어쓴다.
 let communityViewSequence = 0;
 let communityPageCount = 1;
@@ -1089,38 +1091,78 @@ function renderCommunityOverlay(title, content) {
 }
 
 function releaseCommunityAttachmentPreviewUrls() {
+    communityAttachmentPreviewObserver?.disconnect();
+    communityAttachmentPreviewObserver = null;
+    communityAttachmentPreviewControllers.forEach((controller) => controller.abort());
+    communityAttachmentPreviewControllers.clear();
     communityAttachmentPreviewUrls.forEach((url) => URL.revokeObjectURL(url));
     communityAttachmentPreviewUrls.clear();
 }
 
-async function loadCommunityAttachmentPreviews(postId, attachments, viewSequence) {
-    const cards = Array.from(homeOverlayRoot?.querySelectorAll("[data-community-attachment-card]") || []);
-    await Promise.all(attachments.map(async (attachment, index) => {
-        const card = cards[index];
-        if (!card) return;
+async function loadCommunityAttachmentPreview(postId, attachment, card, viewSequence) {
+    const image = card.querySelector("img");
+    const status = card.querySelector(".overlay-community-attachment-status");
+    if (!image || !status) return;
 
-        const image = card.querySelector("img");
-        const status = card.querySelector(".overlay-community-attachment-status");
-        if (!image || !status) return;
-        try {
-            const blob = await api.community.getAttachmentBlob(postId, attachment.attachmentId);
-            if (viewSequence !== communityViewSequence || !card.isConnected) {
-                return;
-            }
-            const previewUrl = URL.createObjectURL(blob);
-            communityAttachmentPreviewUrls.add(previewUrl);
-            image.src = previewUrl;
-            image.hidden = false;
-            status.hidden = true;
-            card.classList.add("is-ready");
-        } catch {
-            if (viewSequence !== communityViewSequence || !card.isConnected) {
-                return;
-            }
-            status.textContent = "미리보기를 불러오지 못했습니다.";
-            card.classList.add("is-error");
+    const controller = new AbortController();
+    communityAttachmentPreviewControllers.add(controller);
+    try {
+        const blob = await api.community.getAttachmentThumbnailBlob(
+            postId,
+            attachment.attachmentId,
+            {signal: controller.signal}
+        );
+        if (viewSequence !== communityViewSequence || !card.isConnected) {
+            return;
         }
-    }));
+        const previewUrl = URL.createObjectURL(blob);
+        communityAttachmentPreviewUrls.add(previewUrl);
+        image.src = previewUrl;
+        image.hidden = false;
+        status.hidden = true;
+        card.classList.add("is-ready");
+    } catch (error) {
+        if (error?.name === "AbortError"
+            || viewSequence !== communityViewSequence
+            || !card.isConnected) {
+            return;
+        }
+        status.textContent = "미리보기를 불러오지 못했습니다.";
+        card.classList.add("is-error");
+    } finally {
+        communityAttachmentPreviewControllers.delete(controller);
+    }
+}
+
+function loadCommunityAttachmentPreviews(postId, attachments, viewSequence) {
+    const cards = Array.from(homeOverlayRoot?.querySelectorAll("[data-community-attachment-card]") || []);
+    const attachmentsById = new Map(
+        attachments.map((attachment) => [String(attachment.attachmentId), attachment])
+    );
+    const loadCard = (card) => {
+        communityAttachmentPreviewObserver?.unobserve(card);
+        const attachment = attachmentsById.get(String(card.dataset.communityAttachmentId));
+        if (!attachment) return;
+        void loadCommunityAttachmentPreview(postId, attachment, card, viewSequence);
+    };
+
+    if (typeof IntersectionObserver === "function") {
+        communityAttachmentPreviewObserver = new IntersectionObserver((entries) => {
+            entries.forEach((entry) => {
+                if (entry.isIntersecting) {
+                    loadCard(entry.target);
+                }
+            });
+        }, {
+            root: homeOverlayRoot?.querySelector(".home-overlay-body") || null,
+            rootMargin: "160px 0px"
+        });
+        cards.forEach((card) => communityAttachmentPreviewObserver.observe(card));
+        return;
+    }
+
+    // 오래된 브라우저에서는 기능을 잃지 않도록 기존처럼 모두 불러온다.
+    cards.forEach(loadCard);
 }
 
 function updateSelectedCommunityAttachmentPreviews(input) {
@@ -1277,6 +1319,7 @@ function closeHomeOverlay() {
     }
 
     window.OmagotchiHomeOverlay?.close();
+    releaseCommunityAttachmentPreviewUrls();
     activeCommunityPost = null;
     communityViewSequence += 1;
     homeOverlayRoot.classList.remove("is-open");

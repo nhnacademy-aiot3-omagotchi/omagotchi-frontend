@@ -209,7 +209,7 @@ test("선택한 첨부파일은 로컬 미리보기 카드로 그린다", () => 
     assert.equal(formatCommunityAttachmentSize(1.5 * 1024 * 1024), "1.5MB");
 });
 
-test("첨부 이미지 미리보기는 인증된 BFF 응답을 Blob으로 받는다", async () => {
+test("첨부 이미지 미리보기는 인증된 썸네일 BFF 응답을 Blob으로 받는다", async () => {
     const imageBlob = new Blob(["image"], {type: "image/png"});
     const calls = [];
     const window = {location: {pathname: "/home", replace() {}}};
@@ -230,12 +230,12 @@ test("첨부 이미지 미리보기는 인증된 BFF 응답을 Blob으로 받는
         window
     });
 
-    const result = await window.OmagotchiApi.community.getAttachmentBlob("post/1", "file/2");
+    const result = await window.OmagotchiApi.community.getAttachmentThumbnailBlob("post/1", "file/2");
 
     assert.equal(result, imageBlob);
     assert.deepEqual(
         [calls[0].url, calls[0].options.method, calls[0].options.headers.Accept],
-        ["/bff/v1/community/posts/post%2F1/attachments/file%2F2", "GET", "image/*"]
+        ["/bff/v1/community/posts/post%2F1/attachments/file%2F2/thumbnail", "GET", "image/*"]
     );
     assert.equal(calls[0].options.credentials, "same-origin");
 });

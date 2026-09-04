@@ -365,10 +365,10 @@
             downloadUrl: (postId, attachmentId) => toUrl(
                 `/community/posts/${encodeURIComponent(postId)}/attachments/${encodeURIComponent(attachmentId)}`
             ),
-            getAttachmentBlob: async (postId, attachmentId) => {
+            getAttachmentThumbnailBlob: async (postId, attachmentId, {signal} = {}) => {
                 const response = await requestResponse(
-                    `/community/posts/${encodeURIComponent(postId)}/attachments/${encodeURIComponent(attachmentId)}`,
-                    {headers: {Accept: "image/*"}}
+                    `/community/posts/${encodeURIComponent(postId)}/attachments/${encodeURIComponent(attachmentId)}/thumbnail`,
+                    {headers: {Accept: "image/*"}, signal}
                 );
                 return response.blob();
             },
