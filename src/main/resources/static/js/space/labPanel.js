@@ -99,7 +99,7 @@ export function formatMeasuredAt(value) {
     return `${hours}:${minutes} 기준`;
 }
 
-실/**
+/**
  * 실내 환경을 화면 문구로 옮긴다.
  *
  * 실습실 카드와 회의실 상세가 같은 반올림·같은 문구를 쓰도록 여기 한 곳에서 만든다.
