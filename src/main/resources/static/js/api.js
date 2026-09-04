@@ -225,6 +225,7 @@
         spaces: {
             list: () => request("/spaces"),
             listLabs: () => request("/spaces/labs"),
+            listEnvironment: () => request("/spaces/environment"),
             startOccupancy: (spaceId) => request(`/spaces/${encodeURIComponent(spaceId)}/occupancies`, {method: "POST"}),
             extendOccupancy: (spaceId) => request(`/spaces/${encodeURIComponent(spaceId)}/occupancies/extend`, {method: "POST"}),
             releaseOccupancy: (spaceId) => request(`/spaces/${encodeURIComponent(spaceId)}/occupancies/release`, {method: "POST"}),
