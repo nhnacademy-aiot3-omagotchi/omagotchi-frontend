@@ -30,6 +30,11 @@ public class LoginPageController {
                     "비밀번호를 변경했습니다. 새 비밀번호로 다시 로그인해 주세요.",
                     "success"
             ),
+            "password-reset",
+            new LoginNotice(
+                    "비밀번호를 재설정했습니다. 새 비밀번호로 로그인해 주세요.",
+                    "success"
+            ),
             "account-withdrawn",
             new LoginNotice(
                     "계정 탈퇴를 완료했습니다.",
