@@ -33,9 +33,11 @@
         if (name) {
             return { name, meta: roleLabel || `기록 #${record.id}` };
         }
+        // "불러오지 못했다"는 프론트 실패처럼 읽혀 관리자가 새로고침만 반복하게 된다.
+        // 실제로는 서버 응답에 소속 식별자(cohortMembershipId)와 닉네임이 비어 온 것이다.
         return {
             name: `출결 기록 #${record?.id ?? "-"}`,
-            meta: roleLabel || "구성원 정보를 불러오지 못했습니다."
+            meta: roleLabel || "서버가 구성원 정보를 보내지 않았습니다."
         };
     }
 
