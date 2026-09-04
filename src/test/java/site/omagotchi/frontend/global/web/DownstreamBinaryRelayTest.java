@@ -44,6 +44,23 @@ class DownstreamBinaryRelayTest {
     }
 
     @Test
+    @DisplayName("여러 줄로 온 Cache-Control 을 하나도 잃지 않는다")
+    void keepsRepeatedCacheControlValues() {
+        // given: 하류가 지시어를 각각 다른 줄로 보냈다
+        HttpHeaders downstreamHeaders = new HttpHeaders();
+        downstreamHeaders.setContentType(MediaType.IMAGE_JPEG);
+        downstreamHeaders.add(HttpHeaders.CACHE_CONTROL, "max-age=300");
+        downstreamHeaders.add(HttpHeaders.CACHE_CONTROL, "private");
+
+        ResponseEntity<Resource> relayed = DownstreamBinaryRelay.relay(new ResponseEntity<>(
+                new ByteArrayResource(new byte[]{1}), downstreamHeaders, HttpStatus.OK));
+
+        // private 이 빠지면 공용 Cache 가 남의 첨부파일을 저장할 수 있다
+        assertThat(relayed.getHeaders().get(HttpHeaders.CACHE_CONTROL))
+                .containsExactly("max-age=300", "private");
+    }
+
+    @Test
     @DisplayName("다운로드 파일 이름은 그대로 전달한다")
     void keepsContentDisposition() {
         HttpHeaders downstreamHeaders = new HttpHeaders();

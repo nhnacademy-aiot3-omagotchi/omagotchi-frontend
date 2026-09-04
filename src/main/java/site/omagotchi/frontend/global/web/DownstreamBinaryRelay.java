@@ -4,6 +4,8 @@ import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 
+import java.util.List;
+
 /**
  * 하류(Learning Service)가 준 파일 응답을 Browser 로 내보낸다.
  *
@@ -31,10 +33,17 @@ public final class DownstreamBinaryRelay {
         return new ResponseEntity<>(downstream.getBody(), headers, downstream.getStatusCode());
     }
 
+    /**
+     * 같은 이름의 헤더가 여러 줄로 올 수 있다. 첫 줄만 옮기면 나머지가 조용히 사라진다.
+     *
+     * <p>예를 들어 {@code Cache-Control: max-age=300} 과 {@code Cache-Control: private} 가
+     * 따로 오면 {@code private} 가 빠지고, 공용 Cache 가 남의 첨부파일을 저장할 수 있게 된다.</p>
+     */
     private static void copy(ResponseEntity<Resource> downstream, HttpHeaders headers, String name) {
-        String value = downstream.getHeaders().getFirst(name);
-        if (value != null) {
-            headers.set(name, value);
+        List<String> values = downstream.getHeaders().get(name);
+        if (values == null) {
+            return;
         }
+        values.forEach(value -> headers.add(name, value));
     }
 }
