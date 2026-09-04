@@ -148,6 +148,40 @@ class LearningHttpServiceContractTest {
                     .isEqualTo("attachment-content");
             server.verify();
         }
+
+        @Test
+        @DisplayName("첨부파일 썸네일 경로와 인증 계약을 사용한다")
+        void relaysAttachmentThumbnail() throws IOException {
+            server.expect(once(), requestTo(BASE_URL
+                            + "/api/v1/cohorts/7/community/posts/11/attachments/29/thumbnail"))
+                    .andExpect(method(HttpMethod.GET))
+                    .andExpect(header(HttpHeaders.AUTHORIZATION, BEARER))
+                    .andRespond(withSuccess("thumbnail-content", MediaType.IMAGE_JPEG));
+
+            ResponseEntity<Resource> response =
+                    service.previewCommunityAttachment(BEARER, 7L, 11L, 29L);
+
+            assertThat(response.getHeaders().getContentType()).isEqualTo(MediaType.IMAGE_JPEG);
+            assertThat(response.getBody()).isNotNull();
+            assertThat(response.getBody().getContentAsString(StandardCharsets.UTF_8))
+                    .isEqualTo("thumbnail-content");
+            server.verify();
+        }
+
+        @Test
+        @DisplayName("첨부파일 삭제 경로와 인증 계약을 사용한다")
+        void deletesAttachment() {
+            server.expect(once(), requestTo(BASE_URL
+                            + "/api/v1/cohorts/7/community/posts/11/attachments/29"))
+                    .andExpect(method(HttpMethod.DELETE))
+                    .andExpect(header(HttpHeaders.AUTHORIZATION, BEARER))
+                    .andRespond(withNoContent());
+
+            ResponseEntity<Void> response = service.deleteCommunityAttachment(BEARER, 7L, 11L, 29L);
+
+            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+            server.verify();
+        }
     }
 
     @Nested

@@ -1105,47 +1105,135 @@
     font-size: 11px;
 }
 
-.home-overlay--community .overlay-community-attachment-list {
+.home-overlay--community :is(.overlay-community-attachment-list, .overlay-community-selected-preview-list) {
     display: grid;
-    gap: 7px;
+    grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+    gap: 10px;
     margin: 0;
     padding: 0;
     list-style: none;
 }
 
-.home-overlay--community .overlay-community-attachment-list li {
-    display: flex;
-    min-height: 46px;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    padding: 8px 12px;
+.home-overlay--community .overlay-community-selected-preview-list[hidden] {
+    display: none;
+}
+
+.home-overlay--community :is(.overlay-community-attachment-card, .overlay-community-selected-preview) {
+    display: grid;
+    min-width: 0;
+    overflow: hidden;
     border: 1px solid #cbded4;
-    border-radius: 10px;
+    border-radius: 12px;
     background: #f8fcf9;
 }
 
-.home-overlay--community .overlay-community-attachment-list a {
+.home-overlay--community .overlay-community-attachment-media {
+    position: relative;
+    display: grid;
+    aspect-ratio: 16 / 10;
+    overflow: hidden;
+    place-items: center;
+    border-bottom: 1px solid #d9e7df;
+    background:
+        linear-gradient(45deg, rgba(23, 107, 70, 0.05) 25%, transparent 25%),
+        linear-gradient(-45deg, rgba(23, 107, 70, 0.05) 25%, transparent 25%),
+        #eff7f2;
+    background-position: 0 0, 8px 8px;
+    background-size: 16px 16px;
+}
+
+.home-overlay--community .overlay-community-attachment-media img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.home-overlay--community .overlay-community-attachment-media img[hidden],
+.home-overlay--community .overlay-community-attachment-status[hidden] {
+    display: none;
+}
+
+.home-overlay--community .overlay-community-attachment-status {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    padding: 14px;
+    color: var(--overlay-muted);
+    font-size: 11px;
+    font-weight: 800;
+    text-align: center;
+}
+
+.home-overlay--community .overlay-community-attachment-card.is-error .overlay-community-attachment-status {
+    color: #9b3838;
+}
+
+.home-overlay--community .overlay-community-attachment-info {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 4px 10px;
+    min-height: 62px;
+    padding: 9px 10px;
+}
+
+.home-overlay--community .overlay-community-attachment-name {
     min-width: 0;
     overflow: hidden;
     color: var(--overlay-ink);
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 800;
-    text-decoration: none;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 
-.home-overlay--community .overlay-community-attachment-list a span {
-    margin-right: 8px;
-    color: var(--overlay-accent-strong);
-}
-
-.home-overlay--community .overlay-community-attachment-list em {
+.home-overlay--community .overlay-community-attachment-info em {
     flex: 0 0 auto;
     color: var(--overlay-muted);
     font-size: 11px;
     font-style: normal;
+}
+
+.home-overlay--community .overlay-community-attachment-actions {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.home-overlay--community .overlay-community-attachment-download {
+    width: fit-content;
+    color: var(--overlay-accent-strong);
+    font-size: 11px;
+    font-weight: 900;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+.home-overlay--community .overlay-community-attachment-delete {
+    min-height: 28px;
+    padding: 0 9px;
+    border: 1px solid rgba(155, 56, 56, 0.35);
+    border-radius: 8px;
+    background: #fff6f6;
+    color: #9b3838;
+    font: inherit;
+    font-size: 11px;
+    font-weight: 900;
+    cursor: pointer;
+}
+
+.home-overlay--community .overlay-community-attachment-delete:hover:not(:disabled) {
+    background: #fde8e8;
+}
+
+.home-overlay--community .overlay-community-attachment-delete:disabled,
+.home-overlay--community .overlay-community-attachment-card.is-deleting {
+    cursor: wait;
+    opacity: 0.65;
 }
 
 .home-overlay--community :is(.overlay-community-detail, .overlay-community-compose) > footer {

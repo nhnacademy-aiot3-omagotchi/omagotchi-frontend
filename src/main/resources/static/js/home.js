@@ -1,7 +1,11 @@
 import { createAttendance, hasApprovedCohort } from "./home/attendance.js";
 import { createBgmPlayer } from "./home/bgm.js";
 import { createCharacter } from "./home/character.js?v=20260902-7";
-import { saveCommunityPost } from "./home/community.js?v=20260831-1";
+import {
+    renderCommunityAttachmentPreviews,
+    renderCommunitySelectedAttachmentPreviews,
+    saveCommunityPost
+} from "./home/community.js?v=20260904-2";
 import { createLevel } from "./home/level.js";
 import { isAiRecommendedQuest, loadProgressResources, normalizeDailyQuests } from "./home/questData.js?v=20260902-1";
 import { renderRankingBoard } from "./home/rankingBoard.js?v=20260902-2";
@@ -204,6 +208,9 @@ function renderPersonalOverlay() {
 let communityPosts = [];
 let communityPinned = null;
 let activeCommunityPost = null;
+const communityAttachmentPreviewUrls = new Set();
+const communityAttachmentPreviewControllers = new Set();
+let communityAttachmentPreviewObserver = null;
 // 상세를 불러오는 동안 목록으로 돌아가면 늦게 도착한 응답이 목록을 덮어쓴다.
 let communityViewSequence = 0;
 let communityPageCount = 1;
@@ -1069,6 +1076,8 @@ function renderCommunityOverlay(title, content) {
         return false;
     }
 
+    releaseCommunityAttachmentPreviewUrls();
+
     homeOverlayRoot.classList.add("is-open");
     document.body.classList.add("has-home-overlay");
 
@@ -1079,6 +1088,103 @@ function renderCommunityOverlay(title, content) {
         body.scrollTop = 0;
     }
     return true;
+}
+
+function releaseCommunityAttachmentPreviewUrls() {
+    communityAttachmentPreviewObserver?.disconnect();
+    communityAttachmentPreviewObserver = null;
+    communityAttachmentPreviewControllers.forEach((controller) => controller.abort());
+    communityAttachmentPreviewControllers.clear();
+    communityAttachmentPreviewUrls.forEach((url) => URL.revokeObjectURL(url));
+    communityAttachmentPreviewUrls.clear();
+}
+
+async function loadCommunityAttachmentPreview(postId, attachment, card, viewSequence) {
+    const image = card.querySelector("img");
+    const status = card.querySelector(".overlay-community-attachment-status");
+    if (!image || !status) return;
+
+    const controller = new AbortController();
+    communityAttachmentPreviewControllers.add(controller);
+    try {
+        const blob = await api.community.getAttachmentThumbnailBlob(
+            postId,
+            attachment.attachmentId,
+            {signal: controller.signal}
+        );
+        if (viewSequence !== communityViewSequence || !card.isConnected) {
+            return;
+        }
+        const previewUrl = URL.createObjectURL(blob);
+        communityAttachmentPreviewUrls.add(previewUrl);
+        image.src = previewUrl;
+        image.hidden = false;
+        status.hidden = true;
+        card.classList.add("is-ready");
+    } catch (error) {
+        if (error?.name === "AbortError"
+            || viewSequence !== communityViewSequence
+            || !card.isConnected) {
+            return;
+        }
+        status.textContent = "미리보기를 불러오지 못했습니다.";
+        card.classList.add("is-error");
+    } finally {
+        communityAttachmentPreviewControllers.delete(controller);
+    }
+}
+
+function loadCommunityAttachmentPreviews(postId, attachments, viewSequence) {
+    const cards = Array.from(homeOverlayRoot?.querySelectorAll("[data-community-attachment-card]") || []);
+    const attachmentsById = new Map(
+        attachments.map((attachment) => [String(attachment.attachmentId), attachment])
+    );
+    const loadCard = (card) => {
+        communityAttachmentPreviewObserver?.unobserve(card);
+        const attachment = attachmentsById.get(String(card.dataset.communityAttachmentId));
+        if (!attachment) return;
+        void loadCommunityAttachmentPreview(postId, attachment, card, viewSequence);
+    };
+
+    if (typeof IntersectionObserver === "function") {
+        communityAttachmentPreviewObserver = new IntersectionObserver((entries) => {
+            entries.forEach((entry) => {
+                if (entry.isIntersecting) {
+                    loadCard(entry.target);
+                }
+            });
+        }, {
+            root: homeOverlayRoot?.querySelector(".home-overlay-body") || null,
+            rootMargin: "160px 0px"
+        });
+        cards.forEach((card) => communityAttachmentPreviewObserver.observe(card));
+        return;
+    }
+
+    // 오래된 브라우저에서는 기능을 잃지 않도록 기존처럼 모두 불러온다.
+    cards.forEach(loadCard);
+}
+
+function updateSelectedCommunityAttachmentPreviews(input) {
+    const field = input.closest(".overlay-community-form-field");
+    const previewList = field?.querySelector("[data-community-selected-previews]");
+    if (!previewList) return;
+
+    releaseCommunityAttachmentPreviewUrls();
+    const files = Array.from(input.files || []);
+    if (!files.length) {
+        previewList.replaceChildren();
+        previewList.hidden = true;
+        return;
+    }
+
+    const previewUrls = files.map((file) => {
+        const url = URL.createObjectURL(file);
+        communityAttachmentPreviewUrls.add(url);
+        return url;
+    });
+    previewList.innerHTML = renderCommunitySelectedAttachmentPreviews(files, previewUrls);
+    previewList.hidden = false;
 }
 
 function openCommunityComposer(post = null) {
@@ -1106,6 +1212,7 @@ function openCommunityComposer(post = null) {
                     <label for="${attachmentInputId}" class="overlay-community-file-button">이미지 선택</label>
                     <span class="overlay-community-file-summary" data-community-file-summary>첨부할 이미지를 선택하세요.</span>
                 </div>
+                <ul class="overlay-community-selected-preview-list" data-community-selected-previews aria-label="선택한 이미지 미리보기" hidden></ul>
             </section>
             <footer>
                 <button type="button" data-community-close>취소</button>
@@ -1185,7 +1292,10 @@ async function openCommunityDetail(postId) {
             </div>
             <section class="overlay-community-form-field" aria-label="첨부파일">
                 <span>첨부파일</span>
-                ${attachments.length ? `<ul class="overlay-community-attachment-list">${attachments.map((attachment) => `<li><a href="${escapeHtml(api.community.downloadUrl(post.postId, attachment.attachmentId))}" download="${escapeHtml(attachment.originalFileName)}"><span aria-hidden="true">▧</span>${escapeHtml(attachment.originalFileName)}</a><em>${Math.ceil(Number(attachment.sizeBytes || 0) / 1024)}KB</em></li>`).join("")}</ul>` : `<p class="overlay-community-empty-attachments">첨부파일이 없습니다.</p>`}
+                ${renderCommunityAttachmentPreviews(attachments, {
+                    downloadUrlFor: (attachment) => api.community.downloadUrl(post.postId, attachment.attachmentId),
+                    canDelete: Boolean(post.canManage)
+                })}
             </section>
             <footer>
                 <button type="button" data-community-list>목록</button>
@@ -1198,6 +1308,7 @@ async function openCommunityDetail(postId) {
     `;
 
     renderCommunityOverlay("게시글", content);
+    loadCommunityAttachmentPreviews(post.postId, attachments, viewSequence);
     return true;
 }
 
@@ -1208,6 +1319,7 @@ function closeHomeOverlay() {
     }
 
     window.OmagotchiHomeOverlay?.close();
+    releaseCommunityAttachmentPreviewUrls();
     activeCommunityPost = null;
     communityViewSequence += 1;
     homeOverlayRoot.classList.remove("is-open");
@@ -1301,6 +1413,37 @@ function deleteCommunityPost(button) {
         });
 }
 
+async function deleteCommunityAttachment(button) {
+    const detail = button.closest("[data-community-detail]");
+    const card = button.closest("[data-community-attachment-card]");
+    const postId = detail?.dataset.communityDetail;
+    const attachmentId = button.dataset.communityAttachmentDelete;
+    if (!postId || !attachmentId || !card) return;
+
+    const attachmentName = card.querySelector(".overlay-community-attachment-name")?.textContent?.trim()
+        || "선택한 첨부파일";
+    if (!globalThis.confirm(`“${attachmentName}” 첨부파일을 삭제하시겠습니까?`)) return;
+
+    const idleLabel = button.textContent;
+    button.disabled = true;
+    button.textContent = "삭제 중…";
+    card.classList.add("is-deleting");
+    try {
+        await api.community.deleteAttachment(postId, attachmentId);
+        const opened = await openCommunityDetail(postId);
+        if (opened) {
+            showHomeToast("첨부파일이 삭제되었습니다.");
+        }
+    } catch (error) {
+        if (button.isConnected) {
+            button.disabled = false;
+            button.textContent = idleLabel;
+            card.classList.remove("is-deleting");
+        }
+        showHomeToast(error.message || "첨부파일을 삭제하지 못했습니다.");
+    }
+}
+
 async function claimDailyQuest(button) {
     button.disabled = true;
     try {
@@ -1332,6 +1475,7 @@ homeOverlayRoot?.addEventListener("click", (event) => {
     const communityListButton = event.target.closest("[data-community-list]");
     const communityPostButton = event.target.closest("[data-community-post]");
     const communityEditButton = event.target.closest("[data-community-edit]");
+    const communityAttachmentDeleteButton = event.target.closest("[data-community-attachment-delete]");
     const communityDeleteButton = event.target.closest("[data-community-delete]");
 
     if (closeTarget && (event.target === closeTarget || closeTarget.matches("button, a"))) {
@@ -1365,6 +1509,11 @@ homeOverlayRoot?.addEventListener("click", (event) => {
 
     if (communityEditButton && activeCommunityPost) {
         openCommunityComposer(activeCommunityPost);
+        return;
+    }
+
+    if (communityAttachmentDeleteButton) {
+        deleteCommunityAttachment(communityAttachmentDeleteButton);
         return;
     }
 
@@ -1432,6 +1581,7 @@ homeOverlayRoot?.addEventListener("change", (event) => {
     summary.textContent = files.length
         ? `${files.length}개 파일 선택됨 · ${files.map((file) => file.name).join(", ")}`
         : "첨부할 이미지를 선택하세요.";
+    updateSelectedCommunityAttachmentPreviews(attachmentInput);
 });
 
 // 커뮤니티 글쓰기와 기수 가입 코드 제출 처리
