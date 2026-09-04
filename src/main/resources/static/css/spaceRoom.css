@@ -845,7 +845,7 @@
         flex: 0 0 auto;
     }
 
-    .ui-space-meeting .space-room-detail-sensors {
+    .ui-space-meeting .space-room-detail-environment {
         flex: 0 0 auto;
     }
 
@@ -856,7 +856,7 @@
     }
 
     .ui-space-meeting .space-room-detail.is-mine .space-room-detail-head,
-    .ui-space-meeting .space-room-detail.is-mine .space-room-detail-sensors,
+    .ui-space-meeting .space-room-detail.is-mine .space-room-detail-environment,
     .ui-space-meeting .space-room-detail.is-mine .space-room-actions,
     .ui-space-meeting .space-room-detail.is-mine .space-room-action-note {
         flex: 0 0 auto;
