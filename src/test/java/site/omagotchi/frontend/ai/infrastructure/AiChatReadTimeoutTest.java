@@ -35,7 +35,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @DisplayName("AI 채팅 그룹의 읽기 타임아웃")
 class AiChatReadTimeoutTest {
 
-    // 전역 read-timeout(5s)보다 확실히 길고, 그룹 재정의(30s)보다는 짧게
+    // 전역 read-timeout(5s)보다 확실히 길고, 그룹 재정의(50s)보다는 짧게
     private static final Duration FIRST_BYTE_DELAY = Duration.ofSeconds(8);
 
     private static ServerSocket serverSocket;

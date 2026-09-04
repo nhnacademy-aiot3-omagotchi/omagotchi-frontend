@@ -85,7 +85,7 @@ clients:
     # AI 채팅만 SSE라 첫 바이트까지 십수 초가 걸린다(모델 1차 호출 → Tool 실행 → 모델 2차 호출).
     # 그 동안 읽히는 바이트가 없어 전역 read-timeout(5s)으로는 응답이 시작되기 전에 끊긴다.
     # 상한은 nginx proxy_read_timeout(기본 60s)이므로 그보다 여유를 두고 잡는다
-    read-timeout: ${AI_CHAT_READ_TIMEOUT:30s}
+    read-timeout: ${AI_CHAT_READ_TIMEOUT:50s}
 
 auth:
   access-token-refresh:
