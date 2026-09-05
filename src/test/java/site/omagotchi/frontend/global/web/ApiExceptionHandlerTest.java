@@ -4,13 +4,10 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.system.CapturedOutput;
-import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
@@ -22,6 +19,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.mock.web.MockHttpSession;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.ResultActions;
@@ -38,6 +36,7 @@ import site.omagotchi.frontend.global.exception.CommonErrorCode;
 import site.omagotchi.frontend.global.exception.RetryAfterMetadata;
 import site.omagotchi.frontend.global.exception.RetryAfterSeconds;
 import site.omagotchi.frontend.global.learning.infrastructure.LearningDownstreamException;
+import site.omagotchi.frontend.global.logging.HttpErrorEventLogger;
 import site.omagotchi.frontend.global.requestid.RequestId;
 import site.omagotchi.frontend.global.requestid.RequestIdContext;
 import site.omagotchi.frontend.global.security.BrowserSessionInvalidator;
@@ -48,6 +47,9 @@ import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.SoftAssertions.assertSoftly;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -55,7 +57,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@ExtendWith(OutputCaptureExtension.class)
 @WebMvcTest(useDefaultFilters = false)
 @AutoConfigureMockMvc(addFilters = false)
 @Import({
@@ -72,6 +73,9 @@ class ApiExceptionHandlerTest {
 
     @Autowired
     private MockMvc mockMvc;
+
+    @MockitoBean
+    private HttpErrorEventLogger errorEventLogger;
 
     @Test
     @DisplayName("REST Controller BusinessException의 공통 JSON 변환")
@@ -300,7 +304,7 @@ class ApiExceptionHandlerTest {
 
     @Test
     @DisplayName("Learning 하류 5xx 오류는 상세 정보를 기록하고 공통 500으로 은닉")
-    void hidesLearningDownstreamServerError(CapturedOutput output) throws Exception {
+    void hidesLearningDownstreamServerError() throws Exception {
         // Given: REST Controller에서 내부 저장소 정보를 포함한 Learning 5xx가 발생
         // When: 실제 Spring MVC 오류 경계를 통과
         // Then: Browser에는 공통 오류 JSON만 반환하고 원본 정보는 서버에 기록
@@ -316,11 +320,12 @@ class ApiExceptionHandlerTest {
                         jsonPath("$.path").value("/bff/v1/test/errors/learning-5xx"),
                         jsonPath("$.requestId").value(REQUEST_ID)
                 );
-        assertThat(output)
-                .contains("downstream.status=500")
-                .contains("downstream.code=COMMUNITY_ATTACHMENT_STORAGE_FAILED")
-                .contains("downstream.requestId=learning-request-5xx")
-                .contains("storage connection refused");
+        verify(errorEventLogger).log(
+                any(LearningDownstreamException.class),
+                eq(CommonErrorCode.INTERNAL_SERVER_ERROR),
+                eq(HttpStatus.INTERNAL_SERVER_ERROR.value()),
+                any(MockHttpServletRequest.class)
+        );
     }
 
     private static Stream<Arguments> teamDownstreamErrors() {
@@ -348,7 +353,7 @@ class ApiExceptionHandlerTest {
 
     @Test
     @DisplayName("승인되지 않은 Learning 하류 4xx 오류는 계약 오류로 은닉")
-    void hidesUnapprovedLearningDownstreamClientError(CapturedOutput output) throws Exception {
+    void hidesUnapprovedLearningDownstreamClientError() throws Exception {
         // Given: REST Controller에서 공개 목록에 없는 Learning 4xx가 발생
         // When: 실제 Spring MVC 오류 경계를 통과
         // Then: 공개 메시지는 숨기고 안전한 하류 계약 오류 JSON 반환
@@ -365,9 +370,12 @@ class ApiExceptionHandlerTest {
                                 "/bff/v1/test/errors/learning-unapproved-4xx"
                         )
                 );
-        assertThat(output)
-                .contains("downstream.code=LEARNING_INTERNAL_DIAGNOSTIC")
-                .contains("downstream.requestId=learning-request-unapproved");
+        verify(errorEventLogger).log(
+                any(LearningDownstreamException.class),
+                eq(CommonErrorCode.DOWNSTREAM_INVALID_RESPONSE),
+                eq(HttpStatus.BAD_GATEWAY.value()),
+                any(MockHttpServletRequest.class)
+        );
     }
 
     @Test
@@ -421,7 +429,7 @@ class ApiExceptionHandlerTest {
 
     @Test
     @DisplayName("호출 대상 서비스 5xx 변환은 공개 오류와 원본 예외를 최종 경계에서 기록")
-    void logsServerSideBusinessFailure(CapturedOutput output) {
+    void logsServerSideBusinessFailure() {
         // Given: 원본 예외를 포함한 호출 대상 서비스 장애
         MockHttpServletRequest request =
                 new MockHttpServletRequest("POST", "/timer/v1/timers");
@@ -429,24 +437,27 @@ class ApiExceptionHandlerTest {
                 new IllegalStateException("test service connection failure");
 
         // When: 공개 ErrorCode가 확정된 5xx 오류의 공통 응답 변환
+        BusinessException exception =
+                new BusinessException(CommonErrorCode.SERVICE_UNAVAILABLE, cause);
         ResponseEntity<ApiErrorResponse> response = handler.handleBusinessException(
-                new BusinessException(CommonErrorCode.SERVICE_UNAVAILABLE, cause),
+                exception,
                 request,
                 new MockHttpServletResponse()
         );
 
         // Then: 공개 상태와 원본 예외 기록
-        assertSoftly(softly -> {
-            softly.assertThat(response.getStatusCode().value()).isEqualTo(503);
-            softly.assertThat(output)
-                    .contains("error.code=COMMON_SERVICE_UNAVAILABLE")
-                    .contains("test service connection failure");
-        });
+        assertThat(response.getStatusCode().value()).isEqualTo(503);
+        verify(errorEventLogger).log(
+                exception,
+                CommonErrorCode.SERVICE_UNAVAILABLE,
+                HttpStatus.SERVICE_UNAVAILABLE.value(),
+                request
+        );
     }
 
     @Test
     @DisplayName("정의하지 않은 Spring MVC 상태는 원본 예외를 기록하고 500으로 은닉")
-    void hidesUnsupportedFrameworkStatusWithoutReplacingOriginal(CapturedOutput output) {
+    void hidesUnsupportedFrameworkStatusWithoutReplacingOriginal() {
         // Given: 공통 오류 계약에 정의하지 않은 Spring MVC 상태와 원본 예외
         MockHttpServletRequest request =
                 new MockHttpServletRequest("GET", "/timer/v1/example");
@@ -474,10 +485,13 @@ class ApiExceptionHandlerTest {
                             assertThat(body.code())
                                     .isEqualTo("COMMON_INTERNAL_SERVER_ERROR")
                     );
-            softly.assertThat(output)
-                    .contains("Spring MVC 오류 응답 계약 위반 status=422")
-                    .contains("original framework failure");
         });
+        verify(errorEventLogger).log(
+                exception,
+                CommonErrorCode.INTERNAL_SERVER_ERROR,
+                HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                request
+        );
     }
 
     @Test
@@ -518,7 +532,7 @@ class ApiExceptionHandlerTest {
 
     @Test
     @DisplayName("Spring MVC 503의 응답·로그 오류 Code 일치")
-    void usesServiceUnavailableCodeForFrameworkFailureLog(CapturedOutput output) {
+    void usesServiceUnavailableCodeForFrameworkFailureLog() {
         // Given: Spring MVC가 전달한 503 상태와 원본 예외
         MockHttpServletRequest request =
                 new MockHttpServletRequest("GET", "/timer/v1/example");
@@ -546,15 +560,18 @@ class ApiExceptionHandlerTest {
                             assertThat(body.code())
                                     .isEqualTo("COMMON_SERVICE_UNAVAILABLE")
                     );
-            softly.assertThat(output)
-                    .contains("error.code=COMMON_SERVICE_UNAVAILABLE")
-                    .doesNotContain("error.code=COMMON_INTERNAL_SERVER_ERROR");
         });
+        verify(errorEventLogger).log(
+                exception,
+                CommonErrorCode.SERVICE_UNAVAILABLE,
+                HttpStatus.SERVICE_UNAVAILABLE.value(),
+                request
+        );
     }
 
     @Test
     @DisplayName("예상하지 못한 REST Controller 예외는 상세 내용을 숨긴 500 응답")
-    void hidesUnexpectedException(CapturedOutput output) throws Exception {
+    void hidesUnexpectedException() throws Exception {
         // Given: 처리 규칙이 없는 REST Controller 예외
         // When: REST Controller 요청 처리 실패
         // Then: 상세 내용을 숨긴 공통 500 응답과 원본 예외 기록
@@ -566,7 +583,12 @@ class ApiExceptionHandlerTest {
                         jsonPath("$.message")
                                 .value(CommonErrorCode.INTERNAL_SERVER_ERROR.message())
                 );
-        assertThat(output).contains("unexpected controller failure");
+        verify(errorEventLogger).log(
+                any(IllegalStateException.class),
+                eq(CommonErrorCode.INTERNAL_SERVER_ERROR),
+                eq(HttpStatus.INTERNAL_SERVER_ERROR.value()),
+                any(MockHttpServletRequest.class)
+        );
     }
 
     private void assertAuthenticationFailureExpiresSession(String path) throws Exception {

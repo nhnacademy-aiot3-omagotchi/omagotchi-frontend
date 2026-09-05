@@ -3,7 +3,6 @@ package site.omagotchi.frontend.global.web;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 import org.springframework.context.support.DefaultMessageSourceResolvable;
@@ -22,7 +21,6 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.ServletWebRequest;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
-import site.omagotchi.frontend.global.requestid.RequestIdContext;
 import site.omagotchi.frontend.global.exception.ApiErrorResponse;
 import site.omagotchi.frontend.global.exception.BusinessException;
 import site.omagotchi.frontend.global.exception.CommonErrorCode;
@@ -31,13 +29,14 @@ import site.omagotchi.frontend.global.exception.ErrorHttpMapper;
 import site.omagotchi.frontend.global.exception.RetryAfterMetadata;
 import site.omagotchi.frontend.global.session.SessionStoreFailures;
 import site.omagotchi.frontend.global.learning.infrastructure.LearningDownstreamException;
+import site.omagotchi.frontend.global.logging.HttpErrorEventLogger;
+import site.omagotchi.frontend.global.requestid.RequestIdContext;
 import site.omagotchi.frontend.global.security.BrowserSessionInvalidator;
 
 import java.util.Map;
 import java.util.Optional;
 
 // @RestController 예외의 Frontend 공통 JSON 오류 응답 변환
-@Slf4j
 @Order(Ordered.HIGHEST_PRECEDENCE) // HTML 예외 처리기보다 REST JSON 예외 처리 우선
 @RestControllerAdvice(annotations = RestController.class)
 @NullMarked
@@ -170,6 +169,7 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
     );
 
     private final BrowserSessionInvalidator sessionInvalidator;
+    private final HttpErrorEventLogger errorEventLogger;
 
     // 클라이언트 공개 ErrorCode와 응답 방식이 확정된 실패 처리
     @ExceptionHandler(BusinessException.class)
@@ -182,7 +182,12 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
         if (status == HttpStatus.UNAUTHORIZED) {
             expireAuthenticationSession(request, response);
         } else if (status.is5xxServerError()) {
-            logServerFailure(exception, exception.getErrorCode(), request);
+            this.errorEventLogger.log(
+                    exception,
+                    exception.getErrorCode(),
+                    status.value(),
+                    request
+            );
         }
         return response(
                 exception.getErrorCode(),
@@ -215,11 +220,25 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
                     .body(publicResponse);
         }
 
-        logLearningDownstreamFailure(exception, request);
         if (exception.getStatusCode().is5xxServerError()) {
+            this.errorEventLogger.log(
+                    exception,
+                    CommonErrorCode.INTERNAL_SERVER_ERROR,
+                    HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                    request
+            );
             return response(CommonErrorCode.INTERNAL_SERVER_ERROR, request);
         }
 
+        HttpStatus status = ErrorHttpMapper.toHttpStatus(
+                CommonErrorCode.DOWNSTREAM_INVALID_RESPONSE.type()
+        );
+        this.errorEventLogger.log(
+                exception,
+                CommonErrorCode.DOWNSTREAM_INVALID_RESPONSE,
+                status.value(),
+                request
+        );
         return response(CommonErrorCode.DOWNSTREAM_INVALID_RESPONSE, request);
     }
 
@@ -257,24 +276,6 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
             case 409 -> "현재 상태에서는 요청을 처리할 수 없습니다.";
             default -> "요청을 처리할 수 없습니다.";
         };
-    }
-
-    private void logLearningDownstreamFailure(
-            LearningDownstreamException exception,
-            HttpServletRequest request
-    ) {
-        ApiErrorResponse downstream = exception.getErrorResponse();
-        log.error(
-                "Learning 하류 오류 은닉 downstream.status={}, downstream.code={}, "
-                        + "downstream.requestId={}, exception={}, method={}, path={}",
-                exception.getStatusCode().value(),
-                downstream.code(),
-                downstream.requestId(),
-                exception.getClass().getName(),
-                request.getMethod(),
-                request.getRequestURI(),
-                exception
-        );
     }
 
     @Override
@@ -331,7 +332,12 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
         Optional<CommonErrorCode> mappedErrorCode = ErrorHttpMapper.findErrorCode(statusCode);
         if (mappedErrorCode.isEmpty()) {
             HttpServletRequest servletRequest = ((ServletWebRequest) request).getRequest();
-            logFrameworkContractViolation(exception, statusCode, servletRequest);
+            this.errorEventLogger.log(
+                    exception,
+                    CommonErrorCode.INTERNAL_SERVER_ERROR,
+                    HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                    servletRequest
+            );
             return frameworkResponse(
                     exception,
                     CommonErrorCode.INTERNAL_SERVER_ERROR,
@@ -345,9 +351,10 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
         ErrorCode errorCode = mappedErrorCode.get();
 
         if (statusCode.is5xxServerError()) {
-            logServerFailure(
+            this.errorEventLogger.log(
                     exception,
                     errorCode,
+                    statusCode.value(),
                     ((ServletWebRequest) request).getRequest()
             );
         }
@@ -373,7 +380,12 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
         }
 
         // 처리 규칙이 없는 예외의 상세 정보 은닉과 500 응답
-        logServerFailure(exception, CommonErrorCode.INTERNAL_SERVER_ERROR, request);
+        this.errorEventLogger.log(
+                exception,
+                CommonErrorCode.INTERNAL_SERVER_ERROR,
+                HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                request
+        );
         return response(CommonErrorCode.INTERNAL_SERVER_ERROR, request);
     }
 
@@ -400,36 +412,6 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
                 responseHeaders,
                 statusCode,
                 request
-        );
-    }
-
-    private void logServerFailure(
-            Exception exception,
-            ErrorCode errorCode,
-            HttpServletRequest request
-    ) {
-        log.error(
-                "서버 오류 error.code={}, exception={}, method={}, path={}",
-                errorCode.code(),
-                exception.getClass().getName(),
-                request.getMethod(),
-                request.getRequestURI(),
-                exception
-        );
-    }
-
-    private void logFrameworkContractViolation(
-            Exception exception,
-            HttpStatusCode statusCode,
-            HttpServletRequest request
-    ) {
-        log.error(
-                "Spring MVC 오류 응답 계약 위반 status={}, exception={}, method={}, path={}",
-                statusCode.value(),
-                exception.getClass().getName(),
-                request.getMethod(),
-                request.getRequestURI(),
-                exception
         );
     }
 

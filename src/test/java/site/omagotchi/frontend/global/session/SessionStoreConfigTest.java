@@ -7,15 +7,18 @@ import org.springframework.boot.session.autoconfigure.SessionProperties;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.session.web.http.SessionRepositoryFilter;
 import org.springframework.web.servlet.ViewResolver;
+import site.omagotchi.frontend.global.logging.HttpErrorEventLogger;
 import site.omagotchi.frontend.global.web.ServletApiErrorResponseWriter;
 import tools.jackson.databind.json.JsonMapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.mock;
 
 class SessionStoreConfigTest {
 
     private final SessionStoreConfig config = new SessionStoreConfig();
+    private final HttpErrorEventLogger errorEventLogger = mock(HttpErrorEventLogger.class);
     private final ServletApiErrorResponseWriter servletApiErrorResponseWriter =
             new ServletApiErrorResponseWriter(JsonMapper.builder().build());
     // Filter 순서 Test에서 사용되지 않는 응답 작성 의존성의 최소 대역
@@ -36,6 +39,7 @@ class SessionStoreConfigTest {
         FilterRegistrationBean<SessionStoreErrorFilter> registration =
                 config.sessionStoreErrorFilter(
                         failureResponseWriter,
+                        errorEventLogger,
                         sessionProperties
                 );
 
@@ -57,6 +61,7 @@ class SessionStoreConfigTest {
         FilterRegistrationBean<SessionStoreErrorFilter> registration =
                 config.sessionStoreErrorFilter(
                         failureResponseWriter,
+                        errorEventLogger,
                         sessionProperties
                 );
 
@@ -75,6 +80,7 @@ class SessionStoreConfigTest {
         // Then: 순서 산술 오버플로우 방지
         assertThatThrownBy(() -> config.sessionStoreErrorFilter(
                 failureResponseWriter,
+                errorEventLogger,
                 sessionProperties
         ))
                 .isInstanceOf(IllegalStateException.class)
