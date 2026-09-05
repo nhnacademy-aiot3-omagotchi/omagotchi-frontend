@@ -8,7 +8,7 @@ const meta = {
   parameters: { layout: "fullscreen" },
   args: { mode: "login", loading: false },
   argTypes: {
-    mode: { control: "radio", options: ["login", "register"] },
+    mode: { control: "radio", options: ["login", "register", "password-reset"] },
     emailVerification: { control: "object" }
   }
 };
@@ -59,36 +59,94 @@ export const MobileRegisterCodeSent = {
   parameters: { viewport: { defaultViewport: "mobile1" } }
 };
 
-/* ── 좌측 히어로 ───────────────────────────────────────────────────
- * 예전에는 큰 제목 두 줄 + 설명 + 해시태그 배지였다. 픽셀 폰트가 좁은 폭에서
- * "새로운 학습 여 / 정을" 처럼 끊기고 아래 절반이 비어서, 캐릭터 하나와 한 줄로 줄였다.
- */
+export const PasswordResetEmail = {
+  args: { mode: "password-reset" },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByTestId("password-reset-email-step")).toBeInTheDocument();
+    await expect(canvas.getByRole("button", { name: "인증번호 받기" })).toBeEnabled();
+    await expect(canvas.getByRole("link", { name: "로그인으로 돌아가기" })).toHaveAttribute(
+      "href",
+      "/login"
+    );
+  }
+};
+export const PasswordResetRequestingCode = {
+  args: { mode: "password-reset", emailVerification: { state: "requesting" } }
+};
+export const PasswordResetCodeSent = {
+  args: {
+    mode: "password-reset",
+    emailVerification: {
+      state: "sent",
+      maskedEmail: "us**@example.com",
+      remaining: "09:42"
+    }
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByTestId("password-reset-challenge-step")).toBeInTheDocument();
+    await expect(canvas.getByLabelText("인증번호")).toBeEnabled();
+    await expect(canvas.getByLabelText("새 비밀번호")).toBeEnabled();
+    await expect(canvas.getByLabelText("새 비밀번호 확인")).toBeEnabled();
+    await expect(canvas.getByRole("button", { name: "비밀번호 재설정" })).toBeEnabled();
+  }
+};
+export const PasswordResetCooldown = {
+  args: {
+    mode: "password-reset",
+    emailVerification: { state: "cooldown", retryAfterSeconds: 37 }
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(
+      canvas.getByRole("button", { name: "인증번호 재전송 (37초)" })
+    ).toBeDisabled();
+  }
+};
+export const PasswordResetInvalid = {
+  args: {
+    mode: "password-reset",
+    emailVerification: { state: "invalid", remaining: "08:15" }
+  }
+};
+export const PasswordResetExpired = {
+  args: { mode: "password-reset", emailVerification: { state: "expired" } },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByText("00:00")).toBeInTheDocument();
+    await expect(canvas.getByLabelText("인증번호")).toBeDisabled();
+    await expect(canvas.getByLabelText("새 비밀번호")).toBeDisabled();
+    await expect(canvas.getByRole("button", { name: "비밀번호 재설정" })).toBeDisabled();
+  }
+};
+export const PasswordResetSubmitting = {
+  args: { mode: "password-reset", emailVerification: { state: "submitting" } }
+};
+export const MobilePasswordResetCodeSent = {
+  args: { mode: "password-reset", emailVerification: { state: "sent" } },
+  parameters: { viewport: { defaultViewport: "mobile1" } }
+};
 
-/** 로그인 히어로 — 공부쟁이. */
 export const HeroLogin = {
   args: { mode: "login" },
   play: async ({ canvasElement }) => {
     const hero = canvasElement.querySelector(".auth-hero");
     expect(hero).not.toBeNull();
 
-    // 캐릭터는 장식이라 보조기기에서 감춘다.
     const stage = hero.querySelector(".auth-hero-stage");
     expect(stage.getAttribute("aria-hidden")).toBe("true");
     expect(stage.querySelector("img").getAttribute("src")).toContain("study/study_eye.gif");
 
-    // 떠 있는 느낌은 캐릭터와 그림자가 함께 움직여야 나온다.
     expect(hero.querySelector(".auth-hero-shadow")).not.toBeNull();
 
-    // 옛 요소는 남아 있으면 안 된다.
     expect(hero.querySelector("h2")).toBeNull();
     expect(hero.querySelector(".ui-auth-aside-badges")).toBeNull();
 
-    // 문구는 한 줄만.
     expect(hero.querySelector(".auth-hero-line").textContent).toBe("오늘도 같이 공부해요");
   }
 };
 
-/** 회원가입 히어로 — 새싹이. 시작하는 화면에 맞췄다. */
 export const HeroRegister = {
   args: { mode: "register" },
   play: async ({ canvasElement }) => {
@@ -96,21 +154,17 @@ export const HeroRegister = {
     expect(hero.querySelector("img").getAttribute("src")).toContain("sprout/sprout_eye.gif");
     expect(hero.querySelector(".auth-hero-line").textContent).toBe("같이 공부할 오마고치가 기다려요");
 
-    // 페이지 제목은 히어로가 아니라 오른쪽 폼이 갖는다. 접근성 참조가 여기 걸려 있다.
     const canvas = within(canvasElement);
     expect(canvas.getByRole("heading", { level: 1 })).toBeInTheDocument();
     expect(hero.querySelector("h1, h2, h3")).toBeNull();
   }
 };
 
-/** 좁은 화면. 문구가 사라지지 않아야 한다. */
 export const HeroNarrow = {
   args: { mode: "register" },
   parameters: { viewport: { defaultViewport: "mobile1" } },
   play: async ({ canvasElement }) => {
     const line = canvasElement.querySelector(".auth-hero-line");
-    // design-system.css 가 좁은 화면에서 .ui-auth-aside p 를 숨기는데,
-    // :not(.auth-hero) 로 한정하지 않으면 이 한 줄까지 사라진다.
     expect(getComputedStyle(line).display).not.toBe("none");
   }
 };

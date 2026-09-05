@@ -20,6 +20,7 @@ import site.omagotchi.frontend.auth.application.port.IdentityAuthClient;
 import site.omagotchi.frontend.auth.application.result.BrowserSessionTokenBundle;
 import site.omagotchi.frontend.auth.domain.GlobalRole;
 import site.omagotchi.frontend.auth.presentation.page.LoginPageController;
+import site.omagotchi.frontend.auth.presentation.page.PasswordResetPageController;
 import site.omagotchi.frontend.auth.presentation.security.AccessTokenRefreshInterceptor;
 import site.omagotchi.frontend.auth.presentation.security.BrowserSessionTokens;
 import site.omagotchi.frontend.auth.presentation.security.BrowserTokenSessionAuthenticationStrategy;
@@ -57,7 +58,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
 
-@WebMvcTest(LoginPageController.class)
+@WebMvcTest({LoginPageController.class, PasswordResetPageController.class})
 @Import({
         ServletApiErrorResponseWriter.class,
         BffApiExceptionResolver.class,
@@ -160,6 +161,53 @@ class AuthenticationSecurityMvcTest {
                         status().isOk(),
                         model().attribute("authFeedbackType", "success"),
                         content().string(containsString("새 비밀번호로 다시 로그인해 주세요."))
+                );
+    }
+
+    @Test
+    @DisplayName("허용된 비밀번호 재설정 안내 Code의 Login Page 표시")
+    void rendersPasswordResetNotice() throws Exception {
+        // When: 허용된 비밀번호 재설정 안내 Code의 Login Page 요청
+        // Then: 고정된 성공 안내 표시
+        mockMvc.perform(get("/login?notice=password-reset"))
+                .andExpectAll(
+                        status().isOk(),
+                        model().attribute("authFeedbackType", "success"),
+                        content().string(containsString("비밀번호를 재설정했습니다."))
+                );
+    }
+
+    @Test
+    @DisplayName("익명 비밀번호 재설정 Page와 CSRF Token 제공")
+    void rendersPasswordResetPageWithCsrfToken() throws Exception {
+        // When: 비밀번호 재설정 Page 요청
+        MvcResult result = mockMvc.perform(get("/password-reset"))
+                .andExpectAll(
+                        status().isOk(),
+                        view().name("pages/auth/passwordReset"),
+                        content().string(containsString("name=\"_csrf\"")),
+                        content().string(containsString(
+                                "data-email-otp-path=\"/bff/v2/auth/password-reset/email-otp\""
+                        )),
+                        content().string(containsString(
+                                "data-password-reset-path=\"/bff/v2/auth/password-reset\""
+                        ))
+                )
+                .andReturn();
+
+        // Then: 익명 Session 기반 CSRF Token 생성
+        assertThat(result.getRequest().getSession(false)).isNotNull();
+    }
+
+    @Test
+    @DisplayName("기존 비밀번호 변경 안내 경로의 정식 재설정 Page Redirect")
+    void redirectsLegacyPasswordChangePage() throws Exception {
+        // When: 기존 비밀번호 변경 안내 경로 요청
+        // Then: 정식 비밀번호 재설정 경로 이동
+        mockMvc.perform(get("/password-change"))
+                .andExpectAll(
+                        status().isFound(),
+                        redirectedUrl("/password-reset")
                 );
     }
 

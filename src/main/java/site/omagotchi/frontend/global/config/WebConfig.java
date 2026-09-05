@@ -14,9 +14,6 @@ public class WebConfig implements WebMvcConfigurer {
                 .setViewName("pages/public/index");
         registry.addViewController("/index")
                 .setViewName("pages/public/index");
-        registry.addViewController("/password-change")
-                .setViewName("pages/auth/passwordChange");
-
         // 사용자 기능 Page
         registry.addViewController("/username")
                 .setViewName("pages/onboarding/username");

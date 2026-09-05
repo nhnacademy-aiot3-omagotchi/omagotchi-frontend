@@ -19,7 +19,8 @@ import java.nio.charset.StandardCharsets;
         group = IdentityAuthHttpServiceConfig.GROUP_NAME,
         types = {
                 IdentityAuthHttpService.class,
-                IdentitySignupV2HttpService.class
+                IdentitySignupV2HttpService.class,
+                IdentityPasswordResetHttpService.class
         }
 )
 class IdentityAuthHttpServiceConfig {

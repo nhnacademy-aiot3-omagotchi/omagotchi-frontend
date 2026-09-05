@@ -1,4 +1,4 @@
-const ISO_CONTROL_CHARACTER = /[\u0000-\u001f\u007f-\u009f]/u;
+import {validatePasswordPolicy} from "./passwordPolicy.js";
 
 export function validateAccountName(rawName) {
     const name = String(rawName ?? "").trim();
@@ -18,18 +18,7 @@ export function validateNewPassword(currentPassword, newPassword, confirmation) 
     if (newPassword === currentPassword) {
         return {valid: false, message: "새 비밀번호는 현재 비밀번호와 달라야 합니다."};
     }
-    const utf8Bytes = new TextEncoder().encode(newPassword).length;
-    if (newPassword.length < 15
-        || newPassword.length > 64
-        || newPassword.trim().length === 0
-        || ISO_CONTROL_CHARACTER.test(newPassword)
-        || utf8Bytes > 72) {
-        return {
-            valid: false,
-            message: "새 비밀번호는 15~64자이고, 제어 문자를 포함하거나 UTF-8 기준 72바이트를 넘을 수 없습니다."
-        };
-    }
-    return {valid: true};
+    return validatePasswordPolicy(newPassword);
 }
 
 export function validateAccountWithdrawal(currentPassword, confirmed) {
