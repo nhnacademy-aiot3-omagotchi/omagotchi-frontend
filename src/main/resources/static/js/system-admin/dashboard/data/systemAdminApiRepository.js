@@ -16,6 +16,7 @@ function requireApi(api) {
 
 const ACCOUNT_ROLES = new Set(["USER", "SYSTEM_ADMIN"]);
 const ACCOUNT_STATUSES = new Set(["ACTIVE", "DISABLED", "WITHDRAWN"]);
+const AUDIT_PAGE_SIZE = 20;
 
 function normalizeCohort(cohort) {
     return {
@@ -152,12 +153,31 @@ export function normalizeAudit(audit) {
     };
 }
 
-async function loadAudits(client) {
-    const response = await client.systemAdmin.getAudits({page: 0, size: 50});
-    if (!Array.isArray(response?.items)) {
+async function fetchAuditPage(client, pageNumber) {
+    if (!Number.isInteger(pageNumber) || pageNumber < 0) {
+        throw new Error("감사 로그 페이지 번호가 올바르지 않습니다.");
+    }
+    const response = await client.systemAdmin.getAudits({
+        page: pageNumber,
+        size: AUDIT_PAGE_SIZE
+    });
+    const page = response?.page;
+    const validPage = Number.isInteger(page?.number) && page.number >= 0
+        && Number.isInteger(page?.size) && page.size > 0
+        && Number.isInteger(page?.totalElements) && page.totalElements >= 0
+        && Number.isInteger(page?.totalPages) && page.totalPages >= 0;
+    if (!Array.isArray(response?.items)
+        || !validPage
+        || page.number !== pageNumber
+        || page.totalPages !== Math.ceil(page.totalElements / page.size)
+        || (page.totalPages === 0 ? page.number !== 0 : page.number >= page.totalPages)
+        || response.items.length !== Math.min(page.size, page.totalElements - page.number * page.size)) {
         throw new Error("감사 로그 응답 형식이 올바르지 않습니다.");
     }
-    return response.items.map(normalizeAudit);
+    return {
+        items: response.items.map(normalizeAudit),
+        page: {...page}
+    };
 }
 
 async function loadAllUsers(client) {
@@ -268,10 +288,18 @@ export function createSystemAdminApiRepository(api = window.OmagotchiApi) {
             const [users, cohorts, auditResult] = await Promise.all([
                 loadAllUsers(client),
                 client.manager.getCohorts(),
-                loadAudits(client).then(
-                    (audits) => ({audits, error: null}),
+                fetchAuditPage(client, 0).then(
+                    (auditPage) => ({auditPage, error: null}),
                     (error) => ({
-                        audits: [],
+                        auditPage: {
+                            items: [],
+                            page: {
+                                number: 0,
+                                size: AUDIT_PAGE_SIZE,
+                                totalElements: 0,
+                                totalPages: 0
+                            }
+                        },
                         error: error?.message || "감사 로그를 불러오지 못했습니다."
                     })
                 )
@@ -279,7 +307,8 @@ export function createSystemAdminApiRepository(api = window.OmagotchiApi) {
             return {
                 users,
                 cohorts: (Array.isArray(cohorts) ? cohorts : []).map(normalizeCohort),
-                audits: auditResult.audits,
+                audits: auditResult.auditPage.items,
+                auditPage: auditResult.auditPage.page,
                 auditError: auditResult.error,
                 capabilities: {
                     identity: true,
@@ -295,6 +324,10 @@ export function createSystemAdminApiRepository(api = window.OmagotchiApi) {
                     cohortSummary: true
                 }
             };
+        },
+
+        async loadAuditPage(pageNumber) {
+            return fetchAuditPage(client, pageNumber);
         },
 
         /**
