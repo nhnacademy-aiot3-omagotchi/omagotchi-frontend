@@ -171,8 +171,7 @@ async function fetchAuditPage(client, pageNumber) {
         || page.number !== pageNumber
         || page.totalPages !== Math.ceil(page.totalElements / page.size)
         || (page.totalPages === 0 ? page.number !== 0 : page.number >= page.totalPages)
-        || response.items.length > page.size
-        || response.items.length > page.totalElements) {
+        || response.items.length !== Math.min(page.size, page.totalElements - page.number * page.size)) {
         throw new Error("감사 로그 응답 형식이 올바르지 않습니다.");
     }
     return {

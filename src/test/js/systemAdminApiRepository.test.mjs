@@ -950,6 +950,7 @@ test("감사 로그의 요청 페이지와 페이지 정보를 보존한다", as
 
     // Then: 감사 로그만 해당 페이지로 조회하고 페이지 정보를 유지
     assert.deepEqual(fixture.calls, [["getAudits", {page: 1, size: 20}]]);
+    assert.equal(loaded.items.length, 1);
     assert.equal(loaded.items[0].action, "계정 비활성화");
     assert.deepEqual(loaded.page, {
         number: 1,
@@ -972,6 +973,69 @@ test("요청과 다른 감사 로그 페이지 응답을 거부한다", async ()
     const loadAuditPage = repository.loadAuditPage(1);
 
     // Then: 감사 로그 응답 계약 위반 처리
+    await assert.rejects(loadAuditPage, /감사 로그 응답 형식이 올바르지 않습니다/);
+});
+
+for (const {name, pageNumber, totalElements, itemCount} of [
+    {name: "전체 건수가 양수인 빈 첫 페이지", pageNumber: 0, totalElements: 21, itemCount: 0},
+    {name: "항목이 부족한 중간 페이지", pageNumber: 1, totalElements: 41, itemCount: 19},
+    {name: "항목이 누락된 마지막 페이지", pageNumber: 1, totalElements: 21, itemCount: 0},
+    {name: "항목이 초과된 마지막 페이지", pageNumber: 1, totalElements: 21, itemCount: 2},
+    {name: "전체 건수가 0인 비어 있지 않은 페이지", pageNumber: 0, totalElements: 0, itemCount: 1}
+]) {
+    test(`감사 로그 ${name} 응답 거부`, async () => {
+        // Given: 페이지 정보와 실제 항목 수가 다른 응답
+        const fixture = apiFixture();
+        const getAudits = fixture.api.systemAdmin.getAudits;
+        fixture.api.systemAdmin.getAudits = async (query) => {
+            const response = await getAudits(query);
+            return {
+                items: Array.from({length: itemCount}, () => response.items[0]),
+                page: {
+                    number: query.page,
+                    size: query.size,
+                    totalElements,
+                    totalPages: Math.ceil(totalElements / query.size)
+                }
+            };
+        };
+        const repository = createSystemAdminApiRepository(fixture.api);
+
+        // When: 항목 수가 일치하지 않는 페이지 조회
+        const loadAuditPage = repository.loadAuditPage(pageNumber);
+
+        // Then: 감사 로그 응답 계약 위반 처리
+        await assert.rejects(loadAuditPage, /감사 로그 응답 형식이 올바르지 않습니다/);
+    });
+}
+
+test("전체 감사 로그가 없는 빈 페이지 조회", async () => {
+    // Given: 전체 건수와 항목 수가 모두 0인 응답
+    const fixture = apiFixture();
+    const response = {
+        items: [],
+        page: {number: 0, size: 20, totalElements: 0, totalPages: 0}
+    };
+    fixture.api.systemAdmin.getAudits = async () => response;
+    const repository = createSystemAdminApiRepository(fixture.api);
+
+    // When: 첫 페이지 조회
+    const loaded = await repository.loadAuditPage(0);
+
+    // Then: 정상 빈 목록과 페이지 정보 반환
+    assert.deepEqual(loaded, response);
+});
+
+test("감사 로그 페이지 정보가 누락된 응답 거부", async () => {
+    // Given: page 필드가 없는 응답
+    const fixture = apiFixture();
+    fixture.api.systemAdmin.getAudits = async () => ({items: []});
+    const repository = createSystemAdminApiRepository(fixture.api);
+
+    // When: 첫 페이지 조회
+    const loadAuditPage = repository.loadAuditPage(0);
+
+    // Then: 페이지 필드 접근 오류 없이 응답 계약 위반 처리
     await assert.rejects(loadAuditPage, /감사 로그 응답 형식이 올바르지 않습니다/);
 });
 
