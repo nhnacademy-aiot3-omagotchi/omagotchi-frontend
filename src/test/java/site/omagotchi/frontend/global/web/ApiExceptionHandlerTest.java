@@ -24,6 +24,8 @@ import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.web.servlet.ResultActions;
+import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.web.ErrorResponseException;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -36,6 +38,8 @@ import site.omagotchi.frontend.global.exception.CommonErrorCode;
 import site.omagotchi.frontend.global.exception.RetryAfterMetadata;
 import site.omagotchi.frontend.global.exception.RetryAfterSeconds;
 import site.omagotchi.frontend.global.learning.infrastructure.LearningDownstreamException;
+import site.omagotchi.frontend.global.requestid.RequestId;
+import site.omagotchi.frontend.global.requestid.RequestIdContext;
 import site.omagotchi.frontend.global.security.BrowserSessionInvalidator;
 import site.omagotchi.frontend.global.security.SecurityErrorCode;
 
@@ -60,6 +64,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         ApiExceptionHandlerTest.TestRestController.class
 })
 class ApiExceptionHandlerTest {
+
+    private static final String REQUEST_ID = "11111111111111111111111111111111";
 
     @Autowired
     private ApiExceptionHandler handler;
@@ -101,7 +107,7 @@ class ApiExceptionHandlerTest {
         // Given: REST Controller에서 Frontend 공개가 승인된 Learning 4xx가 발생
         // When: 실제 Spring MVC 오류 경계를 통과
         // Then: 공개 상태·Code를 유지하되 하류 원문 Message는 노출하지 않음
-        mockMvc.perform(post("/bff/v1/test/errors/learning-approved-4xx"))
+        performWithRequestId(post("/bff/v1/test/errors/learning-approved-4xx"))
                 .andExpectAll(
                         status().isConflict(),
                         content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON),
@@ -111,7 +117,7 @@ class ApiExceptionHandlerTest {
                         jsonPath("$.path").value(
                                 "/bff/v1/test/errors/learning-approved-4xx"
                         ),
-                        jsonPath("$.requestId").value("learning-request-4xx")
+                        jsonPath("$.requestId").value(REQUEST_ID)
                 );
     }
 
@@ -133,7 +139,7 @@ class ApiExceptionHandlerTest {
     @Test
     @DisplayName("이미 실행 중인 Learning 타이머 오류는 Frontend 409 계약으로 전달")
     void forwardsTimerAlreadyRunning() throws Exception {
-        mockMvc.perform(post("/bff/v1/test/errors/timer-already-running"))
+        performWithRequestId(post("/bff/v1/test/errors/timer-already-running"))
                 .andExpectAll(
                         status().isConflict(),
                         content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON),
@@ -141,7 +147,7 @@ class ApiExceptionHandlerTest {
                         jsonPath("$.code").value("TIMER_ALREADY_RUNNING"),
                         jsonPath("$.message").value("현재 상태에서는 요청을 처리할 수 없습니다."),
                         jsonPath("$.path").value("/bff/v1/test/errors/timer-already-running"),
-                        jsonPath("$.requestId").value("learning-timer-already-running")
+                        jsonPath("$.requestId").value(REQUEST_ID)
                 );
     }
 
@@ -187,7 +193,7 @@ class ApiExceptionHandlerTest {
         // Given: Telegram 연동 이력이 없는 사용자를 Learning이 404로 응답
         // When: 실제 Spring MVC 오류 경계를 통과
         // Then: Browser가 정상 미연동 상태로 판정할 수 있도록 404와 Code 유지
-        mockMvc.perform(get("/bff/v1/test/errors/telegram-link-not-found"))
+        performWithRequestId(get("/bff/v1/test/errors/telegram-link-not-found"))
                 .andExpectAll(
                         status().isNotFound(),
                         content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON),
@@ -197,7 +203,7 @@ class ApiExceptionHandlerTest {
                         jsonPath("$.path").value(
                                 "/bff/v1/test/errors/telegram-link-not-found"
                         ),
-                        jsonPath("$.requestId").value("learning-telegram-link-not-found")
+                        jsonPath("$.requestId").value(REQUEST_ID)
                 );
     }
 
@@ -216,14 +222,14 @@ class ApiExceptionHandlerTest {
     @Test
     @DisplayName("승인된 공간 점유 4xx 오류는 공개 계약을 유지")
     void forwardsApprovedOccupancyDownstreamClientError() throws Exception {
-        mockMvc.perform(post("/bff/v1/test/errors/occupancy-approved-4xx"))
+        performWithRequestId(post("/bff/v1/test/errors/occupancy-approved-4xx"))
                 .andExpectAll(
                         status().isConflict(),
                         content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON),
                         header().string(HttpHeaders.CACHE_CONTROL, "no-store"),
                         jsonPath("$.code").value("OCCUPANCY_ROOM_ALREADY_OCCUPIED"),
                         jsonPath("$.message").value("현재 상태에서는 요청을 처리할 수 없습니다."),
-                        jsonPath("$.requestId").value("occupancy-request-4xx")
+                        jsonPath("$.requestId").value(REQUEST_ID)
                 );
     }
 
@@ -242,18 +248,22 @@ class ApiExceptionHandlerTest {
                 new IllegalStateException("team request rejected")
         );
 
-        ResponseEntity<ApiErrorResponse> response = handler.handleLearningDownstreamException(
-                exception,
-                new MockHttpServletRequest("POST", "/bff/v1/teams/10"),
-                new MockHttpServletResponse()
-        );
+        ResponseEntity<ApiErrorResponse> response;
+        try (RequestIdContext.Scope ignored =
+                     RequestIdContext.openInbound(new RequestId(REQUEST_ID))) {
+            response = handler.handleLearningDownstreamException(
+                    exception,
+                    new MockHttpServletRequest("POST", "/bff/v1/teams/10"),
+                    new MockHttpServletResponse()
+            );
+        }
 
         assertSoftly(softly -> {
             softly.assertThat(response.getStatusCode()).isEqualTo(status);
             softly.assertThat(response.getBody()).isNotNull().satisfies(body -> {
                 softly.assertThat(body.code()).isEqualTo(code);
                 softly.assertThat(body.path()).isEqualTo("/bff/v1/teams/10");
-                softly.assertThat(body.requestId()).isEqualTo("learning-team-error");
+                softly.assertThat(body.requestId()).isEqualTo(REQUEST_ID);
             });
         });
     }
@@ -294,7 +304,7 @@ class ApiExceptionHandlerTest {
         // Given: REST Controller에서 내부 저장소 정보를 포함한 Learning 5xx가 발생
         // When: 실제 Spring MVC 오류 경계를 통과
         // Then: Browser에는 공통 오류 JSON만 반환하고 원본 정보는 서버에 기록
-        mockMvc.perform(post("/bff/v1/test/errors/learning-5xx"))
+        performWithRequestId(post("/bff/v1/test/errors/learning-5xx"))
                 .andExpectAll(
                         status().isInternalServerError(),
                         content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON),
@@ -304,7 +314,7 @@ class ApiExceptionHandlerTest {
                                 CommonErrorCode.INTERNAL_SERVER_ERROR.message()
                         ),
                         jsonPath("$.path").value("/bff/v1/test/errors/learning-5xx"),
-                        jsonPath("$.requestId").doesNotExist()
+                        jsonPath("$.requestId").value(REQUEST_ID)
                 );
         assertThat(output)
                 .contains("downstream.status=500")
@@ -572,6 +582,15 @@ class ApiExceptionHandlerTest {
 
         assertThat(authenticatedSession.isInvalid()).isTrue();
         assertThat(result.getRequest().getSession(false)).isNull();
+    }
+
+    private ResultActions performWithRequestId(
+            MockHttpServletRequestBuilder requestBuilder
+    ) throws Exception {
+        try (RequestIdContext.Scope ignored =
+                     RequestIdContext.openInbound(new RequestId(REQUEST_ID))) {
+            return mockMvc.perform(requestBuilder);
+        }
     }
 
     @RestController

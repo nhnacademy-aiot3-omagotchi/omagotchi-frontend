@@ -1,5 +1,7 @@
 package site.omagotchi.frontend.ai.infrastructure;
 
+import io.micrometer.tracing.Span;
+import io.micrometer.tracing.Tracer;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,9 +34,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 class AiChatHttpServiceConfigTest {
 
     private static final String BEARER = "Bearer test-access-token";
+    private static final String REQUEST_ID = "0123456789abcdef0123456789abcdef";
 
     @Autowired
     private AiChatHttpService httpService;
+
+    @Autowired
+    private Tracer tracer;
 
     @Autowired
     private MockHttpServiceConfiguration mockHttpServiceConfiguration;
@@ -42,13 +48,24 @@ class AiChatHttpServiceConfigTest {
     @Test
     @DisplayName("AI 채팅은 WebClient 기반 Learning 전용 그룹으로 SSE를 요청한다")
     void requestsLearningChatAsServerSentEvents() {
-        // Given: WebClient 기반 HTTP Service Client가 반환할 SSE 응답
+        // Given: WebClient 기반 HTTP Service Client가 반환할 SSE 응답과 활성 Span
         mockHttpServiceConfiguration.respondWith("data: 안녕\n\n");
+        Span parent = this.tracer.nextSpan().name("ai-chat-test").start();
 
-        // When: 사용자 JWT와 질문·모델을 전달해 채팅 스트림 호출
-        List<String> chunks = httpService.streamChat(BEARER, "광주 날씨", "GEMINI")
-                .collectList()
-                .block(Duration.ofSeconds(1));
+        // When: 활성 Span에서 사용자 JWT와 질문·모델을 전달해 채팅 스트림 호출
+        List<String> chunks;
+        try (Tracer.SpanInScope ignored = this.tracer.withSpan(parent)) {
+            chunks = httpService.streamChat(
+                            BEARER,
+                            REQUEST_ID,
+                            "광주 날씨",
+                            "GEMINI"
+                    )
+                    .collectList()
+                    .block(Duration.ofSeconds(1));
+        } finally {
+            parent.end();
+        }
 
         // Then: Learning 채팅 경로·인증·SSE 계약과 전용 Client Group
         ClientRequest request = mockHttpServiceConfiguration.request();
@@ -71,6 +88,11 @@ class AiChatHttpServiceConfigTest {
         assertThat(UriComponentsBuilder.fromUri(request.url()).build().getQueryParams())
                 .containsEntry("model", List.of("GEMINI"));
         assertThat(request.headers().getFirst(HttpHeaders.AUTHORIZATION)).isEqualTo(BEARER);
+        assertThat(request.headers().getFirst("X-Request-ID")).isEqualTo(REQUEST_ID);
+        assertThat(request.headers().getFirst("traceparent")).matches(
+                "^00-" + parent.context().traceId() + "-[0-9a-f]{16}-[0-9a-f]{2}$"
+        );
+        assertThat(request.headers().getFirst("baggage")).isNull();
         assertThat(request.headers().getAccept()).contains(MediaType.TEXT_EVENT_STREAM);
         assertThat(chunks).containsExactly("안녕");
     }

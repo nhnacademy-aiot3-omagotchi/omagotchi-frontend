@@ -1,6 +1,7 @@
 package site.omagotchi.frontend.global.exception;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import site.omagotchi.frontend.global.requestid.RequestIdContext;
 
 /**
  * Omagotchi HTTP API의 공통 오류 본문.
@@ -9,7 +10,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
  * @param code Client 분기용 오류 식별자
  * @param message 사용자 표시용 오류 설명
  * @param path 요청 URI. HTML 직접 삽입 금지.
- * @param requestId 요청 추적 ID. Frontend Request ID 도입 전까지 {@code null}.
+ * @param requestId 요청 추적 ID
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record ApiErrorResponse(
@@ -39,7 +40,7 @@ public record ApiErrorResponse(
                 errorCode.code(),
                 message,
                 path,
-                null
+                RequestIdContext.currentValue()
         );
     }
 }

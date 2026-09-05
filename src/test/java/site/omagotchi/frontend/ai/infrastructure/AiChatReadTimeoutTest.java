@@ -105,7 +105,12 @@ class AiChatReadTimeoutTest {
     @Test
     @DisplayName("첫 바이트가 전역 read-timeout보다 늦게 와도 끊기지 않는다")
     void doesNotTimeOutWhileModelIsStillThinking() {
-        List<String> chunks = httpService.streamChat("Bearer test-access-token", "안녕", "GEMINI")
+        List<String> chunks = httpService.streamChat(
+                        "Bearer test-access-token",
+                        "0123456789abcdef0123456789abcdef",
+                        "안녕",
+                        "GEMINI"
+                )
                 .collectList()
                 .block(FIRST_BYTE_DELAY.plusSeconds(10));
 

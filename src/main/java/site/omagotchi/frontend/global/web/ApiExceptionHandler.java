@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.ServletWebRequest;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
+import site.omagotchi.frontend.global.requestid.RequestIdContext;
 import site.omagotchi.frontend.global.exception.ApiErrorResponse;
 import site.omagotchi.frontend.global.exception.BusinessException;
 import site.omagotchi.frontend.global.exception.CommonErrorCode;
@@ -207,7 +208,7 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
                     downstream.code(),
                     publicLearningDownstreamMessage(exception),
                     request.getRequestURI(),
-                    downstream.requestId()
+                    RequestIdContext.currentValue()
             );
             return ResponseEntity.status(exception.getStatusCode())
                     .cacheControl(CacheControl.noStore())
