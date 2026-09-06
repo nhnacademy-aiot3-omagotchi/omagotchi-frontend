@@ -10,6 +10,7 @@ import org.springframework.dao.QueryTimeoutException;
 import org.springframework.data.redis.RedisConnectionFailureException;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
+import site.omagotchi.frontend.global.logging.HttpErrorEventLogger;
 
 import java.util.concurrent.TimeoutException;
 
@@ -21,13 +22,15 @@ import static org.mockito.Mockito.verifyNoInteractions;
 
 class SessionStoreErrorFilterTest {
 
+    private final HttpErrorEventLogger errorEventLogger = mock(HttpErrorEventLogger.class);
+
     @Test
     @DisplayName("Redis 연결 실패의 503 응답 Writer 위임")
     void delegatesRedisConnectionFailureToResponseWriter() throws Exception {
         // Given: Redis 연결 실패와 Session 장애 응답 Writer
         SessionStoreFailureResponseWriter responseWriter =
                 mock(SessionStoreFailureResponseWriter.class);
-        SessionStoreErrorFilter filter = new SessionStoreErrorFilter(responseWriter);
+        SessionStoreErrorFilter filter = new SessionStoreErrorFilter(responseWriter, errorEventLogger);
         MockHttpServletRequest request = new MockHttpServletRequest("GET", "/home");
         MockHttpServletResponse response = new MockHttpServletResponse();
 
@@ -46,7 +49,7 @@ class SessionStoreErrorFilterTest {
         // Given: Redis 명령 Timeout 원인과 Session 장애 응답 Writer
         SessionStoreFailureResponseWriter responseWriter =
                 mock(SessionStoreFailureResponseWriter.class);
-        SessionStoreErrorFilter filter = new SessionStoreErrorFilter(responseWriter);
+        SessionStoreErrorFilter filter = new SessionStoreErrorFilter(responseWriter, errorEventLogger);
         MockHttpServletRequest request = new MockHttpServletRequest("GET", "/home");
         MockHttpServletResponse response = new MockHttpServletResponse();
 
@@ -71,7 +74,7 @@ class SessionStoreErrorFilterTest {
         // Given: Redis 원인 없는 QueryTimeoutException
         SessionStoreFailureResponseWriter responseWriter =
                 mock(SessionStoreFailureResponseWriter.class);
-        SessionStoreErrorFilter filter = new SessionStoreErrorFilter(responseWriter);
+        SessionStoreErrorFilter filter = new SessionStoreErrorFilter(responseWriter, errorEventLogger);
         MockHttpServletRequest request = new MockHttpServletRequest("GET", "/home");
         MockHttpServletResponse response = new MockHttpServletResponse();
         QueryTimeoutException exception =
@@ -95,7 +98,7 @@ class SessionStoreErrorFilterTest {
         // Given: 일반 Timeout 원인을 포함한 다른 저장소 예외
         SessionStoreFailureResponseWriter responseWriter =
                 mock(SessionStoreFailureResponseWriter.class);
-        SessionStoreErrorFilter filter = new SessionStoreErrorFilter(responseWriter);
+        SessionStoreErrorFilter filter = new SessionStoreErrorFilter(responseWriter, errorEventLogger);
         MockHttpServletRequest request = new MockHttpServletRequest("GET", "/home");
         MockHttpServletResponse response = new MockHttpServletResponse();
         QueryTimeoutException exception = new QueryTimeoutException(
@@ -121,7 +124,7 @@ class SessionStoreErrorFilterTest {
         // Given: Redis와 무관한 DataAccess 오류
         SessionStoreFailureResponseWriter responseWriter =
                 mock(SessionStoreFailureResponseWriter.class);
-        SessionStoreErrorFilter filter = new SessionStoreErrorFilter(responseWriter);
+        SessionStoreErrorFilter filter = new SessionStoreErrorFilter(responseWriter, errorEventLogger);
         MockHttpServletRequest request = new MockHttpServletRequest("GET", "/home");
         MockHttpServletResponse response = new MockHttpServletResponse();
         DataAccessResourceFailureException exception =
@@ -145,7 +148,7 @@ class SessionStoreErrorFilterTest {
         // Given: 이미 커밋된 응답과 Redis 연결 실패
         SessionStoreFailureResponseWriter responseWriter =
                 mock(SessionStoreFailureResponseWriter.class);
-        SessionStoreErrorFilter filter = new SessionStoreErrorFilter(responseWriter);
+        SessionStoreErrorFilter filter = new SessionStoreErrorFilter(responseWriter, errorEventLogger);
         MockHttpServletRequest request = new MockHttpServletRequest("GET", "/home");
         MockHttpServletResponse response = new MockHttpServletResponse();
         response.getWriter().write("committed");
@@ -172,7 +175,7 @@ class SessionStoreErrorFilterTest {
         // Given: REQUEST dispatch 종료 뒤 시작된 별도 ERROR dispatch
         SessionStoreFailureResponseWriter responseWriter =
                 mock(SessionStoreFailureResponseWriter.class);
-        SessionStoreErrorFilter filter = new SessionStoreErrorFilter(responseWriter);
+        SessionStoreErrorFilter filter = new SessionStoreErrorFilter(responseWriter, errorEventLogger);
         MockHttpServletRequest request = new MockHttpServletRequest("GET", "/home");
         request.setDispatcherType(DispatcherType.ERROR);
         request.setAttribute(RequestDispatcher.ERROR_REQUEST_URI, "/home");
@@ -193,7 +196,7 @@ class SessionStoreErrorFilterTest {
         // Given: REQUEST dispatch 처리 중 같은 요청으로 진입하는 중첩 ERROR dispatch
         SessionStoreFailureResponseWriter responseWriter =
                 mock(SessionStoreFailureResponseWriter.class);
-        SessionStoreErrorFilter filter = new SessionStoreErrorFilter(responseWriter);
+        SessionStoreErrorFilter filter = new SessionStoreErrorFilter(responseWriter, errorEventLogger);
         MockHttpServletRequest request = new MockHttpServletRequest("GET", "/home");
         MockHttpServletResponse response = new MockHttpServletResponse();
 

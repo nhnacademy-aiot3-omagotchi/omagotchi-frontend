@@ -5,20 +5,21 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NonNull;
 import org.springframework.web.filter.OncePerRequestFilter;
 import site.omagotchi.frontend.global.exception.CommonErrorCode;
+import site.omagotchi.frontend.global.exception.ErrorHttpMapper;
+import site.omagotchi.frontend.global.logging.HttpErrorEventLogger;
 
 import java.io.IOException;
 
 // Spring Session Redis 조회·저장 실패의 외부 503 변환 경계
 // DispatcherServlet 바깥 예외로 인한 ControllerAdvice 적용 불가 구간 처리
-@Slf4j
 @RequiredArgsConstructor
 public class SessionStoreErrorFilter extends OncePerRequestFilter {
 
     private final SessionStoreFailureResponseWriter failureResponseWriter;
+    private final HttpErrorEventLogger errorEventLogger;
 
     @Override
     protected void doFilterInternal(
@@ -35,7 +36,13 @@ public class SessionStoreErrorFilter extends OncePerRequestFilter {
                 throw exception;
             }
             // TODO 로그인 성공 뒤 Session 저장 실패의 Refresh Token Family 폐기 보상
-            logFailure(request, exception);
+            CommonErrorCode errorCode = CommonErrorCode.SERVICE_UNAVAILABLE;
+            this.errorEventLogger.log(
+                    exception,
+                    errorCode,
+                    ErrorHttpMapper.toHttpStatus(errorCode.type()).value(),
+                    request
+            );
             failureResponseWriter.write(request, response);
         }
     }
@@ -56,19 +63,4 @@ public class SessionStoreErrorFilter extends OncePerRequestFilter {
         return false;
     }
 
-    // 장애 분류 결과와 원본 Stack Trace의 단일 기록
-    private void logFailure(
-            HttpServletRequest request,
-            RuntimeException exception
-    ) {
-        CommonErrorCode errorCode = CommonErrorCode.SERVICE_UNAVAILABLE;
-        log.error(
-                "Redis Session Store 오류 error.code={}, exception={}, method={}, path={}",
-                errorCode.code(),
-                exception.getClass().getName(),
-                request.getMethod(),
-                request.getRequestURI(),
-                exception
-        );
-    }
 }

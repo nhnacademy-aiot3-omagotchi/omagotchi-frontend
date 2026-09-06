@@ -99,7 +99,6 @@ public interface SensorAdminHttpService {
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
             @PathVariable("cohort-id") Long cohortId,
             @PathVariable("space-id") Long spaceId,
-            @RequestHeader(value = "X-Request-ID", required = false) String requestId,
             @RequestBody JsonNode request
     );
 }

@@ -27,6 +27,7 @@ import site.omagotchi.frontend.auth.presentation.security.AccessTokenRefreshInte
 import site.omagotchi.frontend.auth.presentation.security.BrowserTokenSessionAuthenticationStrategy;
 import site.omagotchi.frontend.auth.presentation.security.IdentityLogoutHandler;
 import site.omagotchi.frontend.auth.presentation.security.LoginAuthenticationFailureHandler;
+import site.omagotchi.frontend.global.logging.HttpErrorEventLogger;
 import site.omagotchi.frontend.global.security.BffApiSecurityErrorHandler;
 import site.omagotchi.frontend.global.security.BrowserSessionInvalidator;
 import site.omagotchi.frontend.global.security.SecurityConfig;
@@ -67,6 +68,9 @@ class SignupBffMvcTest {
 
     @Autowired
     private MockMvc mockMvc;
+
+    @MockitoBean
+    private HttpErrorEventLogger errorEventLogger;
 
     @MockitoBean
     private AuthenticationService authenticationService;

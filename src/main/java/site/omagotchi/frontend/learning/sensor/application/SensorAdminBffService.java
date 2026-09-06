@@ -84,11 +84,10 @@ public class SensorAdminBffService {
     public JsonNode applySpaceThreshold(
             HttpServletRequest request,
             Long spaceId,
-            String requestId,
             JsonNode body
     ) {
         return callWithCohort(request, (token, cohortId) -> sensorAdminHttpService
-                .applySpaceThreshold(token, cohortId, spaceId, requestId, body));
+                .applySpaceThreshold(token, cohortId, spaceId, body));
     }
 
     private JsonNode callWithCohort(HttpServletRequest request, CohortScopedCall downstreamCall) {

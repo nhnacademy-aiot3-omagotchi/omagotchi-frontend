@@ -10,6 +10,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import site.omagotchi.frontend.auth.presentation.page.SignupPageController;
 import site.omagotchi.frontend.auth.presentation.security.AccessTokenRefreshInterceptor;
+import site.omagotchi.frontend.global.logging.HttpErrorEventLogger;
 import site.omagotchi.frontend.global.security.BrowserSessionInvalidator;
 import site.omagotchi.frontend.global.web.PageBusinessExceptionHandler;
 
@@ -31,6 +32,9 @@ class SignupPageMvcTest {
 
     @Autowired
     private MockMvc mockMvc;
+
+    @MockitoBean
+    private HttpErrorEventLogger errorEventLogger;
 
     @MockitoBean
     private AccessTokenRefreshInterceptor accessTokenRefreshInterceptor;

@@ -5,6 +5,7 @@ import org.springframework.boot.session.autoconfigure.SessionProperties;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import site.omagotchi.frontend.global.logging.HttpErrorEventLogger;
 
 import java.util.EnumSet;
 
@@ -15,12 +16,13 @@ public class SessionStoreConfig {
     @Bean
     FilterRegistrationBean<SessionStoreErrorFilter> sessionStoreErrorFilter(
             SessionStoreFailureResponseWriter failureResponseWriter,
+            HttpErrorEventLogger errorEventLogger,
             SessionProperties sessionProperties
     ) {
         // 자동 구성 SessionRepositoryFilter 바깥 배치를 위한 명시적 Servlet Filter 등록
         FilterRegistrationBean<SessionStoreErrorFilter> registration =
                 new FilterRegistrationBean<>(
-                        new SessionStoreErrorFilter(failureResponseWriter)
+                        new SessionStoreErrorFilter(failureResponseWriter, errorEventLogger)
                 );
         registration.setName("sessionStoreErrorFilter");
         // 별도·중첩 ERROR dispatch의 Redis Session 장애 감시 범위 고정

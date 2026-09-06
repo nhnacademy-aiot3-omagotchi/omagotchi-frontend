@@ -20,6 +20,7 @@ import org.springframework.web.servlet.View;
 import org.springframework.web.servlet.ViewResolver;
 import site.omagotchi.frontend.global.exception.CommonErrorCode;
 import site.omagotchi.frontend.global.exception.ErrorHttpMapper;
+import site.omagotchi.frontend.global.requestid.RequestId;
 import site.omagotchi.frontend.global.web.BffApiPaths;
 import site.omagotchi.frontend.global.web.ServletApiErrorResponseWriter;
 
@@ -115,6 +116,10 @@ public class SessionStoreFailureResponseWriter {
     ) {
         // Redis Session 저장 실패 전까지 작성된 본문·Cookie·Redirect Header 제거
         response.reset();
+        // 응답 초기화로 제거된 최초 요청의 Request ID Header 복원
+        if (request.getAttribute(RequestId.ATTRIBUTE_NAME) instanceof RequestId requestId) {
+            response.setHeader(RequestId.HEADER_NAME, requestId.value());
+        }
         response.setStatus(status.value());
         // 장애 응답의 Browser·중간 Cache 저장 금지
         response.setHeader(

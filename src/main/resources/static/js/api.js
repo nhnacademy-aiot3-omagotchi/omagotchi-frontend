@@ -518,7 +518,6 @@
             listSpaceThresholds: () => request("/admin/sensors/thresholds"),
             applySpaceThreshold: (spaceId, rules) => request(`/admin/sensors/thresholds/${encodeURIComponent(spaceId)}`, {
                 method: "PATCH",
-                headers: {"X-Request-ID": crypto.randomUUID?.() || `threshold-${Date.now()}`},
                 body: {rules}
             })
         }

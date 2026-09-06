@@ -94,18 +94,13 @@ public class SensorAdminBffController {
         return sensorAdminBffService.getSpaceThresholds(request);
     }
 
-    /**
-     * 공간 안 모든 기기의 임계치를 한 번에 맞춘다.
-     *
-     * <p>requestId는 하류의 멱등 처리용이다. Browser가 보내지 않으면 하류가 스스로 처리한다.
-     */
+    /** 공간 안 모든 기기의 임계치 일괄 변경. */
     @PatchMapping("/thresholds/{space-id}")
     public JsonNode applySpaceThreshold(
             HttpServletRequest request,
             @PathVariable("space-id") Long spaceId,
-            @RequestHeader(value = "X-Request-ID", required = false) String requestId,
             @RequestBody JsonNode body
     ) {
-        return sensorAdminBffService.applySpaceThreshold(request, spaceId, requestId, body);
+        return sensorAdminBffService.applySpaceThreshold(request, spaceId, body);
     }
 }

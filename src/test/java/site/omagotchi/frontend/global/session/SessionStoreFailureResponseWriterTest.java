@@ -9,6 +9,8 @@ import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.web.servlet.View;
 import org.springframework.web.servlet.ViewResolver;
+import site.omagotchi.frontend.global.requestid.RequestId;
+import site.omagotchi.frontend.global.requestid.RequestIdFilter;
 import site.omagotchi.frontend.global.web.ServletApiErrorResponseWriter;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -32,6 +34,7 @@ class SessionStoreFailureResponseWriterTest {
         // Given: 일부 응답이 작성된 Page 요청
         MockHttpServletRequest request = new MockHttpServletRequest("GET", "/home");
         MockHttpServletResponse response = new MockHttpServletResponse();
+        request.addHeader(RequestId.HEADER_NAME, "0123456789abcdef0123456789abcdef");
         response.setHeader("X-Feature-Result", "stale");
         response.setHeader(HttpHeaders.LOCATION, "/login");
         response.addHeader(HttpHeaders.SET_COOKIE, "OMAGOTCHI_SESSION=stale");
@@ -40,11 +43,14 @@ class SessionStoreFailureResponseWriterTest {
         response.getWriter().write("stale response body");
 
         // When: Redis Session 장애의 Page 응답 작성
-        responseWriter.write(request, response);
+        new RequestIdFilter().doFilter(request, response,
+                (incoming, outgoing) -> responseWriter.write(request, response));
 
         // Then: 이전 표현 Header·본문 없는 공통 HTML 503
         assertSoftly(softly -> {
             softly.assertThat(response.getStatus()).isEqualTo(503);
+            softly.assertThat(response.getHeaders(RequestId.HEADER_NAME))
+                    .containsExactly("0123456789abcdef0123456789abcdef");
             softly.assertThat(response.getHeader(HttpHeaders.CACHE_CONTROL))
                     .isEqualTo("no-store");
             softly.assertThat(response.getContentType()).startsWith("text/html");
@@ -65,10 +71,12 @@ class SessionStoreFailureResponseWriterTest {
         // Given: BFF API 요청
         MockHttpServletRequest request =
                 new MockHttpServletRequest("GET", "/bff/v1/timers");
+        request.addHeader(RequestId.HEADER_NAME, "0123456789abcdef0123456789abcdef");
         MockHttpServletResponse response = new MockHttpServletResponse();
 
         // When: Redis Session 장애의 BFF 응답 작성
-        responseWriter.write(request, response);
+        new RequestIdFilter().doFilter(request, response,
+                (incoming, outgoing) -> responseWriter.write(request, response));
 
         // Then: HTML View 없는 공통 JSON 503
         String responseBody = response.getContentAsString();
@@ -77,7 +85,10 @@ class SessionStoreFailureResponseWriterTest {
             softly.assertThat(response.getContentType()).startsWith("application/json");
             softly.assertThat(responseBody)
                     .contains("\"code\":\"COMMON_SERVICE_UNAVAILABLE\"")
+                    .contains("\"requestId\":\"0123456789abcdef0123456789abcdef\"")
                     .contains("\"path\":\"/bff/v1/timers\"");
+            softly.assertThat(response.getHeaders(RequestId.HEADER_NAME))
+                    .containsExactly("0123456789abcdef0123456789abcdef");
             softly.assertThat(viewResolver.requestedViewName).isNull();
         });
     }
