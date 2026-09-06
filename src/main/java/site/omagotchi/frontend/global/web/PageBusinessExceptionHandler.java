@@ -3,25 +3,25 @@ package site.omagotchi.frontend.global.web;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.servlet.ModelAndView;
 import site.omagotchi.frontend.global.exception.ApiErrorResponse;
 import site.omagotchi.frontend.global.exception.BusinessException;
+import site.omagotchi.frontend.global.exception.CommonErrorCode;
 import site.omagotchi.frontend.global.exception.ErrorCode;
 import site.omagotchi.frontend.global.exception.ErrorHttpMapper;
 import site.omagotchi.frontend.global.learning.infrastructure.LearningDownstreamException;
+import site.omagotchi.frontend.global.logging.HttpErrorEventLogger;
 import site.omagotchi.frontend.global.security.BrowserSessionInvalidator;
 
 import java.util.Optional;
 
 // Page Controller 예외 전용 HTML 오류 변환
-// 예상하지 못한 Page 500은 Boot /error 처리
+// 예상 밖 Page 500은 UnhandledExceptionLoggingResolver 기록 뒤 Boot /error 처리
 // ApiExceptionHandler가 HIGHEST_PRECEDENCE·@RestController 한정이므로
 // 이 Advice는 @Controller(HTML Page) 경로만 실질적으로 담당한다.
-@Slf4j
 @ControllerAdvice
 @RequiredArgsConstructor
 public class PageBusinessExceptionHandler {
@@ -30,6 +30,7 @@ public class PageBusinessExceptionHandler {
     private static final String LOGIN_REDIRECT = "redirect:/login?notice=session-expired";
 
     private final BrowserSessionInvalidator sessionInvalidator;
+    private final HttpErrorEventLogger errorEventLogger;
 
     @ExceptionHandler(BusinessException.class)
     public ModelAndView handleBusinessException(
@@ -40,13 +41,11 @@ public class PageBusinessExceptionHandler {
         ErrorCode errorCode = exception.getErrorCode();
         HttpStatus status = ErrorHttpMapper.toHttpStatus(errorCode.type());
         if (status.is5xxServerError()) {
-            log.error(
-                    "Page 처리 실패 error.code={}, exception={}, method={}, path={}",
-                    errorCode.code(),
-                    exception.getClass().getName(),
-                    request.getMethod(),
-                    request.getRequestURI(),
-                    exception
+            this.errorEventLogger.log(
+                    exception,
+                    errorCode,
+                    status.value(),
+                    request
             );
         }
 
@@ -69,17 +68,6 @@ public class PageBusinessExceptionHandler {
     ) {
         ApiErrorResponse downstream = exception.getErrorResponse();
         int downstreamStatus = exception.getStatusCode().value();
-        log.error(
-                "Page 하류 호출 실패 downstream.status={}, downstream.code={}, "
-                        + "downstream.requestId={}, method={}, path={}",
-                downstreamStatus,
-                downstream.code(),
-                downstream.requestId(),
-                request.getMethod(),
-                request.getRequestURI(),
-                exception
-        );
-
         if (downstreamStatus == HttpStatus.UNAUTHORIZED.value()) {
             return expiredSessionRedirect(request, response);
         }
@@ -89,6 +77,14 @@ public class PageBusinessExceptionHandler {
         HttpStatus status = Optional.ofNullable(HttpStatus.resolve(downstreamStatus))
                 .filter(HttpStatus::is4xxClientError)
                 .orElse(HttpStatus.INTERNAL_SERVER_ERROR);
+        if (status.is5xxServerError()) {
+            this.errorEventLogger.log(
+                    exception,
+                    CommonErrorCode.INTERNAL_SERVER_ERROR,
+                    status.value(),
+                    request
+            );
+        }
         return errorModelAndView(status);
     }
 

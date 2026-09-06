@@ -65,6 +65,7 @@ export async function initializeSystemAdminDashboard(root = document, repository
     let selectedUserId = null;
     let policyCohortId = null;
     let currentUserPage = 1;
+    let auditPageLoading = false;
     const find = (selector) => root.querySelector(selector);
     const findAll = (selector) => [...root.querySelectorAll(selector)];
     const capabilities = () => ({
@@ -238,6 +239,21 @@ export async function initializeSystemAdminDashboard(root = document, repository
         find("[data-system-audit-list]").innerHTML = state.audits.length
             ? state.audits.map((audit) => `<li><time>${escapeHtml(audit.time)}</time><i aria-hidden="true"></i><div><span>${escapeHtml(audit.action)}</span><strong>${escapeHtml(audit.detail)}</strong><small>실행자 · ${escapeHtml(audit.actor)}</small></div></li>`).join("")
             : `<li class="system-integration-message">${escapeHtml(auditPlaceholder())}</li>`;
+
+        const page = state.auditPage;
+        const pageAvailable = capabilities().audit && page?.totalElements > 0;
+        find("[data-audit-pagination-footer]").hidden = !pageAvailable;
+        if (!pageAvailable) return;
+
+        const firstItem = page.number * page.size + 1;
+        const lastItem = Math.min(firstItem + state.audits.length - 1, page.totalElements);
+        find("[data-audit-page-range]").textContent = `${firstItem}–${lastItem} / ${page.totalElements}건`;
+        find("[data-audit-page-indicator]").textContent = `${page.number + 1} / ${page.totalPages}`;
+        findAll("[data-audit-page-offset]").forEach((button) => {
+            const targetPage = page.number + Number(button.dataset.auditPageOffset);
+            button.disabled = auditPageLoading || targetPage < 0 || targetPage >= page.totalPages;
+        });
+        find("[data-system-audit-list]").setAttribute("aria-busy", String(auditPageLoading));
     }
 
     function renderAll() {
@@ -406,6 +422,30 @@ export async function initializeSystemAdminDashboard(root = document, repository
         currentUserPage = Number(button.dataset.userPage);
         renderUsers();
         find("[data-user-table-body]")?.closest(".system-table-card")?.scrollIntoView({behavior: "smooth", block: "start"});
+    });
+    find("[data-audit-pagination-footer]")?.addEventListener("click", async (event) => {
+        const button = event.target.closest("[data-audit-page-offset]");
+        if (!button || button.disabled || auditPageLoading) return;
+
+        const requestedPage = state.auditPage.number + Number(button.dataset.auditPageOffset);
+        auditPageLoading = true;
+        renderAudits();
+        try {
+            const loaded = await repository.loadAuditPage(requestedPage);
+            state = {
+                ...state,
+                audits: loaded.items,
+                auditPage: loaded.page,
+                auditError: null
+            };
+            find("[data-system-audit-list]")?.closest(".system-audit-card")
+                ?.scrollIntoView({behavior: "smooth", block: "start"});
+        } catch (error) {
+            showToast(error?.message || "감사 로그를 불러오지 못했습니다.", true);
+        } finally {
+            auditPageLoading = false;
+            renderAudits();
+        }
     });
     find("[data-user-table-body]")?.addEventListener("click", (event) => {
         const button = event.target.closest("[data-open-permission]");

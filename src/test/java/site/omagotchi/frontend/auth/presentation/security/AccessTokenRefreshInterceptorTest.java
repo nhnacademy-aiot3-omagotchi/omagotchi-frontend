@@ -16,6 +16,7 @@ import site.omagotchi.frontend.auth.application.port.BrowserSessionTokenStore;
 import site.omagotchi.frontend.auth.application.result.BrowserSessionTokenBundle;
 import site.omagotchi.frontend.auth.domain.GlobalRole;
 import site.omagotchi.frontend.global.exception.BusinessException;
+import site.omagotchi.frontend.global.logging.HttpErrorEventLogger;
 import site.omagotchi.frontend.global.security.BrowserSessionInvalidator;
 import site.omagotchi.frontend.global.security.SecurityErrorCode;
 import site.omagotchi.frontend.global.web.ApiExceptionHandler;
@@ -55,7 +56,10 @@ class AccessTokenRefreshInterceptorTest {
         );
         mockMvc = MockMvcBuilders.standaloneSetup(controller)
                 .addInterceptors(interceptor)
-                .setControllerAdvice(new ApiExceptionHandler(sessionInvalidator))
+                .setControllerAdvice(new ApiExceptionHandler(
+                        sessionInvalidator,
+                        mock(HttpErrorEventLogger.class)
+                ))
                 .build();
         controller.reset();
     }

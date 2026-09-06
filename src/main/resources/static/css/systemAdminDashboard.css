@@ -82,6 +82,7 @@ body.system-admin-preview #storybook-root { min-height: 100%; }
 .system-pagination button:hover:not(:disabled) { border-color: var(--green-700); color: var(--green-800); }
 .system-pagination button.is-active { border-color: var(--green-800); background: var(--green-800); color: #fff; }
 .system-pagination button:disabled { cursor: not-allowed; opacity: .4; }
+.system-page-indicator { display: inline-flex; min-width: 58px; align-items: center; justify-content: center; color: var(--muted); font-size: 10px; font-weight: 800; }
 .system-contract-note { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 16px; padding: 13px 16px; border: 1px solid #cbe2d5; border-radius: 8px; background: #effaf4; font-size: 10px; }
 .system-contract-note strong { color: var(--green-800); }
 .system-contract-note span { padding: 4px 8px; border-radius: 5px; background: #fff; font-family: ui-monospace, monospace; font-weight: 800; }

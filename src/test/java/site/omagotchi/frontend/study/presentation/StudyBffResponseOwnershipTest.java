@@ -14,6 +14,7 @@ import site.omagotchi.frontend.global.http.ApiErrorResponseDecoder;
 import site.omagotchi.frontend.global.learning.application.LearningCohortContext;
 import site.omagotchi.frontend.global.learning.infrastructure.LearningGatewayCallExecutor;
 import site.omagotchi.frontend.global.learning.infrastructure.LearningHttpService;
+import site.omagotchi.frontend.global.logging.HttpErrorEventLogger;
 import site.omagotchi.frontend.global.security.BrowserSessionInvalidator;
 import site.omagotchi.frontend.global.web.ApiExceptionHandler;
 import site.omagotchi.frontend.study.application.StudyRecordBffService;
@@ -34,6 +35,7 @@ import java.util.UUID;
 import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 import static org.springframework.test.web.servlet.setup.MockMvcBuilders.standaloneSetup;
@@ -78,7 +80,10 @@ class StudyBffResponseOwnershipTest {
                 new StudyRecordBffController(recordService),
                 new StudyTimerBffController(timerService)
         )
-                .setControllerAdvice(new ApiExceptionHandler(new BrowserSessionInvalidator()))
+                .setControllerAdvice(new ApiExceptionHandler(
+                        new BrowserSessionInvalidator(),
+                        mock(HttpErrorEventLogger.class)
+                ))
                 .build();
     }
 

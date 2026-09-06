@@ -26,6 +26,7 @@ import site.omagotchi.frontend.auth.presentation.security.BrowserTokenSessionAut
 import site.omagotchi.frontend.auth.presentation.security.IdentityLogoutHandler;
 import site.omagotchi.frontend.auth.presentation.security.LoginAuthenticationFailureHandler;
 import site.omagotchi.frontend.global.exception.BusinessException;
+import site.omagotchi.frontend.global.logging.HttpErrorEventLogger;
 import site.omagotchi.frontend.global.web.BffApiExceptionResolver;
 import site.omagotchi.frontend.global.exception.CommonErrorCode;
 import site.omagotchi.frontend.global.web.ServletApiErrorResponseWriter;
@@ -80,6 +81,9 @@ class AuthenticationSecurityMvcTest {
 
     @MockitoBean
     private AccessTokenRefreshInterceptor accessTokenRefreshInterceptor;
+
+    @MockitoBean
+    private HttpErrorEventLogger errorEventLogger;
 
     @Autowired
     private BrowserSessionTokens browserSessionTokens;

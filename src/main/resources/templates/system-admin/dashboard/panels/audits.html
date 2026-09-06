@@ -3,7 +3,17 @@
 <body>
 <section class="dashboard-panel system-panel" id="system-audits" th:fragment="panel">
     <header class="system-page-heading"><div><span>SECURITY ACTIVITY</span><h1>시스템 감사 로그</h1><p>관리자 권한 및 기수 구성 변경 내역을 추적합니다.</p></div></header>
-    <article class="system-card system-audit-card"><ol data-system-audit-list></ol></article>
+    <article class="system-card system-audit-card">
+        <ol data-system-audit-list></ol>
+        <footer class="system-table-footer" data-audit-pagination-footer hidden>
+            <span data-audit-page-range>0건</span>
+            <nav class="system-pagination" aria-label="감사 로그 페이지">
+                <button type="button" data-audit-page-offset="-1">이전</button>
+                <span class="system-page-indicator" data-audit-page-indicator aria-live="polite">1 / 1</span>
+                <button type="button" data-audit-page-offset="1">다음</button>
+            </nav>
+        </footer>
+    </article>
 </section>
 </body>
 </html>

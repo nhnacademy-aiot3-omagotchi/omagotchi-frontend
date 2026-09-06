@@ -35,7 +35,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @DisplayName("AI 채팅 그룹의 읽기 타임아웃")
 class AiChatReadTimeoutTest {
 
-    // 전역 read-timeout(5s)보다 확실히 길고, 그룹 재정의(30s)보다는 짧게
+    // 전역 read-timeout(5s)보다 확실히 길고, 그룹 재정의(50s)보다는 짧게
     private static final Duration FIRST_BYTE_DELAY = Duration.ofSeconds(8);
 
     private static ServerSocket serverSocket;
@@ -105,7 +105,12 @@ class AiChatReadTimeoutTest {
     @Test
     @DisplayName("첫 바이트가 전역 read-timeout보다 늦게 와도 끊기지 않는다")
     void doesNotTimeOutWhileModelIsStillThinking() {
-        List<String> chunks = httpService.streamChat("Bearer test-access-token", "안녕", "GEMINI")
+        List<String> chunks = httpService.streamChat(
+                        "Bearer test-access-token",
+                        "0123456789abcdef0123456789abcdef",
+                        "안녕",
+                        "GEMINI"
+                )
                 .collectList()
                 .block(FIRST_BYTE_DELAY.plusSeconds(10));
 

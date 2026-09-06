@@ -4,15 +4,18 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.data.redis.RedisConnectionFailureException;
 import org.springframework.mock.web.MockHttpServletRequest;
+import site.omagotchi.frontend.global.logging.HttpErrorEventLogger;
 import site.omagotchi.frontend.global.security.BrowserSessionInvalidator;
 import site.omagotchi.frontend.global.web.ApiExceptionHandler;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.mock;
 
 class SessionStoreExceptionPropagationTest {
 
     private final ApiExceptionHandler handler = new ApiExceptionHandler(
-            new BrowserSessionInvalidator()
+            new BrowserSessionInvalidator(),
+            mock(HttpErrorEventLogger.class)
     );
 
     @Test

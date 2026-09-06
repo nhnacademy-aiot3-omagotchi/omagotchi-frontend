@@ -42,7 +42,7 @@ class SensorAdminHttpServiceContractTest {
     }
 
     @Test
-    @DisplayName("공간 임계치 변경은 인증과 요청 식별자를 Learning 계약으로 전달")
+    @DisplayName("공간 임계치 변경은 인증과 요청 본문을 Learning 계약으로 전달")
     void mapsSpaceThresholdUpdateToLearningEndpoint() {
         // Given: 공간 임계치 요청과 Learning Endpoint 기대 계약
         var request = JSON_MAPPER.createObjectNode();
@@ -63,12 +63,11 @@ class SensorAdminHttpServiceContractTest {
         server.expect(once(), requestTo(BASE_URL + "/api/v1/cohorts/3/threshold-rules/spaces/7"))
                 .andExpect(method(HttpMethod.PATCH))
                 .andExpect(header(HttpHeaders.AUTHORIZATION, BEARER))
-                .andExpect(header("X-Request-ID", "request-123"))
                 .andExpect(content().json(request.toString()))
                 .andRespond(withSuccess("{\"spaceId\":7}", MediaType.APPLICATION_JSON));
 
         // When: 실제 HTTP Service Interface 호출
-        JsonNode response = service.applySpaceThreshold(BEARER, 3L, 7L, "request-123", request);
+        JsonNode response = service.applySpaceThreshold(BEARER, 3L, 7L, request);
 
         // Then: 응답 역직렬화와 요청 계약 충족
         assertThat(response.get("spaceId").asLong()).isEqualTo(7L);
