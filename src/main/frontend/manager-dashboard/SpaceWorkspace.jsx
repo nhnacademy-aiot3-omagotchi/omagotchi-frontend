@@ -38,14 +38,18 @@ function SpaceDialog({ space, selectedCohortId, onClose, onSave }) {
   const [policyValidationAttempted, setPolicyValidationAttempted] = useState(false);
   const update = (key, value) => setForm((current) => ({ ...current, [key]: value }));
   const isActiveEdit = Boolean(space && space.operationalStatus === "ACTIVE");
-  const isActiveCapacityReduction = isActiveEdit && Number(form.capacity) < Number(space.capacity);
+  const capacityLimited = form.type !== "STUDY";
+  const isActiveCapacityReduction = capacityLimited
+    && isActiveEdit
+    && Number(form.capacity) < Number(space.capacity);
   const isActiveTypeChange = isActiveEdit && form.type !== space.type;
   const hasPolicyError = isActiveCapacityReduction || isActiveTypeChange;
   const capacity = Number(form.capacity);
-  const hasRequiredInputError = !form.name.trim()
-    || form.capacity === ""
+  const hasRequiredInputError = !form.name.trim() || (capacityLimited && (
+    form.capacity === ""
     || !Number.isInteger(capacity)
-    || capacity < 1;
+    || capacity < 1
+  ));
   const selectedCohortNumber = Number(selectedCohortId);
   const hasCohortSelectionError = !space
     && (!Number.isInteger(selectedCohortNumber) || selectedCohortNumber <= 0);
@@ -62,7 +66,15 @@ function SpaceDialog({ space, selectedCohortId, onClose, onSave }) {
     if (hasPolicyError) return;
     setSaving(true);
     try {
-      const payload = { ...form, capacity: Number(form.capacity) };
+      // DB의 공통 capacity 컬럼은 유지하되 STUDY에서는 정책값으로 사용하지 않는다.
+      // 기존 STUDY를 수정할 때는 저장값도 유지해, 활성 공간의 정원 감소 규칙을 의도치 않게 건드리지 않는다.
+      const compatibilityCapacity = space?.type === "STUDY"
+        ? Number(space.capacity) || 1
+        : 1;
+      const payload = {
+        ...form,
+        capacity: capacityLimited ? Number(form.capacity) : compatibilityCapacity
+      };
       if (!space) payload.cohortId = selectedCohortNumber;
       if (await onSave(payload, space ? "update" : "create", space?.spaceId)) onClose();
     } finally {
@@ -79,7 +91,11 @@ function SpaceDialog({ space, selectedCohortId, onClose, onSave }) {
             <label className="sensor-field"><span>공간명</span><input required maxLength={50} value={form.name} onChange={(event) => update("name", event.target.value)} /></label>
             <div className="sensor-field-row">
               <label className="sensor-field"><span>유형</span><select value={form.type} onChange={(event) => update("type", event.target.value)}>{Object.entries(SPACE_TYPE_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
-              <label className="sensor-field"><span>정원</span><input required min="1" step="1" type="number" value={form.capacity} onChange={(event) => update("capacity", event.target.value)} /></label>
+              {capacityLimited ? (
+                <label className="sensor-field"><span>정원</span><input required min="1" step="1" type="number" value={form.capacity} onChange={(event) => update("capacity", event.target.value)} /></label>
+              ) : (
+                <div className="sensor-field"><span>정원</span><p>도서관은 정원 제한 없이 현재 이용 인원만 표시합니다.</p></div>
+              )}
             </div>
             {policyValidationAttempted && hasPolicyError && <p className="space-form-error" role="alert">{policyErrorMessage}</p>}
             {hasCohortSelectionError && <p className="space-form-error" role="alert">공간을 생성하려면 먼저 기수를 선택해 주세요.</p>}
@@ -91,17 +107,24 @@ function SpaceDialog({ space, selectedCohortId, onClose, onSave }) {
   );
 }
 
-function DeactivateSpaceDialog({ space, onClose, onConfirm }) {
+function DeactivateSpaceDialog({ space, onClose, onConfirm, onShowPresences }) {
   const [inactiveReason, setInactiveReason] = useState("");
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState(null);
 
   async function submit(event) {
     event.preventDefault();
     const reason = inactiveReason.trim();
     if (!reason || saving) return;
+    setError(null);
     setSaving(true);
     try {
       if (await onConfirm(space, reason)) onClose();
+    } catch (cause) {
+      setError({
+        code: cause?.code || null,
+        message: cause?.message || "공간을 비활성화하지 못했습니다."
+      });
     } finally {
       setSaving(false);
     }
@@ -117,8 +140,12 @@ function DeactivateSpaceDialog({ space, onClose, onConfirm }) {
           </header>
           <fieldset>
             <label className="sensor-field"><span>비활성 사유</span><textarea required maxLength={200} value={inactiveReason} onChange={(event) => setInactiveReason(event.target.value)} /></label>
+            {error && <p className="space-form-error" role="alert">{error.message}</p>}
           </fieldset>
-          <footer><div><button type="button" className="sensor-secondary-button" onClick={onClose} disabled={saving}>취소</button><button type="submit" className="sensor-primary-button is-danger" disabled={saving || !inactiveReason.trim()}>{saving ? "처리 중…" : "비활성화"}</button></div></footer>
+          <footer><div>
+            {error?.code === "SPACE_HAS_CURRENT_PRESENCE" && onShowPresences && <button type="button" className="sensor-secondary-button" onClick={() => { onClose(); onShowPresences(space); }}>현재 이용자 보기</button>}
+            <button type="button" className="sensor-secondary-button" onClick={onClose} disabled={saving}>취소</button><button type="submit" className="sensor-primary-button is-danger" disabled={saving || !inactiveReason.trim()}>{saving ? "처리 중…" : "비활성화"}</button>
+          </div></footer>
         </form>
       </div>
     </div>
@@ -200,6 +227,51 @@ function ParticipantDialog({ occupancy, onClose, onLoad }) {
   );
 }
 
+function CurrentPresenceDialog({ space, onClose, onLoad }) {
+  const [detail, setDetail] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+    Promise.resolve(onLoad?.(space.spaceId))
+      .then((result) => { if (!cancelled) setDetail(result); })
+      .catch((cause) => { if (!cancelled) setError(cause?.message || "현재 이용자를 불러오지 못했습니다."); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [space.spaceId, onLoad]);
+
+  const occupants = Array.isArray(detail?.occupants) ? detail.occupants : [];
+  return (
+    <div className="sensor-dialog-backdrop">
+      <div className="sensor-dialog" role="dialog" aria-modal="true" aria-labelledby="space-presence-dialog-title">
+        <form onSubmit={(event) => { event.preventDefault(); onClose(); }}>
+          <header>
+            <div><span>CURRENT PRESENCE</span><h2 id="space-presence-dialog-title">{space.name} 현재 인원</h2><p>전체 인원과 현재 기수에서 확인 가능한 이용자입니다.</p></div>
+            <button type="button" className="sensor-dialog-close" onClick={onClose} aria-label="닫기">×</button>
+          </header>
+          <section className="space-dialog-validation">
+            {loading && <p>현재 이용자를 불러오는 중입니다.</p>}
+            {!loading && error && <p className="space-form-error" role="alert">{error}</p>}
+            {!loading && !error && <p><strong>전체 {detail?.totalCount ?? 0}명</strong> · 현재 기수 {detail?.cohortCount ?? 0}명 · 다른 기수 {detail?.otherCohortCount ?? 0}명</p>}
+          </section>
+          {!loading && !error && <div className="space-participant-list">
+            {occupants.length === 0 ? <p className="sensor-list-empty">현재 기수의 이용자가 없습니다.</p> : occupants.map((occupant) => (
+              <article key={occupant.userId} className="space-participant-item">
+                <div><strong>{occupant.displayName || "이름 미설정"}</strong></div>
+                <div className="space-participant-badges"><span className="space-presence-badge">이용 중</span></div>
+              </article>
+            ))}
+          </div>}
+          <footer><div><button type="submit" className="sensor-primary-button">확인</button></div></footer>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 function ForceEndDialog({ occupancy, onClose, onConfirm }) {
   const [saving, setSaving] = useState(false);
 
@@ -264,12 +336,13 @@ function OccupancyManagement({ occupancies, loading, error, onRetry, onShowParti
   );
 }
 
-export function SpaceWorkspace({ spaces = [], occupancies = [], selectedCohortId = null, loading = false, error = null, occupancyLoading = false, occupancyError = null, onRetry, onLoadOccupancies, onLoadParticipants, onForceEndOccupancy, onSave, onChangeStatus, onDelete, onChangeCohort, embedded = false }) {
+export function SpaceWorkspace({ spaces = [], occupancies = [], selectedCohortId = null, loading = false, error = null, occupancyLoading = false, occupancyError = null, onRetry, onLoadOccupancies, onLoadParticipants, onLoadPresences, onForceEndOccupancy, onSave, onChangeStatus, onDelete, onChangeCohort, embedded = false }) {
   const [dialogSpace, setDialogSpace] = useState(undefined);
   const [actionDialog, setActionDialog] = useState(null);
   const [activeTab, setActiveTab] = useState("spaces");
   const [selectedOccupancy, setSelectedOccupancy] = useState(null);
   const [forceEndOccupancy, setForceEndOccupancy] = useState(null);
+  const [selectedPresenceSpace, setSelectedPresenceSpace] = useState(null);
   const visibleSpaces = spaces.filter((space) => space.cohortId == null
     || Number(space.cohortId) === Number(selectedCohortId));
 
@@ -278,7 +351,11 @@ export function SpaceWorkspace({ spaces = [], occupancies = [], selectedCohortId
       setActionDialog({ type: "deactivate", space });
       return;
     }
-    await onChangeStatus?.(space);
+    try {
+      await onChangeStatus?.(space);
+    } catch {
+      // 호스트 패널이 사용자 안내를 표시한다. 이벤트 Promise만 이 경계에서 소비한다.
+    }
   }
 
   return (
@@ -299,9 +376,9 @@ export function SpaceWorkspace({ spaces = [], occupancies = [], selectedCohortId
                     <p className="space-lifecycle-note"><strong>모든 공간은 생성 직후 비활성 상태입니다.</strong> 활성화 후 목적에 맞게 운영할 수 있습니다.</p>
                     <div className="space-table-wrap">
                       <table className="sensor-table space-table">
-                        <thead><tr><th>공간명</th><th>유형</th><th>정원</th><th>운영 상태</th><th>사용 상태</th><th>비활성 사유</th><th>기수</th><th>관리</th></tr></thead>
+                        <thead><tr><th>공간명</th><th>유형</th><th>정원</th><th>현재 인원</th><th>운영 상태</th><th>사용 상태</th><th>비활성 사유</th><th>기수</th><th>관리</th></tr></thead>
                         <tbody>{visibleSpaces.map((space) => <tr key={space.spaceId}>
-                          <th scope="row" data-label="공간명">{space.name}</th><td data-label="유형">{SPACE_TYPE_LABELS[space.type] || space.type}</td><td data-label="정원">{space.capacity}명</td>
+                          <th scope="row" data-label="공간명">{space.name}</th><td data-label="유형">{SPACE_TYPE_LABELS[space.type] || space.type}</td><td data-label="정원">{space.type === "STUDY" ? "제한 없음" : `${space.capacity}명`}</td><td data-label="현재 인원"><button type="button" className="space-presence-count-button" onClick={() => setSelectedPresenceSpace(space)}>{Math.max(0, Number(space.currentPresenceCount) || 0)}명</button></td>
                           <td data-label="운영 상태"><span className={`sensor-status ${space.operationalStatus === "ACTIVE" ? "is-active" : "is-inactive"}`}>{space.operationalStatus === "ACTIVE" ? "활성" : "비활성"}</span></td><td data-label="사용 상태">{SPACE_USAGE_LABELS[space.status] || space.status}</td><td data-label="비활성 사유">{space.inactiveReason || "-"}</td>
                           <td data-label="기수" className="space-cohort-cell"><span>{space.cohortId == null ? "미배정" : Number(space.cohortId) === Number(selectedCohortId) ? "현재 기수" : space.cohortId}</span><button type="button" onClick={() => onChangeCohort?.(space, space.cohortId == null)}>{space.cohortId == null ? "배정" : "해제"}</button></td>
                           <td data-label="관리" className="space-table-actions"><button type="button" onClick={() => setDialogSpace(space)}>수정</button><button type="button" onClick={() => toggleStatus(space)}>{space.operationalStatus === "ACTIVE" ? "비활성화" : "활성화"}</button><button type="button" className="is-danger" onClick={() => setActionDialog({ type: "delete", space })}>삭제</button></td>
@@ -318,10 +395,11 @@ export function SpaceWorkspace({ spaces = [], occupancies = [], selectedCohortId
         )}
       </section>
       {dialogSpace !== undefined && <SpaceDialog space={dialogSpace} selectedCohortId={selectedCohortId} onClose={() => setDialogSpace(undefined)} onSave={onSave} />}
-      {actionDialog?.type === "deactivate" && <DeactivateSpaceDialog space={actionDialog.space} onClose={() => setActionDialog(null)} onConfirm={onChangeStatus} />}
+      {actionDialog?.type === "deactivate" && <DeactivateSpaceDialog space={actionDialog.space} onClose={() => setActionDialog(null)} onConfirm={onChangeStatus} onShowPresences={setSelectedPresenceSpace} />}
       {actionDialog?.type === "delete" && <DeleteSpaceDialog space={actionDialog.space} onClose={() => setActionDialog(null)} onConfirm={onDelete} />}
       {selectedOccupancy && <ParticipantDialog occupancy={selectedOccupancy} onLoad={onLoadParticipants} onClose={() => setSelectedOccupancy(null)} />}
       {forceEndOccupancy && <ForceEndDialog occupancy={forceEndOccupancy} onClose={() => setForceEndOccupancy(null)} onConfirm={onForceEndOccupancy} />}
+      {selectedPresenceSpace && <CurrentPresenceDialog space={selectedPresenceSpace} onLoad={onLoadPresences} onClose={() => setSelectedPresenceSpace(null)} />}
     </main>
   );
 }

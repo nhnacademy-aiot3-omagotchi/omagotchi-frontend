@@ -292,6 +292,8 @@ button, input, select { font: inherit; }
 .space-cohort-cell { white-space: nowrap; }
 .space-cohort-cell span { display: inline !important; margin: 0 6px 0 0 !important; }
 .space-cohort-cell button { min-height: 30px; padding: 0 7px; border: 1px solid #afb9b4; border-radius: 4px; background: #fff; font-size: 11px; font-weight: 800; cursor: pointer; }
+.space-presence-count-button { min-height: 30px; padding: 0 9px; border: 1px solid #9fc9b2; border-radius: 999px; color: #17643e; background: #e4f6eb; font-size: 12px; font-weight: 800; cursor: pointer; }
+.space-presence-count-button:hover { background: #d4efdf; }
 .space-usage-status { display: inline-flex; padding: 6px 10px; border-radius: 999px; color: #47524c; background: #eef1ef; font-size: 12px; font-weight: 800; white-space: nowrap; }
 .space-usage-status.is-available { color: #0c7747; background: #dff5e8; }
 .space-usage-status.is-occupied { color: #8d5200; background: #fff0cf; }

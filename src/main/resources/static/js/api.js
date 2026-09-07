@@ -414,6 +414,10 @@
             update: (spaceId, payload) => request(`/admin/spaces/${encodeURIComponent(spaceId)}`, {method: "PUT", body: payload}),
             activate: (spaceId) => request(`/admin/spaces/${encodeURIComponent(spaceId)}/activate`, {method: "POST"}),
             deactivate: (spaceId, inactiveReason) => request(`/admin/spaces/${encodeURIComponent(spaceId)}/deactivate`, {method: "POST", body: {inactiveReason}}),
+            currentPresences: (spaceId, cohortId) => request(withQuery(
+                `/admin/spaces/${encodeURIComponent(spaceId)}/presences`,
+                {cohortId}
+            )),
             remove: (spaceId) => request(`/admin/spaces/${encodeURIComponent(spaceId)}`, {method: "DELETE"}),
             assignCohort: (spaceId, cohortId) => request(`/admin/spaces/${encodeURIComponent(spaceId)}/cohort`, {method: "PUT", body: {cohortId}}),
             unassignCohort: (spaceId) => request(`/admin/spaces/${encodeURIComponent(spaceId)}/cohort`, {method: "DELETE"})

@@ -18,7 +18,8 @@ public record SpaceResponse(
         boolean occupiedBySameCohort,
         boolean occupiedByRequester,
         boolean participatingByRequester,
-        Integer participantCount
+        Integer participantCount,
+        long currentPresenceCount
 ) {
 
     public static SpaceResponse from(SpaceView view) {
@@ -36,7 +37,8 @@ public record SpaceResponse(
                 view.occupiedBySameCohort(),
                 view.occupiedByRequester(),
                 view.participatingByRequester(),
-                view.participantCount()
+                view.participantCount(),
+                view.currentPresenceCount()
         );
     }
 }

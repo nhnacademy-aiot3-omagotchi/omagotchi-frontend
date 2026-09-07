@@ -60,6 +60,7 @@ function normalizeSpaceContext(context = {}) {
     onChangeCohort: fn(context.onChangeCohort),
     onLoadOccupancies: fn(context.onLoadOccupancies),
     onLoadParticipants: fn(context.onLoadParticipants),
+    onLoadPresences: fn(context.onLoadPresences),
     onForceEndOccupancy: fn(context.onForceEndOccupancy),
     onRetry: fn(context.onRetry)
   };

@@ -219,7 +219,8 @@ public class SpaceBffService {
                 item.occupiedBySameCohort(),
                 requesterUserId.equals(item.occupierUserId()),
                 participants.contains(requesterUserId),
-                item.occupiedBySameCohort() ? participants.size() : null
+                item.occupiedBySameCohort() ? participants.size() : null,
+                item.currentPresenceCount()
         );
     }
 

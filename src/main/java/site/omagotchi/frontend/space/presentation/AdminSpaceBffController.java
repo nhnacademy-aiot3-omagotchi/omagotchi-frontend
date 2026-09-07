@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import site.omagotchi.frontend.global.web.BffApiPaths;
@@ -22,6 +23,7 @@ import site.omagotchi.frontend.space.presentation.request.AdminSpaceUpdateReques
 import tools.jackson.databind.JsonNode;
 import site.omagotchi.frontend.space.presentation.response.AdminActiveOccupancyResponse;
 import site.omagotchi.frontend.space.presentation.response.OccupancyParticipantResponse;
+import site.omagotchi.frontend.space.presentation.response.SpacePresenceDetailResponse;
 
 import java.util.List;
 
@@ -45,6 +47,15 @@ public class AdminSpaceBffController {
             HttpServletRequest request
     ) {
         return adminSpaceBffService.getParticipants(spaceId, request);
+    }
+
+    @GetMapping("/{spaceId}/presences")
+    public SpacePresenceDetailResponse getCurrentPresences(
+            @PathVariable Long spaceId,
+            @RequestParam Long cohortId,
+            HttpServletRequest request
+    ) {
+        return adminSpaceBffService.getCurrentPresences(cohortId, spaceId, request);
     }
 
     @PostMapping("/{spaceId}/occupancies/force-release")
