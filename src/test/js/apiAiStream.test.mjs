@@ -14,7 +14,11 @@ const clientSource = await readFile(
 
 function loadApi(fetch) {
     const redirects = [];
+    const alerts = [];
     const window = {
+        alert(message) {
+            alerts.push(message);
+        },
         location: {
             pathname: "/home",
             replace(path) {
@@ -30,7 +34,7 @@ function loadApi(fetch) {
         fetch,
         window
     });
-    return {api: window.OmagotchiApi, redirects};
+    return {api: window.OmagotchiApi, alerts, redirects};
 }
 
 test("AI 스트림 요청은 api.js 공통 요청 경로를 사용한다", async () => {
@@ -57,7 +61,7 @@ test("AI 스트림 요청은 api.js 공통 요청 경로를 사용한다", async
 });
 
 test("AI 스트림 401 응답도 공통 재로그인 처리와 API 오류 계약을 따른다", async () => {
-    const {api, redirects} = loadApi(async () => ({
+    const {api, alerts, redirects} = loadApi(async () => ({
         ok: false,
         status: 401,
         headers: {get: () => "application/json"},
@@ -70,5 +74,51 @@ test("AI 스트림 401 응답도 공통 재로그인 처리와 API 오류 계약
             && error.code === "AUTH_SESSION_EXPIRED"
             && error.message === "세션이 만료되었습니다."
     );
+    assert.deepEqual(alerts, ["세션이 만료되었습니다. 로그인 화면으로 이동합니다."]);
+    assert.deepEqual(redirects, ["/login?notice=session-expired"]);
+});
+
+test("상태 변경 전 CSRF 조회에서 세션이 만료돼도 공통 안내 후 재로그인 처리한다", async () => {
+    const calls = [];
+    const {api, alerts, redirects} = loadApi(async (url) => {
+        calls.push(url);
+        return {
+            ok: false,
+            status: 401,
+            headers: {get: () => "application/json"},
+            json: async () => ({
+                code: "AUTH_AUTHENTICATION_REQUIRED",
+                message: "인증이 필요합니다."
+            })
+        };
+    });
+
+    await assert.rejects(
+        api.attendance.checkOut(),
+        (error) => error.status === 401
+            && error.code === "AUTH_AUTHENTICATION_REQUIRED"
+            && error.message === "인증이 필요합니다."
+    );
+
+    assert.deepEqual(calls, ["/bff/v1/csrf"]);
+    assert.deepEqual(alerts, ["세션이 만료되었습니다. 로그인 화면으로 이동합니다."]);
+    assert.deepEqual(redirects, ["/login?notice=session-expired"]);
+});
+
+test("동시에 여러 401을 받아도 세션 만료 안내와 이동은 한 번만 수행한다", async () => {
+    const {api, alerts, redirects} = loadApi(async () => ({
+        ok: false,
+        status: 401,
+        headers: {get: () => "application/json"},
+        json: async () => ({code: "AUTH_SESSION_EXPIRED"})
+    }));
+
+    const results = await Promise.allSettled([
+        api.profile.get(),
+        api.access.getContext()
+    ]);
+
+    assert.ok(results.every(({status}) => status === "rejected"));
+    assert.deepEqual(alerts, ["세션이 만료되었습니다. 로그인 화면으로 이동합니다."]);
     assert.deepEqual(redirects, ["/login?notice=session-expired"]);
 });
