@@ -19,6 +19,7 @@ import org.springframework.web.client.RestClient;
 import org.springframework.web.client.support.RestClientHttpServiceGroupConfigurer;
 import site.omagotchi.frontend.auth.infrastructure.request.IdentitySignupRequest;
 import site.omagotchi.frontend.auth.infrastructure.request.IdentityRefreshTokenRequest;
+import site.omagotchi.frontend.auth.infrastructure.request.IdentityPasswordResetEmailChallengeRequest;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -41,6 +42,9 @@ class IdentityAuthHttpServiceConfigTest {
 
     @Autowired
     private IdentityAuthHttpService httpService;
+
+    @Autowired
+    private IdentityPasswordResetHttpService passwordResetHttpService;
 
     @Autowired
     private HttpComponentsClientHttpRequestFactory identityClientHttpRequestFactory;
@@ -118,6 +122,41 @@ class IdentityAuthHttpServiceConfigTest {
         httpService.refresh(new IdentityRefreshTokenRequest("refresh-token"));
 
         // Then: Basic 인증 Header와 Refresh 요청 Body
+        server.verify();
+    }
+
+    @Test
+    @DisplayName("비밀번호 재설정 HTTP Service에도 Frontend Basic 인증 적용")
+    void appliesFrontendBasicCredentialToPasswordReset() {
+        // Given: 실제 Group 설정에 연결된 Identity 비밀번호 재설정 Mock 응답
+        MockRestServiceServer server = mockHttpServiceConfiguration.server();
+        server.expect(once(), requestTo(
+                        "http://localhost:8083/api/v2/auth/password-reset/email-otp"
+                ))
+                .andExpect(header(
+                        HttpHeaders.AUTHORIZATION,
+                        "Basic " + HttpHeaders.encodeBasicAuth(
+                                "frontend",
+                                "test-only-frontend-credential-value",
+                                StandardCharsets.UTF_8
+                        )
+                ))
+                .andExpect(content().json("{\"email\":\"user@example.com\"}"))
+                .andRespond(withStatus(HttpStatus.ACCEPTED)
+                        .header(HttpHeaders.CONTENT_TYPE, "application/json")
+                        .body("""
+                                {
+                                  "challengeId": "00000000-0000-0000-0000-000000900001",
+                                  "expiresInSeconds": 300
+                                }
+                                """));
+
+        // When: 실제 비밀번호 재설정 HTTP Service Interface 호출
+        passwordResetHttpService.requestEmailOtp(
+                new IdentityPasswordResetEmailChallengeRequest("user@example.com")
+        );
+
+        // Then: 공유 Frontend Basic 인증 Header
         server.verify();
     }
 

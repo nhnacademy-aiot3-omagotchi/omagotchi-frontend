@@ -11,6 +11,7 @@
     "test:manager-join-code": "node --test src/test/js/managerJoinCodePanel.test.mjs",
     "test:manager-study-stats": "node --test src/test/js/managerStudyStatsPanel.test.mjs",
     "test:register-email-verification": "node --test src/test/js/registerEmailVerification.test.mjs",
+    "test:password-reset": "node --test src/test/js/authApi.test.mjs src/test/js/passwordResetFlow.test.mjs src/test/js/passwordResetMarkup.test.mjs",
     "test:system-admin": "node --test src/test/js/systemAdminApiRepository.test.mjs",
     "test:storybook-css": "node --test src/test/js/storybookPreviewCss.test.mjs",
     "test:vacancy-alerts": "node --test src/test/js/vacancyAlerts.test.mjs",

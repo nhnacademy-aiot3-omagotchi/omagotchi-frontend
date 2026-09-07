@@ -6,17 +6,9 @@ import {
     isEmailChallengeResponse,
     maskEmail,
     normalizeSignupDetails,
-    parseRetryAfter,
     secondsUntil
 } from "./registerEmailVerification.js";
-
-class ApiRequestError extends Error {
-    constructor(response, body) {
-        super(body?.message || "요청을 처리하지 못했습니다.");
-        this.code = body?.code;
-        this.retryAfterSeconds = parseRetryAfter(response.headers.get("Retry-After"));
-    }
-}
+import {AuthApiRequestError, requestAuthJson} from "./authApi.js";
 
 const form = document.querySelector(".register-form");
 
@@ -34,8 +26,6 @@ if (form) {
     const editDetailsButton = form.querySelector("[data-signup-edit-details]");
     const otpAddress = form.querySelector("[data-email-otp-address]");
     const countdown = form.querySelector("[data-email-otp-countdown]");
-    const csrfToken = document.querySelector("meta[name='_csrf']")?.content;
-    const csrfHeader = document.querySelector("meta[name='_csrf_header']")?.content;
 
     const state = {
         challengeId: null,
@@ -68,36 +58,6 @@ if (form) {
             return false;
         }
         return true;
-    }
-
-    async function postJson(path, payload) {
-        const headers = { "Content-Type": "application/json" };
-        if (csrfHeader && csrfToken) {
-            headers[csrfHeader] = csrfToken;
-        }
-
-        const response = await fetch(path, {
-            method: "POST",
-            credentials: "same-origin",
-            headers,
-            body: JSON.stringify(payload)
-        });
-        const responseText = await response.text();
-        let body = null;
-        if (responseText) {
-            try {
-                body = JSON.parse(responseText);
-            } catch {
-                if (response.ok) {
-                    throw new Error("서버 응답 형식을 확인할 수 없습니다.");
-                }
-            }
-        }
-
-        if (!response.ok) {
-            throw new ApiRequestError(response, body);
-        }
-        return body;
     }
 
     function showOtpStep(email) {
@@ -159,7 +119,7 @@ if (form) {
 
         try {
             const details = currentDetails();
-            const challenge = await postJson(form.dataset.emailOtpPath, details);
+            const challenge = await requestAuthJson(form.dataset.emailOtpPath, {payload: details});
             if (!isEmailChallengeResponse(challenge)) {
                 throw new Error("서버의 인증 요청 응답을 확인할 수 없습니다.");
             }
@@ -179,7 +139,7 @@ if (form) {
             ensureTimer();
             codeInput.focus();
         } catch (error) {
-            if (error instanceof ApiRequestError && error.retryAfterSeconds !== null) {
+            if (error instanceof AuthApiRequestError && error.retryAfterSeconds !== null) {
                 applyCooldown(error.retryAfterSeconds);
                 setFeedback(
                     formatRetryAfterMessage(error.retryAfterSeconds),
@@ -187,7 +147,7 @@ if (form) {
                 );
             } else {
                 setFeedback(
-                    error instanceof ApiRequestError
+                    error instanceof AuthApiRequestError
                         ? error.message
                         : "인증번호를 보내지 못했습니다. 잠시 후 다시 시도해 주세요.",
                     "error"
@@ -247,10 +207,13 @@ if (form) {
         setFeedback("인증번호를 확인하고 계정을 생성하고 있어요.");
 
         try {
-            const signupResult = await postJson(
-                form.dataset.signupPath,
-                buildVerifiedSignupPayload(details, state.challengeId, codeInput.value)
-            );
+            const signupResult = await requestAuthJson(form.dataset.signupPath, {
+                payload: buildVerifiedSignupPayload(
+                    details,
+                    state.challengeId,
+                    codeInput.value
+                )
+            });
             state.challengeId = null;
             state.issuedEmail = null;
             passwordInput.value = "";
@@ -264,7 +227,7 @@ if (form) {
             window.setTimeout(() => window.location.assign(form.dataset.loginPath), 600);
         } catch (error) {
             setFeedback(
-                error instanceof ApiRequestError
+                error instanceof AuthApiRequestError
                     ? error.message
                     : "계정을 생성하지 못했습니다. 잠시 후 다시 시도해 주세요.",
                 "error"
