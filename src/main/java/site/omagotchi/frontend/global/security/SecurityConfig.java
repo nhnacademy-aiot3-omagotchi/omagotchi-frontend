@@ -72,9 +72,10 @@ public class SecurityConfig {
                         ).permitAll() // 로그인·일반 가입 진입용 공개 Page
                         .requestMatchers(
                                 "/actuator/health",
+                                "/actuator/prometheus",
                                 "/actuator/health/**",
                                 "/actuator/info"
-                        ).permitAll() // 배포 확인용 최소 Actuator endpoint
+                        ).permitAll() // 배포 확인·내부 메트릭 수집용 Actuator 경로
                         .requestMatchers(
                                 HttpMethod.POST,
                                 SignupBffPaths.SIGNUP,
