@@ -3,17 +3,18 @@ import { createRoot } from "react-dom/client";
 import { SensorWorkspace } from "./SensorWorkspace.jsx";
 import { SpaceWorkspace } from "./SpaceWorkspace.jsx";
 import sensorWorkspaceCss from "./SensorWorkspace.css?inline";
+import spaceWorkspaceCss from "./SpaceWorkspace.css?inline";
 
 const SENSOR_CONTEXT_EVENT = "omagotchi:manager-sensors:context";
 const SPACE_CONTEXT_EVENT = "omagotchi:manager-spaces:context";
 const sensorRootElement = document.querySelector("[data-manager-sensor-react-root]");
 const spaceRootElement = document.querySelector("[data-manager-space-react-root]");
 
-function installStyles() {
-  if (document.querySelector("style[data-manager-sensor-react-styles]")) return;
+function installStyles(marker, cssText) {
+  if (document.querySelector(`style[${marker}]`)) return;
   const style = document.createElement("style");
-  style.dataset.managerSensorReactStyles = "";
-  style.textContent = sensorWorkspaceCss;
+  style.setAttribute(marker, "");
+  style.textContent = cssText;
   document.head.append(style);
 }
 
@@ -67,7 +68,11 @@ function normalizeSpaceContext(context = {}) {
 }
 
 if (sensorRootElement || spaceRootElement) {
-  installStyles();
+  installStyles("data-manager-sensor-react-styles", sensorWorkspaceCss);
+}
+
+if (spaceRootElement) {
+  installStyles("data-manager-space-react-styles", spaceWorkspaceCss);
 }
 
 if (sensorRootElement) {
