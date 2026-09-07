@@ -21,6 +21,11 @@ public enum AuthErrorCode implements ErrorCode {
             "AUTH_INVALID_REFRESH_TOKEN",
             "인증이 만료되었습니다. 다시 로그인해 주세요."
     ),
+    PASSWORD_RESET_INVALID(
+            ErrorType.INVALID_INPUT,
+            "AUTH_PASSWORD_RESET_INVALID",
+            "비밀번호 재설정 정보가 올바르지 않거나 만료되었습니다."
+    ),
     EMAIL_VERIFICATION_INVALID(
             ErrorType.INVALID_INPUT,
             "EMAIL_VERIFICATION_INVALID_CHALLENGE",

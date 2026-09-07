@@ -1128,3 +1128,36 @@ body {
         animation: none;
     }
 }
+
+.password-reset-card {
+    min-height: 680px;
+}
+
+.ui-story-canvas--password-reset {
+    height: 100vh;
+    min-height: 0;
+    align-items: start;
+    overflow-y: auto;
+}
+
+.password-reset-card .ui-auth-card {
+    padding-block: clamp(28px, 4vw, 44px);
+}
+
+.password-reset-card .password-back-link {
+    justify-self: start;
+    margin: 0 0 0 4px;
+}
+
+.password-reset-policy-hint {
+    margin: -4px 2px 0;
+    color: var(--ui-ink-muted);
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+@media (max-width: 840px) {
+    .password-reset-card {
+        min-height: 0;
+    }
+}
