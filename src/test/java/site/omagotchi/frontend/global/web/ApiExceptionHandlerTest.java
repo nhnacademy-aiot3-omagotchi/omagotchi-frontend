@@ -26,6 +26,7 @@ import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.web.ErrorResponseException;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
@@ -137,6 +138,20 @@ class ApiExceptionHandlerTest {
                         jsonPath("$.path").value(
                                 "/bff/v1/test/errors/lab-capacity-exceeded"
                         )
+                );
+    }
+
+    @ParameterizedTest(name = "[{index}] {0}")
+    @MethodSource("spaceDownstreamErrors")
+    @DisplayName("공간 상태 충돌 오류는 코드별 공개 JSON 계약을 유지")
+    void forwardsSpaceDownstreamErrors(String code, String message) throws Exception {
+        mockMvc.perform(post("/bff/v1/test/errors/spaces/{code}", code))
+                .andExpectAll(
+                        status().isConflict(),
+                        content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON),
+                        header().string(HttpHeaders.CACHE_CONTROL, "no-store"),
+                        jsonPath("$.code").value(code),
+                        jsonPath("$.message").value(message)
                 );
     }
 
@@ -348,6 +363,27 @@ class ApiExceptionHandlerTest {
                 Arguments.of("TEAM_ACCOUNT_WITHDRAWN", HttpStatus.CONFLICT),
                 Arguments.of("TEAM_DELEGATION_REQUIRED", HttpStatus.CONFLICT),
                 Arguments.of("TEAM_MASTER_STATE_CONFLICT", HttpStatus.CONFLICT)
+        );
+    }
+
+    private static Stream<Arguments> spaceDownstreamErrors() {
+        return Stream.of(
+                Arguments.of(
+                        "SPACE_HAS_CURRENT_PRESENCE",
+                        "현재 이용 중인 사용자가 있어 비활성화할 수 없습니다."
+                ),
+                Arguments.of(
+                        "SPACE_HAS_RETURN_RESERVATION",
+                        "회의 종료 후 복귀 예정인 사용자가 있어 비활성화할 수 없습니다."
+                ),
+                Arguments.of(
+                        "LAST_ACTIVE_LAB_REQUIRED",
+                        "활성 기수에는 활성 실습실이 최소 1개 필요합니다."
+                ),
+                Arguments.of(
+                        "SPACE_STATE_CHANGED",
+                        "공간 상태가 변경되었습니다. 최신 상태를 확인한 뒤 다시 시도해 주세요."
+                )
         );
     }
 
@@ -703,6 +739,20 @@ class ApiExceptionHandlerTest {
                             "learning-lab-capacity-request"
                     ),
                     new IllegalStateException("lab capacity exceeded")
+            );
+        }
+
+        @PostMapping("/bff/v1/test/errors/spaces/{code}")
+        void spaceConflict(@PathVariable String code) {
+            throw new LearningDownstreamException(
+                    HttpStatus.CONFLICT,
+                    new ApiErrorResponse(
+                            code,
+                            "공개하지 않을 Learning 내부 공간 상태",
+                            "/api/v1/spaces/7",
+                            "learning-space-conflict"
+                    ),
+                    new IllegalStateException("space state conflict")
             );
         }
 
