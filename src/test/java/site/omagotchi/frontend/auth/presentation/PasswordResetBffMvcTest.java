@@ -22,6 +22,7 @@ import site.omagotchi.frontend.auth.presentation.security.BrowserTokenSessionAut
 import site.omagotchi.frontend.auth.presentation.security.IdentityLogoutHandler;
 import site.omagotchi.frontend.auth.presentation.security.LoginAuthenticationFailureHandler;
 import site.omagotchi.frontend.global.exception.BusinessException;
+import site.omagotchi.frontend.global.logging.HttpErrorEventLogger;
 import site.omagotchi.frontend.global.security.BffApiSecurityErrorHandler;
 import site.omagotchi.frontend.global.security.BrowserSessionInvalidator;
 import site.omagotchi.frontend.global.security.SecurityConfig;
@@ -65,6 +66,9 @@ class PasswordResetBffMvcTest {
 
     @MockitoBean
     private AccessTokenRefreshInterceptor accessTokenRefreshInterceptor;
+
+    @MockitoBean
+    private HttpErrorEventLogger errorEventLogger;
 
     @MockitoBean
     private PasswordResetBffService passwordResetBffService;
