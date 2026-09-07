@@ -1,8 +1,10 @@
 (() => {
     const API_BASE = window.OMAGOTCHI_API_BASE || document.documentElement.dataset.apiBase || "/bff/v1";
     const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS", "TRACE"]);
+    const SESSION_EXPIRED_MESSAGE = "세션이 만료되었습니다. 로그인 화면으로 이동합니다.";
     let csrfTokenPromise = null;
     let cachedCsrfToken = null;
+    let sessionExpirationHandling = false;
 
     class ApiRequestError extends Error {
         constructor(status, message, details = {}) {
@@ -22,7 +24,13 @@
                 headers: {Accept: "application/json"}
             }).then(async (response) => {
                 if (!response.ok) {
-                    throw new ApiRequestError(response.status, "CSRF 토큰을 가져오지 못했습니다.");
+                    const payload = await parseResponsePayload(response).catch(() => ({}));
+                    handleSessionExpiration(response.status);
+                    throw new ApiRequestError(
+                        response.status,
+                        errorMessage(payload, response.status),
+                        errorDetails(payload)
+                    );
                 }
                 const data = await response.json();
                 cachedCsrfToken = data;
@@ -67,10 +75,20 @@
         return errorDetails(payload).message || `API request failed: ${status}`;
     }
 
-    function redirectToLogin(status) {
-        if (status === 401 && window.location.pathname !== "/login") {
-            window.location.replace("/login?notice=session-expired");
+    function handleSessionExpiration(status) {
+        if (status !== 401
+            || window.location.pathname === "/login"
+            || sessionExpirationHandling) {
+            return;
         }
+
+        sessionExpirationHandling = true;
+        csrfTokenPromise = null;
+        cachedCsrfToken = null;
+        if (typeof window.alert === "function") {
+            window.alert(SESSION_EXPIRED_MESSAGE);
+        }
+        window.location.replace("/login?notice=session-expired");
     }
 
     async function requestResponse(path, options = {}) {
@@ -107,7 +125,7 @@
             errorMessage(payload, response.status),
             errorDetails(payload)
         );
-        redirectToLogin(response.status);
+        handleSessionExpiration(response.status);
         throw error;
     }
 
