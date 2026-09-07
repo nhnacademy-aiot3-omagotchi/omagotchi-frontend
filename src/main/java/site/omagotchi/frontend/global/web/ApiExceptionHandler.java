@@ -113,6 +113,10 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
             Map.entry("SPACE_ALREADY_ACTIVE", 409),
             Map.entry("SPACE_ALREADY_INACTIVE", 409),
             Map.entry("SPACE_ACTIVE_OCCUPANCY_EXISTS", 409),
+            Map.entry("SPACE_HAS_CURRENT_PRESENCE", 409),
+            Map.entry("SPACE_HAS_RETURN_RESERVATION", 409),
+            Map.entry("LAST_ACTIVE_LAB_REQUIRED", 409),
+            Map.entry("SPACE_STATE_CHANGED", 409),
             Map.entry("SPACE_ACTIVE_CAPACITY_REDUCTION_NOT_ALLOWED", 409),
             Map.entry("SPACE_ACTIVE_TYPE_CHANGE_NOT_ALLOWED", 409),
             Map.entry("SPACE_ACTIVE_DELETE_NOT_ALLOWED", 409),
@@ -264,8 +268,25 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
     private String publicLearningDownstreamMessage(
             LearningDownstreamException exception
     ) {
-        if ("LAB_CAPACITY_EXCEEDED".equals(exception.getErrorResponse().code())) {
-            return "실습실 정원이 가득 찼습니다.";
+        String code = exception.getErrorResponse().code();
+        String codeMessage = switch (code) {
+            case "OCCUPANCY_ROOM_ALREADY_OCCUPIED" ->
+                    "다른 사용자가 먼저 회의실 사용을 시작했습니다.";
+            case "LAB_CAPACITY_EXCEEDED" -> "실습실 정원이 가득 찼습니다.";
+            case "SPACE_ACTIVE_OCCUPANCY_EXISTS" ->
+                    "현재 진행 중인 회의실 점유가 있어 비활성화할 수 없습니다.";
+            case "SPACE_HAS_CURRENT_PRESENCE" ->
+                    "현재 이용 중인 사용자가 있어 비활성화할 수 없습니다.";
+            case "SPACE_HAS_RETURN_RESERVATION" ->
+                    "회의 종료 후 복귀 예정인 사용자가 있어 비활성화할 수 없습니다.";
+            case "LAST_ACTIVE_LAB_REQUIRED" ->
+                    "활성 기수에는 활성 실습실이 최소 1개 필요합니다.";
+            case "SPACE_STATE_CHANGED" ->
+                    "공간 상태가 변경되었습니다. 최신 상태를 확인한 뒤 다시 시도해 주세요.";
+            default -> null;
+        };
+        if (codeMessage != null) {
+            return codeMessage;
         }
         int status = exception.getStatusCode().value();
         return switch (status) {

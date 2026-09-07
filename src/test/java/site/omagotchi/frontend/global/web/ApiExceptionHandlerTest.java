@@ -232,7 +232,7 @@ class ApiExceptionHandlerTest {
                         content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON),
                         header().string(HttpHeaders.CACHE_CONTROL, "no-store"),
                         jsonPath("$.code").value("OCCUPANCY_ROOM_ALREADY_OCCUPIED"),
-                        jsonPath("$.message").value("현재 상태에서는 요청을 처리할 수 없습니다."),
+                        jsonPath("$.message").value("다른 사용자가 먼저 회의실 사용을 시작했습니다."),
                         jsonPath("$.requestId").value(REQUEST_ID)
                 );
     }
