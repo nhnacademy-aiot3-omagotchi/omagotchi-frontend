@@ -21,6 +21,10 @@ import {
     isLabFull,
     renderLabPanel
 } from "./space/labPanel.js";
+import {
+    renderTelegramControl,
+    renderVacancyAlertList
+} from "./space/vacancyAlertPanel.js";
 
 (() => {
     const stateKey = "omagotchiSpaceState";
@@ -50,6 +54,13 @@ import {
     };
 
     let telegramOverride = null;
+    let telegramLinkLoaded = false;
+    let telegramLinkLoading = false;
+    let telegramLinkError = "";
+    let telegramLinkLoadPromise = null;
+    let vacancyAlertListOpen = false;
+    let vacancyAlertsLoading = false;
+    let vacancyAlertsError = "";
     let currentAttendance = null;
     let currentPresence = null;
     let currentContextLoading = false;
@@ -517,9 +528,19 @@ import {
     }
 
     async function loadVacancyAlerts() {
-        const alerts = await window.OmagotchiApi.spaces.getMyVacancyAlerts();
-        state.vacancyAlerts = normalizeVacancyAlerts(alerts);
+        vacancyAlertsLoading = true;
+        vacancyAlertsError = "";
         renderAll();
+        try {
+            const alerts = await window.OmagotchiApi.spaces.getMyVacancyAlerts();
+            state.vacancyAlerts = normalizeVacancyAlerts(alerts);
+        } catch (error) {
+            vacancyAlertsError = error?.message || "공실 알림 신청 내역을 불러오지 못했습니다.";
+            throw error;
+        } finally {
+            vacancyAlertsLoading = false;
+            renderAll();
+        }
     }
 
     function refreshVacancyAlerts() {
@@ -534,6 +555,43 @@ import {
 
     function vacancyAlertForSpace(spaceId) {
         return findVacancyAlert(state.vacancyAlerts, spaceId);
+    }
+
+    async function loadTelegramLink() {
+        const telegramApi = window.OmagotchiApi?.telegram;
+        if (typeof telegramApi?.getMyLink !== "function") {
+            telegramLinkLoaded = true;
+            telegramLinkError = "";
+            renderAll();
+            return;
+        }
+
+        telegramLinkLoading = true;
+        telegramLinkError = "";
+        renderAll();
+        try {
+            const link = await telegramApi.getMyLink();
+            telegramOverride = link
+                ? { ...link, connected: true }
+                : { connected: false, notificationEnabled: false };
+        } catch (error) {
+            telegramLinkError = error?.message || "텔레그램 연동 상태를 확인하지 못했습니다.";
+            throw error;
+        } finally {
+            telegramLinkLoaded = true;
+            telegramLinkLoading = false;
+            renderAll();
+        }
+    }
+
+    function refreshTelegramLink() {
+        if (telegramLinkLoadPromise) {
+            return telegramLinkLoadPromise;
+        }
+        telegramLinkLoadPromise = loadTelegramLink().finally(() => {
+            telegramLinkLoadPromise = null;
+        });
+        return telegramLinkLoadPromise;
     }
 
     function formatRemaining(expiresAt) {
@@ -561,32 +619,35 @@ import {
             && String(left) === String(right);
     }
 
-    function safeTelegramDeepLink(value) {
-        if (typeof value !== "string" || !value.trim()) return "";
-        try {
-            const url = new URL(value, window.location.origin);
-            if (url.protocol === "tg:") return url.href;
-            if (url.protocol === "https:" && ["t.me", "telegram.me"].includes(url.hostname)) return url.href;
-        } catch {
-            return "";
-        }
-        return "";
-    }
-
     function getTelegramState() {
+        if (telegramLinkLoading || (
+            !telegramLinkLoaded
+            && typeof window.OmagotchiApi?.telegram?.getMyLink === "function"
+        )) {
+            return { status: "loading", connected: false, notificationEnabled: false };
+        }
+        if (telegramLinkError) {
+            return { status: "error", connected: false, notificationEnabled: false };
+        }
+
         const injected = telegramOverride || window.OmagotchiTelegram || {};
         const profileTelegram = profile.integrations?.telegram || {};
+        const connected = Boolean(
+            injected.connected
+            ?? profileTelegram.connected
+            ?? profile.telegramConnected
+        );
+        const notificationEnabled = connected && (
+            injected.notificationEnabled
+            ?? profileTelegram.notificationEnabled
+            ?? true
+        ) !== false;
         return {
-            connected: Boolean(
-                injected.connected
-                ?? profileTelegram.connected
-                ?? profile.telegramConnected
-            ),
-            deepLink: safeTelegramDeepLink(
-                injected.deepLink
-                || profileTelegram.deepLink
-                || profile.telegramDeepLink
-            )
+            status: connected
+                ? notificationEnabled ? "enabled" : "disabled"
+                : "unlinked",
+            connected,
+            notificationEnabled
         };
     }
 
@@ -913,11 +974,10 @@ import {
                     </div>
                 `;
         const telegram = getTelegramState();
-        const telegramControl = telegram.connected
-            ? '<span class="ui-space-telegram-status">텔레그램 알림 설정됨</span>'
-            : telegram.deepLink
-                ? `<a class="ui-space-telegram-link" href="${escapeHtml(telegram.deepLink)}" target="_blank" rel="noreferrer">텔레그램 알림 설정</a>`
-                : '<button class="ui-space-telegram-link" type="button" disabled title="텔레그램 연결 기능을 준비하고 있습니다">텔레그램 알림 준비 중</button>';
+        const telegramControl = renderTelegramControl({
+            status: telegram.status,
+            open: vacancyAlertListOpen
+        });
 
         return `
             <section class="ui-space-meeting" aria-labelledby="space-meeting-title">
@@ -930,6 +990,14 @@ import {
                         ${telegramControl}
                     </div>
                 </header>
+                ${telegram.status === "enabled" && vacancyAlertListOpen
+                    ? renderVacancyAlertList({
+                        alerts: state.vacancyAlerts,
+                        rooms: state.rooms,
+                        loading: vacancyAlertsLoading,
+                        error: vacancyAlertsError
+                    })
+                    : ""}
                 <div class="ui-space-meeting__body">
                     ${roomContent}
                 </div>
@@ -1220,8 +1288,18 @@ import {
         const participantCandidate = event.target.closest("[data-space-participant-candidate]");
         const libraryEnter = event.target.closest("[data-space-library-enter]");
         const retry = event.target.closest("[data-space-retry]");
+        const telegramLinkRetry = event.target.closest("[data-telegram-link-retry]");
+        const vacancyAlertsToggle = event.target.closest("[data-vacancy-alerts-toggle]");
+        const vacancyAlertsRetry = event.target.closest("[data-vacancy-alerts-retry]");
 
-        if (participantCandidate) {
+        if (telegramLinkRetry) {
+            await refreshTelegramLink().catch(() => {});
+        } else if (vacancyAlertsToggle) {
+            vacancyAlertListOpen = !vacancyAlertListOpen;
+            renderAll();
+        } else if (vacancyAlertsRetry) {
+            await refreshVacancyAlerts().catch(() => {});
+        } else if (participantCandidate) {
             if (!participantCandidate.disabled) {
                 state.selectedParticipantId = participantCandidate.dataset.spaceParticipantCandidate;
                 renderAll();
@@ -1460,6 +1538,9 @@ import {
                 renderAll(error?.message || "공실 알림 신청 내역을 불러오지 못했습니다.");
             });
         }
+        if (!telegramLinkLoaded && !telegramLinkLoadPromise) {
+            void refreshTelegramLink().catch(() => {});
+        }
 
         if (!ticker) {
             ticker = window.setInterval(updateCountdowns, 1000);
@@ -1479,6 +1560,11 @@ import {
 
         if (data.telegram && typeof data.telegram === "object") {
             telegramOverride = { ...data.telegram };
+            telegramLinkLoaded = true;
+            telegramLinkError = "";
+            if (getTelegramState().status !== "enabled") {
+                vacancyAlertListOpen = false;
+            }
         }
 
         renderAll();

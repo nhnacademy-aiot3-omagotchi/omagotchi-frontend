@@ -27,6 +27,7 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 import org.springframework.web.ErrorResponseException;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
@@ -118,7 +119,7 @@ class ApiExceptionHandlerTest {
                         content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON),
                         header().string(HttpHeaders.CACHE_CONTROL, "no-store"),
                         jsonPath("$.code").value("ATTENDANCE_ALREADY_CHECKED_IN"),
-                        jsonPath("$.message").value("현재 상태에서는 요청을 처리할 수 없습니다."),
+                        jsonPath("$.message").value("이미 출석 처리된 날짜입니다."),
                         jsonPath("$.path").value(
                                 "/bff/v1/test/errors/learning-approved-4xx"
                         ),
@@ -145,7 +146,8 @@ class ApiExceptionHandlerTest {
     @MethodSource("spaceDownstreamErrors")
     @DisplayName("공간 상태 충돌 오류는 코드별 공개 JSON 계약을 유지")
     void forwardsSpaceDownstreamErrors(String code, String message) throws Exception {
-        mockMvc.perform(post("/bff/v1/test/errors/spaces/{code}", code))
+        mockMvc.perform(post("/bff/v1/test/errors/spaces/{code}", code)
+                        .param("message", message))
                 .andExpectAll(
                         status().isConflict(),
                         content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON),
@@ -164,7 +166,7 @@ class ApiExceptionHandlerTest {
                         content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON),
                         header().string(HttpHeaders.CACHE_CONTROL, "no-store"),
                         jsonPath("$.code").value("TIMER_ALREADY_RUNNING"),
-                        jsonPath("$.message").value("현재 상태에서는 요청을 처리할 수 없습니다."),
+                        jsonPath("$.message").value("이미 실행 중인 타이머가 존재합니다."),
                         jsonPath("$.path").value("/bff/v1/test/errors/timer-already-running"),
                         jsonPath("$.requestId").value(REQUEST_ID)
                 );
@@ -218,7 +220,7 @@ class ApiExceptionHandlerTest {
                         content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON),
                         header().string(HttpHeaders.CACHE_CONTROL, "no-store"),
                         jsonPath("$.code").value("TELEGRAM_USER_LINK_NOT_FOUND"),
-                        jsonPath("$.message").value("요청한 정보를 찾을 수 없습니다."),
+                        jsonPath("$.message").value("Telegram 연동 정보를 찾을 수 없습니다."),
                         jsonPath("$.path").value(
                                 "/bff/v1/test/errors/telegram-link-not-found"
                         ),
@@ -247,9 +249,66 @@ class ApiExceptionHandlerTest {
                         content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON),
                         header().string(HttpHeaders.CACHE_CONTROL, "no-store"),
                         jsonPath("$.code").value("OCCUPANCY_ROOM_ALREADY_OCCUPIED"),
-                        jsonPath("$.message").value("다른 사용자가 먼저 회의실 사용을 시작했습니다."),
+                        jsonPath("$.message").value("이미 점유 중인 회의실입니다."),
                         jsonPath("$.requestId").value(REQUEST_ID)
                 );
+    }
+
+    @Test
+    @DisplayName("하류 4xx의 Domain 문구를 그대로 전달한다")
+    void forwardsDownstreamClientErrorMessageAsIs() {
+        // 팀 이름 중복이 상태·Code는 맞는데 문구만 일반 안내로 뭉개지던 회귀를 고정한다.
+        LearningDownstreamException exception = new LearningDownstreamException(
+                HttpStatus.CONFLICT,
+                new ApiErrorResponse(
+                        "TEAM_DUPLICATE_NAME",
+                        "같은 기수에 이미 사용 중인 팀 이름입니다.",
+                        "/api/v1/teams",
+                        "learning-team-duplicate-name"
+                ),
+                new IllegalStateException("duplicate team name")
+        );
+
+        ResponseEntity<ApiErrorResponse> response = handler.handleLearningDownstreamException(
+                exception,
+                new MockHttpServletRequest("POST", "/bff/v1/teams"),
+                new MockHttpServletResponse()
+        );
+
+        assertSoftly(softly -> {
+            softly.assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+            softly.assertThat(response.getBody()).isNotNull().satisfies(body -> {
+                softly.assertThat(body.code()).isEqualTo("TEAM_DUPLICATE_NAME");
+                softly.assertThat(body.message())
+                        .isEqualTo("같은 기수에 이미 사용 중인 팀 이름입니다.");
+            });
+        });
+    }
+
+    @Test
+    @DisplayName("하류 5xx는 문구를 전달하지 않고 일반 안내로 대체한다")
+    void hidesDownstreamServerErrorMessage() {
+        // 5xx는 Gateway·Proxy 등 계약을 모르는 주체가 만들 수 있어 내용을 신뢰하지 않는다.
+        LearningDownstreamException exception = new LearningDownstreamException(
+                HttpStatus.INTERNAL_SERVER_ERROR,
+                new ApiErrorResponse(
+                        "COMMON_INTERNAL_SERVER_ERROR",
+                        "NullPointerException at TeamService.create line 81",
+                        "/api/v1/teams",
+                        "learning-team-500"
+                ),
+                new IllegalStateException("downstream failure")
+        );
+
+        ResponseEntity<ApiErrorResponse> response = handler.handleLearningDownstreamException(
+                exception,
+                new MockHttpServletRequest("POST", "/bff/v1/teams"),
+                new MockHttpServletResponse()
+        );
+
+        assertThat(response.getBody()).isNotNull()
+                .extracting(ApiErrorResponse::message)
+                .isEqualTo("서버 내부 오류가 발생했습니다.");
     }
 
     @ParameterizedTest(name = "[{index}] {0}")
@@ -294,7 +353,7 @@ class ApiExceptionHandlerTest {
                 HttpStatus.NOT_FOUND,
                 new ApiErrorResponse(
                         "COMMUNITY_ATTACHMENT_NOT_FOUND",
-                        "내부 첨부파일 경로",
+                        "첨부파일을 찾을 수 없습니다.",
                         "/api/v1/cohorts/7/community/posts/11/attachments/29",
                         "learning-attachment-not-found"
                 ),
@@ -311,7 +370,7 @@ class ApiExceptionHandlerTest {
             softly.assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
             softly.assertThat(response.getBody()).isNotNull().satisfies(body -> {
                 softly.assertThat(body.code()).isEqualTo("COMMUNITY_ATTACHMENT_NOT_FOUND");
-                softly.assertThat(body.message()).isEqualTo("요청한 정보를 찾을 수 없습니다.");
+                softly.assertThat(body.message()).isEqualTo("첨부파일을 찾을 수 없습니다.");
                 softly.assertThat(body.path()).isEqualTo("/bff/v1/community/posts/11/attachments/29");
             });
         });
@@ -370,11 +429,11 @@ class ApiExceptionHandlerTest {
         return Stream.of(
                 Arguments.of(
                         "SPACE_HAS_CURRENT_PRESENCE",
-                        "현재 이용 중인 사용자가 있어 비활성화할 수 없습니다."
+                        "현재 체류 중인 사용자가 있어 공간을 변경할 수 없습니다."
                 ),
                 Arguments.of(
                         "SPACE_HAS_RETURN_RESERVATION",
-                        "회의 종료 후 복귀 예정인 사용자가 있어 비활성화할 수 없습니다."
+                        "회의 종료 후 복귀할 사용자가 있어 공간을 변경할 수 없습니다."
                 ),
                 Arguments.of(
                         "LAST_ACTIVE_LAB_REQUIRED",
@@ -382,7 +441,7 @@ class ApiExceptionHandlerTest {
                 ),
                 Arguments.of(
                         "SPACE_STATE_CHANGED",
-                        "공간 상태가 변경되었습니다. 최신 상태를 확인한 뒤 다시 시도해 주세요."
+                        "공간 상태가 동시에 변경되었습니다. 다시 시도해 주세요."
                 )
         );
     }
@@ -720,7 +779,7 @@ class ApiExceptionHandlerTest {
                     HttpStatus.CONFLICT,
                     new ApiErrorResponse(
                             "ATTENDANCE_ALREADY_CHECKED_IN",
-                            "internal attendance row id=8472 already exists",
+                            "이미 출석 처리된 날짜입니다.",
                             "/api/v1/cohorts/1/attendance-records/check-in",
                             "learning-request-4xx"
                     ),
@@ -734,7 +793,7 @@ class ApiExceptionHandlerTest {
                     HttpStatus.CONFLICT,
                     new ApiErrorResponse(
                             "LAB_CAPACITY_EXCEEDED",
-                            "internal capacity details",
+                            "실습실 정원이 가득 찼습니다.",
                             "/api/v1/cohorts/7/attendance-records/move-lab",
                             "learning-lab-capacity-request"
                     ),
@@ -743,12 +802,12 @@ class ApiExceptionHandlerTest {
         }
 
         @PostMapping("/bff/v1/test/errors/spaces/{code}")
-        void spaceConflict(@PathVariable String code) {
+        void spaceConflict(@PathVariable String code, @RequestParam String message) {
             throw new LearningDownstreamException(
                     HttpStatus.CONFLICT,
                     new ApiErrorResponse(
                             code,
-                            "공개하지 않을 Learning 내부 공간 상태",
+                            message,
                             "/api/v1/spaces/7",
                             "learning-space-conflict"
                     ),
@@ -762,7 +821,7 @@ class ApiExceptionHandlerTest {
                     HttpStatus.CONFLICT,
                     new ApiErrorResponse(
                             "TIMER_ALREADY_RUNNING",
-                            "active timer run already exists",
+                            "이미 실행 중인 타이머가 존재합니다.",
                             "/api/v1/cohorts/1/timer/start",
                             "learning-timer-already-running"
                     ),
@@ -790,7 +849,7 @@ class ApiExceptionHandlerTest {
                     HttpStatus.CONFLICT,
                     new ApiErrorResponse(
                             "COHORT_MANAGER_PERIOD_CONFLICT",
-                            "internal cohort period details",
+                            "기수 운영 기간이 다른 담당 기수와 겹칩니다.",
                             "/api/v1/cohorts/2/managers",
                             "learning-manager-conflict"
                     ),

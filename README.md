@@ -31,9 +31,10 @@ SPRING_PROFILES_ACTIVE=local ./mvnw spring-boot:run
 - 로컬 설정 파일: `.env.local`
 - Git 추적 제외: `.env.local`
 - Redis 논리 DB: `SESSION_REDIS_DATABASE`, 로컬 기본값 `0`
-- Session 유휴시간: `SESSION_TIMEOUT=PT12H`, 마지막 서버 요청부터 12시간
+- Session 유휴시간: `application.yaml`의 기본값 `PT12H`, 마지막 서버 요청부터 12시간
   - 아직 유효한 기존 Session에도 다음 인증 BFF·권한 조회 Page 요청에서 현재 설정 적용
-  - 운영 값은 Infra `compose.yaml`의 `frontend.environment.SESSION_TIMEOUT`에서 직접 주입하므로 해당 값을 변경한 뒤 Frontend Container 재생성 필요
+  - Infra의 30분 덮어쓰기 제거 후 서비스 기본값 사용, Frontend 배포 후 Infra 배포 순서
+  - 이미 만료된 Session의 복구 제외, 기존 환경 파일에 `SESSION_TIMEOUT`이 있으면 해당 값 우선
 - Identity 주소: `IDENTITY_SERVICE_BASE_URL=http://localhost:8083`
 - Learning 주소: `LEARNING_SERVICE_BASE_URL=http://localhost:8084`
 - 서비스 인증 정보: Identity와 동일한 `FRONTEND_USERNAME`·`FRONTEND_PASSWORD`
@@ -41,6 +42,8 @@ SPRING_PROFILES_ACTIVE=local ./mvnw spring-boot:run
   - Identity가 발급하는 Access Token 수명보다 짧게 설정하고, 새 Token Bundle의 만료 시각은 Refresh 응답에서 검증
 - Refresh Lock 대기·Polling·lease: `ACCESS_TOKEN_REFRESH_LOCK_WAIT_TIMEOUT`·`ACCESS_TOKEN_REFRESH_LOCK_POLL_INTERVAL`·`ACCESS_TOKEN_REFRESH_LOCK_LEASE`
   - lease는 Identity HTTP와 Redis Session 조회·저장 timeout보다 충분히 길게 설정하고 timeout 변경 시 함께 조정
+- 세션·호출 timeout·Token 갱신 정책: `application.yaml` 기본값 사용, 기존 환경변수의 선택적 덮어쓰기 지원
+  - Redis 주소·Credential·서비스 주소의 필수 주입 유지
 - 운영 Identity 주소: `lb://identity-service`
 - 운영 Learning 주소: `lb://learning-service`
 - 운영 Service Discovery: `EUREKA_ENABLED=true`, `EUREKA_URL` 필수

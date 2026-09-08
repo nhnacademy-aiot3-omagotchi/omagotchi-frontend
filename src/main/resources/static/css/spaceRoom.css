@@ -808,6 +808,118 @@
     align-items: start;
 }
 
+.ui-space-telegram-status.is-disabled {
+    border-color: #e6ca8b;
+    background: #fff8e7;
+    color: #8a5b00;
+}
+
+.ui-space-telegram-status.is-unlinked {
+    border-color: #d6ded9;
+    background: #f3f6f4;
+    color: #64716b;
+}
+
+.space-room-vacancy-alerts {
+    display: grid;
+    gap: 12px;
+    padding: 14px 16px;
+    border: 1px solid var(--room-line);
+    border-left: 4px solid var(--room-accent);
+    border-radius: 8px;
+    background: #ffffff;
+}
+
+.space-room-vacancy-alerts > header,
+.space-room-vacancy-alerts > header > div,
+.space-room-vacancy-alerts__list li,
+.space-room-vacancy-alerts__list li > div {
+    display: flex;
+    align-items: center;
+}
+
+.space-room-vacancy-alerts > header {
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.space-room-vacancy-alerts > header > div {
+    gap: 8px;
+}
+
+.space-room-vacancy-alerts > header strong {
+    font-size: 14px;
+}
+
+.space-room-vacancy-alerts > header span {
+    color: var(--room-accent-deep);
+    font-size: 12px;
+    font-weight: 800;
+}
+
+.space-room-vacancy-alerts button {
+    min-height: 32px;
+    padding: 0 11px;
+    border: 1px solid var(--room-line);
+    border-radius: 6px;
+    background: #ffffff;
+    color: var(--room-accent-deep);
+    font-size: 12px;
+    font-weight: 800;
+}
+
+.space-room-vacancy-alerts__list {
+    display: grid;
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.space-room-vacancy-alerts__list li {
+    justify-content: space-between;
+    gap: 16px;
+    padding: 10px 12px;
+    border-radius: 7px;
+    background: var(--room-panel);
+}
+
+.space-room-vacancy-alerts__list li > div {
+    min-width: 0;
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.space-room-vacancy-alerts__list li strong {
+    overflow: hidden;
+    color: var(--room-ink);
+    font-size: 13px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.space-room-vacancy-alerts__list li span {
+    color: var(--room-muted);
+    font-size: 11px;
+}
+
+.space-room-vacancy-alerts__list li > span {
+    flex: 0 0 auto;
+    color: var(--room-accent-deep);
+    font-weight: 800;
+}
+
+.space-room-vacancy-alerts__state {
+    margin: 0;
+    color: var(--room-muted);
+    font-size: 13px;
+}
+
+.space-room-vacancy-alerts__state p {
+    margin: 0 0 8px;
+}
+
 .ui-space-meeting__body,
 .ui-space-meeting .ui-space-list__grid {
     grid-template-columns: minmax(0, 1fr);
@@ -1560,6 +1672,22 @@
 
     .space-room-section-head {
         align-items: flex-start;
+    }
+
+    .ui-space-meeting > header {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .ui-space-meeting__tools,
+    .ui-space-meeting__tools > * {
+        width: 100%;
+    }
+
+    .space-room-vacancy-alerts__list li {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 6px;
     }
 
     .space-room-meeting-tools {
