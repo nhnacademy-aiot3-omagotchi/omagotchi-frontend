@@ -15,8 +15,8 @@ import static org.mockito.Mockito.mock;
 class AccessTokenRefreshWebConfigTest {
 
     @Test
-    @DisplayName("Access Token Refresh는 dev의 v1 BFF 범위에만 적용")
-    void limitsRefreshInterceptorToV1Bff() {
+    @DisplayName("인증 BFF와 하류 권한 조회 Page에 Refresh 적용, 공개 경로 제외")
+    void refreshesProtectedBffAndAuthorizationPages() {
         TestInterceptorRegistry registry = new TestInterceptorRegistry();
         new AccessTokenRefreshWebConfig(mock(AccessTokenRefreshInterceptor.class))
                 .addInterceptors(registry);
@@ -24,6 +24,13 @@ class AccessTokenRefreshWebConfigTest {
         MappedInterceptor interceptor = (MappedInterceptor) registry.onlyInterceptor();
 
         assertThat(matches(interceptor, "/bff/v1/spaces")).isTrue();
+        assertThat(matches(interceptor, "/home")).isTrue();
+        assertThat(matches(interceptor, "/manager-dashboard")).isTrue();
+        assertThat(matches(interceptor, "/authenticated-landing")).isTrue();
+        assertThat(matches(interceptor, "/login")).isFalse();
+        assertThat(matches(interceptor, "/register")).isFalse();
+        assertThat(matches(interceptor, "/password-reset")).isFalse();
+        assertThat(matches(interceptor, "/js/home.js")).isFalse();
         assertThat(matches(interceptor, "/bff/v1/csrf")).isFalse();
         assertThat(matches(interceptor, "/bff/v2/auth/signup")).isFalse();
         assertThat(matches(interceptor, "/bff/v2/private")).isFalse();
