@@ -388,7 +388,7 @@ import {
             state.roomsLoading = false;
             state.roomsError = "공간 API를 불러올 수 없습니다.";
             renderAll();
-            return;
+            return false;
         }
 
         state.roomsLoading = true;
@@ -443,6 +443,7 @@ import {
             // 센서 조회 실패는 화면을 막지 않는다. 값이 없는 항목은 "측정 대기"로 남는다.
             void refreshSpaceEnvironments().catch(() => {});
         }
+        return !state.roomsError;
     }
 
     function refreshSpaces(successMessage = "") {
@@ -950,11 +951,15 @@ import {
             const active = library.operationalStatus === "ACTIVE";
             const usingThis = sameId(library.spaceId, currentStudySpaceId) && !inMeeting;
             const selectable = checkedIn && active && !inMeeting && !usingThis;
+            const currentPresenceCount = Math.max(
+                0,
+                Number(library.currentPresenceCount) || 0
+            );
             return `
                 <article class="space-room-library-action">
                     <span>운영 상태</span>
                     <strong>${escapeHtml(library.name)}</strong>
-                    <p>${active ? "정상 운영" : escapeHtml(library.inactiveReason || "운영 중지")} · 여러 기수가 함께 사용하는 조용한 학습 공간입니다.</p>
+                    <p>${active ? "정상 운영" : escapeHtml(library.inactiveReason || "운영 중지")} · 현재 ${currentPresenceCount}명 이용 중 · 여러 기수가 함께 사용하는 조용한 학습 공간입니다.</p>
                     <button type="button" data-space-library-enter="${library.spaceId}"${selectable ? "" : " disabled"}>
                         ${usingThis
                             ? "현재 이용 중"
@@ -1062,7 +1067,14 @@ import {
             ]);
             renderAll(successMessage);
         } catch (error) {
-            renderAll(error?.message || "회의실 요청을 처리하지 못했습니다.");
+            if (error?.code === "OCCUPANCY_ROOM_ALREADY_OCCUPIED") {
+                const refreshed = await refreshSpaces();
+                renderAll(refreshed
+                    ? "다른 사용자가 먼저 회의실 사용을 시작했습니다. 이용 현황을 갱신했습니다."
+                    : "다른 사용자가 먼저 회의실 사용을 시작했습니다. 이용 현황을 불러오지 못했습니다.");
+            } else {
+                renderAll(error?.message || "회의실 요청을 처리하지 못했습니다.");
+            }
         } finally {
             roomActionPending = false;
         }
@@ -1099,8 +1111,10 @@ import {
             renderAll(successMessage);
         } catch (error) {
             if (error?.code === "LAB_CAPACITY_EXCEEDED") {
-                await refreshSpaces();
-                renderAll("실습실 정원이 가득 찼습니다.");
+                const refreshed = await refreshSpaces();
+                renderAll(refreshed
+                    ? "다른 사용자가 먼저 이동하여 실습실 정원이 찼습니다. 이용 현황을 갱신했습니다."
+                    : "다른 사용자가 먼저 이동하여 실습실 정원이 찼습니다. 이용 현황을 불러오지 못했습니다.");
             } else {
                 renderAll(error?.message || "공간 이동을 처리하지 못했습니다.");
             }

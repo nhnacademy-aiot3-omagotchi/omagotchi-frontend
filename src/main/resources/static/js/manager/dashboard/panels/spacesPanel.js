@@ -32,6 +32,7 @@
                 onChangeCohort: changeSpaceCohort,
                 onLoadOccupancies: loadOccupancies,
                 onLoadParticipants: loadParticipants,
+                onLoadPresences: loadPresences,
                 onForceEndOccupancy: forceEndOccupancy,
                 onRetry: loadSpaces
             });
@@ -85,6 +86,14 @@
             const api = window.OmagotchiApi?.adminOccupancies;
             if (!api?.participants) throw new Error("참여자 API를 사용할 수 없습니다.");
             return api.participants(spaceId);
+        }
+
+        async function loadPresences(spaceId) {
+            const api = window.OmagotchiApi?.adminSpaces;
+            const cohortId = store.getState().selectedCohortId;
+            if (!api?.currentPresences) throw new Error("현재 인원 API를 사용할 수 없습니다.");
+            if (cohortId == null) throw new Error("조회할 기수를 먼저 선택해 주세요.");
+            return api.currentPresences(spaceId, cohortId);
         }
 
         async function forceEndOccupancy(spaceId) {
@@ -157,8 +166,8 @@
                 await loadSpaces();
                 return true;
             } catch (cause) {
-                warn("공간 운영 상태를 변경하지 못했습니다.", cause);
-                return false;
+                warn(cause?.message || "공간 운영 상태를 변경하지 못했습니다.", cause);
+                throw cause;
             }
         }
 

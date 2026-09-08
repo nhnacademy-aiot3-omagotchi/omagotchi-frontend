@@ -71,3 +71,13 @@ test("adminSpaces adapter uses the BFF paths, methods, bodies, and shared CSRF r
     assert.equal(options.headers["X-CSRF-TOKEN"], "csrf-token");
   }
 });
+
+test("adminSpaces current presence lookup carries the selected cohort without CSRF", async () => {
+  const { api, calls } = await loadApi();
+
+  await api.adminSpaces.currentPresences("space/1", 7);
+
+  assert.deepEqual(calls.map(({ url, options }) => [url, options.method]), [
+    ["/bff/v1/admin/spaces/space%2F1/presences?cohortId=7", "GET"]
+  ]);
+});

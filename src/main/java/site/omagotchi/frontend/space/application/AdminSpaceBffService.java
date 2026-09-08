@@ -17,8 +17,11 @@ import site.omagotchi.frontend.learning.infrastructure.request.LearningUpdateSpa
 import tools.jackson.databind.JsonNode;
 import site.omagotchi.frontend.learning.infrastructure.response.LearningAdminActiveOccupancyResponse;
 import site.omagotchi.frontend.learning.infrastructure.response.LearningOccupancyParticipantResponse;
+import site.omagotchi.frontend.learning.infrastructure.response.LearningSpacePresenceDetailResponse;
 import site.omagotchi.frontend.space.presentation.response.AdminActiveOccupancyResponse;
 import site.omagotchi.frontend.space.presentation.response.OccupancyParticipantResponse;
+import site.omagotchi.frontend.space.presentation.response.SpacePresenceDetailResponse;
+import site.omagotchi.frontend.space.presentation.response.SpacePresenceOccupantResponse;
 
 import java.util.List;
 
@@ -63,6 +66,31 @@ public class AdminSpaceBffService {
                 .map(participant -> new OccupancyParticipantResponse(
                         participant.userId(), participant.displayName(), participant.occupier()))
                 .toList();
+    }
+
+    public SpacePresenceDetailResponse getCurrentPresences(
+            Long cohortId,
+            Long spaceId,
+            HttpServletRequest request
+    ) {
+        ResponseEntity<LearningSpacePresenceDetailResponse> response = callExecutor.execute(
+                () -> learningHttpService.getAdminSpacePresences(
+                        authorization.bearerToken(request), cohortId, spaceId));
+        requireStatus(response, HttpStatus.OK, "관리자 공간 현재 인원 조회");
+        LearningSpacePresenceDetailResponse body = response.getBody();
+        if (body == null || body.occupants() == null) {
+            throw invalidResponse("관리자 공간 현재 인원 조회 성공 응답 Body 누락");
+        }
+        return new SpacePresenceDetailResponse(
+                body.spaceId(),
+                body.totalCount(),
+                body.cohortCount(),
+                body.otherCohortCount(),
+                body.occupants().stream()
+                        .map(occupant -> new SpacePresenceOccupantResponse(
+                                occupant.userId(), occupant.displayName()))
+                        .toList()
+        );
     }
 
     public void forceRelease(Long spaceId, HttpServletRequest request) {

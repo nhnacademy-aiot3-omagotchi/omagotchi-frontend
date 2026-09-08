@@ -1,4 +1,4 @@
-import { createAttendance, hasApprovedCohort } from "./home/attendance.js";
+import { createAttendance, hasApprovedCohort } from "./home/attendance.js?v=20260907-1";
 import { createBgmPlayer } from "./home/bgm.js";
 import { createCharacter } from "./home/character.js?v=20260902-7";
 import {
@@ -348,6 +348,7 @@ const attendanceController = createAttendance({
     api: api?.attendance,
     enabled: hasApprovedCohort(currentProfile),
     onCheckOutSuccess: () => showHomeToast("퇴실 처리됐어요. 타이머는 계속 사용할 수 있어요."),
+    onMissingCheckOut: () => showHomeToast("퇴실 마감 시간이 지나 미퇴실로 처리되었습니다."),
     onCheckOutError: () => showHomeToast("퇴실 처리에 실패했어요. 잠시 후 다시 시도해 주세요."),
     confirmCheckOut,
     onChange: ({ streakCount: currentStreakCount } = {}) => {

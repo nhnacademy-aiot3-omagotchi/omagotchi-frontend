@@ -4,6 +4,10 @@ export function hasApprovedCohort(profile) {
     return Boolean(profile?.approvedCohort?.cohortId);
 }
 
+function isMissingCheckOut(attendance) {
+    return attendance?.autoStatus === "MISSING_CHECK_OUT";
+}
+
 export function createAttendance({
     button,
     checkInTime,
@@ -20,6 +24,7 @@ export function createAttendance({
     api,
     enabled = true,
     onCheckOutSuccess,
+    onMissingCheckOut,
     onCheckOutError,
     confirmCheckOut,
     onChange
@@ -255,7 +260,9 @@ export function createAttendance({
         const history = getHistory();
         const attendance = history[getServiceDate()] || {};
         const hasCheckIn = Boolean(attendance.checkedInAt);
-        const hasCheckOut = hasCheckIn && Boolean(attendance.checkedOutAt);
+        const hasRecordedCheckOut = hasCheckIn && Boolean(attendance.checkedOutAt);
+        const hasMissingCheckOut = hasCheckIn && isMissingCheckOut(attendance);
+        const hasCheckOut = hasRecordedCheckOut || hasMissingCheckOut;
 
         const panel = calendarGrid?.closest("[data-ui-state]");
         if (panel && panel.dataset.uiState !== "error") {
@@ -263,8 +270,14 @@ export function createAttendance({
         }
 
         if (checkInTime) checkInTime.textContent = hasCheckIn ? formatTime(new Date(attendance.checkedInAt)) : "아직 입실 전";
-        if (checkOutTime) checkOutTime.textContent = hasCheckOut ? formatTime(new Date(attendance.checkedOutAt)) : "아직 퇴실 전";
-        if (earlyLeave) earlyLeave.textContent = hasCheckOut ? `${attendance.earlyLeaveMinutes || 0}분` : "기록 없음";
+        if (checkOutTime) {
+            checkOutTime.textContent = hasMissingCheckOut
+                ? "미퇴실 처리됨"
+                : hasRecordedCheckOut
+                    ? formatTime(new Date(attendance.checkedOutAt))
+                    : "아직 퇴실 전";
+        }
+        if (earlyLeave) earlyLeave.textContent = hasRecordedCheckOut ? `${attendance.earlyLeaveMinutes || 0}분` : "기록 없음";
         if (lateMinutes) lateMinutes.textContent = hasCheckIn ? `${attendance.lateMinutes || 0}분` : "기록 없음";
 
         if (button) {
@@ -311,6 +324,12 @@ export function createAttendance({
                 throw new Error("Attendance check-out API returned an invalid response");
             }
             const serverAttendance = response;
+            if (isMissingCheckOut(serverAttendance)) {
+                saveToday(serverAttendance);
+                render();
+                onMissingCheckOut?.();
+                return;
+            }
             if (!serverAttendance.checkedOutAt) {
                 throw new Error("Attendance check-out response is missing checkedOutAt");
             }

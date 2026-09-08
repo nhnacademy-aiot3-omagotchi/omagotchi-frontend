@@ -30,6 +30,7 @@ import site.omagotchi.frontend.learning.infrastructure.request.LearningCreateTea
 import site.omagotchi.frontend.learning.infrastructure.response.LearningOccupancyResponse;
 import site.omagotchi.frontend.learning.infrastructure.response.LearningAdminActiveOccupancyResponse;
 import site.omagotchi.frontend.learning.infrastructure.response.LearningSpaceResponse;
+import site.omagotchi.frontend.learning.infrastructure.response.LearningSpacePresenceDetailResponse;
 import site.omagotchi.frontend.learning.infrastructure.response.LearningVacancyAlertResponse;
 import site.omagotchi.frontend.learning.infrastructure.response.LearningParticipantCandidateResponse;
 import site.omagotchi.frontend.learning.infrastructure.response.LearningOccupancyParticipantResponse;
@@ -618,6 +619,13 @@ public interface LearningHttpService {
     @GetExchange("/admin/spaces/occupancies")
     ResponseEntity<List<LearningAdminActiveOccupancyResponse>> getAdminActiveOccupancies(
             @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization
+    );
+
+    @GetExchange("/admin/cohorts/{cohortId}/spaces/{spaceId}/presences")
+    ResponseEntity<LearningSpacePresenceDetailResponse> getAdminSpacePresences(
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
+            @PathVariable Long cohortId,
+            @PathVariable Long spaceId
     );
 
     @PostExchange("/spaces/{spaceId}/occupancies/force-release")

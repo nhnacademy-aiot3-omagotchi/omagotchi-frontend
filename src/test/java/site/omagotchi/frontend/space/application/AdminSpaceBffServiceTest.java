@@ -22,8 +22,12 @@ import site.omagotchi.frontend.learning.infrastructure.request.LearningUpdateSpa
 import tools.jackson.databind.JsonNode;
 import site.omagotchi.frontend.learning.infrastructure.response.LearningAdminActiveOccupancyResponse;
 import site.omagotchi.frontend.learning.infrastructure.response.LearningOccupancyParticipantResponse;
+import site.omagotchi.frontend.learning.infrastructure.response.LearningSpacePresenceDetailResponse;
+import site.omagotchi.frontend.learning.infrastructure.response.LearningSpacePresenceOccupantResponse;
 import site.omagotchi.frontend.space.presentation.response.AdminActiveOccupancyResponse;
 import site.omagotchi.frontend.space.presentation.response.OccupancyParticipantResponse;
+import site.omagotchi.frontend.space.presentation.response.SpacePresenceDetailResponse;
+import site.omagotchi.frontend.space.presentation.response.SpacePresenceOccupantResponse;
 
 import java.time.Instant;
 import java.time.OffsetDateTime;
@@ -163,5 +167,26 @@ class AdminSpaceBffServiceTest {
         verify(learningHttpService).getAdminActiveOccupancies(BEARER);
         verify(learningHttpService).getSpaceOccupancyParticipants(BEARER, 3L);
         verify(learningHttpService).forceReleaseSpaceOccupancy(BEARER, 3L);
+    }
+
+    @Test
+    void relaysCurrentPresencesForSelectedCohort() {
+        UUID userId = UUID.randomUUID();
+        var occupant = new LearningSpacePresenceOccupantResponse(userId, "학습자");
+        var detail = new LearningSpacePresenceDetailResponse(
+                3L, 4L, 1L, 3L, List.of(occupant));
+        when(learningHttpService.getAdminSpacePresences(BEARER, 7L, 3L))
+                .thenReturn(ResponseEntity.ok(detail));
+
+        assertThat(service.getCurrentPresences(7L, 3L, request))
+                .isEqualTo(new SpacePresenceDetailResponse(
+                        3L,
+                        4L,
+                        1L,
+                        3L,
+                        List.of(new SpacePresenceOccupantResponse(userId, "학습자"))
+                ));
+
+        verify(learningHttpService).getAdminSpacePresences(BEARER, 7L, 3L);
     }
 }
