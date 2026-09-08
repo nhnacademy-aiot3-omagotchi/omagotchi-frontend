@@ -170,6 +170,134 @@ test("linked Telegram users with notifications disabled see the disabled status"
     }, { activeTab: "meeting" }, {}, api);
 });
 
+test("a failed Telegram link lookup retries and restores the linked UI", async () => {
+    let linkRequests = 0;
+    const api = {
+        spaces: {
+            async list() {
+                return [];
+            },
+            async getMyVacancyAlerts() {
+                return [];
+            }
+        },
+        telegram: {
+            async getMyLink() {
+                linkRequests += 1;
+                if (linkRequests === 1) {
+                    throw new Error("텔레그램 연동 조회 실패");
+                }
+                return { notificationEnabled: true };
+            }
+        }
+    };
+
+    await withSpaceRoom(async (spaceRoom) => {
+        const root = createRoot();
+        spaceRoom.mount(root);
+        await new Promise(setImmediate);
+
+        assert.equal(linkRequests, 1);
+        assert.match(root.innerHTML, /data-telegram-link-retry/);
+        assert.match(root.innerHTML, /텔레그램 상태 다시 확인/);
+        assert.doesNotMatch(root.innerHTML, /내 알림 신청 보기/);
+
+        await root.click({
+            matches() {
+                return false;
+            },
+            closest(selector) {
+                return selector === "[data-telegram-link-retry]"
+                    ? { dataset: {} }
+                    : null;
+            }
+        });
+        await new Promise(setImmediate);
+
+        assert.equal(linkRequests, 2);
+        assert.match(root.innerHTML, /내 알림 신청 보기/);
+        assert.doesNotMatch(root.innerHTML, /data-telegram-link-retry/);
+        assert.doesNotMatch(root.innerHTML, /텔레그램 상태 다시 확인/);
+    }, { activeTab: "meeting" }, {}, api);
+});
+
+test("a failed vacancy alert lookup retries and restores the application list", async () => {
+    let alertRequests = 0;
+    const api = {
+        spaces: {
+            async list() {
+                return [{
+                    spaceId: 301,
+                    name: "공용 회의실",
+                    type: "MEETING",
+                    capacity: 8,
+                    operationalStatus: "ACTIVE",
+                    status: "OCCUPIED"
+                }];
+            },
+            async getMyVacancyAlerts() {
+                alertRequests += 1;
+                if (alertRequests === 1) {
+                    throw new Error("공실 알림 신청 내역 조회 실패");
+                }
+                return [{
+                    alertId: 91,
+                    spaceId: 301,
+                    cohortId: 3,
+                    createdAt: "2026-09-08T01:00:00Z"
+                }];
+            }
+        },
+        telegram: {
+            async getMyLink() {
+                return { notificationEnabled: true };
+            }
+        }
+    };
+
+    await withSpaceRoom(async (spaceRoom) => {
+        const root = createRoot();
+        spaceRoom.mount(root);
+        await new Promise(setImmediate);
+        await new Promise(setImmediate);
+
+        assert.equal(alertRequests, 1);
+        assert.match(root.innerHTML, /내 알림 신청 보기/);
+
+        await root.click({
+            matches() {
+                return false;
+            },
+            closest(selector) {
+                return selector === "[data-vacancy-alerts-toggle]"
+                    ? { dataset: {} }
+                    : null;
+            }
+        });
+
+        assert.match(root.innerHTML, /공실 알림 신청 내역 조회 실패/);
+        assert.match(root.innerHTML, /data-vacancy-alerts-retry/);
+
+        await root.click({
+            matches() {
+                return false;
+            },
+            closest(selector) {
+                return selector === "[data-vacancy-alerts-retry]"
+                    ? { dataset: {} }
+                    : null;
+            }
+        });
+        await new Promise(setImmediate);
+
+        assert.equal(alertRequests, 2);
+        assert.match(root.innerHTML, /공용 회의실/);
+        assert.match(root.innerHTML, /대기 중/);
+        assert.doesNotMatch(root.innerHTML, /공실 알림 신청 내역 조회 실패/);
+        assert.doesNotMatch(root.innerHTML, /data-vacancy-alerts-retry/);
+    }, { activeTab: "meeting" }, {}, api);
+});
+
 test("lab tab appears before meeting and lists only the current cohort labs", async () => {
     const api = {
         attendance: {
