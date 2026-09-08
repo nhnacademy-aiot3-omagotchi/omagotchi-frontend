@@ -388,7 +388,7 @@ import {
             state.roomsLoading = false;
             state.roomsError = "공간 API를 불러올 수 없습니다.";
             renderAll();
-            return;
+            return false;
         }
 
         state.roomsLoading = true;
@@ -443,6 +443,7 @@ import {
             // 센서 조회 실패는 화면을 막지 않는다. 값이 없는 항목은 "측정 대기"로 남는다.
             void refreshSpaceEnvironments().catch(() => {});
         }
+        return !state.roomsError;
     }
 
     function refreshSpaces(successMessage = "") {
@@ -1067,8 +1068,10 @@ import {
             renderAll(successMessage);
         } catch (error) {
             if (error?.code === "OCCUPANCY_ROOM_ALREADY_OCCUPIED") {
-                await refreshSpaces();
-                renderAll("다른 사용자가 먼저 회의실 사용을 시작했습니다. 이용 현황을 갱신했습니다.");
+                const refreshed = await refreshSpaces();
+                renderAll(refreshed
+                    ? "다른 사용자가 먼저 회의실 사용을 시작했습니다. 이용 현황을 갱신했습니다."
+                    : "다른 사용자가 먼저 회의실 사용을 시작했습니다. 이용 현황을 불러오지 못했습니다.");
             } else {
                 renderAll(error?.message || "회의실 요청을 처리하지 못했습니다.");
             }
@@ -1108,8 +1111,10 @@ import {
             renderAll(successMessage);
         } catch (error) {
             if (error?.code === "LAB_CAPACITY_EXCEEDED") {
-                await refreshSpaces();
-                renderAll("다른 사용자가 먼저 이동하여 실습실 정원이 찼습니다. 이용 현황을 갱신했습니다.");
+                const refreshed = await refreshSpaces();
+                renderAll(refreshed
+                    ? "다른 사용자가 먼저 이동하여 실습실 정원이 찼습니다. 이용 현황을 갱신했습니다."
+                    : "다른 사용자가 먼저 이동하여 실습실 정원이 찼습니다. 이용 현황을 불러오지 못했습니다.");
             } else {
                 renderAll(error?.message || "공간 이동을 처리하지 못했습니다.");
             }

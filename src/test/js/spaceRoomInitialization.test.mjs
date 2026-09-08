@@ -417,6 +417,153 @@ test("a meeting collision refreshes the room and explains that another user won"
     }, api);
 });
 
+test("a meeting collision reports when the occupancy refresh fails", async () => {
+    let listRequests = 0;
+    const api = {
+        attendance: {
+            async getToday() {
+                return { checkedInAt: "2026-09-01T09:00:00Z", checkedOutAt: null };
+            },
+            async getCurrentPresence() {
+                return null;
+            }
+        },
+        spaces: {
+            async list() {
+                listRequests += 1;
+                if (listRequests > 1) {
+                    throw new Error("공간 목록 조회 실패");
+                }
+                return [{
+                    spaceId: 301,
+                    name: "공용 회의실",
+                    type: "MEETING",
+                    capacity: 8,
+                    operationalStatus: "ACTIVE",
+                    status: "AVAILABLE",
+                    occupiedBySameCohort: false
+                }];
+            },
+            async getMyVacancyAlerts() {
+                return [];
+            },
+            async startOccupancy() {
+                const error = new Error("현재 상태에서는 요청을 처리할 수 없습니다.");
+                error.code = "OCCUPANCY_ROOM_ALREADY_OCCUPIED";
+                throw error;
+            }
+        }
+    };
+
+    await withSpaceRoom(async (spaceRoom) => {
+        const toast = {
+            textContent: "",
+            classList: { add() {}, remove() {} }
+        };
+        const root = createRoot();
+        root.querySelector = (selector) => selector === "[data-space-toast]" ? toast : null;
+        globalThis.window.setTimeout = () => 1;
+        spaceRoom.mount(root);
+        await new Promise(setImmediate);
+
+        await root.click({
+            matches() {
+                return false;
+            },
+            closest(selector) {
+                return selector === "[data-space-occupy]"
+                    ? { dataset: { spaceOccupy: "301" } }
+                    : null;
+            }
+        });
+        await new Promise(setImmediate);
+
+        assert.equal(listRequests, 2);
+        assert.match(root.innerHTML, /공간 목록 조회 실패/);
+        assert.match(toast.textContent, /이용 현황을 불러오지 못했습니다/);
+        assert.doesNotMatch(toast.textContent, /이용 현황을 갱신했습니다/);
+    }, { activeTab: "meeting", selectedRoomId: "301" }, {
+        approvedCohort: { cohortId: 3, name: "3기" }
+    }, api);
+});
+
+test("a lab capacity collision reports when the occupancy refresh fails", async () => {
+    let listRequests = 0;
+    const api = {
+        attendance: {
+            async getToday() {
+                return { checkedInAt: "2026-09-01T09:00:00Z", checkedOutAt: null };
+            },
+            async getCurrentPresence() {
+                return null;
+            },
+            async moveLab() {
+                const error = new Error("현재 상태에서는 요청을 처리할 수 없습니다.");
+                error.code = "LAB_CAPACITY_EXCEEDED";
+                throw error;
+            }
+        },
+        spaces: {
+            async list() {
+                listRequests += 1;
+                if (listRequests > 1) {
+                    throw new Error("공간 목록 조회 실패");
+                }
+                return [{
+                    spaceId: 101,
+                    name: "3기 실습실 A",
+                    type: "LAB",
+                    capacity: 2,
+                    operationalStatus: "ACTIVE",
+                    cohortId: 3
+                }];
+            },
+            async listLabs() {
+                return [{
+                    spaceId: 101,
+                    name: "3기 실습실 A",
+                    capacity: 2,
+                    reservedCount: 1
+                }];
+            },
+            async getMyVacancyAlerts() {
+                return [];
+            }
+        }
+    };
+
+    await withSpaceRoom(async (spaceRoom) => {
+        const toast = {
+            textContent: "",
+            classList: { add() {}, remove() {} }
+        };
+        const root = createRoot();
+        root.querySelector = (selector) => selector === "[data-space-toast]" ? toast : null;
+        globalThis.window.setTimeout = () => 1;
+        spaceRoom.mount(root);
+        await new Promise(setImmediate);
+
+        await root.click({
+            matches() {
+                return false;
+            },
+            closest(selector) {
+                return selector === "[data-space-lab-move]"
+                    ? { dataset: { spaceLabMove: "101" } }
+                    : null;
+            }
+        });
+        await new Promise(setImmediate);
+
+        assert.equal(listRequests, 2);
+        assert.match(root.innerHTML, /공간 목록 조회 실패/);
+        assert.match(toast.textContent, /이용 현황을 불러오지 못했습니다/);
+        assert.doesNotMatch(toast.textContent, /이용 현황을 갱신했습니다/);
+    }, { activeTab: "lab" }, {
+        approvedCohort: { cohortId: 3, name: "3기" }
+    }, api);
+});
+
 test("library uses the shared current location and keeps its action under operational status", async () => {
     const moves = [];
     let currentPresence = null;
