@@ -13,6 +13,8 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.web.client.support.RestClientHttpServiceGroupConfigurer;
 import site.omagotchi.frontend.attendance.infrastructure.AttendanceHttpService;
+import site.omagotchi.frontend.global.requestid.RequestId;
+import site.omagotchi.frontend.global.requestid.RequestIdContext;
 import site.omagotchi.frontend.learning.sensor.infrastructure.SensorAdminHttpService;
 import site.omagotchi.frontend.learning.series.infrastructure.SensorHttpService;
 import site.omagotchi.frontend.presence.infrastructure.PresenceHttpService;
@@ -56,12 +58,16 @@ class LearningHttpServiceConfigTest {
     void registersFiveClientsAndUsesLearningServiceBaseUrl() {
         // Given: 실제 Learning Group 설정에 연결된 Mock 응답
         MockRestServiceServer server = mockHttpServiceConfiguration.server();
+        String requestId = "Dev-Request_01.test";
         server.expect(once(), requestTo(LEARNING_BASE_URL + "/api/v1/cohorts"))
                 .andExpect(header(HttpHeaders.AUTHORIZATION, BEARER))
+                .andExpect(header(RequestId.HEADER_NAME, requestId))
                 .andRespond(withSuccess("[]", MediaType.APPLICATION_JSON));
 
         // When: 같은 Group에 등록된 대표 HTTP Service Interface 호출
-        learningHttpService.getCohorts(BEARER);
+        try (RequestIdContext.Scope ignored = RequestIdContext.openScope(new RequestId(requestId))) {
+            learningHttpService.getCohorts(BEARER);
+        }
 
         // Then: Group 이름, 5개 Client Bean, Learning Base URL과 사용자 Bearer Header
         assertThat(LearningHttpServiceConfig.GROUP_NAME).isEqualTo("learning-service");

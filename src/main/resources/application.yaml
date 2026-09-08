@@ -22,8 +22,8 @@ spring:
         enabled: false
   http:
     clients:
-      connect-timeout: ${HTTP_CLIENT_CONNECT_TIMEOUT}
-      read-timeout: ${HTTP_CLIENT_READ_TIMEOUT}
+      connect-timeout: ${HTTP_CLIENT_CONNECT_TIMEOUT:2s}
+      read-timeout: ${HTTP_CLIENT_READ_TIMEOUT:5s}
     serviceclient:
       identity-service:
         base-url: ${IDENTITY_SERVICE_BASE_URL}
@@ -43,12 +43,13 @@ spring:
       database: ${SESSION_REDIS_DATABASE}
       username: ${SESSION_REDIS_USERNAME}
       password: ${SESSION_REDIS_PASSWORD}
-      connect-timeout: ${SESSION_REDIS_CONNECT_TIMEOUT}
-      timeout: ${SESSION_REDIS_COMMAND_TIMEOUT}
+      connect-timeout: ${SESSION_REDIS_CONNECT_TIMEOUT:1s}
+      timeout: ${SESSION_REDIS_COMMAND_TIMEOUT:2s}
       ssl:
         enabled: ${SESSION_REDIS_SSL_ENABLED}
   session:
-    timeout: ${SESSION_TIMEOUT}
+    # 마지막 서버 요청부터 12시간 동안 유지되는 로그인 세션
+    timeout: ${SESSION_TIMEOUT:PT12H}
     data:
       redis:
         namespace: ${SESSION_REDIS_NAMESPACE}
@@ -126,11 +127,11 @@ clients:
 
 auth:
   access-token-refresh:
-    refresh-before-expiry: ${ACCESS_TOKEN_REFRESH_BEFORE_EXPIRY}
+    refresh-before-expiry: ${ACCESS_TOKEN_REFRESH_BEFORE_EXPIRY:30s}
     lock:
-      wait-timeout: ${ACCESS_TOKEN_REFRESH_LOCK_WAIT_TIMEOUT}
-      poll-interval: ${ACCESS_TOKEN_REFRESH_LOCK_POLL_INTERVAL}
-      lease: ${ACCESS_TOKEN_REFRESH_LOCK_LEASE}
+      wait-timeout: ${ACCESS_TOKEN_REFRESH_LOCK_WAIT_TIMEOUT:20s}
+      poll-interval: ${ACCESS_TOKEN_REFRESH_LOCK_POLL_INTERVAL:250ms}
+      lease: ${ACCESS_TOKEN_REFRESH_LOCK_LEASE:45s}
 
 logging:
   pattern:

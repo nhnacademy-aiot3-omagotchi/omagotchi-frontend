@@ -1,5 +1,9 @@
 package site.omagotchi.frontend.global.requestid;
 
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
+import jakarta.servlet.DispatcherType;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -12,7 +16,10 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
+import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.mock.web.MockHttpServletResponse;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -46,11 +53,11 @@ class RequestIdFilterTest {
         MDC.clear();
     }
 
-    @Test
-    @DisplayName("유효한 단일 Request ID의 요청·응답·MDC 전파")
-    void propagatesOneValidRequestId() throws Exception {
+    @ParameterizedTest
+    @ValueSource(strings = {"0123456789abcdef0123456789abcdef", "Dev-Request_01.test", "Z"})
+    @DisplayName("허용한 단일 Request ID의 요청·응답·MDC 전파")
+    void propagatesOneValidRequestId(String incoming) throws Exception {
         // Given
-        String incoming = "0123456789abcdef0123456789abcdef";
         givenRequestIds(incoming);
         doAnswer(invocation -> {
             then(RequestIdContext.currentValue()).isEqualTo(incoming);
@@ -78,7 +85,7 @@ class RequestIdFilterTest {
         // Then
         verify(this.response).setHeader(
                 eq(RequestId.HEADER_NAME),
-                argThat(RequestId::isValid)
+                argThat(value -> value.matches("[0-9a-f]{32}"))
         );
     }
 
@@ -96,7 +103,7 @@ class RequestIdFilterTest {
         // Then
         verify(this.response).setHeader(
                 eq(RequestId.HEADER_NAME),
-                argThat(value -> RequestId.isValid(value)
+                argThat(value -> value.matches("[0-9a-f]{32}")
                         && !first.equals(value)
                         && !second.equals(value))
         );
@@ -104,10 +111,12 @@ class RequestIdFilterTest {
 
     @ParameterizedTest
     @ValueSource(strings = {
-            "invalid-request-id",
+            "invalid request id",
             "",
             " ",
-            "ABCDEF0123456789ABCDEF0123456789",
+            "0123456789abcdef0123456789abcdef!",
+            "first,second",
+            "한글",
             "0123456789abcdef\r\nX-Injected: 1"
     })
     @DisplayName("잘못된 Request ID의 신규 값 교체")
@@ -121,7 +130,7 @@ class RequestIdFilterTest {
         // Then
         verify(this.response).setHeader(
                 eq(RequestId.HEADER_NAME),
-                argThat(value -> RequestId.isValid(value) && !invalidRequestId.equals(value))
+                argThat(value -> value.matches("[0-9a-f]{32}") && !invalidRequestId.equals(value))
         );
     }
 
@@ -142,6 +151,64 @@ class RequestIdFilterTest {
 
         // Then
         then(RequestIdContext.currentValue()).isNull();
+    }
+
+    @Test
+    @DisplayName("긴 Request ID의 앞 32자를 요청·응답·MDC에 동일하게 적용")
+    void propagatesTruncatedRequestId() throws Exception {
+        // Given
+        String incoming = "Dev-Request_0123456789.abcdefghijk-extra";
+        String expected = incoming.substring(0, 32);
+        givenRequestIds(incoming);
+        doAnswer(invocation -> {
+            then(RequestIdContext.currentValue()).isEqualTo(expected);
+            return null;
+        }).when(this.filterChain).doFilter(this.request, this.response);
+
+        // When
+        this.filter.doFilter(this.request, this.response, this.filterChain);
+
+        // Then
+        verify(this.response).setHeader(RequestId.HEADER_NAME, expected);
+        verify(this.request).setAttribute(RequestId.ATTRIBUTE_NAME, new RequestId(expected));
+        then(RequestIdContext.currentValue()).isNull();
+    }
+
+    @Test
+    @DisplayName("재진입 시 확정 ID 재사용과 원문 없는 경고 한 번 기록")
+    void reusesResolvedRequestIdWithoutRepeatingWarning() throws Exception {
+        // Given
+        String incoming = "Dev-Request_0123456789.abcdefghijk-privateSuffix";
+        String expected = incoming.substring(0, 32);
+        MockHttpServletRequest repeatedRequest = new MockHttpServletRequest();
+        repeatedRequest.addHeader(RequestId.HEADER_NAME, incoming);
+        MockHttpServletResponse repeatedResponse = new MockHttpServletResponse();
+        Logger logger = (Logger) LoggerFactory.getLogger(RequestId.class);
+        ListAppender<ILoggingEvent> appender = new ListAppender<>();
+        appender.start();
+        logger.addAppender(appender);
+
+        try {
+            // When: 같은 요청의 최초 진입과 후속 재진입
+            this.filter.doFilter(repeatedRequest, repeatedResponse, this.filterChain);
+            repeatedRequest.setDispatcherType(DispatcherType.ASYNC);
+            this.filter.doFilter(repeatedRequest, repeatedResponse, this.filterChain);
+
+            // Then
+            then(repeatedResponse.getHeader(RequestId.HEADER_NAME)).isEqualTo(expected);
+            then(repeatedRequest.getAttribute(RequestId.ATTRIBUTE_NAME)).isEqualTo(new RequestId(expected));
+            then(appender.list).singleElement().satisfies(event -> {
+                then(event.getFormattedMessage()).contains("length limit exceeded")
+                        .doesNotContain(incoming, "privateSuffix");
+                then(event.getKeyValuePairs()).singleElement().satisfies(pair -> {
+                    then(pair.key).isEqualTo("http.request.id");
+                    then(pair.value).isEqualTo(expected);
+                });
+            });
+        } finally {
+            logger.detachAppender(appender);
+            appender.stop();
+        }
     }
 
     private void givenRequestIds(String... requestIds) {

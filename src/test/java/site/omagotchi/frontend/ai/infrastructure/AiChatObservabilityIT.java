@@ -60,7 +60,7 @@ import static org.mockito.BDDMockito.given;
 )
 class AiChatObservabilityIT {
 
-    private static final String REQUEST_ID = "0123456789abcdef0123456789abcdef";
+    private static final String REQUEST_ID = "Dev-Request_01.test";
     private static final String TRACE_ID = "11111111111111111111111111111111";
     private static final String TRACEPARENT = "00-" + TRACE_ID + "-2222222222222222-01";
     private static final AtomicReference<Headers> RECEIVED_HEADERS = new AtomicReference<>();
