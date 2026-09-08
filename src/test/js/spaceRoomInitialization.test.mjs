@@ -60,6 +60,116 @@ test("spaceRoom initializes and exposes updateData", async () => {
     });
 });
 
+test("linked Telegram users can open their vacancy alert applications", async () => {
+    const api = {
+        spaces: {
+            async list() {
+                return [{
+                    spaceId: 301,
+                    name: "공용 회의실",
+                    type: "MEETING",
+                    capacity: 8,
+                    operationalStatus: "ACTIVE",
+                    status: "OCCUPIED"
+                }];
+            },
+            async getMyVacancyAlerts() {
+                return [{
+                    alertId: 91,
+                    spaceId: 301,
+                    cohortId: 3,
+                    createdAt: "2026-09-08T01:00:00Z"
+                }];
+            }
+        },
+        telegram: {
+            async getMyLink() {
+                return { notificationEnabled: true };
+            }
+        }
+    };
+
+    await withSpaceRoom(async (spaceRoom) => {
+        const root = createRoot();
+        spaceRoom.mount(root);
+        await new Promise(setImmediate);
+        await new Promise(setImmediate);
+
+        assert.match(root.innerHTML, /내 알림 신청 보기/);
+        assert.doesNotMatch(root.innerHTML, /space-room-vacancy-alerts__list/);
+
+        await root.click({
+            matches() {
+                return false;
+            },
+            closest(selector) {
+                return selector === "[data-vacancy-alerts-toggle]"
+                    ? { dataset: {} }
+                    : null;
+            }
+        });
+
+        assert.match(root.innerHTML, /내 알림 신청/);
+        assert.match(root.innerHTML, /1건/);
+        assert.match(root.innerHTML, /공용 회의실/);
+        assert.match(root.innerHTML, /대기 중/);
+    }, { activeTab: "meeting" }, {}, api);
+});
+
+test("unlinked Telegram users see the unlinked status", async () => {
+    const api = {
+        spaces: {
+            async list() {
+                return [];
+            },
+            async getMyVacancyAlerts() {
+                return [];
+            }
+        },
+        telegram: {
+            async getMyLink() {
+                return null;
+            }
+        }
+    };
+
+    await withSpaceRoom(async (spaceRoom) => {
+        const root = createRoot();
+        spaceRoom.mount(root);
+        await new Promise(setImmediate);
+
+        assert.match(root.innerHTML, /텔레그램 연동 안됨/);
+        assert.doesNotMatch(root.innerHTML, /내 알림 신청 보기/);
+    }, { activeTab: "meeting" }, {}, api);
+});
+
+test("linked Telegram users with notifications disabled see the disabled status", async () => {
+    const api = {
+        spaces: {
+            async list() {
+                return [];
+            },
+            async getMyVacancyAlerts() {
+                return [];
+            }
+        },
+        telegram: {
+            async getMyLink() {
+                return { notificationEnabled: false };
+            }
+        }
+    };
+
+    await withSpaceRoom(async (spaceRoom) => {
+        const root = createRoot();
+        spaceRoom.mount(root);
+        await new Promise(setImmediate);
+
+        assert.match(root.innerHTML, /텔레그램 알림 꺼짐/);
+        assert.doesNotMatch(root.innerHTML, /내 알림 신청 보기/);
+    }, { activeTab: "meeting" }, {}, api);
+});
+
 test("lab tab appears before meeting and lists only the current cohort labs", async () => {
     const api = {
         attendance: {
