@@ -48,9 +48,15 @@ React·Thymeleaf DOM
 | `loading` | 중복 조작을 막고 로딩 안내를 표시한다. |
 | `empty` | 정상 빈 응답이며 가짜 사용자·순위·업적을 만들지 않는다. |
 | `ready` | 검증된 Backend 응답만 표시한다. |
-| `error` | 내부 예외 원문 대신 사용자용 문구를 표시한다. |
+| `error` | Domain 4xx는 Backend 문구를 그대로 표시하고, 그 밖에는 Frontend 문구로 대체한다. |
 | `unauthorized` | 로그인 흐름으로 위임하며 임시 사용자로 대체하지 않는다. |
 | `forbidden` | 권한 부족을 빈 데이터처럼 숨기지 않는다. |
+
+`error` 문구의 출처는 상태로 갈린다. Domain 4xx는 Backend가 사용자 대상으로 작성한 문장이므로
+View BFF가 그대로 전달한다 — 예전에는 코드별 대응 문구를 Frontend에 등록해 두었는데, 등록되지
+않은 코드가 "현재 상태에서는 요청을 처리할 수 없습니다."로 뭉개져 의미를 잃었다(팀 이름 중복).
+반면 하류 5xx와 Framework 오류는 내용을 신뢰할 수 없어 Frontend 문구로 대체한다. Backend가
+지켜야 할 작성 규칙은 Learning Service의 `docs/04-error-handling.md` §4에 있다.
 
 재실 Snapshot은 사용자 ID, 표시 이름, 캐릭터 이미지와 재실 상태처럼 목록 표현에 필요한
 최소 정보만 제공한다. 이메일은 재실 목록의 표시·필터 데이터로 사용하지 않는다. 메시지나
