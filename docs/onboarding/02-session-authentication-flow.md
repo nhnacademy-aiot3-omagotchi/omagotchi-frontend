@@ -33,7 +33,7 @@ Browser
   - 현재: Identity 본인 계정 API는 Identity Service 직접 호출
   - 현재: Learning 선언형 HTTP Client는 Learning Service 직접 호출
   - 현재: AI Chat은 WebClient 기반 HTTP Service Client로 Learning Service 직접 호출
-  - Access Token 만료 임박 시 인증 v1 BFF 진입 단계에서 선제 Refresh
+  - Access Token 만료 임박·만료 시 인증 v1 BFF와 하류 권한 조회 Page 진입 단계에서 선제 Refresh
   - 하류 `401` 뒤 원래 요청 자동 재실행 없음
 - Gateway
   - 외부 `/api/**`·Webhook 경계
@@ -67,7 +67,7 @@ Browser
 | Security | `LoginAuthenticationFailureHandler` | Credential 실패 Redirect·장애 상태 처리 |
 | Security | `BrowserTokenSessionAuthenticationStrategy` | Session ID 교체 뒤 Token Bundle 기록·SecurityContext 비밀값 제거 |
 | Security | `BrowserSessionTokens` | Token Bundle Session attribute 접근 |
-| Security | `AccessTokenRefreshInterceptor` | 인증 v1 BFF Controller 진입 전 선제 Refresh·현재 요청 Bundle override |
+| Security | `AccessTokenRefreshInterceptor` | 인증 v1 BFF·권한 조회 Page 진입 전 선제 Refresh·현재 요청 Bundle override |
 | Security | `IdentityLogoutHandler` | Identity Refresh Token 폐기 시도 |
 | Application | `AuthenticationService` | Presentation과 Identity Port 사이의 Use Case 경계 |
 | Application | `VerifiedSignupService` | 이메일 OTP 회원가입 v2 Application 진입점 |
@@ -445,14 +445,14 @@ sequenceDiagram
 
 ## 9. Access JWT 만료와 계정 변경
 
-### 만료 임박 선제 Refresh
+### 만료 임박·만료 Access Token 선제 Refresh
 
 ```text
-BFF 요청 진입
-→ AccessTokenRefreshInterceptor가 만료 임박 확인
+인증 BFF·하류 권한 조회 Page 요청 진입
+→ AccessTokenRefreshInterceptor가 만료 임박·만료 확인
 → Redis Session별 Lock 획득
 → SessionRepository로 최신 Token Bundle 재조회
-→ 아직 만료 임박이면 Identity Refresh 1회
+→ 여전히 갱신이 필요하면 Identity Refresh 1회
 → 새 Bundle을 Redis Session에 명시 저장
 → 현재 요청에는 새 Bundle을 request-local로 반영
 → 원래 Controller·downstream 요청 1회 실행
@@ -462,10 +462,10 @@ BFF 요청 진입
 - lease는 Identity HTTP와 Redis Session 조회·저장 timeout보다 충분히 길게 설정하고, 관련 timeout을 늘릴 때 함께 조정합니다.
 - Lock owner는 획득 뒤 최신 Bundle을 다시 읽고 이미 갱신됐으면 Identity를 호출하지 않습니다.
 - 동시 요청은 Lock 종료 뒤 최신 Bundle을 재사용하고 Identity를 중복 호출하지 않습니다.
-- 현재 요청은 캐시된 `HttpSession`을 다시 변경하지 않고 request-local Bundle을 우선 사용합니다.
-- Identity의 명시적 `503`, 응답 미수신과 Refresh 전 Redis 장애는 Session을 유지한 채 JSON `503`을 반환합니다.
+- 현재 요청은 캐시된 `HttpSession`의 Token attribute를 변경하지 않고 request-local Bundle을 우선 사용합니다.
+- Identity의 명시적 `503`, 응답 미수신과 Refresh 전 Redis 장애는 Session을 유지한 채 BFF에는 JSON `503`, Page에는 HTML `503`을 반환합니다.
 - 응답 미수신은 같은 Browser 요청에서 자동 재시도하지 않으며 다음 요청의 Refresh는 허용합니다.
-- Refresh `401`, Identity Refresh 응답 계약 위반, 새 Bundle 저장 결과 불명확은 Cookie와 Session을 best-effort로 폐기하고 JSON `401`을 반환합니다.
+- Refresh `401`, Identity Refresh 응답 계약 위반, 새 Bundle 저장 결과 불명확은 Cookie와 Session을 best-effort로 폐기합니다. BFF에는 JSON `401`을 반환하고 Page는 `/login?notice=session-expired`로 이동합니다.
 
 ### 하류 `401`
 

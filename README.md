@@ -60,7 +60,7 @@ SPRING_PROFILES_ACTIVE=local ./mvnw spring-boot:run
 - 인증 사용자 화면: Spring Security의 서버 측 보호
 - Browser 전용 API: 기본 `/bff/v1/**`, 회원가입 `/bff/v2/auth/signup/**`
 - 내부 서비스 호출: 담당 Domain Service 직접 호출, Discovery·Client-side Load Balancing 사용
-- Access Token 갱신: 만료 임박 BFF 요청 진입 시 Redis Session 단위 single-flight Refresh
+- Access Token 갱신: 만료 임박·만료 Token을 인증 BFF와 `/home`·`/manager-dashboard`·`/authenticated-landing` 진입 시 Redis Session 단위 single-flight Refresh
 - 요청 실행 기준: Refresh 성공 뒤에도 원래 Controller·downstream 요청은 최대 1회
 - AI Chat 호출: Learning Service 직접 호출과 SSE 응답 전달
 - Gateway 역할: 외부 `/api/**`·Webhook 경계

@@ -5,6 +5,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
@@ -45,8 +48,10 @@ import site.omagotchi.frontend.auth.application.result.BrowserSessionTokenBundle
 import site.omagotchi.frontend.auth.domain.GlobalRole;
 import site.omagotchi.frontend.auth.infrastructure.SpringSessionBrowserSessionTokenStore;
 import site.omagotchi.frontend.auth.presentation.security.BrowserSessionTokens;
+import site.omagotchi.frontend.cohort.infrastructure.response.UserAccessContextResponse;
 import site.omagotchi.frontend.global.exception.BusinessException;
 import site.omagotchi.frontend.global.exception.CommonErrorCode;
+import site.omagotchi.frontend.global.learning.infrastructure.LearningHttpService;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
@@ -64,10 +69,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willAnswer;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.never;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
@@ -104,6 +112,9 @@ class AccessTokenRefreshRedisIT {
     @MockitoBean
     private IdentityAuthClient identityAuthClient;
 
+    @MockitoBean
+    private LearningHttpService learningHttpService;
+
     @MockitoSpyBean
     private SpringSessionBrowserSessionTokenStore tokenStore;
 
@@ -113,12 +124,14 @@ class AccessTokenRefreshRedisIT {
     }
 
     @Test
-    @DisplayName("동일 Cookie 동시 요청의 단일 Refresh와 오래된 Bundle 덮어쓰기 방지")
+    @DisplayName("동일 Cookie Page·BFF 동시 요청의 단일 Refresh와 오래된 Bundle 덮어쓰기 방지")
     void refreshesOnlyOnceAndPreventsStaleBundleOverwrite() throws Exception {
         // Given: Redis에 저장된 만료 임박 Browser Session과 읽기만 한 오래된 요청 Snapshot
         BrowserSessionTokenBundle expiring = expiringTokenBundle();
         BrowserSessionTokenBundle refreshed = refreshedTokenBundle();
         BrowserSession browserSession = createSession(expiring);
+        given(learningHttpService.getMyAccessContext("Bearer " + NEW_ACCESS_TOKEN))
+                .willReturn(new UserAccessContextResponse("USER", "STUDENT", List.of(), List.of()));
         Session staleRequestSession = findSession(browserSession.id());
         BrowserSessionTokenBundle staleBundle = staleRequestSession.getAttribute(
                 BrowserSessionTokenStore.SESSION_TOKEN_BUNDLE_ATTRIBUTE
@@ -138,7 +151,7 @@ class AccessTokenRefreshRedisIT {
         // When: 동일 Cookie의 두 요청이 동시에 만료 임박 Access Token을 확인
         try (ExecutorService executor = Executors.newFixedThreadPool(2)) {
             Future<EntityExchangeResult<String>> first = executor.submit(() ->
-                    sendProbe(browserSession.cookieValue())
+                    sendGet("/home", browserSession.cookieValue())
             );
             assertThat(refreshStarted.await(5, TimeUnit.SECONDS)).isTrue();
             Future<EntityExchangeResult<String>> second = executor.submit(() ->
@@ -150,12 +163,13 @@ class AccessTokenRefreshRedisIT {
             EntityExchangeResult<String> secondResponse = second.get(5, TimeUnit.SECONDS);
 
             // Then: 요청별 Controller 1회와 Session 단위 Identity Refresh 1회
-            assertThat(firstResponse.getStatus().value()).isEqualTo(HttpStatus.NO_CONTENT.value());
+            assertThat(firstResponse.getStatus().value()).isEqualTo(HttpStatus.OK.value());
             assertThat(secondResponse.getStatus().value()).isEqualTo(HttpStatus.NO_CONTENT.value());
-            assertThat(probeController.calls()).isEqualTo(2);
+            assertThat(probeController.calls()).isEqualTo(1);
             assertThat(probeController.accessTokens())
                     .containsOnly(NEW_ACCESS_TOKEN)
-                    .hasSize(2);
+                    .hasSize(1);
+            verify(learningHttpService).getMyAccessContext("Bearer " + NEW_ACCESS_TOKEN);
             verify(identityAuthClient, times(1)).refresh(PREVIOUS_REFRESH_TOKEN);
             assertTokensAreNotExposed(firstResponse);
             assertTokensAreNotExposed(secondResponse);
@@ -165,6 +179,59 @@ class AccessTokenRefreshRedisIT {
         assertStoredTokenBundle(browserSession.id(), refreshed);
         saveSession(sessionRepository, staleRequestSession);
         assertStoredTokenBundle(browserSession.id(), refreshed);
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "/home, STUDENT, 200",
+            "/manager-dashboard, COHORT_MANAGER, 200",
+            "/authenticated-landing, STUDENT, 302"
+    })
+    @DisplayName("Page 재진입의 만료 Access Token 갱신과 새 토큰 권한 조회")
+    void refreshesBeforePageAuthorizationAfterStudyBreak(
+            String path, String accessType, int expectedStatus
+    ) {
+        BrowserSessionTokenBundle previous = expiredTokenBundle();
+        BrowserSession browserSession = createSession(previous);
+        given(identityAuthClient.refresh(PREVIOUS_REFRESH_TOKEN)).willReturn(refreshedTokenBundle());
+        given(learningHttpService.getMyAccessContext("Bearer " + NEW_ACCESS_TOKEN))
+                .willReturn(new UserAccessContextResponse("USER", accessType, List.of(), List.of()));
+
+        EntityExchangeResult<String> response = sendGet(path, browserSession.cookieValue());
+
+        assertThat(response.getStatus().value()).isEqualTo(expectedStatus);
+        if (expectedStatus == 302) {
+            assertThat(response.getResponseHeaders().getLocation()).hasPath("/home");
+        }
+        var calls = inOrder(identityAuthClient, learningHttpService);
+        calls.verify(identityAuthClient).refresh(PREVIOUS_REFRESH_TOKEN);
+        calls.verify(learningHttpService).getMyAccessContext("Bearer " + NEW_ACCESS_TOKEN);
+        assertTokensAreNotExposed(response);
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {401, 503})
+    @DisplayName("Page Refresh 실패의 재로그인과 일시 장애 구분")
+    void handlesRefreshFailureBeforePageAuthorization(int refreshStatus) {
+        BrowserSession browserSession = createSession(expiredTokenBundle());
+        given(identityAuthClient.refresh(PREVIOUS_REFRESH_TOKEN)).willThrow(new BusinessException(
+                refreshStatus == 401 ? AuthErrorCode.INVALID_REFRESH_TOKEN : CommonErrorCode.SERVICE_UNAVAILABLE
+        ));
+
+        EntityExchangeResult<String> response = sendGet("/home", browserSession.cookieValue());
+
+        if (refreshStatus == 401) {
+            assertThat(response.getStatus().value()).isEqualTo(302);
+            assertThat(response.getResponseHeaders().getLocation())
+                    .hasPath("/login").hasQuery("notice=session-expired");
+            assertThat(sessionRepository.findById(browserSession.id())).isNull();
+        } else {
+            assertThat(response.getStatus().value()).isEqualTo(503);
+            assertThat(sessionRepository.findById(browserSession.id())).isNotNull();
+        }
+        verify(learningHttpService, never()).getMyAccessContext(anyString());
+        verify(identityAuthClient).refresh(PREVIOUS_REFRESH_TOKEN);
+        assertTokensAreNotExposed(response);
     }
 
     @Test
@@ -332,8 +399,12 @@ class AccessTokenRefreshRedisIT {
     }
 
     private EntityExchangeResult<String> sendProbe(String sessionCookie) {
+        return sendGet("/bff/v1/test/access-token-refresh", sessionCookie);
+    }
+
+    private EntityExchangeResult<String> sendGet(String path, String sessionCookie) {
         return restTestClient.get()
-                .uri("/bff/v1/test/access-token-refresh")
+                .uri(path)
                 .cookie(SESSION_COOKIE, sessionCookie)
                 .exchange()
                 .expectBody(String.class)
@@ -392,6 +463,15 @@ class AccessTokenRefreshRedisIT {
                 Instant.now().plusSeconds(5),
                 PREVIOUS_REFRESH_TOKEN,
                 Instant.now().plus(Duration.ofDays(7))
+        );
+    }
+
+    private static BrowserSessionTokenBundle expiredTokenBundle() {
+        BrowserSessionTokenBundle tokenBundle = expiringTokenBundle();
+        return new BrowserSessionTokenBundle(
+                tokenBundle.userId(), tokenBundle.globalRole(), tokenBundle.accessToken(),
+                Instant.now().minus(Duration.ofHours(2)),
+                tokenBundle.refreshToken(), tokenBundle.refreshTokenExpiresAt()
         );
     }
 
