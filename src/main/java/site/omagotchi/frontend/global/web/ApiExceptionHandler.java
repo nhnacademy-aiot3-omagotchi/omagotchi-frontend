@@ -265,30 +265,30 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
                 && approvedStatus == exception.getStatusCode().value();
     }
 
+    /**
+     * 하류 4xx의 Message를 그대로 사용자에게 전달한다.
+     *
+     * <p>Domain 오류 문구는 하류가 사용자 대상으로 작성하며(예: "같은 기수에 이미 사용 중인 팀
+     * 이름입니다."), 그 의미를 Frontend가 다시 옮겨 적으면 코드마다 대응을 등록해야 하고
+     * 빠뜨린 코드는 상태 기반 일반 문구로 뭉개진다 — 실제로 팀 기능의 409가 그렇게 의미를
+     * 잃었다.</p>
+     *
+     * <p><b>5xx는 전달하지 않는다.</b> 4xx는 사용자가 고칠 수 있는 상황이라 하류가 문구를
+     * 준비하지만, 5xx는 게이트웨이·프록시 등 계약을 모르는 주체가 만들 수도 있어 내용 보장이
+     * 없다. Message가 비어 오는 경우도 같은 이유로 상태 기반 문구로 되돌린다.</p>
+     */
     private String publicLearningDownstreamMessage(
             LearningDownstreamException exception
     ) {
-        String code = exception.getErrorResponse().code();
-        String codeMessage = switch (code) {
-            case "OCCUPANCY_ROOM_ALREADY_OCCUPIED" ->
-                    "다른 사용자가 먼저 회의실 사용을 시작했습니다.";
-            case "LAB_CAPACITY_EXCEEDED" -> "실습실 정원이 가득 찼습니다.";
-            case "SPACE_ACTIVE_OCCUPANCY_EXISTS" ->
-                    "현재 진행 중인 회의실 점유가 있어 비활성화할 수 없습니다.";
-            case "SPACE_HAS_CURRENT_PRESENCE" ->
-                    "현재 이용 중인 사용자가 있어 비활성화할 수 없습니다.";
-            case "SPACE_HAS_RETURN_RESERVATION" ->
-                    "회의 종료 후 복귀 예정인 사용자가 있어 비활성화할 수 없습니다.";
-            case "LAST_ACTIVE_LAB_REQUIRED" ->
-                    "활성 기수에는 활성 실습실이 최소 1개 필요합니다.";
-            case "SPACE_STATE_CHANGED" ->
-                    "공간 상태가 변경되었습니다. 최신 상태를 확인한 뒤 다시 시도해 주세요.";
-            default -> null;
-        };
-        if (codeMessage != null) {
-            return codeMessage;
-        }
         int status = exception.getStatusCode().value();
+        ApiErrorResponse errorResponse = exception.getErrorResponse();
+        String downstreamMessage = errorResponse == null ? null : errorResponse.message();
+        if (exception.getStatusCode().is4xxClientError()
+                && downstreamMessage != null
+                && !downstreamMessage.isBlank()) {
+            return downstreamMessage;
+        }
+
         return switch (status) {
             case 400 -> "요청값이 올바르지 않습니다.";
             case 401 -> "인증이 필요합니다.";
