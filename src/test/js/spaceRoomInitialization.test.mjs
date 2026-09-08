@@ -346,6 +346,224 @@ test("a capacity conflict refreshes the lab count and closes the stale last seat
     }, api);
 });
 
+test("a meeting collision refreshes the room and explains that another user won", async () => {
+    let occupied = false;
+    let listRequests = 0;
+    let startRequests = 0;
+    const api = {
+        attendance: {
+            async getToday() {
+                return { checkedInAt: "2026-09-01T09:00:00Z", checkedOutAt: null };
+            },
+            async getCurrentPresence() {
+                return null;
+            }
+        },
+        spaces: {
+            async list() {
+                listRequests += 1;
+                return [{
+                    spaceId: 301,
+                    name: "공용 회의실",
+                    type: "MEETING",
+                    capacity: 8,
+                    operationalStatus: "ACTIVE",
+                    status: occupied ? "OCCUPIED" : "AVAILABLE",
+                    occupiedBySameCohort: false
+                }];
+            },
+            async getMyVacancyAlerts() {
+                return [];
+            },
+            async startOccupancy() {
+                startRequests += 1;
+                occupied = true;
+                const error = new Error("현재 상태에서는 요청을 처리할 수 없습니다.");
+                error.code = "OCCUPANCY_ROOM_ALREADY_OCCUPIED";
+                throw error;
+            }
+        }
+    };
+
+    await withSpaceRoom(async (spaceRoom) => {
+        const toast = {
+            textContent: "",
+            classList: { add() {}, remove() {} }
+        };
+        const root = createRoot();
+        root.querySelector = (selector) => selector === "[data-space-toast]" ? toast : null;
+        globalThis.window.setTimeout = () => 1;
+        spaceRoom.mount(root);
+        await new Promise(setImmediate);
+
+        await root.click({
+            matches() {
+                return false;
+            },
+            closest(selector) {
+                return selector === "[data-space-occupy]"
+                    ? { dataset: { spaceOccupy: "301" } }
+                    : null;
+            }
+        });
+        await new Promise(setImmediate);
+
+        assert.equal(startRequests, 1);
+        assert.equal(listRequests, 2);
+        assert.match(root.innerHTML, /사용 중/);
+        assert.match(toast.textContent, /다른 사용자가 먼저 회의실 사용을 시작했습니다/);
+    }, { activeTab: "meeting", selectedRoomId: "301" }, {
+        approvedCohort: { cohortId: 3, name: "3기" }
+    }, api);
+});
+
+test("a meeting collision reports when the occupancy refresh fails", async () => {
+    let listRequests = 0;
+    const api = {
+        attendance: {
+            async getToday() {
+                return { checkedInAt: "2026-09-01T09:00:00Z", checkedOutAt: null };
+            },
+            async getCurrentPresence() {
+                return null;
+            }
+        },
+        spaces: {
+            async list() {
+                listRequests += 1;
+                if (listRequests > 1) {
+                    throw new Error("공간 목록 조회 실패");
+                }
+                return [{
+                    spaceId: 301,
+                    name: "공용 회의실",
+                    type: "MEETING",
+                    capacity: 8,
+                    operationalStatus: "ACTIVE",
+                    status: "AVAILABLE",
+                    occupiedBySameCohort: false
+                }];
+            },
+            async getMyVacancyAlerts() {
+                return [];
+            },
+            async startOccupancy() {
+                const error = new Error("현재 상태에서는 요청을 처리할 수 없습니다.");
+                error.code = "OCCUPANCY_ROOM_ALREADY_OCCUPIED";
+                throw error;
+            }
+        }
+    };
+
+    await withSpaceRoom(async (spaceRoom) => {
+        const toast = {
+            textContent: "",
+            classList: { add() {}, remove() {} }
+        };
+        const root = createRoot();
+        root.querySelector = (selector) => selector === "[data-space-toast]" ? toast : null;
+        globalThis.window.setTimeout = () => 1;
+        spaceRoom.mount(root);
+        await new Promise(setImmediate);
+
+        await root.click({
+            matches() {
+                return false;
+            },
+            closest(selector) {
+                return selector === "[data-space-occupy]"
+                    ? { dataset: { spaceOccupy: "301" } }
+                    : null;
+            }
+        });
+        await new Promise(setImmediate);
+
+        assert.equal(listRequests, 2);
+        assert.match(root.innerHTML, /공간 목록 조회 실패/);
+        assert.match(toast.textContent, /이용 현황을 불러오지 못했습니다/);
+        assert.doesNotMatch(toast.textContent, /이용 현황을 갱신했습니다/);
+    }, { activeTab: "meeting", selectedRoomId: "301" }, {
+        approvedCohort: { cohortId: 3, name: "3기" }
+    }, api);
+});
+
+test("a lab capacity collision reports when the occupancy refresh fails", async () => {
+    let listRequests = 0;
+    const api = {
+        attendance: {
+            async getToday() {
+                return { checkedInAt: "2026-09-01T09:00:00Z", checkedOutAt: null };
+            },
+            async getCurrentPresence() {
+                return null;
+            },
+            async moveLab() {
+                const error = new Error("현재 상태에서는 요청을 처리할 수 없습니다.");
+                error.code = "LAB_CAPACITY_EXCEEDED";
+                throw error;
+            }
+        },
+        spaces: {
+            async list() {
+                listRequests += 1;
+                if (listRequests > 1) {
+                    throw new Error("공간 목록 조회 실패");
+                }
+                return [{
+                    spaceId: 101,
+                    name: "3기 실습실 A",
+                    type: "LAB",
+                    capacity: 2,
+                    operationalStatus: "ACTIVE",
+                    cohortId: 3
+                }];
+            },
+            async listLabs() {
+                return [{
+                    spaceId: 101,
+                    name: "3기 실습실 A",
+                    capacity: 2,
+                    reservedCount: 1
+                }];
+            },
+            async getMyVacancyAlerts() {
+                return [];
+            }
+        }
+    };
+
+    await withSpaceRoom(async (spaceRoom) => {
+        const toast = {
+            textContent: "",
+            classList: { add() {}, remove() {} }
+        };
+        const root = createRoot();
+        root.querySelector = (selector) => selector === "[data-space-toast]" ? toast : null;
+        globalThis.window.setTimeout = () => 1;
+        spaceRoom.mount(root);
+        await new Promise(setImmediate);
+
+        await root.click({
+            matches() {
+                return false;
+            },
+            closest(selector) {
+                return selector === "[data-space-lab-move]"
+                    ? { dataset: { spaceLabMove: "101" } }
+                    : null;
+            }
+        });
+        await new Promise(setImmediate);
+
+        assert.equal(listRequests, 2);
+        assert.match(root.innerHTML, /공간 목록 조회 실패/);
+        assert.match(toast.textContent, /이용 현황을 불러오지 못했습니다/);
+        assert.doesNotMatch(toast.textContent, /이용 현황을 갱신했습니다/);
+    }, { activeTab: "lab" }, {
+        approvedCohort: { cohortId: 3, name: "3기" }
+    }, api);
+});
+
 test("library uses the shared current location and keeps its action under operational status", async () => {
     const moves = [];
     let currentPresence = null;
@@ -380,7 +598,7 @@ test("library uses the shared current location and keeps its action under operat
             async list() {
                 return [
                     { spaceId: 101, name: "3기 실습실 A", type: "LAB", capacity: 30, operationalStatus: "ACTIVE", cohortId: 3 },
-                    { spaceId: 401, name: "도서관", type: "STUDY", capacity: 100, operationalStatus: "ACTIVE", cohortId: null }
+                    { spaceId: 401, name: "도서관", type: "STUDY", capacity: 1, currentPresenceCount: 7, operationalStatus: "ACTIVE", cohortId: null }
                 ];
             },
             async getMyVacancyAlerts() {
@@ -396,6 +614,8 @@ test("library uses the shared current location and keeps its action under operat
 
         assert.match(root.innerHTML, /운영 상태/);
         assert.match(root.innerHTML, /정상 운영/);
+        assert.match(root.innerHTML, /현재 7명 이용 중/);
+        assert.doesNotMatch(root.innerHTML, /7\s*\/\s*1명|정원 마감/);
         assert.match(root.innerHTML, /data-space-library-enter="401">[\s\S]*도서관 입장/);
         assert.doesNotMatch(root.innerHTML, /현재 이용/);
         assert.doesNotMatch(root.innerHTML, /내 상태/);

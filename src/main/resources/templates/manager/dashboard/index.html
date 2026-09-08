@@ -46,7 +46,7 @@
 </div>
 <th:block layout:fragment="pageScripts">
     <script src="/vendor/chartjs/4.5.1/chart.umd.min.js" th:src="@{/vendor/chartjs/4.5.1/chart.umd.min.js}"></script>
-    <script src="/js/api.js" th:src="@{/js/api.js}"></script>
+    <script src="/js/api.js?v=20260907-1" th:src="@{/js/api.js(v='20260907-1')}"></script>
     <script src="/js/manager/dashboard/dashboardStore.js" th:src="@{/js/manager/dashboard/dashboardStore.js}"></script>
     <script src="/js/manager/dashboard/dashboardPanelRegistry.js" th:src="@{/js/manager/dashboard/dashboardPanelRegistry.js}"></script>
     <script src="/js/manager/dashboard/panels/overviewPanel.js" th:src="@{/js/manager/dashboard/panels/overviewPanel.js}"></script>
@@ -55,15 +55,16 @@
     <script src="/js/manager/dashboard/panels/membersPanel.js" th:src="@{/js/manager/dashboard/panels/membersPanel.js}"></script>
     <script src="/js/manager/dashboard/panels/attendancePanel.js" th:src="@{/js/manager/dashboard/panels/attendancePanel.js}"></script>
     <script src="/js/manager/dashboard/panels/sensorsPanel.js" th:src="@{/js/manager/dashboard/panels/sensorsPanel.js}"></script>
-    <script src="/js/manager/dashboard/panels/spacesPanel.js" th:src="@{/js/manager/dashboard/panels/spacesPanel.js}"></script>
+    <script src="/js/manager/dashboard/panels/spacesPanel.js?v=20260907-1"
+            th:src="@{/js/manager/dashboard/panels/spacesPanel.js(v='20260907-1')}"></script>
     <script src="/js/manager/dashboard/panels/communityPanel.js" th:src="@{/js/manager/dashboard/panels/communityPanel.js}"></script>
     <script src="/js/manager/dashboard/panels/auditsPanel.js" th:src="@{/js/manager/dashboard/panels/auditsPanel.js}"></script>
     <script src="/js/manager/dashboard/panels/studyStatsPanel.js" th:src="@{/js/manager/dashboard/panels/studyStatsPanel.js}"></script>
     <script src="/js/manager/dashboard/panels/telegramPanel.js" th:src="@{/js/manager/dashboard/panels/telegramPanel.js}"></script>
     <script src="/js/manager/dashboard/popups/studyDetailModal.js" th:src="@{/js/manager/dashboard/popups/studyDetailModal.js}"></script>
-    <script src="/js/manager/dashboard/index.js" th:src="@{/js/manager/dashboard/index.js}"></script>
-    <script type="module" src="/js/home-react/manager-sensors-app.js"
-            th:src="@{/js/home-react/manager-sensors-app.js}"></script>
+    <script src="/js/manager/dashboard/index.js?v=20260907-1" th:src="@{/js/manager/dashboard/index.js(v='20260907-1')}"></script>
+    <script type="module" src="/js/home-react/manager-sensors-app.js?v=20260907-2"
+            th:src="@{/js/home-react/manager-sensors-app.js(v='20260907-2')}"></script>
     <script type="module" src="/js/home-react/manager-telegram-app.js"
             th:src="@{/js/home-react/manager-telegram-app.js}"></script>
     <script type="module" src="/js/home-react/manager-study-stats-app.js"
