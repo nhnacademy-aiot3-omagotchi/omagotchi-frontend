@@ -1,5 +1,15 @@
 import { getServiceDate } from "../attendanceState.js";
 
+const ATTENDANCE_STATUS_LABELS = Object.freeze({
+    PENDING: "대기",
+    PRESENT: "정상",
+    LATE: "지각",
+    ABSENT: "결석",
+    LEFT_EARLY: "조퇴",
+    LATE_LEFT_EARLY: "지각·조퇴",
+    MISSING_CHECK_OUT: "퇴실 누락"
+});
+
 export function hasApprovedCohort(profile) {
     return Boolean(profile?.approvedCohort?.cohortId);
 }
@@ -12,7 +22,7 @@ export function createAttendance({
     button,
     checkInTime,
     checkOutTime,
-    earlyLeave,
+    attendanceStatus,
     lateMinutes,
     calendarGrid,
     calendarTitle,
@@ -277,7 +287,11 @@ export function createAttendance({
                     ? formatTime(new Date(attendance.checkedOutAt))
                     : "아직 퇴실 전";
         }
-        if (earlyLeave) earlyLeave.textContent = hasRecordedCheckOut ? `${attendance.earlyLeaveMinutes || 0}분` : "기록 없음";
+        if (attendanceStatus) {
+            attendanceStatus.textContent = hasCheckIn
+                ? ATTENDANCE_STATUS_LABELS[attendance.finalStatus] || "확인 필요"
+                : "기록 없음";
+        }
         if (lateMinutes) lateMinutes.textContent = hasCheckIn ? `${attendance.lateMinutes || 0}분` : "기록 없음";
 
         if (button) {
