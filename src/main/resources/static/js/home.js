@@ -1,4 +1,4 @@
-import { createAttendance, hasApprovedCohort } from "./home/attendance.js?v=20260907-1";
+import { createAttendance, hasApprovedCohort } from "./home/attendance.js?v=20260908-2";
 import { createBgmPlayer } from "./home/bgm.js";
 import { createCharacter } from "./home/character.js?v=20260902-7";
 import {
@@ -26,7 +26,7 @@ const timerToggle = document.querySelector("[data-timer-toggle]");
 const attendanceButton = document.querySelector("[data-attendance-button]");
 const checkInTime = document.querySelector("[data-check-in-time]");
 const checkOutTime = document.querySelector("[data-check-out-time]");
-const earlyLeave = document.querySelector("[data-early-leave]");
+const attendanceStatus = document.querySelector("[data-attendance-status]");
 const lateMinutes = document.querySelector("[data-late-minutes]");
 const homeCharacter = document.querySelector("[data-home-character]");
 const characterWing = document.querySelector("[data-character-wing]");
@@ -336,7 +336,7 @@ const attendanceController = createAttendance({
     button: attendanceButton,
     checkInTime,
     checkOutTime,
-    earlyLeave,
+    attendanceStatus,
     lateMinutes,
     calendarGrid,
     calendarTitle,

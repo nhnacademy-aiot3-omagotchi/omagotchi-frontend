@@ -5,6 +5,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpSession;
+import org.springframework.boot.session.autoconfigure.SessionProperties;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -21,6 +22,7 @@ import site.omagotchi.frontend.global.security.BrowserSessionInvalidator;
 import site.omagotchi.frontend.global.security.SecurityErrorCode;
 import site.omagotchi.frontend.global.web.ApiExceptionHandler;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -50,9 +52,12 @@ class AccessTokenRefreshInterceptorTest {
     void setUp() {
         BrowserSessionInvalidator sessionInvalidator =
                 new BrowserSessionInvalidator();
+        SessionProperties sessionProperties = new SessionProperties();
+        sessionProperties.setTimeout(Duration.ofHours(12));
         AccessTokenRefreshInterceptor interceptor = new AccessTokenRefreshInterceptor(
                 refreshService,
-                sessionTokens
+                sessionTokens,
+                sessionProperties
         );
         mockMvc = MockMvcBuilders.standaloneSetup(controller)
                 .addInterceptors(interceptor)
@@ -85,12 +90,13 @@ class AccessTokenRefreshInterceptorTest {
     }
 
     @Test
-    @DisplayName("새 Bundle의 현재 요청 반영과 캐시된 HttpSession 미변경")
-    void usesRefreshedBundleWithoutDirtyingCurrentHttpSession() throws Exception {
+    @DisplayName("새 Bundle의 현재 요청 반영과 기존 Session 유휴 정책 갱신")
+    void usesRefreshedBundleWithoutOverwritingSessionTokens() throws Exception {
         // Given: 요청 Session의 이전 Bundle과 Redis에 명시 저장된 새 Bundle
         BrowserSessionTokenBundle previous = tokenBundle("previous-access-token");
         BrowserSessionTokenBundle refreshed = tokenBundle("refreshed-access-token");
         MockHttpSession session = session(previous);
+        session.setMaxInactiveInterval(30 * 60);
         given(refreshService.refreshIfRequired(anyString(), any()))
                 .willReturn(refreshed);
 
@@ -106,6 +112,7 @@ class AccessTokenRefreshInterceptorTest {
                 BrowserSessionTokenStore.SESSION_TOKEN_BUNDLE_ATTRIBUTE
         )).isEqualTo(previous);
         assertThat(sessionTokens.find(result.getRequest())).contains(refreshed);
+        assertThat(session.getMaxInactiveInterval()).isEqualTo(12 * 60 * 60);
     }
 
     @Test

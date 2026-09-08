@@ -18,6 +18,7 @@ import org.springframework.test.web.servlet.request.RequestPostProcessor;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 import site.omagotchi.frontend.auth.application.result.BrowserSessionTokenBundle;
+import site.omagotchi.frontend.auth.application.port.BrowserSessionTokenStore;
 import site.omagotchi.frontend.auth.domain.GlobalRole;
 import site.omagotchi.frontend.cohort.application.UserAccessContextBffService;
 import site.omagotchi.frontend.cohort.infrastructure.response.CohortAccessSummaryResponse;
@@ -90,7 +91,8 @@ class FrontendApplicationTests {
 	void managerDashboardUsesModularView() throws Exception {
 		given(accessContextService.getContext(any())).willReturn(managerContext());
 
-		unfilteredMockMvc.perform(get("/manager-dashboard"))
+		unfilteredMockMvc.perform(get("/manager-dashboard")
+				.with(authenticatedUser("11111111-1111-1111-1111-111111111111", GlobalRole.USER)))
 				.andExpect(status().isOk())
 				.andExpect(view().name("manager/dashboard/index"));
 
@@ -321,8 +323,11 @@ class FrontendApplicationTests {
 						null,
 						List.of(new SimpleGrantedAuthority("ROLE_" + globalRole.name()))
 				);
-		authentication.setDetails(tokenBundle);
-		return authentication(authentication);
+		return request -> {
+			request.getSession(true).setAttribute(
+					BrowserSessionTokenStore.SESSION_TOKEN_BUNDLE_ATTRIBUTE, tokenBundle);
+			return authentication(authentication).postProcessRequest(request);
+		};
 	}
 
 }

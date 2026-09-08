@@ -68,12 +68,53 @@ test("ACTIVE 승인 기수로 홈을 초기화하면 출결 이력을 즉시 조
     }
 });
 
+test("출석 상태 카드에는 조퇴 분이 아니라 최종 판정을 표시한다", async () => {
+    const originalWindow = globalThis.window;
+    const originalDocument = globalThis.document;
+    const today = getServiceDate();
+    const attendanceStatus = {textContent: ""};
+
+    globalThis.window = {
+        addEventListener() {},
+        setInterval() {}
+    };
+    globalThis.document = {
+        addEventListener() {},
+        hidden: false
+    };
+
+    try {
+        const attendance = createAttendance({
+            attendanceStatus,
+            api: {
+                getHistory: async () => [{
+                    attendanceDate: today,
+                    finalStatus: "LATE_LEFT_EARLY",
+                    checkedInAt: "2026-09-08T00:19:50Z",
+                    checkedOutAt: "2026-09-08T01:17:00Z",
+                    lateMinutes: 10,
+                    earlyLeaveMinutes: 463
+                }]
+            }
+        });
+
+        attendance.init();
+        await new Promise((resolve) => setImmediate(resolve));
+
+        assert.equal(attendanceStatus.textContent, "지각·조퇴");
+    } finally {
+        globalThis.window = originalWindow;
+        globalThis.document = originalDocument;
+    }
+});
+
 test("오래 열린 화면에서 미퇴실 마감 응답을 받으면 안내하고 퇴실 버튼을 완료 처리한다", async () => {
     const originalWindow = globalThis.window;
     const originalDocument = globalThis.document;
     const today = getServiceDate();
     const label = {textContent: ""};
     const checkOutTime = {textContent: ""};
+    const attendanceStatus = {textContent: ""};
     let clickHandler;
     let missingCheckOutCalls = 0;
     let errorCalls = 0;
@@ -102,6 +143,7 @@ test("오래 열린 화면에서 미퇴실 마감 응답을 받으면 안내하�
         const attendance = createAttendance({
             button,
             checkOutTime,
+            attendanceStatus,
             api: {
                 getHistory: async () => [{
                     attendanceDate: today,
@@ -135,6 +177,7 @@ test("오래 열린 화면에서 미퇴실 마감 응답을 받으면 안내하�
         assert.equal(button.disabled, true);
         assert.equal(label.textContent, "완료");
         assert.equal(checkOutTime.textContent, "미퇴실 처리됨");
+        assert.equal(attendanceStatus.textContent, "퇴실 누락");
         assert.equal(attendance.getHistory()[today].autoStatus, "MISSING_CHECK_OUT");
     } finally {
         globalThis.window = originalWindow;
