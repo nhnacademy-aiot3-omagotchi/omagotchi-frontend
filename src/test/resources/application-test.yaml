@@ -22,7 +22,7 @@ spring:
       ssl:
         enabled: false
   session:
-    timeout: PT30M
+    timeout: PT12H
     data:
       redis:
         namespace: omagotchi:frontend:test:session

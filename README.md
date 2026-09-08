@@ -31,6 +31,9 @@ SPRING_PROFILES_ACTIVE=local ./mvnw spring-boot:run
 - 로컬 설정 파일: `.env.local`
 - Git 추적 제외: `.env.local`
 - Redis 논리 DB: `SESSION_REDIS_DATABASE`, 로컬 기본값 `0`
+- Session 유휴시간: `SESSION_TIMEOUT=PT12H`, 마지막 서버 요청부터 12시간
+  - 아직 유효한 기존 Session에도 다음 인증 BFF·권한 조회 Page 요청에서 현재 설정 적용
+  - 운영 값은 Infra `compose.yaml`의 `frontend.environment.SESSION_TIMEOUT`에서 직접 주입하므로 해당 값을 변경한 뒤 Frontend Container 재생성 필요
 - Identity 주소: `IDENTITY_SERVICE_BASE_URL=http://localhost:8083`
 - Learning 주소: `LEARNING_SERVICE_BASE_URL=http://localhost:8084`
 - 서비스 인증 정보: Identity와 동일한 `FRONTEND_USERNAME`·`FRONTEND_PASSWORD`
@@ -61,6 +64,7 @@ SPRING_PROFILES_ACTIVE=local ./mvnw spring-boot:run
 - Browser 전용 API: 기본 `/bff/v1/**`, 회원가입 `/bff/v2/auth/signup/**`
 - 내부 서비스 호출: 담당 Domain Service 직접 호출, Discovery·Client-side Load Balancing 사용
 - Access Token 갱신: 만료 임박·만료 Token을 인증 BFF와 `/home`·`/manager-dashboard`·`/authenticated-landing` 진입 시 Redis Session 단위 single-flight Refresh
+- 로그인 유지: Session 유휴 한도 안에서 요청 시 갱신, Refresh Token Family는 최초 로그인부터 7일 유지
 - 요청 실행 기준: Refresh 성공 뒤에도 원래 Controller·downstream 요청은 최대 1회
 - AI Chat 호출: Learning Service 직접 호출과 SSE 응답 전달
 - Gateway 역할: 외부 `/api/**`·Webhook 경계

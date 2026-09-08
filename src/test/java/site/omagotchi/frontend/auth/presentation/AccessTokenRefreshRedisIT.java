@@ -76,6 +76,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
@@ -187,12 +188,16 @@ class AccessTokenRefreshRedisIT {
             "/manager-dashboard, COHORT_MANAGER, 200",
             "/authenticated-landing, STUDENT, 302"
     })
-    @DisplayName("Page 재진입의 만료 Access Token 갱신과 새 토큰 권한 조회")
+    @DisplayName("2시간 뒤 Page 재진입의 만료 Access Token 갱신과 새 토큰 권한 조회")
     void refreshesBeforePageAuthorizationAfterStudyBreak(
             String path, String accessType, int expectedStatus
     ) {
         BrowserSessionTokenBundle previous = expiredTokenBundle();
         BrowserSession browserSession = createSession(previous);
+        Session stored = findSession(browserSession.id());
+        assertThat(stored.getMaxInactiveInterval()).isEqualTo(Duration.ofHours(12));
+        stored.setLastAccessedTime(Instant.now().minus(Duration.ofHours(2)));
+        saveSession(sessionRepository, stored);
         given(identityAuthClient.refresh(PREVIOUS_REFRESH_TOKEN)).willReturn(refreshedTokenBundle());
         given(learningHttpService.getMyAccessContext("Bearer " + NEW_ACCESS_TOKEN))
                 .willReturn(new UserAccessContextResponse("USER", accessType, List.of(), List.of()));
@@ -206,7 +211,43 @@ class AccessTokenRefreshRedisIT {
         var calls = inOrder(identityAuthClient, learningHttpService);
         calls.verify(identityAuthClient).refresh(PREVIOUS_REFRESH_TOKEN);
         calls.verify(learningHttpService).getMyAccessContext("Bearer " + NEW_ACCESS_TOKEN);
+        assertThat(findSession(browserSession.id()).getMaxInactiveInterval()).isEqualTo(Duration.ofHours(12));
         assertTokensAreNotExposed(response);
+    }
+
+    @Test
+    @DisplayName("배포 전 생성된 30분 Session의 유효 요청에서 12시간 정책 적용")
+    void updatesExistingSessionIdleTimeout() {
+        BrowserSessionTokenBundle previous = expiredTokenBundle();
+        BrowserSession browserSession = createSession(previous);
+        Session stored = findSession(browserSession.id());
+        stored.setMaxInactiveInterval(Duration.ofMinutes(30));
+        stored.setLastAccessedTime(Instant.now().minus(Duration.ofMinutes(20)));
+        saveSession(sessionRepository, stored);
+        BrowserSessionTokenBundle refreshed = refreshedTokenBundle();
+        given(identityAuthClient.refresh(PREVIOUS_REFRESH_TOKEN)).willReturn(refreshed);
+
+        EntityExchangeResult<String> response = sendProbe(browserSession.cookieValue());
+
+        assertThat(response.getStatus().value()).isEqualTo(204);
+        assertThat(findSession(browserSession.id()).getMaxInactiveInterval()).isEqualTo(Duration.ofHours(12));
+        assertStoredTokenBundle(browserSession.id(), refreshed);
+    }
+
+    @Test
+    @DisplayName("12시간 유휴 한도를 넘긴 Session의 재인증 요구와 Refresh 미실행")
+    void rejectsSessionBeyondIdleTimeout() {
+        BrowserSession browserSession = createSession(expiredTokenBundle());
+        Session stored = findSession(browserSession.id());
+        stored.setLastAccessedTime(Instant.now().minus(Duration.ofHours(13)));
+        saveSession(sessionRepository, stored);
+
+        EntityExchangeResult<String> response = sendProbe(browserSession.cookieValue());
+
+        assertThat(response.getStatus().value()).isEqualTo(401);
+        assertThat(sessionRepository.findById(browserSession.id())).isNull();
+        assertThat(probeController.calls()).isZero();
+        verifyNoInteractions(identityAuthClient, learningHttpService);
     }
 
     @ParameterizedTest
