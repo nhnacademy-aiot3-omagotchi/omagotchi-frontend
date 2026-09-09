@@ -57,11 +57,9 @@ async function bootstrapSpace() {
 
     try {
         await import(SPACE_ROOM_MODULE);
-    } catch {
-        showNotice(
-            "공간 화면을 불러오지 못했습니다.",
-            "페이지를 새로고침해 주세요."
-        );
+    } catch (error) {
+        console.error("공간 화면 초기화 실패", error);
+        globalThis.OmagotchiResourceLoadNotice?.show();
         return;
     }
 
