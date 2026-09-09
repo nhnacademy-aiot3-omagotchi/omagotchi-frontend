@@ -1,7 +1,13 @@
 import { resolveHomeEntry } from "./homeEntry.js";
 
 async function bootstrapHome() {
-    await import("./home-react/home-app.js?v=20260904-1");
+    try {
+        await import("./home-react/home-app.js?v=20260904-1");
+    } catch (error) {
+        console.error("홈 화면 초기화 실패", error);
+        globalThis.OmagotchiResourceLoadNotice?.show();
+        return;
+    }
 
     let profile = null;
 
@@ -58,11 +64,8 @@ async function bootstrapHome() {
         await import("./spaceRoom.js?v=20260908-2");
         await import("./home.js?v=20260908-2");
     } catch (error) {
-        const toast = document.querySelector("[data-home-toast]");
-        if (toast) {
-            toast.textContent = error?.message || "홈 기능을 불러오지 못했습니다.";
-            toast.classList.add("is-visible");
-        }
+        console.error("홈 기능 초기화 실패", error);
+        globalThis.OmagotchiResourceLoadNotice?.show();
     }
 }
 

@@ -114,6 +114,9 @@ class AuthenticationSecurityMvcTest {
 
         // Then: 익명 Session 기반 CSRF Token 생성
         assertThat(result.getRequest().getSession(false)).isNotNull();
+        // 외부 Stylesheet보다 먼저 등록된 로딩 실패 안내와 기존 캐시 보호 유지
+        assertThat(result.getResponse().getContentAsString())
+                .containsSubsequence("src=\"/js/resourceLoadNotice", "rel=\"stylesheet\"");
     }
 
     @Test

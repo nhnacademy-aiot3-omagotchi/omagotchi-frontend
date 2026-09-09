@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<th:block th:fragment="head">
+    <!-- 화면용 JS·CSS보다 먼저 등록하는 오류 안내와 외부 CSS에 의존하지 않는 표시 스타일 -->
+    <style>
+        #resource-load-notice {
+            position: fixed;
+            z-index: 2147483647;
+            inset: auto 16px 16px;
+            box-sizing: border-box;
+            max-width: 560px;
+            margin: 0 auto;
+            padding: 16px;
+            border: 1px solid #9c6b29;
+            border-radius: 12px;
+            background: #fff8e8;
+            color: #332a1e;
+            font: 16px/1.5 sans-serif;
+            box-shadow: 0 4px 16px #0003;
+        }
+        #resource-load-notice p { margin: 0 0 8px; }
+        #resource-load-notice button {
+            padding: 8px 16px;
+            border: 1px solid #332a1e;
+            border-radius: 6px;
+            background: #332a1e;
+            color: #fff;
+            font: inherit;
+            cursor: pointer;
+        }
+    </style>
+    <script src="/js/resourceLoadNotice.js" th:src="@{/js/resourceLoadNotice.js}"></script>
+</th:block>
+</html>
