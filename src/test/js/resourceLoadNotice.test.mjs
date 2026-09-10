@@ -17,9 +17,17 @@ function createPage(readyState = "complete") {
     document.createElement = () => ({setAttribute() {}, querySelector: () => button});
     const page = {
         document,
-        location: {reload: () => reloads.push(true)},
-        HTMLScriptElement: class {},
+        URL,
+        location: {origin: "https://omagotchi.test", reload: () => reloads.push(true)},
+        HTMLScriptElement: class {
+            constructor(src) {
+                this.src = src;
+            }
+        },
         HTMLLinkElement: class {
+            constructor(href) {
+                this.href = href;
+            }
             relList = {contains: (rel) => rel === "stylesheet"};
         },
         addEventListener: (type, listener, capture) => listeners.set(type, {listener, capture})
@@ -34,8 +42,8 @@ test("여러 파일의 로딩 실패에도 안내 한 개와 사용자 클릭 �
     const {listener, capture} = listeners.get("error");
 
     // When: JS·CSS 로딩 오류의 연속 수신
-    listener({target: new page.HTMLScriptElement()});
-    listener({target: new page.HTMLLinkElement()});
+    listener({target: new page.HTMLScriptElement("https://omagotchi.test/js/home.js")});
+    listener({target: new page.HTMLLinkElement("https://omagotchi.test/css/home.css")});
 
     // Then: 자동 이동 없이 한 번 표시, 명시적 클릭 시에만 새로고침
     assert.equal(capture, true);
@@ -44,6 +52,54 @@ test("여러 파일의 로딩 실패에도 안내 한 개와 사용자 클릭 �
     assert.equal(reloads.length, 0);
     button.dispatchEvent(new Event("click"));
     assert.equal(reloads.length, 1);
+});
+
+test("내용 해시와 쿼리가 있는 앱 CSS의 로딩 실패 안내", () => {
+    // Given: 앱에서 제공하는 Stylesheet
+    const {page, listeners, notices} = createPage();
+    const stylesheet = new page.HTMLLinkElement("https://omagotchi.test/css/home-abc123.css?v=2");
+
+    // When: CSS 로딩 실패
+    listeners.get("error").listener({target: stylesheet});
+
+    // Then: 파일 이름의 버전 표기와 무관한 안내 표시
+    assert.equal(notices.length, 1);
+});
+
+test("외부 파일·앱 경로 밖의 파일은 제외하고 이후 앱 JS 실패는 안내", () => {
+    // Given: 외부 통계·외부 CSS·같은 사이트의 보조 Script
+    const {page, listeners, notices} = createPage();
+    const resources = [
+        new page.HTMLScriptElement("https://static.cloudflareinsights.com/beacon.min.js"),
+        new page.HTMLLinkElement("https://cdn.example.test/css/theme.css"),
+        new page.HTMLScriptElement("https://omagotchi.test/cdn-cgi/scripts/beacon.js"),
+        new page.HTMLScriptElement("https://omagotchi.test/js-other/tool.js")
+    ];
+
+    // When: 앱 화면과 무관한 파일의 로딩 실패
+    for (const resource of resources) {
+        listeners.get("error").listener({target: resource});
+    }
+
+    // Then: 불필요한 안내 없이 이후 앱 모듈의 실패만 표시
+    assert.equal(notices.length, 0);
+    listeners.get("error").listener({
+        target: new page.HTMLScriptElement("https://omagotchi.test/js/home-react/chunks/home-abc123.js?v=2")
+    });
+    assert.equal(notices.length, 1);
+});
+
+test("주소가 없거나 잘못된 Script의 처리 제외", () => {
+    // Given: 파일 주소가 없거나 올바른 URL이 아닌 Script
+    const {page, listeners, notices} = createPage();
+
+    // When: 해당 요소의 오류 수신
+    for (const src of ["", "http://["]) {
+        listeners.get("error").listener({target: new page.HTMLScriptElement(src)});
+    }
+
+    // Then: 오류 처리 중 추가 예외나 새로고침 안내 없음
+    assert.equal(notices.length, 0);
 });
 
 test("Body 생성 전 파일 오류의 안내 대기", () => {

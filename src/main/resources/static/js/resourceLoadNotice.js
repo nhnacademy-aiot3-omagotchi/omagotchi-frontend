@@ -29,11 +29,28 @@
 
     globalThis.OmagotchiResourceLoadNotice = {show: showResourceLoadNotice};
 
-    // 버블링하지 않는 파일 로딩 오류의 포착. 이미지·API·일반 실행 오류는 제외.
+    // 캡처 단계에서 앱 파일의 로딩 실패만 안내. 외부 통계·이미지·API 오류는 제외.
     globalThis.addEventListener("error", (event) => {
         const resource = event.target;
-        if (resource instanceof HTMLScriptElement
-            || (resource instanceof HTMLLinkElement && resource.relList.contains("stylesheet"))) {
+        let resourceAddress;
+        if (resource instanceof HTMLScriptElement) {
+            resourceAddress = resource.src;
+        } else if (resource instanceof HTMLLinkElement && resource.relList.contains("stylesheet")) {
+            resourceAddress = resource.href;
+        } else {
+            return;
+        }
+
+        // DOM의 절대 주소로 출처·경로 확인. 잘못된 주소로 인한 추가 예외 방지.
+        let resourceUrl;
+        try {
+            resourceUrl = new URL(resourceAddress);
+        } catch {
+            return;
+        }
+
+        if (resourceUrl.origin === globalThis.location.origin
+            && (resourceUrl.pathname.startsWith("/js/") || resourceUrl.pathname.startsWith("/css/"))) {
             showResourceLoadNotice();
         }
     }, true);
