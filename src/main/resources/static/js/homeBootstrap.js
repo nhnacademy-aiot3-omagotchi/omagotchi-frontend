@@ -2,7 +2,7 @@ import { resolveHomeEntry } from "./homeEntry.js";
 
 async function bootstrapHome() {
     try {
-        await import("./home-react/home-app.js?v=20260904-1");
+        await import("./home-react/home-app.js?v=20260914-1");
     } catch (error) {
         console.error("홈 화면 초기화 실패", error);
         globalThis.OmagotchiResourceLoadNotice?.show();

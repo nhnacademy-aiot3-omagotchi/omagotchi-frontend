@@ -1,5 +1,5 @@
 import React, {useEffect, useRef, useState} from "react";
-import { PanelHeader } from "../../ui/PanelHeader.jsx";
+import {PanelHeader} from "../../ui/PanelHeader.jsx";
 import PropTypes from "prop-types";
 import {streamAiChat} from "./aiAssistantClient.js";
 import {AI_ASSISTANT_TIPS, AI_ASSISTANT_TOOLS, AI_ASSISTANT_UPCOMING} from "./aiAssistantGuide.js";
@@ -405,8 +405,8 @@ export function AiAssistantPanel({
                                 disabled={isBusy}
                                 aria-label="AI 모델 선택"
                             >
-                                <option value="GEMINI">Gemini</option>
-                                <option value="OLLAMA">Ollama</option>
+                                <option value="GEMINI">Gemini 3.6 Flash</option>
+                                <option value="OLLAMA">Qwen 2.5</option>
                             </select>
                             <span aria-hidden="true">⌄</span>
                         </div>
