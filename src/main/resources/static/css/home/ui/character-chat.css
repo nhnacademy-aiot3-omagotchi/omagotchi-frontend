@@ -574,6 +574,8 @@
 
 .home-ai-model-select select {
     appearance: none;
+    /* 가장 긴 옵션이 아니라 선택된 옵션 폭에 맞춘다. 미지원 브라우저는 기존처럼 보인다 */
+    field-sizing: content;
     border: 0;
     background: transparent;
     color: #274b3d;
