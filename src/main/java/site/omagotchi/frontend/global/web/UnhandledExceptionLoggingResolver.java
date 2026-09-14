@@ -26,6 +26,7 @@ public class UnhandledExceptionLoggingResolver implements HandlerExceptionResolv
     private final HttpErrorEventLogger errorEventLogger;
 
     @Override
+    @SuppressWarnings("java:S3516") // null 반환은 다음 HandlerExceptionResolver와 Boot /error에 위임하는 계약이다.
     public @Nullable ModelAndView resolveException(
             @NonNull HttpServletRequest request,
             @NonNull HttpServletResponse response,

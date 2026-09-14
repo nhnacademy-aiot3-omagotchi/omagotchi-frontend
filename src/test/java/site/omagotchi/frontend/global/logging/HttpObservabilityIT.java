@@ -269,6 +269,7 @@ class HttpObservabilityIT {
         @GetMapping("/probe/{item-id}")
         @ResponseStatus(HttpStatus.NO_CONTENT)
         void probe() {
+            // 응답 본문 없이 관측 필터를 통과시키기 위한 테스트용 종단점이다.
         }
 
         @GetMapping("/failure")
@@ -305,7 +306,7 @@ class HttpObservabilityIT {
     static class TestSecurityConfiguration {
 
         @Bean
-        SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        SecurityFilterChain securityFilterChain(HttpSecurity http) {
             return http
                     .csrf(AbstractHttpConfigurer::disable)
                     .authorizeHttpRequests(authorize -> authorize.anyRequest().permitAll())

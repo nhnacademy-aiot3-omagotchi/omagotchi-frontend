@@ -10,7 +10,6 @@ import org.springframework.boot.testcontainers.service.connection.ServiceConnect
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseCookie;
@@ -84,6 +83,7 @@ class BrowserSessionRedisIT {
 
     @Test
     @DisplayName("Redis Browser Session 로그인·인증 복원·로그아웃")
+    @SuppressWarnings("java:S5961") // 하나의 Session 수명주기를 실제 HTTP·Redis 경계에서 검증하는 통합 시나리오다.
     void restoresAuthenticationAndInvalidatesSession() {
         // Given: Identity Login Token Bundle
         given(identityAuthClient.login("user@example.com", "password-passphrase"))

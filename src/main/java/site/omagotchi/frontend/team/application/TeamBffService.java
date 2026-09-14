@@ -27,6 +27,8 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class TeamBffService {
 
+    private static final String GET_TEAM_DETAIL_OPERATION = "팀 상세 조회";
+
     private final LearningHttpService learningHttpService;
     private final LearningGatewayCallExecutor callExecutor;
     private final LearningSessionAuthorization authorization;
@@ -57,8 +59,11 @@ public class TeamBffService {
                 () -> learningHttpService.getTeam(
                         authorization.bearerToken(request), teamId)
         );
-        requireStatus(response, HttpStatus.OK, "팀 상세 조회");
-        return toDetailView(requireBody(response, "팀 상세 조회"), "팀 상세 조회");
+        requireStatus(response, HttpStatus.OK, GET_TEAM_DETAIL_OPERATION);
+        return toDetailView(
+                requireBody(response, GET_TEAM_DETAIL_OPERATION),
+                GET_TEAM_DETAIL_OPERATION
+        );
     }
 
     public List<TeamMemberCandidateView> searchMemberCandidates(

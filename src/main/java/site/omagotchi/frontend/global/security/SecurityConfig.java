@@ -36,6 +36,8 @@ import java.util.List;
 @Configuration
 public class SecurityConfig {
 
+    private static final String LOGIN_PATH = "/login";
+
     @Bean
     SecurityFilterChain securityFilterChain(
             HttpSecurity http,
@@ -67,7 +69,7 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/",
                                 "/index",
-                                "/login",
+                                LOGIN_PATH,
                                 "/register",
                                 "/password-reset",
                                 "/password-change"
@@ -102,8 +104,8 @@ public class SecurityConfig {
                         .anyRequest().authenticated() // 기본 보호 정책
                 )
                 .formLogin(form -> form
-                        .loginPage("/login")
-                        .loginProcessingUrl("/login")
+                        .loginPage(LOGIN_PATH)
+                        .loginProcessingUrl(LOGIN_PATH)
                         .usernameParameter("email")
                         .passwordParameter("password")
                         .successHandler((request, response, authentication) ->
@@ -119,7 +121,7 @@ public class SecurityConfig {
                 .logout(logout -> logout
                         // Identity Token 폐기 시도 뒤 Spring Security 기본 Session·CSRF 정리
                         .addLogoutHandler(identityLogoutHandler)
-                        .logoutSuccessUrl("/login")
+                        .logoutSuccessUrl(LOGIN_PATH)
                         .permitAll()
                 )
                 .requestCache(RequestCacheConfigurer::disable) // Login 성공 뒤 역할별 접근 판정 화면으로 이동
@@ -135,7 +137,7 @@ public class SecurityConfig {
                         )
                         // HTML Page의 Login redirect·기본 403 처리
                         .defaultAuthenticationEntryPointFor(
-                                new LoginUrlAuthenticationEntryPoint("/login"),
+                                new LoginUrlAuthenticationEntryPoint(LOGIN_PATH),
                                 AnyRequestMatcher.INSTANCE
                         )
                         .defaultAccessDeniedHandlerFor(

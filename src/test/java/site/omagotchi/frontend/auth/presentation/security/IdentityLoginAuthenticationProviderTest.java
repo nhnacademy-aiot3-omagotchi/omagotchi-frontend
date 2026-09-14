@@ -81,15 +81,15 @@ class IdentityLoginAuthenticationProviderTest {
                 new IdentityLoginAuthenticationProvider(
                         new AuthenticationService(identityAuthClient)
                 );
-
-        // When: Spring Security 자격 증명 검증
-        // Then: AuthenticationServiceException 변환과 원인 보존
-        assertThatThrownBy(() -> provider.authenticate(
+        UsernamePasswordAuthenticationToken credentials =
                 UsernamePasswordAuthenticationToken.unauthenticated(
                         "user@example.com",
                         "password-passphrase"
-                )
-        ))
+                );
+
+        // When: Spring Security 자격 증명 검증
+        // Then: AuthenticationServiceException 변환과 원인 보존
+        assertThatThrownBy(() -> provider.authenticate(credentials))
                 .isInstanceOf(AuthenticationServiceException.class)
                 .isNotInstanceOf(InternalAuthenticationServiceException.class)
                 .satisfies(exception -> assertThat(exception.getCause()).isSameAs(identityFailure));
@@ -107,15 +107,15 @@ class IdentityLoginAuthenticationProviderTest {
                 new IdentityLoginAuthenticationProvider(
                         new AuthenticationService(identityAuthClient)
                 );
-
-        // When: Spring Security 자격 증명 검증
-        // Then: BadCredentialsException 변환과 원인 보존
-        assertThatThrownBy(() -> provider.authenticate(
+        UsernamePasswordAuthenticationToken credentials =
                 UsernamePasswordAuthenticationToken.unauthenticated(
                         "user@example.com",
                         "password-passphrase"
-                )
-        ))
+                );
+
+        // When: Spring Security 자격 증명 검증
+        // Then: BadCredentialsException 변환과 원인 보존
+        assertThatThrownBy(() -> provider.authenticate(credentials))
                 .isInstanceOf(BadCredentialsException.class)
                 .satisfies(exception -> assertThat(exception.getCause())
                         .isSameAs(invalidCredentials));
@@ -130,21 +130,23 @@ class IdentityLoginAuthenticationProviderTest {
                 new IdentityLoginAuthenticationProvider(
                         new AuthenticationService(identityAuthClient)
                 );
-
-        // When: 빈 이메일·비밀번호의 자격 증명 검증
-        // Then: Identity 호출 없는 BadCredentialsException
-        assertThatThrownBy(() -> provider.authenticate(
+        UsernamePasswordAuthenticationToken blankEmailCredentials =
                 UsernamePasswordAuthenticationToken.unauthenticated(
                         " ",
                         "password-passphrase"
-                )
-        )).isInstanceOf(BadCredentialsException.class);
-        assertThatThrownBy(() -> provider.authenticate(
+                );
+        UsernamePasswordAuthenticationToken blankPasswordCredentials =
                 UsernamePasswordAuthenticationToken.unauthenticated(
                         "user@example.com",
                         " "
-                )
-        )).isInstanceOf(BadCredentialsException.class);
+                );
+
+        // When: 빈 이메일·비밀번호의 자격 증명 검증
+        // Then: Identity 호출 없는 BadCredentialsException
+        assertThatThrownBy(() -> provider.authenticate(blankEmailCredentials))
+                .isInstanceOf(BadCredentialsException.class);
+        assertThatThrownBy(() -> provider.authenticate(blankPasswordCredentials))
+                .isInstanceOf(BadCredentialsException.class);
         assertSoftly(softly -> {
             softly.assertThat(identityAuthClient.loginEmail).isNull();
             softly.assertThat(identityAuthClient.loginPassword).isNull();

@@ -19,7 +19,6 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -46,14 +45,14 @@ class AttendanceBffControllerTest {
     @DisplayName("출결 Application 결과의 공통 items·page 응답 변환")
     void returnsAttendanceHistoryAsCommonPageResponse() throws Exception {
         // Given: 출결 항목과 페이지 정보를 포함한 Application 결과
-        AttendanceRecordResult record = attendanceRecord();
+        AttendanceRecordResult attendanceRecord = attendanceRecord();
         when(service.getHistory(
-                eq(LocalDate.of(2026, 8, 1)),
-                eq(LocalDate.of(2026, 8, 21)),
-                eq(1),
-                eq(10)
+                LocalDate.of(2026, 8, 1),
+                LocalDate.of(2026, 8, 21),
+                1,
+                10
         )).thenReturn(new AttendancePageResult(
-                List.of(record),
+                List.of(attendanceRecord),
                 new PageMetadata(1, 10, 13, 2)
         ));
 
@@ -75,10 +74,10 @@ class AttendanceBffControllerTest {
                 );
 
         verify(service).getHistory(
-                eq(LocalDate.of(2026, 8, 1)),
-                eq(LocalDate.of(2026, 8, 21)),
-                eq(1),
-                eq(10)
+                LocalDate.of(2026, 8, 1),
+                LocalDate.of(2026, 8, 21),
+                1,
+                10
         );
     }
 

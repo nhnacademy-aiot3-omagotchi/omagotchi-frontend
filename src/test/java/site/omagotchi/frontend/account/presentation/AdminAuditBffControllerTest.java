@@ -18,7 +18,6 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -54,7 +53,7 @@ class AdminAuditBffControllerTest {
     @DisplayName("페이지 조건 전달과 감사 응답 변환")
     void forwardsPagingAndReturnsAuditPage() throws Exception {
         // Given: 역할 변경 감사 한 줄
-        when(service.findAudits(eq("admin-token"), eq(0), eq(50))).thenReturn(
+        when(service.findAudits("admin-token", 0, 50)).thenReturn(
                 new IdentityAdminAuditPage(
                         List.of(new IdentityAdminAudit(
                                 "ACCOUNT_ROLE",
@@ -85,7 +84,7 @@ class AdminAuditBffControllerTest {
     @DisplayName("페이지 조건 없이 호출하면 Identity 기본값에 맡긴다")
     void passesNullPagingThrough() throws Exception {
         // Given: 화면이 조건을 생략한 호출
-        when(service.findAudits(eq("admin-token"), eq(null), eq(null))).thenReturn(
+        when(service.findAudits("admin-token", null, null)).thenReturn(
                 new IdentityAdminAuditPage(List.of(), new PageMetadata(0, 20, 0, 0))
         );
 

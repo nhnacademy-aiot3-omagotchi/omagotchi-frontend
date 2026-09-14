@@ -31,6 +31,8 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class IdentityRestAdminAccountClient implements IdentityAdminAccountClient {
 
+    private static final String BEARER_PREFIX = "Bearer ";
+
     private final IdentityAdminAccountHttpService httpService;
     private final IdentityAdminAccountStatusHttpService statusHttpService;
     private final IdentityAdminAccountRoleHttpService roleHttpService;
@@ -51,7 +53,7 @@ public class IdentityRestAdminAccountClient implements IdentityAdminAccountClien
     ) {
         ResponseEntity<PageResponse<IdentityAdminAccountResponse>> response = callExecutor.execute(
                 () -> httpService.getUsers(
-                        "Bearer " + accessToken,
+                        BEARER_PREFIX + accessToken,
                         query,
                         status,
                         locked,
@@ -113,7 +115,7 @@ public class IdentityRestAdminAccountClient implements IdentityAdminAccountClien
     ) {
         ResponseEntity<Void> response = callExecutor.execute(
                 () -> statusHttpService.changeStatus(
-                        "Bearer " + accessToken,
+                        BEARER_PREFIX + accessToken,
                         userId,
                         new IdentityChangeAccountStatusRequest(status, reason)
                 ),
@@ -144,7 +146,7 @@ public class IdentityRestAdminAccountClient implements IdentityAdminAccountClien
     ) {
         ResponseEntity<Void> response = callExecutor.execute(
                 () -> roleHttpService.changeRole(
-                        "Bearer " + accessToken,
+                        BEARER_PREFIX + accessToken,
                         userId,
                         new IdentityChangeAccountRoleRequest(role, reason)
                 ),
@@ -170,7 +172,7 @@ public class IdentityRestAdminAccountClient implements IdentityAdminAccountClien
     public void unlockLogin(String accessToken, UUID userId, String reason) {
         ResponseEntity<Void> response = callExecutor.execute(
                 () -> statusHttpService.unlockLogin(
-                        "Bearer " + accessToken,
+                        BEARER_PREFIX + accessToken,
                         userId,
                         new IdentityLoginUnlockRequest(reason)
                 ),

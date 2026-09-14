@@ -26,6 +26,8 @@ import java.time.Instant;
 @RequiredArgsConstructor
 public class IdentityRestAccountClient implements IdentityAccountClient {
 
+    private static final String BEARER_PREFIX = "Bearer ";
+
     private final IdentityAccountHttpService httpService;
     private final RestClientCallExecutor callExecutor;
     private final ApiErrorContractResolver errorResolver;
@@ -33,7 +35,7 @@ public class IdentityRestAccountClient implements IdentityAccountClient {
     @Override
     public AccountSettings getCurrentAccount(String accessToken) {
         ResponseEntity<IdentityAccountResponse> response = callExecutor.execute(
-                () -> httpService.getCurrentAccount("Bearer " + accessToken),
+                () -> httpService.getCurrentAccount(BEARER_PREFIX + accessToken),
                 exception -> {
                     ErrorCode errorCode = errorResolver.resolve(
                             exception,
@@ -61,7 +63,7 @@ public class IdentityRestAccountClient implements IdentityAccountClient {
     public void changeName(String accessToken, String name) {
         ResponseEntity<Void> response = callExecutor.execute(
                 () -> httpService.changeName(
-                        "Bearer " + accessToken,
+                        BEARER_PREFIX + accessToken,
                         new IdentityUpdateNameRequest(name)
                 ),
                 exception -> {
@@ -86,7 +88,7 @@ public class IdentityRestAccountClient implements IdentityAccountClient {
     ) {
         ResponseEntity<Void> response = callExecutor.execute(
                 () -> httpService.changePassword(
-                        "Bearer " + accessToken,
+                        BEARER_PREFIX + accessToken,
                         new IdentityChangePasswordRequest(currentPassword, newPassword)
                 ),
                 exception -> {
@@ -109,7 +111,7 @@ public class IdentityRestAccountClient implements IdentityAccountClient {
     public Instant withdraw(String accessToken, String currentPassword) {
         ResponseEntity<IdentityAccountWithdrawalResponse> response = callExecutor.execute(
                 () -> httpService.withdraw(
-                        "Bearer " + accessToken,
+                        BEARER_PREFIX + accessToken,
                         new IdentityWithdrawAccountRequest(currentPassword)
                 ),
                 exception -> {
