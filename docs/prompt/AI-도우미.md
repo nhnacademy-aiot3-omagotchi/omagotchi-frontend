@@ -29,8 +29,11 @@ src/main/resources/static/js/home.js
 
 - Home 하단 버튼에는 기존 `commu.png` 픽셀 에셋과 `AI` 라벨을 사용한다.
 - `AiAssistantPanel`은 입력창과 전송 버튼이 활성화되어 있다. 모델 선택도 활성화되어
-  있으며 Gemini/Ollama 중 선택할 수 있다 (`<select>`, 값은 대문자 `GEMINI`/`OLLAMA`로
-  전송한다 — `learning-service`의 `ChatModelType`이 대소문자를 구분하기 때문이다).
+  있으며 Gemini 3.6 Flash / Qwen 2.5 중 선택할 수 있다 (`<select>`, 값은 대문자
+  `GEMINI`/`OLLAMA`로 전송한다 — `learning-service`의 `ChatModelType`이 대소문자를
+  구분하기 때문이다). 표시명은 `learning-service` `application.yaml`의 실제 모델명
+  (`gemini-3.6-flash`, `qwen2.5:latest`)을 따르므로, 서버가 모델을 바꾸면 이 표시명도
+  함께 바꿔야 한다.
 - 답변 영역은 Home의 `data-home-character`와 `data-character-name`을 관찰해 현재 선택
   캐릭터를 그대로 표시한다. 별도의 기본 캐릭터 경로를 Source of Truth로 만들지 않는다.
 - 캐릭터 아바타는 메신저 형식으로 assistant 말풍선마다 붙는다 (`.home-ai-message-row`
@@ -122,7 +125,7 @@ Source of Truth까지 함께 바꾸지 않는다. 배치 변경은 CSS와 열림
 ### 연결 완료
 
 - 질문 입력과 전송 (Enter 전송, Shift+Enter 줄바꿈, 한글 조합 중 Enter는 전송하지 않음)
-- 모델 선택 (Gemini/Ollama)
+- 모델 선택 (Gemini 3.6 Flash / Qwen 2.5)
 - 답변 스트리밍 표시 (청크 단위로 도착하는 대로 반영)
 - AI 도우미 버튼과 준비 화면의 PC·모바일 표시
 - Dock 버튼으로 열기·닫기, 오른쪽 스와이프로 닫기와 다른 Home 패널 간 닫힘 동작

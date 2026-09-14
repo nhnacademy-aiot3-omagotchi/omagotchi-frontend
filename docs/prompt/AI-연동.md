@@ -28,7 +28,7 @@ AiAssistantPanel (React)
   → AiChatBffService
   → LearningAiChatClient (WebClient 기반 HTTP Service Client, SSE 스트리밍)
      ※ Discovery(lb://learning-service) 직접 호출. Gateway를 거치지 않는다
-     ※ 이 그룹만 읽기 타임아웃 30초 (전역 5초와 분리)
+     ※ 이 그룹만 읽기 타임아웃 50초 (전역 5초와 분리)
   → learning-service ChatController (/api/v1/chat, JWT 인증)
   → ChatClient.prompt().stream() (Spring AI, Gemini 또는 Ollama 호출 + Tool 실행)
 ```
@@ -69,7 +69,7 @@ AiAssistantPanel (React)
 ### `learning-service` (ChatClient + Tool)
 
 - `ChatController`가 JWT에서 사용자를 확인하고 `ChatClient.prompt().stream()`을 호출한다.
-- 모델(Gemini)이 어떤 `@Tool`을 호출할지는 Spring AI가 판단한다 — Browser나 BFF가 Tool
+- 모델이 어떤 `@Tool`을 호출할지는 Spring AI가 판단한다 — Browser나 BFF가 Tool
   선택에 관여하지 않는다.
 - 하나의 Tool은 하나의 명확한 목적과 최소 권한을 가진다 (예: `WeatherTools.getWeather`는
   지역명으로 날씨만 조회하고 다른 어떤 것도 하지 않는다).
@@ -205,10 +205,13 @@ Stream은 구조화된 Event(예: `answer.delta`, `tool.started`)를 쓰지 않�
 - **읽기 타임아웃은 AI 채팅만 따로 잡는다.** 모델 1차 호출 → Tool 실행 → 모델 2차 호출을
   거쳐야 첫 글자가 나오므로 그동안 읽히는 바이트가 없고, 전역 5초로는 응답이 시작되기
   전에 끊긴다(실제 운영 장애의 원인이었다). `AiChatHttpServiceConfig`가 이 그룹의
-  WebClient에만 30초를 건다(`AI_CHAT_READ_TIMEOUT`).
+  WebClient에만 50초를 건다. 값은 `application.yaml`의 코드 기본값이며, 환경변수
+  `AI_CHAT_READ_TIMEOUT`은 2026-09-08 "서비스 기본 설정 이관" 이후 infra가 더 이상
+  주입하지 않는다 — 바꾸려면 재배포가 필요하다. 30초로 시작했으나 넘기는 질문이 남아
+  2026-09-05에 50초로 올렸고, 그 위 nginx 기본값이 60초라 더 올릴 여지는 거의 없다.
   - **커넥터를 빈으로 노출하지 않는다.** `ClientHttpConnector` 타입 빈이 있으면 Boot의
     전역 커넥터가 물러나고 그것이 **모든** WebClient에 적용된다 — identity 등 다른
-    호출까지 30초가 된다.
+    호출까지 50초가 된다.
   - **적용 순서가 0보다 뒤여야 한다.** Boot이 order 0에서 전역 커넥터를 다시 걸기
     때문이다. `spring.http.serviceclient.<group>.read-timeout` 프로퍼티가 듣지 않는
     이유도 같다(그쪽은 order `Integer.MIN_VALUE`).
