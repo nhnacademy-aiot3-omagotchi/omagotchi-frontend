@@ -23,7 +23,6 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
@@ -96,9 +95,9 @@ class AiBffControllerTest {
 
         // Then: 사용자 JWT와 요청 값의 손실 없는 전달
         verify(this.aiChatClient).streamChat(
-                eq("Bearer access-token-1"),
-                eq("광주 동구 날씨 알려줘"),
-                eq("OLLAMA")
+                "Bearer access-token-1",
+                "광주 동구 날씨 알려줘",
+                "OLLAMA"
         );
     }
 

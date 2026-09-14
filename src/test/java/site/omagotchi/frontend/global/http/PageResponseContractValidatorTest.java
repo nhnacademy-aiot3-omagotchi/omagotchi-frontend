@@ -79,8 +79,9 @@ class PageResponseContractValidatorTest {
         items.clear();
 
         // Then: 페이지 항목 불변성과 외부 변경 차단
-        assertThat(response.items()).containsExactly("item");
-        assertThatThrownBy(() -> response.items().add("other"))
+        List<String> responseItems = response.items();
+        assertThat(responseItems).containsExactly("item");
+        assertThatThrownBy(() -> responseItems.add("other"))
                 .isInstanceOf(UnsupportedOperationException.class);
     }
 

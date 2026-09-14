@@ -99,9 +99,9 @@ class LearningRestAttendanceClientTest {
         );
 
         // Then: HTTP 타입이 없는 Application 결과 반환
-        assertThat(result.items()).singleElement().satisfies(record -> {
-            assertThat(record.attendanceDate()).isEqualTo(LocalDate.of(2026, 8, 20));
-            assertThat(record.finalStatus()).isEqualTo("PRESENT");
+        assertThat(result.items()).singleElement().satisfies(attendanceRecord -> {
+            assertThat(attendanceRecord.attendanceDate()).isEqualTo(LocalDate.of(2026, 8, 20));
+            assertThat(attendanceRecord.finalStatus()).isEqualTo("PRESENT");
         });
         assertThat(result.page()).isEqualTo(new PageMetadata(1, 10, 13, 2));
     }

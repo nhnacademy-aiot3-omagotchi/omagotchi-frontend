@@ -67,14 +67,16 @@ class BrowserTokenSessionAuthenticationStrategyTest {
                         "user-id",
                         null,
                         List.of()
-                );
+        );
+        MockHttpServletRequest request = new MockHttpServletRequest("POST", "/login");
+        MockHttpServletResponse response = new MockHttpServletResponse();
 
         // When: Login 성공 Session 전략 실행
         // Then: Token 없는 인증 Session 수립 거절
         assertThatThrownBy(() -> strategy.onAuthentication(
                 authentication,
-                new MockHttpServletRequest("POST", "/login"),
-                new MockHttpServletResponse()
+                request,
+                response
         )).isInstanceOf(InternalAuthenticationServiceException.class);
     }
 }

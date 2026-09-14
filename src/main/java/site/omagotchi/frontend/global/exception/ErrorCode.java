@@ -1,6 +1,8 @@
 package site.omagotchi.frontend.global.exception;
 
-public interface ErrorCode {
+import java.io.Serializable;
+
+public interface ErrorCode extends Serializable {
 
     ErrorType type();
 

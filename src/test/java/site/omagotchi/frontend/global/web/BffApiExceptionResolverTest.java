@@ -132,6 +132,7 @@ class BffApiExceptionResolverTest {
                 consumes = MediaType.APPLICATION_JSON_VALUE
         )
         void requestBody(@RequestBody TestRequest request) {
+            // 요청 본문 역직렬화 실패를 유도하기 위한 테스트용 종단점이다.
         }
 
         @GetMapping(

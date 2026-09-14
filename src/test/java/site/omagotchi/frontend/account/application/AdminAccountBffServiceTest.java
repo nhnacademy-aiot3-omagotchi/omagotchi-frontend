@@ -9,7 +9,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import site.omagotchi.frontend.account.application.port.IdentityAdminAccountClient;
 import site.omagotchi.frontend.account.application.port.LearningCohortManagerClient;
 import site.omagotchi.frontend.account.application.result.AdminAccountPage;
-import site.omagotchi.frontend.account.application.result.AdminAccountView;
 import site.omagotchi.frontend.account.application.result.AdminManagedCohort;
 import site.omagotchi.frontend.account.application.result.IdentityAdminAccount;
 import site.omagotchi.frontend.account.application.result.IdentityAdminAccountPage;

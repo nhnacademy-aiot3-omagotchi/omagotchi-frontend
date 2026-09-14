@@ -728,6 +728,7 @@ class ApiExceptionHandlerTest {
                 consumes = MediaType.APPLICATION_JSON_VALUE
         )
         void requestBody(@Valid @RequestBody TestRequest request) {
+            // Bean Validation과 공통 예외 변환만 검증하는 테스트용 종단점이다.
         }
 
         @GetMapping("/bff/v1/test/errors/framework-not-found")
