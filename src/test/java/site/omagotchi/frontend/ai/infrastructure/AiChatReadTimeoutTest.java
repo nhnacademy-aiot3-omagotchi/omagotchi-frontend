@@ -49,6 +49,7 @@ class AiChatReadTimeoutTest {
     private WebClient.Builder webClientBuilder;
 
     @BeforeAll
+    @SuppressWarnings("java:S2925") // 실제 무응답 서버를 재현하는 지연이며 상태 변화를 기다리는 테스트 대기가 아니다.
     static void startSlowServer() throws IOException {
         // 앞 테스트가 끊고 나가도 서버는 지연 시간을 마저 기다린다. 그 사이 들어오는 연결이
         // 거절되지 않도록 backlog에 여유를 둔다

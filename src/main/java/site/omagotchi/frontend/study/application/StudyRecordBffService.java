@@ -27,6 +27,12 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class StudyRecordBffService {
 
+    private static final String GET_RECORD_OPERATION = "공부 기록 조회";
+    private static final String GET_DAILY_RECORDS_OPERATION = "일별 공부 기록 조회";
+    private static final String GET_MONTHLY_SUMMARY_OPERATION = "월별 공부 시간 조회";
+    private static final String CREATE_RECORD_OPERATION = "공부 기록 생성";
+    private static final String UPDATE_RECORD_OPERATION = "공부 기록 수정";
+
     private final LearningHttpService learningHttpService;
     private final LearningGatewayCallExecutor callExecutor;
     private final LearningCohortContext cohortContext;
@@ -40,11 +46,11 @@ public class StudyRecordBffService {
                 () -> learningHttpService.getStudyRecord(
                         context.bearerToken(), context.cohortId(), studyRecordId)
         );
-        requireStatus(response, HttpStatus.OK, "공부 기록 조회");
+        requireStatus(response, HttpStatus.OK, GET_RECORD_OPERATION);
         return StudyResponseContracts.requireStudyRecord(
-                requireBody(response, "공부 기록 조회"),
+                requireBody(response, GET_RECORD_OPERATION),
                 studyRecordId,
-                "공부 기록 조회"
+                GET_RECORD_OPERATION
         );
     }
 
@@ -57,11 +63,11 @@ public class StudyRecordBffService {
                 () -> learningHttpService.getDailyStudyRecords(
                         context.bearerToken(), context.cohortId(), date.toString())
         );
-        requireStatus(response, HttpStatus.OK, "일별 공부 기록 조회");
+        requireStatus(response, HttpStatus.OK, GET_DAILY_RECORDS_OPERATION);
         return StudyResponseContracts.requireDailyRecords(
-                requireBody(response, "일별 공부 기록 조회"),
+                requireBody(response, GET_DAILY_RECORDS_OPERATION),
                 date,
-                "일별 공부 기록 조회"
+                GET_DAILY_RECORDS_OPERATION
         );
     }
 
@@ -74,11 +80,11 @@ public class StudyRecordBffService {
                 () -> learningHttpService.getMonthlyStudyTimeSummary(
                         context.bearerToken(), context.cohortId(), month.toString())
         );
-        requireStatus(response, HttpStatus.OK, "월별 공부 시간 조회");
+        requireStatus(response, HttpStatus.OK, GET_MONTHLY_SUMMARY_OPERATION);
         return StudyResponseContracts.requireMonthlySummary(
-                requireBody(response, "월별 공부 시간 조회"),
+                requireBody(response, GET_MONTHLY_SUMMARY_OPERATION),
                 month,
-                "월별 공부 시간 조회"
+                GET_MONTHLY_SUMMARY_OPERATION
         );
     }
 
@@ -96,10 +102,10 @@ public class StudyRecordBffService {
                 () -> learningHttpService.createStudyRecord(
                         context.bearerToken(), context.cohortId(), body)
         );
-        requireStatus(response, HttpStatus.CREATED, "공부 기록 생성");
+        requireStatus(response, HttpStatus.CREATED, CREATE_RECORD_OPERATION);
         return StudyResponseContracts.requireStudyRecord(
-                requireBody(response, "공부 기록 생성"),
-                "공부 기록 생성"
+                requireBody(response, CREATE_RECORD_OPERATION),
+                CREATE_RECORD_OPERATION
         );
     }
 
@@ -124,11 +130,11 @@ public class StudyRecordBffService {
                         body
                 )
         );
-        requireStatus(response, HttpStatus.OK, "공부 기록 수정");
+        requireStatus(response, HttpStatus.OK, UPDATE_RECORD_OPERATION);
         return StudyResponseContracts.requireStudyRecord(
-                requireBody(response, "공부 기록 수정"),
+                requireBody(response, UPDATE_RECORD_OPERATION),
                 studyRecordId,
-                "공부 기록 수정"
+                UPDATE_RECORD_OPERATION
         );
     }
 

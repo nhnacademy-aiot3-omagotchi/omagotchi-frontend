@@ -12,6 +12,6 @@ public record AttendancePageResult(
 
     public AttendancePageResult {
         items = items == null ? List.of() : List.copyOf(items);
-        page = Objects.requireNonNull(page, "page");
+        Objects.requireNonNull(page, "page");
     }
 }

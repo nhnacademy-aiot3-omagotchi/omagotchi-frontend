@@ -20,6 +20,9 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class StudyTimerBffService {
 
+    private static final String GET_CURRENT_TIMER_OPERATION = "현재 타이머 조회";
+    private static final String START_TIMER_OPERATION = "타이머 시작";
+
     private final LearningHttpService learningHttpService;
     private final LearningGatewayCallExecutor callExecutor;
     private final LearningCohortContext cohortContext;
@@ -30,10 +33,10 @@ public class StudyTimerBffService {
                 () -> learningHttpService.getCurrentTimer(
                         context.bearerToken(), context.cohortId())
         );
-        requireStatus(response, HttpStatus.OK, "현재 타이머 조회");
+        requireStatus(response, HttpStatus.OK, GET_CURRENT_TIMER_OPERATION);
         return StudyResponseContracts.requireCurrentTimer(
-                requireBody(response, "현재 타이머 조회"),
-                "현재 타이머 조회"
+                requireBody(response, GET_CURRENT_TIMER_OPERATION),
+                GET_CURRENT_TIMER_OPERATION
         );
     }
 
@@ -43,10 +46,10 @@ public class StudyTimerBffService {
                 () -> learningHttpService.startTimer(
                         context.bearerToken(), context.cohortId())
         );
-        requireStatus(response, HttpStatus.CREATED, "타이머 시작");
+        requireStatus(response, HttpStatus.CREATED, START_TIMER_OPERATION);
         return StudyResponseContracts.requireStartedTimer(
-                requireBody(response, "타이머 시작"),
-                "타이머 시작"
+                requireBody(response, START_TIMER_OPERATION),
+                START_TIMER_OPERATION
         );
     }
 

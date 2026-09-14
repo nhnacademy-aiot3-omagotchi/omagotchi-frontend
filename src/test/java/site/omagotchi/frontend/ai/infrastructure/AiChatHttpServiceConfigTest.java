@@ -107,8 +107,8 @@ class AiChatHttpServiceConfigTest {
         WebClientHttpServiceGroupConfigurer learningAiMockConfigurer() {
             return groups -> groups
                     .filterByName(AiChatHttpServiceConfig.GROUP_NAME)
-                    .forEachClient((ignoredGroup, builder) -> builder.exchangeFunction(request -> {
-                        this.request.set(request);
+                    .forEachClient((ignoredGroup, builder) -> builder.exchangeFunction(clientRequest -> {
+                        this.request.set(clientRequest);
                         return Mono.just(ClientResponse.create(HttpStatus.OK)
                                 .header(HttpHeaders.CONTENT_TYPE, MediaType.TEXT_EVENT_STREAM_VALUE)
                                 .body(Objects.requireNonNull(this.responseBody.get()))

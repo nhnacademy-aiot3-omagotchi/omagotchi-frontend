@@ -33,8 +33,7 @@ public class SensorAdminBffService {
     }
 
     public JsonNode getDevices(HttpServletRequest request) {
-        return callWithCohort(request, (token, cohortId) ->
-                sensorAdminHttpService.getSensorDevices(token, cohortId));
+        return callWithCohort(request, sensorAdminHttpService::getSensorDevices);
     }
 
     public JsonNode createDevice(HttpServletRequest request, JsonNode body) {
@@ -77,8 +76,7 @@ public class SensorAdminBffService {
     }
 
     public JsonNode getSpaceThresholds(HttpServletRequest request) {
-        return callWithCohort(request, (token, cohortId) ->
-                sensorAdminHttpService.getSpaceThresholds(token, cohortId));
+        return callWithCohort(request, sensorAdminHttpService::getSpaceThresholds);
     }
 
     public JsonNode applySpaceThreshold(

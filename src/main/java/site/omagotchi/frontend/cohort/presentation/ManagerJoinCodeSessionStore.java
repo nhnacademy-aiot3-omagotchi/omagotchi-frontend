@@ -4,6 +4,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
+import site.omagotchi.frontend.auth.application.result.BrowserSessionTokenBundle;
 import site.omagotchi.frontend.auth.presentation.security.BrowserSessionTokens;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.node.ObjectNode;
@@ -72,7 +73,9 @@ class ManagerJoinCodeSessionStore {
     }
 
     private Optional<UUID> currentUserId(HttpServletRequest request) {
-        return browserSessionTokens.find(request).map(tokenBundle -> tokenBundle.userId());
+        return browserSessionTokens.find(request).map(
+                BrowserSessionTokenBundle::userId
+        );
     }
 
     private String attributeName(Long cohortId) {

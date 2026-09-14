@@ -159,31 +159,18 @@ class IdentityRestAdminAccountClientTest {
                         .isEqualTo(CommonErrorCode.SERVICE_UNAVAILABLE));
     }
 
-    @Test
-    @DisplayName("Identity 필수 사용자 필드 누락의 잘못된 하류 응답 처리")
-    void rejectsMissingRequiredIdentityFieldAsBadGateway() {
-        // Given: 필수 이메일이 누락된 Identity 성공 응답
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("invalidIdentityResponses")
+    @DisplayName("잘못된 Identity 성공 응답 거부")
+    void rejectsInvalidIdentityResponse(
+            String ignoredDescription,
+            String responseBody
+    ) {
+        // Given: 필수 계약이 깨진 Identity 성공 응답
         server.expect(once(), requestTo(BASE_URL + PATH + "?page=0&size=20"))
                 .andRespond(withStatus(HttpStatus.OK)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .body("""
-                                {
-                                  "items": [{
-                                    "accountId": "00000000-0000-0000-0000-000000000001",
-                                    "email": null,
-                                    "name": "관리자",
-                                    "role": "SYSTEM_ADMIN",
-                                    "status": "ACTIVE",
-                                    "createdAt": "2026-08-31T07:00:00Z"
-                                  }],
-                                  "page": {
-                                    "number": 0,
-                                    "size": 20,
-                                    "totalElements": 1,
-                                    "totalPages": 1
-                                  }
-                                }
-                                """));
+                        .body(responseBody));
 
         // When & Then: 잘못된 하류 응답 오류로 거부
         assertThatThrownBy(() -> client.findAccounts(
@@ -191,62 +178,6 @@ class IdentityRestAdminAccountClientTest {
         )).isInstanceOfSatisfying(BusinessException.class, exception ->
                         assertThat(exception.getErrorCode())
                                 .isEqualTo(CommonErrorCode.DOWNSTREAM_INVALID_RESPONSE));
-    }
-
-    @Test
-    @DisplayName("탈퇴 계정의 복구 기한 누락 응답 거부")
-    void rejectsWithdrawnAccountWithoutRecoveryDeadline() {
-        server.expect(once(), requestTo(BASE_URL + PATH + "?page=0&size=20"))
-                .andRespond(withStatus(HttpStatus.OK)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .body("""
-                                {
-                                  "items": [{
-                                    "accountId": "00000000-0000-0000-0000-000000000001",
-                                    "email": "withdrawn@example.com",
-                                    "name": "탈퇴 사용자",
-                                    "role": "USER",
-                                    "status": "WITHDRAWN",
-                                    "failedLoginAttempts": 0,
-                                    "locked": false,
-                                    "lockedUntil": null,
-                                    "statusChangedAt": "2026-08-31T07:30:00Z",
-                                    "recoveryDeadline": null,
-                                    "createdAt": "2026-08-01T07:00:00Z"
-                                  }],
-                                  "page": {
-                                    "number": 0,
-                                    "size": 20,
-                                    "totalElements": 1,
-                                    "totalPages": 1
-                                  }
-                                }
-                                """));
-
-        assertThatThrownBy(() -> client.findAccounts(
-                ACCESS_TOKEN, null, null, null, null, 0, 20, null
-        )).isInstanceOfSatisfying(BusinessException.class, exception ->
-                assertThat(exception.getErrorCode())
-                        .isEqualTo(CommonErrorCode.DOWNSTREAM_INVALID_RESPONSE));
-    }
-
-    @Test
-    @DisplayName("Identity 페이지 메타데이터 누락의 잘못된 하류 응답 처리")
-    void rejectsMissingPageMetadataAsBadGateway() {
-        // Given: page가 누락된 Identity 성공 응답
-        server.expect(once(), requestTo(BASE_URL + PATH + "?page=0&size=20"))
-                .andRespond(withStatus(HttpStatus.OK)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .body("""
-                                {"items": []}
-                                """));
-
-        // When & Then: 잘못된 하류 응답 오류로 거부
-        assertThatThrownBy(() -> client.findAccounts(
-                ACCESS_TOKEN, null, null, null, null, 0, 20, null
-        )).isInstanceOfSatisfying(BusinessException.class, exception ->
-                assertThat(exception.getErrorCode())
-                        .isEqualTo(CommonErrorCode.DOWNSTREAM_INVALID_RESPONSE));
     }
 
     @Test
@@ -316,8 +247,9 @@ class IdentityRestAdminAccountClientTest {
                                 """));
 
         // When & Then: 화면이 해석할 수 있도록 승인 목록 밖의 코드는 삼키지 않는다
+        UUID targetId = UUID.fromString(TARGET_ID);
         assertThatThrownBy(() -> client.changeRole(
-                ACCESS_TOKEN, UUID.fromString(TARGET_ID), "USER", "퇴사 처리"
+                ACCESS_TOKEN, targetId, "USER", "퇴사 처리"
         )).isInstanceOf(BusinessException.class);
     }
 
@@ -332,6 +264,64 @@ class IdentityRestAdminAccountClientTest {
                         "잘못된 조회 조건",
                         HttpStatus.BAD_REQUEST,
                         CommonErrorCode.INVALID_REQUEST
+                )
+        );
+    }
+
+    private static Stream<Arguments> invalidIdentityResponses() {
+        return Stream.of(
+                Arguments.of(
+                        "필수 이메일 누락",
+                        """
+                                {
+                                  "items": [{
+                                    "accountId": "00000000-0000-0000-0000-000000000001",
+                                    "email": null,
+                                    "name": "관리자",
+                                    "role": "SYSTEM_ADMIN",
+                                    "status": "ACTIVE",
+                                    "createdAt": "2026-08-31T07:00:00Z"
+                                  }],
+                                  "page": {
+                                    "number": 0,
+                                    "size": 20,
+                                    "totalElements": 1,
+                                    "totalPages": 1
+                                  }
+                                }
+                                """
+                ),
+                Arguments.of(
+                        "탈퇴 계정 복구 기한 누락",
+                        """
+                                {
+                                  "items": [{
+                                    "accountId": "00000000-0000-0000-0000-000000000001",
+                                    "email": "withdrawn@example.com",
+                                    "name": "탈퇴 사용자",
+                                    "role": "USER",
+                                    "status": "WITHDRAWN",
+                                    "failedLoginAttempts": 0,
+                                    "locked": false,
+                                    "lockedUntil": null,
+                                    "statusChangedAt": "2026-08-31T07:30:00Z",
+                                    "recoveryDeadline": null,
+                                    "createdAt": "2026-08-01T07:00:00Z"
+                                  }],
+                                  "page": {
+                                    "number": 0,
+                                    "size": 20,
+                                    "totalElements": 1,
+                                    "totalPages": 1
+                                  }
+                                }
+                                """
+                ),
+                Arguments.of(
+                        "페이지 메타데이터 누락",
+                        """
+                                {"items": []}
+                                """
                 )
         );
     }

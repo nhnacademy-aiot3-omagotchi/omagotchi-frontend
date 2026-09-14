@@ -74,7 +74,7 @@ class AdminSpaceBffSecurityMvcTest {
     private AdminSpaceBffService service;
 
     @BeforeEach
-    void configureIdentityLogin() throws Exception {
+    void configureIdentityLogin() {
         given(identityAuthClient.login(anyString(), anyString())).willReturn(tokenBundle());
         given(accessTokenRefreshInterceptor.preHandle(any(), any(), any()))
                 .willReturn(true);

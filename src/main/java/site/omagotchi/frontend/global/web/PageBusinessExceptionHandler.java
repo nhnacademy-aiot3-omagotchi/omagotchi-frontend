@@ -7,7 +7,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.servlet.ModelAndView;
-import site.omagotchi.frontend.global.exception.ApiErrorResponse;
 import site.omagotchi.frontend.global.exception.BusinessException;
 import site.omagotchi.frontend.global.exception.CommonErrorCode;
 import site.omagotchi.frontend.global.exception.ErrorCode;
@@ -66,7 +65,6 @@ public class PageBusinessExceptionHandler {
             HttpServletRequest request,
             HttpServletResponse response
     ) {
-        ApiErrorResponse downstream = exception.getErrorResponse();
         int downstreamStatus = exception.getStatusCode().value();
         if (downstreamStatus == HttpStatus.UNAUTHORIZED.value()) {
             return expiredSessionRedirect(request, response);

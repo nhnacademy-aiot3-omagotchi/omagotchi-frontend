@@ -29,6 +29,8 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class LearningRestCohortManagerClient implements LearningCohortManagerClient {
 
+    private static final String BEARER_PREFIX = "Bearer ";
+
     private final LearningCohortManagerHttpService httpService;
     private final RestClientCallExecutor callExecutor;
     private final ApiErrorContractResolver errorResolver;
@@ -40,7 +42,7 @@ public class LearningRestCohortManagerClient implements LearningCohortManagerCli
     ) {
         ResponseEntity<List<LearningUserManagedCohortsResponse>> response = callExecutor.execute(
                 () -> httpService.searchManagedCohorts(
-                        "Bearer " + accessToken,
+                        BEARER_PREFIX + accessToken,
                         new LearningCohortManagerSearchRequest(accountIds)
                 ),
                 exception -> {
@@ -75,7 +77,7 @@ public class LearningRestCohortManagerClient implements LearningCohortManagerCli
     public void assignManager(String accessToken, UUID userId, Long cohortId) {
         ResponseEntity<Void> response = callExecutor.execute(
                 () -> httpService.assignManager(
-                        "Bearer " + accessToken,
+                        BEARER_PREFIX + accessToken,
                         cohortId,
                         new LearningAssignCohortManagerRequest(userId)
                 ),
@@ -94,7 +96,7 @@ public class LearningRestCohortManagerClient implements LearningCohortManagerCli
     public void removeManager(String accessToken, UUID userId, Long cohortId) {
         ResponseEntity<Void> response = callExecutor.execute(
                 () -> httpService.changeMemberRole(
-                        "Bearer " + accessToken,
+                        BEARER_PREFIX + accessToken,
                         cohortId,
                         userId,
                         new LearningChangeCohortMemberRoleRequest("STUDENT")

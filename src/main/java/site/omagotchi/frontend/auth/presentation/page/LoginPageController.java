@@ -21,6 +21,7 @@ public class LoginPageController {
     private static final String LOGIN_VIEW = "pages/auth/login";
     private static final String AUTH_FEEDBACK = "authFeedback";
     private static final String AUTH_FEEDBACK_TYPE = "authFeedbackType";
+    private static final String SUCCESS_FEEDBACK_TYPE = "success";
     private static final DateTimeFormatter RECOVERY_DEADLINE_FORMAT = DateTimeFormatter
             .ofPattern("yyyy년 M월 d일 HH:mm")
             .withZone(ZoneId.of("Asia/Seoul"));
@@ -28,17 +29,17 @@ public class LoginPageController {
             "password-changed",
             new LoginNotice(
                     "비밀번호를 변경했습니다. 새 비밀번호로 다시 로그인해 주세요.",
-                    "success"
+                    SUCCESS_FEEDBACK_TYPE
             ),
             "password-reset",
             new LoginNotice(
                     "비밀번호를 재설정했습니다. 새 비밀번호로 로그인해 주세요.",
-                    "success"
+                    SUCCESS_FEEDBACK_TYPE
             ),
             "account-withdrawn",
             new LoginNotice(
                     "계정 탈퇴를 완료했습니다.",
-                    "success"
+                    SUCCESS_FEEDBACK_TYPE
             ),
             "session-expired",
             new LoginNotice(
@@ -81,7 +82,7 @@ public class LoginPageController {
                     "계정 탈퇴를 완료했습니다. "
                             + RECOVERY_DEADLINE_FORMAT.format(deadline)
                             + "까지 같은 이메일 인증으로 계정과 공부 기록을 복구할 수 있습니다.",
-                    "success"
+                    SUCCESS_FEEDBACK_TYPE
             );
         } catch (DateTimeException ignored) {
             return base;

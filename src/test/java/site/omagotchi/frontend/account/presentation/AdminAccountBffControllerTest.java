@@ -21,7 +21,6 @@ import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -59,14 +58,14 @@ class AdminAccountBffControllerTest {
         // Given: 계정과 기수 관리자 정보가 결합된 Application 결과
         UUID accountId = UUID.randomUUID();
         when(service.findAccounts(
-                eq("admin-token"),
-                eq("kim"),
-                eq("ACTIVE"),
-                eq(true),
-                eq("USER"),
-                eq(0),
-                eq(20),
-                eq("NAME_ASC")
+                "admin-token",
+                "kim",
+                "ACTIVE",
+                true,
+                "USER",
+                0,
+                20,
+                "NAME_ASC"
         )).thenReturn(new AdminAccountPage(
                 List.of(new AdminAccountView(
                         accountId,
@@ -108,14 +107,14 @@ class AdminAccountBffControllerTest {
                 );
 
         verify(service).findAccounts(
-                eq("admin-token"),
-                eq("kim"),
-                eq("ACTIVE"),
-                eq(true),
-                eq("USER"),
-                eq(0),
-                eq(20),
-                eq("NAME_ASC"));
+                "admin-token",
+                "kim",
+                "ACTIVE",
+                true,
+                "USER",
+                0,
+                20,
+                "NAME_ASC");
     }
 
     @Test
@@ -134,7 +133,7 @@ class AdminAccountBffControllerTest {
 
         // Then: Session Access Token과 요청 값을 Application Service에 전달
         verify(service).changeAccountStatus(
-                eq("admin-token"), eq(userId), eq("DISABLED"), eq("부정 사용 신고"));
+                "admin-token", userId, "DISABLED", "부정 사용 신고");
     }
 
     @Test
@@ -195,7 +194,7 @@ class AdminAccountBffControllerTest {
 
         // Then: Session Access Token과 요청 값을 Application Service에 전달
         verify(service).changeAccountRole(
-                eq("admin-token"), eq(userId), eq("SYSTEM_ADMIN"), eq("운영 인수인계"));
+                "admin-token", userId, "SYSTEM_ADMIN", "운영 인수인계");
     }
 
     @Test
@@ -246,7 +245,7 @@ class AdminAccountBffControllerTest {
                 .andExpect(status().isOk());
 
         // Then: Session Access Token과 식별자를 Application Service에 전달
-        verify(service).assignManager(eq("admin-token"), eq(userId), eq(3L));
+        verify(service).assignManager("admin-token", userId, 3L);
     }
 
     @Test
@@ -261,6 +260,6 @@ class AdminAccountBffControllerTest {
                 .andExpect(status().isOk());
 
         // Then: Session Access Token과 식별자를 Application Service에 전달
-        verify(service).removeManager(eq("admin-token"), eq(userId), eq(3L));
+        verify(service).removeManager("admin-token", userId, 3L);
     }
 }
