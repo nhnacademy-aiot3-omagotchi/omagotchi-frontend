@@ -13,6 +13,9 @@ import site.omagotchi.frontend.auth.application.result.BrowserSessionTokenBundle
 import site.omagotchi.frontend.global.exception.BusinessException;
 import site.omagotchi.frontend.global.security.SecurityErrorCode;
 
+import java.time.Duration;
+import java.util.Objects;
+
 // 인증 Controller 실행 전 Access Token 선제 갱신과 Session 유휴 정책 적용
 @Component
 @RequiredArgsConstructor
@@ -44,7 +47,11 @@ public class AccessTokenRefreshInterceptor implements HandlerInterceptor {
             browserSessionTokens.useForCurrentRequest(request, latest);
         }
         // 배포 전 생성된 유효 Session에도 현재 유휴 정책 적용. Token attribute는 변경하지 않는다.
-        int timeoutSeconds = Math.toIntExact(sessionProperties.getTimeout().getSeconds());
+        Duration sessionTimeout = Objects.requireNonNull(
+                sessionProperties.getTimeout(),
+                "spring.session.timeout"
+        );
+        int timeoutSeconds = Math.toIntExact(sessionTimeout.getSeconds());
         if (session.getMaxInactiveInterval() != timeoutSeconds) {
             session.setMaxInactiveInterval(timeoutSeconds);
         }
