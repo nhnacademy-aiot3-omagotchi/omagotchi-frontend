@@ -40,10 +40,11 @@ public class AdminSpaceBffService {
                 () -> learningHttpService.getAdminActiveOccupancies(
                         authorization.bearerToken(request)));
         requireStatus(response, HttpStatus.OK, "관리자 활성 점유 조회");
-        if (response.getBody() == null) {
+        List<LearningAdminActiveOccupancyResponse> body = response.getBody();
+        if (body == null) {
             throw invalidResponse("관리자 활성 점유 조회 성공 응답 Body 누락");
         }
-        return response.getBody().stream()
+        return body.stream()
                 .map(occupancy -> new AdminActiveOccupancyResponse(
                         occupancy.spaceId(), occupancy.spaceName(), occupancy.occupancyId(),
                         occupancy.occupierUserId(), occupancy.occupierDisplayName(), occupancy.participantCount(),
@@ -59,10 +60,11 @@ public class AdminSpaceBffService {
                 () -> learningHttpService.getSpaceOccupancyParticipants(
                         authorization.bearerToken(request), spaceId));
         requireStatus(response, HttpStatus.OK, "관리자 참여자 조회");
-        if (response.getBody() == null) {
+        List<LearningOccupancyParticipantResponse> body = response.getBody();
+        if (body == null) {
             throw invalidResponse("관리자 참여자 조회 성공 응답 Body 누락");
         }
-        return response.getBody().stream()
+        return body.stream()
                 .map(participant -> new OccupancyParticipantResponse(
                         participant.userId(), participant.displayName(), participant.occupier()))
                 .toList();
@@ -194,10 +196,11 @@ public class AdminSpaceBffService {
             String operation
     ) {
         requireStatus(response, expected, operation);
-        if (response.getBody() == null) {
+        JsonNode body = response.getBody();
+        if (body == null) {
             throw invalidResponse(operation + " 성공 응답 Body 누락");
         }
-        return response.getBody();
+        return body;
     }
 
     private static void requireStatus(

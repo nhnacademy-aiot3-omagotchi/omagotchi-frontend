@@ -5,7 +5,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
-import org.springframework.context.support.DefaultMessageSourceResolvable;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.CacheControl;
@@ -309,8 +308,7 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
         // 첫 번째 Bean Validation 필드 오류 메시지 선택
         String message = exception.getBindingResult().getFieldErrors().stream()
                 .findFirst()
-                .filter(error -> error.getDefaultMessage() != null)
-                .map(DefaultMessageSourceResolvable::getDefaultMessage)
+                .flatMap(error -> Optional.ofNullable(error.getDefaultMessage()))
                 .orElse(CommonErrorCode.INVALID_REQUEST.message());
 
         return frameworkResponse(
