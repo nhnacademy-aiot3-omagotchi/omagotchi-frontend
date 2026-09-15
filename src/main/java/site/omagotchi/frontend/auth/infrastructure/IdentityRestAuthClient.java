@@ -73,7 +73,8 @@ public class IdentityRestAuthClient implements IdentityAuthClient {
         requireStatus(response, HttpStatus.OK, "Login");
 
         // 본문 없는 로그인 성공 응답의 502 변환
-        if (response.getBody() == null) {
+        TokenResponse body = response.getBody();
+        if (body == null) {
             throw new BusinessException(
                     CommonErrorCode.DOWNSTREAM_INVALID_RESPONSE,
                     "Identity Login 성공 응답 Body 누락"
@@ -81,7 +82,7 @@ public class IdentityRestAuthClient implements IdentityAuthClient {
         }
 
         // 로그인 응답 검증과 브라우저 세션 토큰 묶음 생성
-        return response.getBody().toTokenBundle();
+        return body.toTokenBundle();
     }
 
     @Override
@@ -102,13 +103,14 @@ public class IdentityRestAuthClient implements IdentityAuthClient {
 
         // Refresh 응답 검증과 브라우저 세션 토큰 묶음 생성
         requireStatus(response, HttpStatus.OK, "Refresh");
-        if (response.getBody() == null) {
+        TokenResponse body = response.getBody();
+        if (body == null) {
             throw new BusinessException(
                     CommonErrorCode.DOWNSTREAM_INVALID_RESPONSE,
                     "Identity Refresh 성공 응답 Body 누락"
             );
         }
-        return response.getBody().toTokenBundle();
+        return body.toTokenBundle();
     }
 
     @Override
