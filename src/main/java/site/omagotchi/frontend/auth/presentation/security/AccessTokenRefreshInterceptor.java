@@ -49,7 +49,7 @@ public class AccessTokenRefreshInterceptor implements HandlerInterceptor {
         // 배포 전 생성된 유효 Session에도 현재 유휴 정책 적용. Token attribute는 변경하지 않는다.
         Duration sessionTimeout = Objects.requireNonNull(
                 sessionProperties.getTimeout(),
-                "server.servlet.session.timeout"
+                "spring.session.timeout"
         );
         int timeoutSeconds = Math.toIntExact(sessionTimeout.getSeconds());
         if (session.getMaxInactiveInterval() != timeoutSeconds) {
