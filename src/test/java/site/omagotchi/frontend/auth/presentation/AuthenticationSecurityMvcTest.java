@@ -1,19 +1,53 @@
 package site.omagotchi.frontend.auth.presentation;
 
+import static java.util.regex.Pattern.compile;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willThrow;
+import static org.mockito.Mockito.clearInvocations;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.document;
+import static org.springframework.restdocs.operation.preprocess.Preprocessors.replacePattern;
+import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
+import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
+import static org.springframework.restdocs.request.RequestDocumentation.formParameters;
+import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
+
+import java.time.Instant;
+import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.restdocs.test.autoconfigure.AutoConfigureRestDocs;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpHeaders;
 import org.springframework.mock.web.MockHttpSession;
+import org.springframework.restdocs.operation.preprocess.OperationRequestPreprocessor;
+import org.springframework.restdocs.operation.preprocess.OperationResponsePreprocessor;
+import org.springframework.restdocs.operation.preprocess.Preprocessors;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.web.WebAttributes;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import site.omagotchi.frontend.auth.application.AuthErrorCode;
 import site.omagotchi.frontend.auth.application.AuthenticationService;
 import site.omagotchi.frontend.auth.application.port.IdentityAuthClient;
@@ -27,50 +61,27 @@ import site.omagotchi.frontend.auth.presentation.security.BrowserTokenSessionAut
 import site.omagotchi.frontend.auth.presentation.security.IdentityLogoutHandler;
 import site.omagotchi.frontend.auth.presentation.security.LoginAuthenticationFailureHandler;
 import site.omagotchi.frontend.global.exception.BusinessException;
-import site.omagotchi.frontend.global.logging.HttpErrorEventLogger;
-import site.omagotchi.frontend.global.web.BffApiExceptionResolver;
 import site.omagotchi.frontend.global.exception.CommonErrorCode;
-import site.omagotchi.frontend.global.web.ServletApiErrorResponseWriter;
+import site.omagotchi.frontend.global.logging.HttpErrorEventLogger;
+import site.omagotchi.frontend.global.security.BffApiSecurityErrorHandler;
 import site.omagotchi.frontend.global.security.BrowserSessionInvalidator;
 import site.omagotchi.frontend.global.security.SecurityConfig;
-import site.omagotchi.frontend.global.security.BffApiSecurityErrorHandler;
-
-import java.time.Instant;
-import java.util.UUID;
-
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.not;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.willThrow;
-import static org.mockito.Mockito.clearInvocations;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
+import site.omagotchi.frontend.global.web.BffApiExceptionResolver;
+import site.omagotchi.frontend.global.web.ServletApiErrorResponseWriter;
 
 @WebMvcTest({LoginPageController.class, PasswordResetPageController.class})
+@AutoConfigureRestDocs(outputDir = "target/generated-snippets")
 @Import({
-        ServletApiErrorResponseWriter.class,
-        BffApiExceptionResolver.class,
-        AuthenticationService.class,
-        BrowserSessionTokens.class,
-        BrowserTokenSessionAuthenticationStrategy.class,
-        BffApiSecurityErrorHandler.class,
-        IdentityLogoutHandler.class,
-        LoginAuthenticationFailureHandler.class,
-        BrowserSessionInvalidator.class,
-        SecurityConfig.class
+    ServletApiErrorResponseWriter.class,
+    BffApiExceptionResolver.class,
+    AuthenticationService.class,
+    BrowserSessionTokens.class,
+    BrowserTokenSessionAuthenticationStrategy.class,
+    BffApiSecurityErrorHandler.class,
+    IdentityLogoutHandler.class,
+    LoginAuthenticationFailureHandler.class,
+    BrowserSessionInvalidator.class,
+    SecurityConfig.class
 })
 class AuthenticationSecurityMvcTest {
 
@@ -129,15 +140,21 @@ class AuthenticationSecurityMvcTest {
 
         // When: Login Form 제출
         MvcResult result = mockMvc.perform(post("/login")
-                        .with(csrf())
-                        .session(anonymousSession)
-                        .param("email", "user@example.com")
-                        .param("password", "password-passphrase"))
-                .andExpectAll(
-                        status().isFound(),
-                        redirectedUrl("/login?error=true")
-                )
-                .andReturn();
+                                .with(csrf())
+                                .session(anonymousSession)
+                                .param("email", "user@example.com")
+                                .param("password", "password-passphrase"))
+                        .andExpectAll(status().isFound(), redirectedUrl("/login?error=true"))
+                        .andDo(document(
+                                "auth-security/login-invalid-credentials",
+                                normalizeRequest(),
+                                normalizeResponse(),
+                                formParameters(
+                                        parameterWithName("email").description("로그인 이메일"),
+                                        parameterWithName("password")
+                                                .description("로그인 비밀번호"),
+                                        parameterWithName("_csrf").description("CSRF 토큰"))))
+                        .andReturn();
 
         // Then: 원본 예외의 Session 저장 방지
         assertThat(result.getRequest().getSession(false).getAttribute(
@@ -212,10 +229,7 @@ class AuthenticationSecurityMvcTest {
         // When: 기존 비밀번호 변경 안내 경로 요청
         // Then: 정식 비밀번호 재설정 경로 이동
         mockMvc.perform(get("/password-change"))
-                .andExpectAll(
-                        status().isFound(),
-                        redirectedUrl("/password-reset")
-                );
+                .andExpectAll(status().isFound(), redirectedUrl("/password-reset"));
     }
 
     @Test
@@ -295,15 +309,21 @@ class AuthenticationSecurityMvcTest {
 
         // When: Login Form 제출
         MvcResult result = mockMvc.perform(post("/login")
-                        .with(csrf())
-                        .session(anonymousSession)
-                        .param("email", " user@example.com ")
-                        .param("password", "password-passphrase"))
-                .andExpectAll(
-                        status().isFound(),
-                        redirectedUrl("/authenticated-landing")
-                )
-                .andReturn();
+                                .with(csrf())
+                                .session(anonymousSession)
+                                .param("email", " user@example.com ")
+                                .param("password", "password-passphrase"))
+                        .andExpectAll(status().isFound(), redirectedUrl("/authenticated-landing"))
+                        .andDo(document(
+                                "auth-security/login-success",
+                                normalizeRequest(),
+                                normalizeResponse(),
+                                formParameters(
+                                        parameterWithName("email").description("로그인 이메일"),
+                                        parameterWithName("password")
+                                                .description("로그인 비밀번호"),
+                                        parameterWithName("_csrf").description("CSRF 토큰"))))
+                        .andReturn();
 
         // Then: Session ID 교체와 Token 없는 SecurityContext 저장
         assertThat(result.getRequest().getSession(false)).isNotNull();
@@ -311,9 +331,7 @@ class AuthenticationSecurityMvcTest {
                 .isNotEqualTo(anonymousSessionId);
         SecurityContext securityContext = (SecurityContext) result.getRequest()
                 .getSession(false)
-                .getAttribute(
-                HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY
-        );
+                .getAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY);
         assertThat(securityContext).isNotNull();
         assertThat(securityContext.getAuthentication().getDetails()).isNull();
         assertThat(browserSessionTokens.find(result.getRequest()))
@@ -331,10 +349,7 @@ class AuthenticationSecurityMvcTest {
                         .with(csrf())
                         .param("email", "test@test.com")
                         .param("password", "00000000000000000000"))
-                .andExpectAll(
-                        status().isFound(),
-                        redirectedUrl("/system-admin-dashboard")
-                );
+                .andExpectAll(status().isFound(), redirectedUrl("/system-admin-dashboard"));
     }
 
     @Test
@@ -346,8 +361,7 @@ class AuthenticationSecurityMvcTest {
                         .param("email", "user@example.com")
                         .param("password", "password-passphrase"))
                 .andReturn();
-        MockHttpSession authenticatedSession =
-                (MockHttpSession) loginResult.getRequest().getSession(false);
+        MockHttpSession authenticatedSession = (MockHttpSession) loginResult.getRequest().getSession(false);
         BrowserSessionTokenBundle originalTokenBundle = browserSessionTokens
                 .find(loginResult.getRequest())
                 .orElseThrow();
@@ -359,10 +373,7 @@ class AuthenticationSecurityMvcTest {
                         .session(authenticatedSession)
                         .param("email", "other@example.com")
                         .param("password", "other-password"))
-                .andExpectAll(
-                        status().isFound(),
-                        redirectedUrl("/authenticated-landing")
-                )
+                .andExpectAll(status().isFound(), redirectedUrl("/authenticated-landing"))
                 .andReturn();
 
         // Then: Identity 재호출 없는 기존 Token Family 유지
@@ -384,7 +395,15 @@ class AuthenticationSecurityMvcTest {
                         .param("email", "user@example.com")
                         .param("password", "password-passphrase"))
                 // Then: Identity 장애 503 응답
-                .andExpect(status().isServiceUnavailable());
+                .andExpect(status().isServiceUnavailable())
+                .andDo(document(
+                        "auth-security/login-service-failure",
+                        normalizeRequest(),
+                        normalizeResponse(),
+                        formParameters(
+                                parameterWithName("email").description("로그인 이메일"),
+                                parameterWithName("password").description("로그인 비밀번호"),
+                                parameterWithName("_csrf").description("CSRF 토큰"))));
 
         // Then: Provider 재시도 없는 Identity 단일 호출
         verify(identityAuthClient).login("user@example.com", "password-passphrase");
@@ -398,7 +417,14 @@ class AuthenticationSecurityMvcTest {
                         .param("email", "user@example.com")
                         .param("password", "password-passphrase"))
                 // Then: HTML 403 응답
-                .andExpect(status().isForbidden());
+                .andExpect(status().isForbidden())
+                .andDo(document(
+                        "auth-security/login-csrf-forbidden",
+                        normalizeRequest(),
+                        normalizeResponse(),
+                        formParameters(
+                                parameterWithName("email").description("로그인 이메일"),
+                                parameterWithName("password").description("로그인 비밀번호"))));
     }
 
     @Test
@@ -419,10 +445,7 @@ class AuthenticationSecurityMvcTest {
         // When: 미인증 Home 요청
         mockMvc.perform(get("/home"))
                 // Then: 일반 Login 이동
-                .andExpectAll(
-                        status().isFound(),
-                        redirectedUrl("/login")
-                );
+                .andExpectAll(status().isFound(), redirectedUrl("/login"));
     }
 
     @Test
@@ -435,8 +458,15 @@ class AuthenticationSecurityMvcTest {
                         status().isUnauthorized(),
                         content().contentTypeCompatibleWith("application/json"),
                         jsonPath("$.code").value("AUTH_AUTHENTICATION_REQUIRED"),
-                        jsonPath("$.path").value("/bff/v1/example")
-                );
+                        jsonPath("$.path").value("/bff/v1/example"))
+                .andDo(document(
+                        "auth-security/bff-unauthenticated",
+                        normalizeResponse(),
+                        responseFields(
+                                fieldWithPath("code").description("공통 인증 오류 코드"),
+                                fieldWithPath("message").description("오류 메시지"),
+                                fieldWithPath("path").description("요청 경로"),
+                                fieldWithPath("requestId").description("요청 추적 ID"))));
     }
 
     @Test
@@ -448,18 +478,24 @@ class AuthenticationSecurityMvcTest {
                         .param("email", "user@example.com")
                         .param("password", "password-passphrase"))
                 .andReturn();
-        MockHttpSession authenticatedSession =
-                (MockHttpSession) loginResult.getRequest().getSession(false);
+        MockHttpSession authenticatedSession = (MockHttpSession) loginResult.getRequest().getSession(false);
 
         // When: CSRF Token 없는 BFF 상태 변경 요청
-        mockMvc.perform(post("/bff/v1/example")
-                        .session(authenticatedSession))
+        mockMvc.perform(post("/bff/v1/example").session(authenticatedSession))
                 // Then: HTML ERROR dispatch 없는 공통 JSON 403
                 .andExpectAll(
                         status().isForbidden(),
                         content().contentTypeCompatibleWith("application/json"),
-                        jsonPath("$.code").value("AUTH_CSRF_INVALID")
-                );
+                        jsonPath("$.code").value("AUTH_CSRF_INVALID"))
+                .andDo(document(
+                        "auth-security/bff-csrf-forbidden",
+                        normalizeRequest(),
+                        normalizeResponse(),
+                        responseFields(
+                                fieldWithPath("code").description("공통 CSRF 오류 코드"),
+                                fieldWithPath("message").description("오류 메시지"),
+                                fieldWithPath("path").description("요청 경로"),
+                                fieldWithPath("requestId").description("요청 추적 ID"))));
     }
 
     @Test
@@ -471,18 +507,24 @@ class AuthenticationSecurityMvcTest {
                         .param("email", "user@example.com")
                         .param("password", "password-passphrase"))
                 .andReturn();
-        MockHttpSession authenticatedSession =
-                (MockHttpSession) loginResult.getRequest().getSession(false);
+        MockHttpSession authenticatedSession = (MockHttpSession) loginResult.getRequest().getSession(false);
 
         // When: 등록되지 않은 BFF Endpoint 요청
-        mockMvc.perform(get("/bff/v1/missing")
-                        .session(authenticatedSession))
+        mockMvc.perform(get("/bff/v1/missing").session(authenticatedSession))
                 // Then: Page 404가 아닌 공통 JSON 404
                 .andExpectAll(
                         status().isNotFound(),
                         content().contentTypeCompatibleWith("application/json"),
-                        jsonPath("$.code").value("COMMON_NOT_FOUND")
-                );
+                        jsonPath("$.code").value("COMMON_NOT_FOUND"))
+                .andDo(document(
+                        "auth-security/bff-not-found",
+                        normalizeRequest(),
+                        normalizeResponse(),
+                        responseFields(
+                                fieldWithPath("code").description("공통 미등록 경로 오류 코드"),
+                                fieldWithPath("message").description("오류 메시지"),
+                                fieldWithPath("path").description("요청 경로"),
+                                fieldWithPath("requestId").description("요청 추적 ID"))));
     }
 
     @Test
@@ -494,17 +536,15 @@ class AuthenticationSecurityMvcTest {
                         .param("email", "user@example.com")
                         .param("password", "password-passphrase"))
                 .andReturn();
-        MockHttpSession authenticatedSession =
-                (MockHttpSession) loginResult.getRequest().getSession(false);
+        MockHttpSession authenticatedSession = (MockHttpSession) loginResult.getRequest().getSession(false);
 
         // When: Spring Security Logout Form 제출
-        mockMvc.perform(post("/logout")
-                        .with(csrf())
-                        .session(authenticatedSession))
-                .andExpectAll(
-                        status().isFound(),
-                        redirectedUrl("/login")
-                );
+        mockMvc.perform(post("/logout").with(csrf()).session(authenticatedSession))
+                .andExpectAll(status().isFound(), redirectedUrl("/login"))
+                .andDo(document(
+                        "auth-security/logout-success",
+                        normalizeRequest(),
+                        normalizeResponse()));
 
         // Then: Identity Refresh Token 폐기와 Local Session 무효화
         verify(identityAuthClient).logout("refresh-token");
@@ -520,20 +560,18 @@ class AuthenticationSecurityMvcTest {
                         .param("email", "user@example.com")
                         .param("password", "password-passphrase"))
                 .andReturn();
-        MockHttpSession authenticatedSession =
-                (MockHttpSession) loginResult.getRequest().getSession(false);
+        MockHttpSession authenticatedSession = (MockHttpSession) loginResult.getRequest().getSession(false);
         willThrow(new BusinessException(CommonErrorCode.SERVICE_UNAVAILABLE))
                 .given(identityAuthClient)
                 .logout("refresh-token");
 
         // When: Spring Security Logout Form 제출
-        mockMvc.perform(post("/logout")
-                        .with(csrf())
-                        .session(authenticatedSession))
-                .andExpectAll(
-                        status().isFound(),
-                        redirectedUrl("/login")
-                );
+        mockMvc.perform(post("/logout").with(csrf()).session(authenticatedSession))
+                .andExpectAll(status().isFound(), redirectedUrl("/login"))
+                .andDo(document(
+                        "auth-security/logout-downstream-failure",
+                        normalizeRequest(),
+                        normalizeResponse()));
 
         // Then: Identity 결과와 무관한 Local Session 무효화
         assertThat(authenticatedSession.isInvalid()).isTrue();
@@ -548,8 +586,7 @@ class AuthenticationSecurityMvcTest {
                         .param("email", "user@example.com")
                         .param("password", "password-passphrase"))
                 .andReturn();
-        MockHttpSession authenticatedSession =
-                (MockHttpSession) loginResult.getRequest().getSession(false);
+        MockHttpSession authenticatedSession = (MockHttpSession) loginResult.getRequest().getSession(false);
         willThrow(new IllegalStateException("unexpected identity client failure"))
                 .given(identityAuthClient)
                 .logout("refresh-token");
@@ -558,10 +595,7 @@ class AuthenticationSecurityMvcTest {
         mockMvc.perform(post("/logout")
                         .with(csrf())
                         .session(authenticatedSession))
-                .andExpectAll(
-                        status().isFound(),
-                        redirectedUrl("/login")
-                );
+                .andExpectAll(status().isFound(), redirectedUrl("/login"));
 
         // Then: 예상하지 못한 오류와 무관한 Local Session 무효화
         assertThat(authenticatedSession.isInvalid()).isTrue();
@@ -576,6 +610,18 @@ class AuthenticationSecurityMvcTest {
                 "refresh-token",
                 Instant.parse("2099-01-02T00:00:00Z")
         );
+    }
+
+    private OperationRequestPreprocessor normalizeRequest() {
+        return Preprocessors.preprocessRequest(replacePattern(compile("(?s)_csrf=([^&\\s]+)"), "CSRF_TOKEN"));
+    }
+
+    private OperationResponsePreprocessor normalizeResponse() {
+        return Preprocessors.preprocessResponse(
+                replacePattern(
+                        compile(
+                                "(?s)(?:[\"']?(?:token|csrfToken|XSRF-TOKEN)[\"']?\\s*[:=]\\s*[\"']?)([^\"'&,\\s]+)"),
+                        "CSRF_TOKEN"));
     }
 
     private BrowserSessionTokenBundle systemAdminTokenBundle() {

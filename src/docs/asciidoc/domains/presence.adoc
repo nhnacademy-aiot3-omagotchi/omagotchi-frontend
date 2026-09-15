@@ -1,0 +1,40 @@
+== 재실 상태 BFF
+
+재실 상태 API는 브라우저 세션을 기준으로 주기적인 REST 하트비트를 전달합니다. 응답 스냅샷은
+기수 ID, 현재 재실 사용자 목록, 스냅샷 시각으로 구성됩니다.
+
+=== 재실 상태 조회
+
+`GET /bff/v1/presence`
+
+인증된 브라우저에서 현재 활성 기수의 재실 상태 스냅샷을 새로 조회합니다.
+
+include::{snippets}/presence/get-snapshot/http-request.adoc[]
+include::{snippets}/presence/get-snapshot/http-response.adoc[]
+include::{snippets}/presence/get-snapshot/response-fields.adoc[]
+
+=== 하트비트
+
+`POST /bff/v1/presence/heartbeat`
+
+화면에서 주기적으로 호출합니다. 응답 본문에 최신 스냅샷이 포함되므로 별도의 조회 요청을 추가로 보낼 필요가 없습니다.
+브라우저 요청에는 `X-Presence-Session` 헤더가 필요하지 않습니다. 이 식별자는 Frontend가 세션에서
+생성하고 보관한 뒤 하위 Learning 서비스의 요청에만 내부적으로 전달합니다.
+
+include::{snippets}/presence/heartbeat/http-request.adoc[]
+include::{snippets}/presence/heartbeat/http-response.adoc[]
+include::{snippets}/presence/heartbeat/response-fields.adoc[]
+
+=== 명시적 이탈
+
+`POST /bff/v1/presence/leave`
+
+로그아웃할 때 명시적으로 이탈을 알리는 API입니다. Frontend BFF는 성공하면 빈 본문과 `204 No Content`를 반환하고,
+하위 Learning 서비스에는 `DELETE /api/v1/cohorts/me/presence`로 전달합니다. 일반 탭의 `pagehide` 시점에는 호출하지
+않으며, 하트비트가 중단된 뒤 TTL에 따라 정리됩니다.
+
+`X-Presence-Session`은 Frontend가 세션에서 가져와 하위 서비스 호출에만 추가하는 내부 헤더이므로
+브라우저 계약에 포함하지 않습니다.
+
+include::{snippets}/presence/leave/http-request.adoc[]
+include::{snippets}/presence/leave/http-response.adoc[]

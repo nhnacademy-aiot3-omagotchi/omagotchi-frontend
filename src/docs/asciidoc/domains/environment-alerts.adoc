@@ -1,0 +1,22 @@
+== 환경 및 공실 알림 BFF
+
+이 문서는 MockMvc를 단독으로 구성해 BFF 컨트롤러를 호출하고 확인한 성공 응답 계약을 안내합니다.
+테스트에서는 `SESSION` 쿠키를 자리표시자로 전달하지만 실제 인증 쿠키 필터와 전체 보안 설정은 검증하지 않습니다.
+
+=== 내 기수 공간 환경 조회
+include::{snippets}/environment-alerts/get-space-environment/http-request.adoc[]
+include::{snippets}/environment-alerts/get-space-environment/request-cookies.adoc[]
+include::{snippets}/environment-alerts/get-space-environment/http-response.adoc[]
+include::{snippets}/environment-alerts/get-space-environment/response-fields.adoc[]
+
+=== 내 공실 알림 목록 조회
+include::{snippets}/environment-alerts/get-vacancy-alerts/http-request.adoc[]
+include::{snippets}/environment-alerts/get-vacancy-alerts/request-cookies.adoc[]
+include::{snippets}/environment-alerts/get-vacancy-alerts/http-response.adoc[]
+include::{snippets}/environment-alerts/get-vacancy-alerts/response-fields.adoc[]
+
+=== 공실 알림 취소
+include::{snippets}/environment-alerts/cancel-vacancy-alert/http-request.adoc[]
+include::{snippets}/environment-alerts/cancel-vacancy-alert/request-cookies.adoc[]
+include::{snippets}/environment-alerts/cancel-vacancy-alert/path-parameters.adoc[]
+include::{snippets}/environment-alerts/cancel-vacancy-alert/http-response.adoc[]

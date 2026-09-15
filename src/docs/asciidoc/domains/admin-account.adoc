@@ -1,0 +1,57 @@
+== 관리자 계정·감사
+
+이 절에서는 MockMvc를 단독으로 구성하고 애플리케이션 서비스의 응답을 모의해 확인한 관리자 계정 BFF의 HTTP 계약을 안내합니다.
+실제 Spring 보안 필터 체인의 관리자 권한·세션 인증 검증은 포함하지 않습니다.
+
+=== 관리자 계정 목록
+
+include::{snippets}/admin-account/list/http-request.adoc[]
+include::{snippets}/admin-account/list/query-parameters.adoc[]
+include::{snippets}/admin-account/list/http-response.adoc[]
+include::{snippets}/admin-account/list/response-fields.adoc[]
+
+=== 계정 상태 변경
+
+include::{snippets}/admin-account/change-status/http-request.adoc[]
+include::{snippets}/admin-account/change-status/path-parameters.adoc[]
+include::{snippets}/admin-account/change-status/request-fields.adoc[]
+include::{snippets}/admin-account/change-status/http-response.adoc[]
+
+=== 로그인 잠금 해제
+
+include::{snippets}/admin-account/unlock-login/http-request.adoc[]
+include::{snippets}/admin-account/unlock-login/path-parameters.adoc[]
+include::{snippets}/admin-account/unlock-login/request-fields.adoc[]
+include::{snippets}/admin-account/unlock-login/http-response.adoc[]
+
+=== 전역 역할 변경
+
+include::{snippets}/admin-account/change-role/http-request.adoc[]
+include::{snippets}/admin-account/change-role/path-parameters.adoc[]
+include::{snippets}/admin-account/change-role/request-fields.adoc[]
+include::{snippets}/admin-account/change-role/http-response.adoc[]
+
+=== 기수 관리자 지정
+
+include::{snippets}/admin-account/assign-managed-cohort/http-request.adoc[]
+include::{snippets}/admin-account/assign-managed-cohort/path-parameters.adoc[]
+include::{snippets}/admin-account/assign-managed-cohort/http-response.adoc[]
+
+=== 기수 관리자 해제
+
+include::{snippets}/admin-account/remove-managed-cohort/http-request.adoc[]
+include::{snippets}/admin-account/remove-managed-cohort/path-parameters.adoc[]
+include::{snippets}/admin-account/remove-managed-cohort/http-response.adoc[]
+
+=== 관리자 감사 목록
+
+include::{snippets}/admin-account/audit-list/http-request.adoc[]
+include::{snippets}/admin-account/audit-list/query-parameters.adoc[]
+include::{snippets}/admin-account/audit-list/http-response.adoc[]
+include::{snippets}/admin-account/audit-list/response-fields.adoc[]
+
+=== 관리자 감사 목록 기본 조회
+
+include::{snippets}/admin-account/audit-list-default/http-request.adoc[]
+include::{snippets}/admin-account/audit-list-default/http-response.adoc[]
+include::{snippets}/admin-account/audit-list-default/response-fields.adoc[]

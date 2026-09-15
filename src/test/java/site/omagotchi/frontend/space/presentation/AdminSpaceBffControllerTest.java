@@ -1,26 +1,10 @@
 package site.omagotchi.frontend.space.presentation;
 
-import jakarta.servlet.http.HttpServletRequest;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import site.omagotchi.frontend.learning.infrastructure.request.LearningSpaceMutationRequest;
-import site.omagotchi.frontend.learning.infrastructure.request.LearningAssignSpaceCohortRequest;
-import site.omagotchi.frontend.learning.infrastructure.request.LearningUpdateSpaceRequest;
-import site.omagotchi.frontend.space.application.AdminSpaceBffService;
-import site.omagotchi.frontend.space.presentation.response.AdminActiveOccupancyResponse;
-import site.omagotchi.frontend.space.presentation.response.OccupancyParticipantResponse;
-import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.json.JsonMapper;
-
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -28,30 +12,40 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import jakarta.servlet.http.HttpServletRequest;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.web.servlet.MockMvc;
+import site.omagotchi.frontend.learning.infrastructure.request.LearningAssignSpaceCohortRequest;
+import site.omagotchi.frontend.learning.infrastructure.request.LearningSpaceMutationRequest;
+import site.omagotchi.frontend.learning.infrastructure.request.LearningUpdateSpaceRequest;
+import site.omagotchi.frontend.space.application.AdminSpaceBffService;
+import site.omagotchi.frontend.space.presentation.response.AdminActiveOccupancyResponse;
+import site.omagotchi.frontend.space.presentation.response.OccupancyParticipantResponse;
+import site.omagotchi.frontend.support.FrontendMvcTestSupport;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
 
-@ExtendWith(MockitoExtension.class)
-class AdminSpaceBffControllerTest {
+@WebMvcTest(AdminSpaceBffController.class)
+class AdminSpaceBffControllerTest extends FrontendMvcTestSupport {
 
     private static final String UPSERT_BODY = """
             {"name":"회의실 A","type":"MEETING","capacity":8,"cohortId":1}
             """;
     private static final LearningSpaceMutationRequest PAYLOAD =
             new LearningSpaceMutationRequest("회의실 A", "MEETING", 8, 1L);
-    private static final LearningUpdateSpaceRequest UPDATE =
-            new LearningUpdateSpaceRequest("회의실 A", "MEETING", 8);
+    private static final LearningUpdateSpaceRequest UPDATE = new LearningUpdateSpaceRequest("회의실 A", "MEETING", 8);
 
-    @Mock
-    private AdminSpaceBffService service;
-
+    @Autowired
     private MockMvc mockMvc;
 
-    @BeforeEach
-    void setUp() {
-        mockMvc = MockMvcBuilders.standaloneSetup(new AdminSpaceBffController(service)).build();
-    }
+    @MockitoBean
+    private AdminSpaceBffService service;
 
     @Test
     void createsWith201AndBody() throws Exception {
@@ -59,6 +53,8 @@ class AdminSpaceBffControllerTest {
                 .thenReturn(json("{\"id\":3,\"name\":\"회의실 A\"}"));
 
         mockMvc.perform(post("/bff/v1/admin/spaces")
+                        .session(authenticatedSession())
+                        .with(csrf())
                         .contentType("application/json")
                         .content(UPSERT_BODY))
                 .andExpect(status().isCreated())
@@ -73,6 +69,8 @@ class AdminSpaceBffControllerTest {
                 .thenReturn(json("{\"id\":3,\"capacity\":8}"));
 
         mockMvc.perform(put("/bff/v1/admin/spaces/3")
+                        .session(authenticatedSession())
+                        .with(csrf())
                         .contentType("application/json")
                         .content("{\"name\":\"회의실 A\",\"type\":\"MEETING\",\"capacity\":8}"))
                 .andExpect(status().isOk())
@@ -86,7 +84,9 @@ class AdminSpaceBffControllerTest {
         when(service.activate(eq(3L), any(HttpServletRequest.class)))
                 .thenReturn(json("{\"id\":3,\"operationalStatus\":\"ACTIVE\"}"));
 
-        mockMvc.perform(post("/bff/v1/admin/spaces/3/activate"))
+        mockMvc.perform(post("/bff/v1/admin/spaces/3/activate")
+                        .session(authenticatedSession())
+                        .with(csrf()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.operationalStatus").value("ACTIVE"));
     }
@@ -97,6 +97,8 @@ class AdminSpaceBffControllerTest {
                 .thenReturn(json("{\"id\":3,\"operationalStatus\":\"INACTIVE\"}"));
 
         mockMvc.perform(post("/bff/v1/admin/spaces/3/deactivate")
+                        .session(authenticatedSession())
+                        .with(csrf())
                         .contentType("application/json")
                         .content("{\"inactiveReason\":\"정기 점검\"}"))
                 .andExpect(status().isOk())
@@ -107,7 +109,9 @@ class AdminSpaceBffControllerTest {
 
     @Test
     void deletesWith204() throws Exception {
-        mockMvc.perform(delete("/bff/v1/admin/spaces/3"))
+        mockMvc.perform(delete("/bff/v1/admin/spaces/3")
+                        .session(authenticatedSession())
+                        .with(csrf()))
                 .andExpect(status().isNoContent());
 
         verify(service).delete(eq(3L), any(HttpServletRequest.class));
@@ -121,8 +125,13 @@ class AdminSpaceBffControllerTest {
                     .thenReturn(json("{\"id\":3}"));
 
             mockMvc.perform(post("/bff/v1/admin/spaces")
+                            .session(authenticatedSession())
+                            .with(csrf())
                             .contentType("application/json")
-                            .content("{\"name\":\"공간 A\",\"type\":\"" + type + "\",\"capacity\":8,\"cohortId\":1}"))
+                            .content(
+                                    "{\"name\":\"공간 A\",\"type\":\""
+                                            + type
+                                            + "\",\"capacity\":8,\"cohortId\":1}"))
                     .andExpect(status().isCreated());
         }
     }
@@ -134,10 +143,14 @@ class AdminSpaceBffControllerTest {
                 .thenReturn(json("{\"cohortId\":1}"));
 
         mockMvc.perform(put("/bff/v1/admin/spaces/3/cohort")
+                        .session(authenticatedSession())
+                        .with(csrf())
                         .contentType("application/json")
                         .content("{\"cohortId\":1}"))
                 .andExpect(status().isOk());
-        mockMvc.perform(delete("/bff/v1/admin/spaces/3/cohort"))
+        mockMvc.perform(delete("/bff/v1/admin/spaces/3/cohort")
+                        .session(authenticatedSession())
+                        .with(csrf()))
                 .andExpect(status().isNoContent());
 
         verify(service).assignCohort(eq(3L), eq(payload), any(HttpServletRequest.class));
@@ -155,7 +168,7 @@ class AdminSpaceBffControllerTest {
         when(service.getParticipants(eq(3L), any(HttpServletRequest.class))).thenReturn(List.of(
                 new OccupancyParticipantResponse(userId, "점유자", true)));
 
-        mockMvc.perform(get("/bff/v1/admin/spaces/occupancies"))
+        mockMvc.perform(get("/bff/v1/admin/spaces/occupancies").session(authenticatedSession()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].spaceId").value(3))
                 .andExpect(jsonPath("$[0].spaceName").value("회의실 A"))
@@ -167,12 +180,15 @@ class AdminSpaceBffControllerTest {
                 .andExpect(jsonPath("$[0].expiresAt").value("2026-08-28T11:00:00+09:00"))
                 .andExpect(jsonPath("$[0].remainingTimeSeconds").value(3600))
                 .andExpect(jsonPath("$[0].status").value("ACTIVE"));
-        mockMvc.perform(get("/bff/v1/admin/spaces/3/occupancies/participants"))
+        mockMvc.perform(get("/bff/v1/admin/spaces/3/occupancies/participants")
+                        .session(authenticatedSession()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].userId").value(userId.toString()))
                 .andExpect(jsonPath("$[0].displayName").value("점유자"))
                 .andExpect(jsonPath("$[0].occupier").value(true));
-        mockMvc.perform(post("/bff/v1/admin/spaces/3/occupancies/force-release"))
+        mockMvc.perform(post("/bff/v1/admin/spaces/3/occupancies/force-release")
+                        .session(authenticatedSession())
+                        .with(csrf()))
                 .andExpect(status().isNoContent());
 
         verify(service).forceRelease(eq(3L), any(HttpServletRequest.class));

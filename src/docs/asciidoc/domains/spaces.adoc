@@ -1,0 +1,52 @@
+== 공간 BFF
+
+=== 공간 목록
+include::{snippets}/spaces-bff/find-all/http-request.adoc[]
+include::{snippets}/spaces-bff/find-all/http-response.adoc[]
+include::{snippets}/spaces-bff/find-all/response-fields.adoc[]
+=== 선택 가능 실습실
+include::{snippets}/spaces-bff/labs/http-request.adoc[]
+include::{snippets}/spaces-bff/labs/http-response.adoc[]
+include::{snippets}/spaces-bff/labs/response-fields.adoc[]
+=== 점유 시작
+include::{snippets}/spaces-bff/start-occupancy/http-request.adoc[]
+include::{snippets}/spaces-bff/start-occupancy/http-response.adoc[]
+include::{snippets}/spaces-bff/start-occupancy/path-parameters.adoc[]
+include::{snippets}/spaces-bff/start-occupancy/response-fields.adoc[]
+=== 점유 연장
+include::{snippets}/spaces-bff/extend-occupancy/http-request.adoc[]
+include::{snippets}/spaces-bff/extend-occupancy/http-response.adoc[]
+include::{snippets}/spaces-bff/extend-occupancy/path-parameters.adoc[]
+include::{snippets}/spaces-bff/extend-occupancy/response-fields.adoc[]
+=== 점유 반납
+include::{snippets}/spaces-bff/release-occupancy/http-request.adoc[]
+include::{snippets}/spaces-bff/release-occupancy/http-response.adoc[]
+include::{snippets}/spaces-bff/release-occupancy/path-parameters.adoc[]
+=== 본인 참여 종료
+include::{snippets}/spaces-bff/leave-occupancy/http-request.adoc[]
+include::{snippets}/spaces-bff/leave-occupancy/http-response.adoc[]
+include::{snippets}/spaces-bff/leave-occupancy/path-parameters.adoc[]
+=== 참여자 조회
+include::{snippets}/spaces-bff/participants/http-request.adoc[]
+include::{snippets}/spaces-bff/participants/http-response.adoc[]
+include::{snippets}/spaces-bff/participants/path-parameters.adoc[]
+include::{snippets}/spaces-bff/participants/response-fields.adoc[]
+=== 참여 후보 검색
+include::{snippets}/spaces-bff/candidates/http-request.adoc[]
+include::{snippets}/spaces-bff/candidates/http-response.adoc[]
+include::{snippets}/spaces-bff/candidates/path-parameters.adoc[]
+include::{snippets}/spaces-bff/candidates/query-parameters.adoc[]
+include::{snippets}/spaces-bff/candidates/response-fields.adoc[]
+=== 참여자 추가
+include::{snippets}/spaces-bff/add-participant/http-request.adoc[]
+include::{snippets}/spaces-bff/add-participant/http-response.adoc[]
+include::{snippets}/spaces-bff/add-participant/path-parameters.adoc[]
+include::{snippets}/spaces-bff/add-participant/request-fields.adoc[]
+=== 참여자 제외
+include::{snippets}/spaces-bff/remove-participant/http-request.adoc[]
+include::{snippets}/spaces-bff/remove-participant/http-response.adoc[]
+include::{snippets}/spaces-bff/remove-participant/path-parameters.adoc[]
+=== 공실 알림 신청
+include::{snippets}/spaces-bff/request-vacancy-alert/http-request.adoc[]
+include::{snippets}/spaces-bff/request-vacancy-alert/http-response.adoc[]
+include::{snippets}/spaces-bff/request-vacancy-alert/path-parameters.adoc[]

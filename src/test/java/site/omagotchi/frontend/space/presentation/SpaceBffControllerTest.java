@@ -1,48 +1,45 @@
 package site.omagotchi.frontend.space.presentation;
 
-import jakarta.servlet.http.HttpServletRequest;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import site.omagotchi.frontend.space.application.SpaceBffService;
-import site.omagotchi.frontend.space.application.result.OccupancyView;
-import site.omagotchi.frontend.space.application.result.SpaceView;
-import site.omagotchi.frontend.space.application.result.ParticipantCandidateView;
-import site.omagotchi.frontend.space.application.result.OccupancyParticipantView;
-import site.omagotchi.frontend.space.application.result.SelectableLabView;
-
-import java.time.OffsetDateTime;
-import java.util.List;
-import java.util.UUID;
-
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@ExtendWith(MockitoExtension.class)
-class SpaceBffControllerTest {
+import jakarta.servlet.http.HttpServletRequest;
+import java.time.OffsetDateTime;
+import java.util.List;
+import java.util.UUID;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentMatchers;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.restdocs.test.autoconfigure.AutoConfigureRestDocs;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.web.servlet.MockMvc;
+import site.omagotchi.frontend.space.application.SpaceBffService;
+import site.omagotchi.frontend.space.application.result.OccupancyParticipantView;
+import site.omagotchi.frontend.space.application.result.OccupancyView;
+import site.omagotchi.frontend.space.application.result.ParticipantCandidateView;
+import site.omagotchi.frontend.space.application.result.SelectableLabView;
+import site.omagotchi.frontend.space.application.result.SpaceView;
+import site.omagotchi.frontend.support.FrontendMvcTestSupport;
 
-    @Mock
-    private SpaceBffService spaceBffService;
+@WebMvcTest(SpaceBffController.class)
+@AutoConfigureRestDocs(outputDir = "target/generated-snippets")
+class SpaceBffControllerTest extends FrontendMvcTestSupport {
 
+    @Autowired
     private MockMvc mockMvc;
 
-    @BeforeEach
-    void setUp() {
-        mockMvc = MockMvcBuilders.standaloneSetup(
-                new SpaceBffController(spaceBffService)
-        ).build();
-    }
+    @MockitoBean
+    private SpaceBffService spaceBffService;
 
     @Test
     @DisplayName("공간 목록 BFF는 요청자 전용 상태를 200 응답으로 변환")
@@ -66,7 +63,7 @@ class SpaceBffControllerTest {
                 )
         ));
 
-        mockMvc.perform(get("/bff/v1/spaces"))
+        mockMvc.perform(get("/bff/v1/spaces").session(authenticatedSession()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].spaceId").value(1))
                 .andExpect(jsonPath("$[0].occupiedByRequester").value(true))
@@ -90,7 +87,7 @@ class SpaceBffControllerTest {
                         2L
                 )));
 
-        mockMvc.perform(get("/bff/v1/spaces/labs"))
+        mockMvc.perform(get("/bff/v1/spaces/labs").session(authenticatedSession()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].spaceId").value(11))
                 .andExpect(jsonPath("$[0].capacity").value(2))
@@ -102,62 +99,59 @@ class SpaceBffControllerTest {
     @Test
     @DisplayName("점유 시작 BFF는 201과 응답 본문을 반환")
     void startsOccupancy() throws Exception {
-        when(spaceBffService.startOccupancy(
-                org.mockito.ArgumentMatchers.eq(3L),
-                any(HttpServletRequest.class)
-        )).thenReturn(occupancyView());
+        when(spaceBffService.startOccupancy(ArgumentMatchers.eq(3L), any(HttpServletRequest.class)))
+                .thenReturn(occupancyView());
 
-        mockMvc.perform(post("/bff/v1/spaces/3/occupancies"))
+        mockMvc.perform(post("/bff/v1/spaces/3/occupancies")
+                        .with(csrf())
+                        .session(authenticatedSession()))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.occupancyId").value(9))
                 .andExpect(jsonPath("$.spaceId").value(3));
 
-        verify(spaceBffService).startOccupancy(
-                org.mockito.ArgumentMatchers.eq(3L),
-                any(HttpServletRequest.class)
-        );
+        verify(spaceBffService)
+                .startOccupancy(ArgumentMatchers.eq(3L), any(HttpServletRequest.class));
     }
 
     @Test
     @DisplayName("점유 연장 BFF는 200과 응답 본문을 반환")
     void extendsOccupancy() throws Exception {
         when(spaceBffService.extendOccupancy(
-                org.mockito.ArgumentMatchers.eq(3L),
-                any(HttpServletRequest.class)
-        )).thenReturn(occupancyView());
+                        ArgumentMatchers.eq(3L), any(HttpServletRequest.class)))
+                .thenReturn(occupancyView());
 
-        mockMvc.perform(post("/bff/v1/spaces/3/occupancies/extend"))
+        mockMvc.perform(post("/bff/v1/spaces/3/occupancies/extend")
+                        .with(csrf())
+                        .session(authenticatedSession()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.extensionCount").value(1));
 
-        verify(spaceBffService).extendOccupancy(
-                org.mockito.ArgumentMatchers.eq(3L),
-                any(HttpServletRequest.class)
-        );
+        verify(spaceBffService)
+                .extendOccupancy(ArgumentMatchers.eq(3L), any(HttpServletRequest.class));
     }
 
     @Test
     @DisplayName("점유 반납 BFF는 204를 반환")
     void releasesOccupancy() throws Exception {
-        mockMvc.perform(post("/bff/v1/spaces/3/occupancies/release"))
+        mockMvc.perform(post("/bff/v1/spaces/3/occupancies/release")
+                        .with(csrf())
+                        .session(authenticatedSession()))
                 .andExpect(status().isNoContent());
 
-        verify(spaceBffService).releaseOccupancy(
-                org.mockito.ArgumentMatchers.eq(3L),
-                any(HttpServletRequest.class)
-        );
+        verify(spaceBffService)
+                .releaseOccupancy(ArgumentMatchers.eq(3L), any(HttpServletRequest.class));
     }
 
     @Test
     @DisplayName("본인 참여 종료 BFF는 204를 반환")
     void leavesOccupancy() throws Exception {
-        mockMvc.perform(delete("/bff/v1/spaces/3/occupancies/participants/me"))
+        mockMvc.perform(delete("/bff/v1/spaces/3/occupancies/participants/me")
+                        .with(csrf())
+                        .session(authenticatedSession()))
                 .andExpect(status().isNoContent());
 
-        verify(spaceBffService).leaveOccupancy(
-                org.mockito.ArgumentMatchers.eq(3L),
-                any(HttpServletRequest.class)
-        );
+        verify(spaceBffService)
+                .leaveOccupancy(ArgumentMatchers.eq(3L), any(HttpServletRequest.class));
     }
 
     @Test
@@ -165,14 +159,17 @@ class SpaceBffControllerTest {
     void searchesParticipantCandidates() throws Exception {
         UUID targetId = UUID.randomUUID();
         when(spaceBffService.searchParticipantCandidates(
-                org.mockito.ArgumentMatchers.eq(3L),
-                org.mockito.ArgumentMatchers.eq("사용자"),
-                any(HttpServletRequest.class)
-        )).thenReturn(List.of(new ParticipantCandidateView(
-                targetId, "사용자", "user@example.com", "AVAILABLE")));
+                        ArgumentMatchers.eq(3L),
+                        ArgumentMatchers.eq("사용자"),
+                        any(HttpServletRequest.class)))
+                .thenReturn(
+                        List.of(
+                                new ParticipantCandidateView(
+                                        targetId, "사용자", "user@example.com", "AVAILABLE")));
 
         mockMvc.perform(get("/bff/v1/spaces/3/occupancies/participants/candidates")
-                        .queryParam("query", "사용자"))
+                        .queryParam("query", "사용자")
+                        .session(authenticatedSession()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].userId").value(targetId.toString()))
                 .andExpect(jsonPath("$[0].email").value("user@example.com"));
@@ -183,10 +180,11 @@ class SpaceBffControllerTest {
     void getsParticipants() throws Exception {
         UUID userId = UUID.randomUUID();
         when(spaceBffService.getParticipants(
-                org.mockito.ArgumentMatchers.eq(3L), any(HttpServletRequest.class)))
+                        ArgumentMatchers.eq(3L), any(HttpServletRequest.class)))
                 .thenReturn(List.of(new OccupancyParticipantView(userId, "사용자", true)));
 
-        mockMvc.perform(get("/bff/v1/spaces/3/occupancies/participants"))
+        mockMvc.perform(get("/bff/v1/spaces/3/occupancies/participants")
+                        .session(authenticatedSession()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].occupier").value(true));
     }
@@ -196,39 +194,45 @@ class SpaceBffControllerTest {
     void addsParticipant() throws Exception {
         UUID targetId = UUID.randomUUID();
         mockMvc.perform(post("/bff/v1/spaces/3/occupancies/participants")
-                        .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                        .with(csrf())
+                        .session(authenticatedSession())
+                        .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"targetUserId\":\"" + targetId + "\"}"))
                 .andExpect(status().isCreated());
 
-        verify(spaceBffService).addParticipant(
-                org.mockito.ArgumentMatchers.eq(3L),
-                org.mockito.ArgumentMatchers.eq(targetId),
-                any(HttpServletRequest.class));
+        verify(spaceBffService)
+                .addParticipant(
+                        ArgumentMatchers.eq(3L),
+                        ArgumentMatchers.eq(targetId),
+                        any(HttpServletRequest.class));
     }
 
     @Test
     @DisplayName("대상 참여자 제외 BFF는 204")
     void removesParticipant() throws Exception {
         UUID targetId = UUID.randomUUID();
-        mockMvc.perform(delete("/bff/v1/spaces/3/occupancies/participants/" + targetId))
+        mockMvc.perform(delete("/bff/v1/spaces/3/occupancies/participants/" + targetId)
+                        .with(csrf())
+                        .session(authenticatedSession()))
                 .andExpect(status().isNoContent());
 
-        verify(spaceBffService).removeParticipant(
-                org.mockito.ArgumentMatchers.eq(3L),
-                org.mockito.ArgumentMatchers.eq(targetId),
-                any(HttpServletRequest.class));
+        verify(spaceBffService)
+                .removeParticipant(
+                        ArgumentMatchers.eq(3L),
+                        ArgumentMatchers.eq(targetId),
+                        any(HttpServletRequest.class));
     }
 
     @Test
     @DisplayName("공실 알림 신청 BFF는 201을 반환")
     void requestsVacancyAlert() throws Exception {
-        mockMvc.perform(post("/bff/v1/spaces/3/vacancy-alerts"))
+        mockMvc.perform(post("/bff/v1/spaces/3/vacancy-alerts")
+                        .with(csrf())
+                        .session(authenticatedSession()))
                 .andExpect(status().isCreated());
 
-        verify(spaceBffService).requestVacancyAlert(
-                org.mockito.ArgumentMatchers.eq(3L),
-                any(HttpServletRequest.class)
-        );
+        verify(spaceBffService)
+                .requestVacancyAlert(ArgumentMatchers.eq(3L), any(HttpServletRequest.class));
     }
 
     private static OccupancyView occupancyView() {

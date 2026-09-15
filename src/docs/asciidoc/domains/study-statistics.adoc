@@ -1,0 +1,53 @@
+== 학습 통계 BFF
+
+관리자 학습 통계 BFF는 경로의 기수 ID와 조회 기간을 하위 Learning 서비스에 전달합니다. 아래 문서는
+보안 필터를 통과한 인증 요청을 기반으로 하며, 내부 `Authorization` 헤더는 브라우저 계약에 포함하지 않습니다.
+
+=== 오늘 통계
+
+==== `GET /bff/v1/admin/cohorts/{cohort-id}/study-statistics/today`
+
+include::{snippets}/study-statistics/today/http-request.adoc[]
+include::{snippets}/study-statistics/today/http-response.adoc[]
+include::{snippets}/study-statistics/today/path-parameters.adoc[]
+include::{snippets}/study-statistics/today/response-fields.adoc[]
+
+=== 기간 추이
+
+==== `GET /bff/v1/admin/cohorts/{cohort-id}/study-statistics/trend`
+
+include::{snippets}/study-statistics/trend/http-request.adoc[]
+include::{snippets}/study-statistics/trend/http-response.adoc[]
+include::{snippets}/study-statistics/trend/path-parameters.adoc[]
+include::{snippets}/study-statistics/trend/query-parameters.adoc[]
+include::{snippets}/study-statistics/trend/response-fields.adoc[]
+
+=== 회원 목록
+
+==== `GET /bff/v1/admin/cohorts/{cohort-id}/study-statistics/members`
+
+include::{snippets}/study-statistics/members/http-request.adoc[]
+include::{snippets}/study-statistics/members/http-response.adoc[]
+include::{snippets}/study-statistics/members/path-parameters.adoc[]
+include::{snippets}/study-statistics/members/query-parameters.adoc[]
+include::{snippets}/study-statistics/members/response-fields.adoc[]
+
+=== 회원 요약
+
+==== `GET /bff/v1/admin/cohorts/{cohort-id}/study-statistics/members/{cohort-membership-id}/overview`
+
+include::{snippets}/study-statistics/member-overview/http-request.adoc[]
+include::{snippets}/study-statistics/member-overview/http-response.adoc[]
+include::{snippets}/study-statistics/member-overview/path-parameters.adoc[]
+include::{snippets}/study-statistics/member-overview/query-parameters.adoc[]
+include::{snippets}/study-statistics/member-overview/response-fields.adoc[]
+
+=== 회원 일별 기록
+
+==== `GET /bff/v1/admin/cohorts/{cohort-id}/study-statistics/members/{cohort-membership-id}/records`
+
+include::{snippets}/study-statistics/member-records/http-request.adoc[]
+include::{snippets}/study-statistics/member-records/http-response.adoc[]
+include::{snippets}/study-statistics/member-records/path-parameters.adoc[]
+include::{snippets}/study-statistics/member-records/query-parameters.adoc[]
+include::{snippets}/study-statistics/member-records/response-fields.adoc[]

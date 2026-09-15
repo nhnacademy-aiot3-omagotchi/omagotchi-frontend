@@ -1,32 +1,9 @@
 package site.omagotchi.frontend.ai.presentation;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-import org.springframework.http.MediaType;
-import org.springframework.mock.web.MockHttpSession;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.MvcResult;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import reactor.core.publisher.Flux;
-import site.omagotchi.frontend.ai.application.AiChatBffService;
-import site.omagotchi.frontend.ai.application.port.AiChatClient;
-import site.omagotchi.frontend.auth.application.port.BrowserSessionTokenStore;
-import site.omagotchi.frontend.auth.application.result.BrowserSessionTokenBundle;
-import site.omagotchi.frontend.auth.domain.GlobalRole;
-import site.omagotchi.frontend.auth.presentation.security.BrowserSessionTokens;
-import site.omagotchi.frontend.global.exception.BusinessException;
-import site.omagotchi.frontend.global.learning.application.LearningSessionAuthorization;
-
-import java.time.Instant;
-import java.util.UUID;
-
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.asyncDispatch;
@@ -35,43 +12,50 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.request;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.nio.charset.StandardCharsets;
+import java.time.Instant;
+import java.util.UUID;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
+import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockHttpSession;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
+import reactor.core.publisher.Flux;
+import site.omagotchi.frontend.ai.application.AiChatBffService;
+import site.omagotchi.frontend.ai.application.port.AiChatClient;
+import site.omagotchi.frontend.auth.application.port.BrowserSessionTokenStore;
+import site.omagotchi.frontend.auth.application.result.BrowserSessionTokenBundle;
+import site.omagotchi.frontend.auth.domain.GlobalRole;
+import site.omagotchi.frontend.support.FrontendMvcTestSupport;
+
+@WebMvcTest(AiBffController.class)
+@Import(AiChatBffService.class)
 @DisplayName("AI 채팅 BFF")
-class AiBffControllerTest {
+class AiBffControllerTest extends FrontendMvcTestSupport {
 
+    @MockitoBean
     private AiChatClient aiChatClient;
+
+    @Autowired
     private MockMvc mockMvc;
-
-    @BeforeEach
-    void setUp() {
-        this.aiChatClient = mock(AiChatClient.class);
-        // LearningSessionAuthorization은 mock으로 가리지 않고 실제 객체를 그대로 쓴다
-        // 세션 -> Bearer 토큰 변환 로직 자체가 검증 대상이기 때문
-        LearningSessionAuthorization learningSessionAuthorization =
-                new LearningSessionAuthorization(new BrowserSessionTokens());
-        AiChatBffService aiChatBffService =
-                new AiChatBffService(this.aiChatClient);
-
-        this.mockMvc = MockMvcBuilders
-                .standaloneSetup(new AiBffController(
-                        aiChatBffService,
-                        learningSessionAuthorization
-                ))
-                .build();
-    }
 
     private MockHttpSession sessionWithToken(String accessToken) {
         MockHttpSession session = new MockHttpSession();
-        session.setAttribute(
-                BrowserSessionTokenStore.SESSION_TOKEN_BUNDLE_ATTRIBUTE,
+        BrowserSessionTokenBundle bundle =
                 new BrowserSessionTokenBundle(
                         UUID.randomUUID(),
                         GlobalRole.USER,
                         accessToken,
                         Instant.now().plusSeconds(3600),
                         "refresh-token",
-                        Instant.now().plusSeconds(7200)
-                )
-        );
+                        Instant.now().plusSeconds(7200));
+        session.setAttribute(BrowserSessionTokenStore.SESSION_TOKEN_BUNDLE_ATTRIBUTE, bundle);
+        authenticate(session, bundle);
         return session;
     }
 
@@ -94,11 +78,7 @@ class AiBffControllerTest {
                 .andExpect(status().isOk());
 
         // Then: 사용자 JWT와 요청 값의 손실 없는 전달
-        verify(this.aiChatClient).streamChat(
-                "Bearer access-token-1",
-                "광주 동구 날씨 알려줘",
-                "OLLAMA"
-        );
+        verify(this.aiChatClient).streamChat("Bearer access-token-1", "광주 동구 날씨 알려줘", "OLLAMA");
     }
 
     @Test
@@ -119,11 +99,7 @@ class AiBffControllerTest {
                 .andExpect(status().isOk());
 
         // Then: 기본 모델 GEMINI 전달
-        verify(this.aiChatClient).streamChat(
-                anyString(),
-                eq("서울 날씨 알려줘"),
-                eq("GEMINI")
-        );
+        verify(this.aiChatClient).streamChat(anyString(), eq("서울 날씨 알려줘"), eq("GEMINI"));
     }
 
     @Test
@@ -164,14 +140,12 @@ class AiBffControllerTest {
     }
 
     @Test
-    @DisplayName("세션에 토큰이 없으면 예외를 던지고 Learning을 호출하지 않는다")
-    void throwsWhenSessionTokenMissing() {
-        // When & Then: Session Token 없는 요청의 인증 실패
-        assertThatThrownBy(() -> this.mockMvc.perform(get("/bff/v1/ai/chat")
-                .param("question", "질문")))
-                .hasRootCauseInstanceOf(BusinessException.class);
-
-        // Then: Learning 호출 없음
+    @DisplayName("세션 토큰 누락 시 401 응답")
+    void rejectsWhenSessionTokenMissing() throws Exception {
+        // Given: 세션 토큰이 없는 AI 채팅 요청
+        // When & Then
+        this.mockMvc.perform(get("/bff/v1/ai/chat").param("question", "질문"))
+                .andExpect(status().isUnauthorized());
         verify(this.aiChatClient, never()).streamChat(anyString(), anyString(), anyString());
     }
 
@@ -199,7 +173,7 @@ class AiBffControllerTest {
         // Then: UTF-8 인코딩과 한글 원문 유지
         assertThat(dispatchResult.getResponse().getCharacterEncoding())
                 .isEqualToIgnoringCase("UTF-8");
-        assertThat(dispatchResult.getResponse().getContentAsString(java.nio.charset.StandardCharsets.UTF_8))
+        assertThat(dispatchResult.getResponse().getContentAsString(StandardCharsets.UTF_8))
                 .contains("광주 동구는 맑고 기온은 27도입니다.")
                 .doesNotContain("?");
     }
@@ -224,7 +198,7 @@ class AiBffControllerTest {
                 .andReturn();
 
         // Then: 응답 조각의 순서 유지
-        String body = dispatchResult.getResponse().getContentAsString(java.nio.charset.StandardCharsets.UTF_8);
+        String body = dispatchResult.getResponse().getContentAsString(StandardCharsets.UTF_8);
         // 각 청크가 도착한 순서 그대로 본문에 남아 있어야 한다 (뒤섞이면 안 됨)
         assertThat(body.indexOf("첫")).isLessThan(body.indexOf("번째"));
         assertThat(body.indexOf("번째")).isLessThan(body.indexOf("청크"));

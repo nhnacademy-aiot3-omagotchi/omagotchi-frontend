@@ -1,0 +1,93 @@
+== 관리자 기수
+
+이 절에서는 단독으로 구성한 컨트롤러 테스트와 모의 Learning 프록시 응답으로 확인한 관리자 기수 BFF 계약을 안내합니다.
+브라우저 세션 인증과 관리자 권한 필터 체인 자체는 이 테스트 범위에 포함하지 않습니다.
+
+=== 기수 목록
+include::{snippets}/admin-cohorts/list/http-request.adoc[]
+include::{snippets}/admin-cohorts/list/http-response.adoc[]
+include::{snippets}/admin-cohorts/list/response-fields.adoc[]
+
+=== 기수 생성
+include::{snippets}/admin-cohorts/create/http-request.adoc[]
+include::{snippets}/admin-cohorts/create/request-fields.adoc[]
+include::{snippets}/admin-cohorts/create/http-response.adoc[]
+include::{snippets}/admin-cohorts/create/response-fields.adoc[]
+
+=== 기수 수정
+include::{snippets}/admin-cohorts/update/http-request.adoc[]
+include::{snippets}/admin-cohorts/update/path-parameters.adoc[]
+include::{snippets}/admin-cohorts/update/request-fields.adoc[]
+include::{snippets}/admin-cohorts/update/http-response.adoc[]
+include::{snippets}/admin-cohorts/update/response-fields.adoc[]
+
+=== 기수 상태 변경
+include::{snippets}/admin-cohorts/update-status/http-request.adoc[]
+include::{snippets}/admin-cohorts/update-status/path-parameters.adoc[]
+include::{snippets}/admin-cohorts/update-status/request-fields.adoc[]
+include::{snippets}/admin-cohorts/update-status/http-response.adoc[]
+include::{snippets}/admin-cohorts/update-status/response-fields.adoc[]
+
+=== 기수 삭제
+include::{snippets}/admin-cohorts/delete/http-request.adoc[]
+include::{snippets}/admin-cohorts/delete/path-parameters.adoc[]
+include::{snippets}/admin-cohorts/delete/http-response.adoc[]
+
+=== 기수 회원 목록
+include::{snippets}/admin-cohorts/members/http-request.adoc[]
+include::{snippets}/admin-cohorts/members/path-parameters.adoc[]
+include::{snippets}/admin-cohorts/members/http-response.adoc[]
+include::{snippets}/admin-cohorts/members/response-fields.adoc[]
+
+=== 기수 신청 목록
+include::{snippets}/admin-cohorts/applications/http-request.adoc[]
+include::{snippets}/admin-cohorts/applications/path-parameters.adoc[]
+include::{snippets}/admin-cohorts/applications/http-response.adoc[]
+include::{snippets}/admin-cohorts/applications/response-fields.adoc[]
+
+=== 기수 관리자 추가
+include::{snippets}/admin-cohorts/add-manager/http-request.adoc[]
+include::{snippets}/admin-cohorts/add-manager/path-parameters.adoc[]
+include::{snippets}/admin-cohorts/add-manager/request-fields.adoc[]
+include::{snippets}/admin-cohorts/add-manager/http-response.adoc[]
+include::{snippets}/admin-cohorts/add-manager/response-fields.adoc[]
+
+=== 회원 역할 변경
+include::{snippets}/admin-cohorts/update-member-role/http-request.adoc[]
+include::{snippets}/admin-cohorts/update-member-role/path-parameters.adoc[]
+include::{snippets}/admin-cohorts/update-member-role/request-fields.adoc[]
+include::{snippets}/admin-cohorts/update-member-role/http-response.adoc[]
+include::{snippets}/admin-cohorts/update-member-role/response-fields.adoc[]
+
+=== 신청 승인
+include::{snippets}/admin-cohorts/approve-membership/http-request.adoc[]
+include::{snippets}/admin-cohorts/approve-membership/path-parameters.adoc[]
+include::{snippets}/admin-cohorts/approve-membership/request-fields.adoc[]
+include::{snippets}/admin-cohorts/approve-membership/http-response.adoc[]
+include::{snippets}/admin-cohorts/approve-membership/response-fields.adoc[]
+
+=== 신청 거절
+include::{snippets}/admin-cohorts/reject-membership/http-request.adoc[]
+include::{snippets}/admin-cohorts/reject-membership/path-parameters.adoc[]
+include::{snippets}/admin-cohorts/reject-membership/request-fields.adoc[]
+include::{snippets}/admin-cohorts/reject-membership/http-response.adoc[]
+include::{snippets}/admin-cohorts/reject-membership/response-fields.adoc[]
+
+=== 가입 코드 조회
+include::{snippets}/admin-cohorts/get-join-code/http-request.adoc[]
+include::{snippets}/admin-cohorts/get-join-code/path-parameters.adoc[]
+include::{snippets}/admin-cohorts/get-join-code/http-response.adoc[]
+include::{snippets}/admin-cohorts/get-join-code/response-fields.adoc[]
+
+=== 가입 코드 발급
+include::{snippets}/admin-cohorts/create-join-code/http-request.adoc[]
+include::{snippets}/admin-cohorts/create-join-code/path-parameters.adoc[]
+include::{snippets}/admin-cohorts/create-join-code/request-fields.adoc[]
+include::{snippets}/admin-cohorts/create-join-code/http-response.adoc[]
+include::{snippets}/admin-cohorts/create-join-code/response-fields.adoc[]
+
+=== 가입 코드 폐기
+include::{snippets}/admin-cohorts/revoke-join-code/http-request.adoc[]
+include::{snippets}/admin-cohorts/revoke-join-code/path-parameters.adoc[]
+include::{snippets}/admin-cohorts/revoke-join-code/http-response.adoc[]
+include::{snippets}/admin-cohorts/revoke-join-code/response-fields.adoc[]

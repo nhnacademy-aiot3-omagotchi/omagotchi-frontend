@@ -1,0 +1,42 @@
+== 기수
+
+이 절에서는 로그인한 브라우저 세션의 요청을 처리하는 기수 BFF의 HTTP 계약을 안내합니다.
+테스트는 모의 하위 서비스 응답을 사용하므로 Spring 보안 필터 체인의 인증·인가를 검증하지 않습니다.
+실제 애플리케이션에서는 브라우저 세션에서 인증 정보를 읽고 하위 Learning 서비스를 호출할 때 Access Token을 전달합니다.
+
+=== 내 접근 컨텍스트
+
+include::{snippets}/cohorts/my-access-context/http-request.adoc[]
+include::{snippets}/cohorts/my-access-context/http-response.adoc[]
+include::{snippets}/cohorts/my-access-context/response-fields.adoc[]
+
+=== 기수 목록
+
+include::{snippets}/cohorts/list/http-request.adoc[]
+include::{snippets}/cohorts/list/http-response.adoc[]
+include::{snippets}/cohorts/list/response-fields.adoc[]
+
+=== 기수 상세
+
+include::{snippets}/cohorts/detail/http-request.adoc[]
+include::{snippets}/cohorts/detail/path-parameters.adoc[]
+include::{snippets}/cohorts/detail/http-response.adoc[]
+include::{snippets}/cohorts/detail/response-fields.adoc[]
+
+=== 기수 참가 신청
+
+include::{snippets}/cohorts/apply/http-request.adoc[]
+include::{snippets}/cohorts/apply/request-fields.adoc[]
+include::{snippets}/cohorts/apply/http-response.adoc[]
+include::{snippets}/cohorts/apply/response-fields.adoc[]
+
+=== 내 참가 신청 목록
+
+include::{snippets}/cohorts/my-applications/http-request.adoc[]
+include::{snippets}/cohorts/my-applications/http-response.adoc[]
+include::{snippets}/cohorts/my-applications/response-fields.adoc[]
+
+=== 잘못된 기수 식별자
+
+include::{snippets}/cohorts/invalid-cohort-id/http-request.adoc[]
+include::{snippets}/cohorts/invalid-cohort-id/http-response.adoc[]

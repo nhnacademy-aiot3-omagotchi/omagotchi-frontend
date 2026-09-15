@@ -1,0 +1,70 @@
+== 관리자 공간
+
+이 절에서는 MockMvc를 단독으로 구성해 실제 `AdminSpaceBffController`를 호출하고 확인한 관리자 공간 BFF 계약을 안내합니다.
+인증 필터와 관리자 권한 정책은 이 테스트 범위에 포함하지 않습니다.
+
+=== 활성 점유 목록
+include::{snippets}/admin-spaces/active-occupancies/http-request.adoc[]
+include::{snippets}/admin-spaces/active-occupancies/http-response.adoc[]
+include::{snippets}/admin-spaces/active-occupancies/response-fields.adoc[]
+
+=== 점유 참여자 목록
+include::{snippets}/admin-spaces/occupancy-participants/http-request.adoc[]
+include::{snippets}/admin-spaces/occupancy-participants/path-parameters.adoc[]
+include::{snippets}/admin-spaces/occupancy-participants/http-response.adoc[]
+include::{snippets}/admin-spaces/occupancy-participants/response-fields.adoc[]
+
+=== 공간 현재 체류자
+include::{snippets}/admin-spaces/current-presences/http-request.adoc[]
+include::{snippets}/admin-spaces/current-presences/path-parameters.adoc[]
+include::{snippets}/admin-spaces/current-presences/query-parameters.adoc[]
+include::{snippets}/admin-spaces/current-presences/http-response.adoc[]
+include::{snippets}/admin-spaces/current-presences/response-fields.adoc[]
+
+=== 점유 강제 종료
+include::{snippets}/admin-spaces/force-release/http-request.adoc[]
+include::{snippets}/admin-spaces/force-release/path-parameters.adoc[]
+include::{snippets}/admin-spaces/force-release/http-response.adoc[]
+
+=== 공간 생성
+include::{snippets}/admin-spaces/create/http-request.adoc[]
+include::{snippets}/admin-spaces/create/request-fields.adoc[]
+include::{snippets}/admin-spaces/create/http-response.adoc[]
+include::{snippets}/admin-spaces/create/response-fields.adoc[]
+
+=== 공간 수정
+include::{snippets}/admin-spaces/update/http-request.adoc[]
+include::{snippets}/admin-spaces/update/path-parameters.adoc[]
+include::{snippets}/admin-spaces/update/request-fields.adoc[]
+include::{snippets}/admin-spaces/update/http-response.adoc[]
+include::{snippets}/admin-spaces/update/response-fields.adoc[]
+
+=== 공간 활성화
+include::{snippets}/admin-spaces/activate/http-request.adoc[]
+include::{snippets}/admin-spaces/activate/path-parameters.adoc[]
+include::{snippets}/admin-spaces/activate/http-response.adoc[]
+include::{snippets}/admin-spaces/activate/response-fields.adoc[]
+
+=== 공간 비활성화
+include::{snippets}/admin-spaces/deactivate/http-request.adoc[]
+include::{snippets}/admin-spaces/deactivate/path-parameters.adoc[]
+include::{snippets}/admin-spaces/deactivate/request-fields.adoc[]
+include::{snippets}/admin-spaces/deactivate/http-response.adoc[]
+include::{snippets}/admin-spaces/deactivate/response-fields.adoc[]
+
+=== 공간 삭제
+include::{snippets}/admin-spaces/delete/http-request.adoc[]
+include::{snippets}/admin-spaces/delete/path-parameters.adoc[]
+include::{snippets}/admin-spaces/delete/http-response.adoc[]
+
+=== 공간 기수 배정
+include::{snippets}/admin-spaces/assign-cohort/http-request.adoc[]
+include::{snippets}/admin-spaces/assign-cohort/path-parameters.adoc[]
+include::{snippets}/admin-spaces/assign-cohort/request-fields.adoc[]
+include::{snippets}/admin-spaces/assign-cohort/http-response.adoc[]
+include::{snippets}/admin-spaces/assign-cohort/response-fields.adoc[]
+
+=== 공간 기수 배정 해제
+include::{snippets}/admin-spaces/unassign-cohort/http-request.adoc[]
+include::{snippets}/admin-spaces/unassign-cohort/path-parameters.adoc[]
+include::{snippets}/admin-spaces/unassign-cohort/http-response.adoc[]

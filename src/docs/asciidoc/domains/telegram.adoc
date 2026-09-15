@@ -1,0 +1,29 @@
+== Telegram 연동 BFF
+
+=== 연동 딥링크 발급
+`linkUrl`에 포함된 일회용 연동 토큰은 실제 값을 문서에 남기지 않고 `[LINK_TOKEN]` 자리표시자로 표시합니다.
+
+include::{snippets}/telegram-bff/issue-link-token/http-request.adoc[]
+include::{snippets}/telegram-bff/issue-link-token/http-response.adoc[]
+include::{snippets}/telegram-bff/issue-link-token/response-fields.adoc[]
+
+=== 내 Telegram 연동 조회
+연동된 상태에서는 Telegram 식별자와 알림 설정을 반환합니다.
+
+include::{snippets}/telegram-bff/get-my-link/http-request.adoc[]
+include::{snippets}/telegram-bff/get-my-link/http-response.adoc[]
+include::{snippets}/telegram-bff/get-my-link/response-fields.adoc[]
+
+=== Telegram 알림 설정 변경
+`enabled`는 필수 불리언 값이며, 변경된 연동 상태를 반환합니다.
+
+include::{snippets}/telegram-bff/update-notification/http-request.adoc[]
+include::{snippets}/telegram-bff/update-notification/http-response.adoc[]
+include::{snippets}/telegram-bff/update-notification/request-fields.adoc[]
+include::{snippets}/telegram-bff/update-notification/response-fields.adoc[]
+
+=== Telegram 연동 해제
+
+include::{snippets}/telegram-bff/disconnect/http-request.adoc[]
+include::{snippets}/telegram-bff/disconnect/http-response.adoc[]
+include::{snippets}/telegram-bff/disconnect/response-fields.adoc[]

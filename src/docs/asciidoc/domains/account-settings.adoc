@@ -1,0 +1,52 @@
+== 계정 설정 BFF
+
+=== 공통 계약
+
+이 문서는 브라우저에서 호출하는 계정 설정 BFF의 HTTP 계약을 설명합니다. 인증에는 서버에 저장된 세션과 `SESSION` 쿠키를 사용하며, 문서에는 쿠키 값을 `[SESSION_ID]`로 표시합니다. 아래 계약 테스트는 MockMvc를 단독으로 구성해 컨트롤러를 실행하므로 실제 보안 필터 체인, 세션 쿠키 발급, CSRF 검증까지 보장하지 않습니다. 실제 인증과 CSRF 적용 여부는 공통 인증·보안 문서와 통합 테스트에서 확인합니다.
+
+비밀번호 요청 예시의 `currentPassword`와 `newPassword` 값은 실제 입력값을 기록하지 않고 `[REDACTED]`로 정규화합니다. 브라우저에서 상태 변경 요청을 보낼 때는 CSRF 토큰을 포함해야 합니다. 다만 이 컨트롤러 계약 테스트에는 CSRF 필터가 연결되지 않으므로, 문서에 나온 CSRF 헤더나 파라미터만으로 인증 성공을 보장하지는 않습니다.
+
+모든 개인 계정 응답과 오류 응답은 `Cache-Control: no-store`를 반환합니다.
+
+=== 현재 계정 설정 조회
+
+`GET /bff/v1/users/me`는 현재 인증 계정의 공개 설정만 반환합니다.
+
+include::{snippets}/account-settings-get/http-request.adoc[]
+include::{snippets}/account-settings-get/http-response.adoc[]
+include::{snippets}/account-settings-get/request-cookies.adoc[]
+include::{snippets}/account-settings-get/response-fields.adoc[]
+
+=== 이름 변경
+
+`PATCH /bff/v1/users/me`는 필수 필드인 `name`만 받으며, 성공하면 본문 없이 `204 No Content`를 반환합니다.
+
+include::{snippets}/account-settings-name-patch/http-request.adoc[]
+include::{snippets}/account-settings-name-patch/http-response.adoc[]
+include::{snippets}/account-settings-name-patch/request-fields.adoc[]
+
+=== 비밀번호 변경
+
+`PATCH /bff/v1/users/me/password`는 `currentPassword`와 `newPassword`를 모두 필수로 받으며 성공 시 `204 No Content`를 반환합니다. 성공하면 현재 브라우저 세션을 폐기하고, 실패하면 세션을 유지합니다.
+
+include::{snippets}/account-settings-password-patch/http-request.adoc[]
+include::{snippets}/account-settings-password-patch/http-response.adoc[]
+include::{snippets}/account-settings-password-patch/request-fields.adoc[]
+include::{snippets}/account-settings-password-patch/response-headers.adoc[]
+
+현재 비밀번호가 틀리면 공통 오류 응답 형식으로 `400 Bad Request`를 반환합니다.
+
+include::{snippets}/account-settings-password-mismatch/http-request.adoc[]
+include::{snippets}/account-settings-password-mismatch/http-response.adoc[]
+include::{snippets}/account-settings-password-mismatch/response-headers.adoc[]
+include::{snippets}/account-settings-password-mismatch/response-fields.adoc[]
+
+=== 계정 탈퇴
+
+`DELETE /bff/v1/users/me`는 탈퇴 확인에 사용할 `currentPassword`를 필수로 받습니다. 성공하면 복구 기한을 반환하고 현재 브라우저 세션을 폐기합니다.
+
+include::{snippets}/account-settings-delete/http-request.adoc[]
+include::{snippets}/account-settings-delete/request-fields.adoc[]
+include::{snippets}/account-settings-delete/http-response.adoc[]
+include::{snippets}/account-settings-delete/response-fields.adoc[]
+include::{snippets}/account-settings-delete/response-headers.adoc[]
