@@ -1,0 +1,30 @@
+== 프로필 BFF
+
+프로필 BFF는 인증된 브라우저 세션을 통해 현재 사용자의 프로필을 조회하고 닉네임을 변경합니다.
+아래 문서는 컨트롤러의 응답 계약을 기준으로 하며, 하위 서비스에 전달하는 `Authorization` 헤더는 브라우저 요청 계약에
+포함하지 않습니다. MockMvc 문서 테스트에서는 보안 필터를 통과할 인증 사용자와 CSRF 요청 처리만 설정합니다.
+
+=== 내 프로필 조회
+
+==== `GET /bff/v1/me/profile`
+
+현재 인증된 사용자의 학습 요약, 승인 기수, 대표 캐릭터를 반환합니다.
+
+include::{snippets}/profile/get-my-profile/http-request.adoc[]
+include::{snippets}/profile/get-my-profile/http-response.adoc[]
+include::{snippets}/profile/get-my-profile/response-fields.adoc[]
+
+`userId`는 Frontend가 현재 인증 세션의 사용자 ID로 채웁니다. `approvedCohort`와
+`currentCharacter`는 하위 서비스의 응답 구조를 그대로 전달합니다.
+
+=== 닉네임 변경
+
+==== `PATCH /bff/v1/me/nickname`
+
+JSON 본문의 `nickname`을 받아 변경 결과를 반환합니다. 닉네임에는 한글·영문·숫자만 사용할 수 있으며 길이는 2~12자여야
+합니다. 상태 변경 요청이므로 브라우저에서 CSRF 토큰을 함께 보내야 합니다.
+
+include::{snippets}/profile/update-nickname/http-request.adoc[]
+include::{snippets}/profile/update-nickname/http-response.adoc[]
+include::{snippets}/profile/update-nickname/request-fields.adoc[]
+include::{snippets}/profile/update-nickname/response-fields.adoc[]

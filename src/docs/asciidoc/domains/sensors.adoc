@@ -1,0 +1,53 @@
+== 센서 BFF
+
+=== 공간 목록
+include::{snippets}/sensors/spaces/http-request.adoc[]
+include::{snippets}/sensors/spaces/http-response.adoc[]
+include::{snippets}/sensors/spaces/response-fields.adoc[]
+=== 센서 장치 목록
+include::{snippets}/sensors/devices/http-request.adoc[]
+include::{snippets}/sensors/devices/http-response.adoc[]
+include::{snippets}/sensors/devices/response-fields.adoc[]
+=== 센서 장치 등록
+include::{snippets}/sensors/create-device/http-request.adoc[]
+include::{snippets}/sensors/create-device/request-fields.adoc[]
+include::{snippets}/sensors/create-device/http-response.adoc[]
+include::{snippets}/sensors/create-device/response-fields.adoc[]
+=== 센서 장치 소유권 등록
+include::{snippets}/sensors/claim-device/http-request.adoc[]
+include::{snippets}/sensors/claim-device/request-fields.adoc[]
+include::{snippets}/sensors/claim-device/path-parameters.adoc[]
+include::{snippets}/sensors/claim-device/http-response.adoc[]
+include::{snippets}/sensors/claim-device/response-fields.adoc[]
+=== 센서 장치 수정
+include::{snippets}/sensors/update-device/http-request.adoc[]
+include::{snippets}/sensors/update-device/request-fields.adoc[]
+include::{snippets}/sensors/update-device/path-parameters.adoc[]
+include::{snippets}/sensors/update-device/http-response.adoc[]
+include::{snippets}/sensors/update-device/response-fields.adoc[]
+=== 센서 장치 활성 상태 변경
+include::{snippets}/sensors/update-active/http-request.adoc[]
+include::{snippets}/sensors/update-active/request-fields.adoc[]
+include::{snippets}/sensors/update-active/path-parameters.adoc[]
+include::{snippets}/sensors/update-active/http-response.adoc[]
+include::{snippets}/sensors/update-active/response-fields.adoc[]
+=== 센서 이벤트 조회
+include::{snippets}/sensors/events/http-request.adoc[]
+include::{snippets}/sensors/events/query-parameters.adoc[]
+include::{snippets}/sensors/events/http-response.adoc[]
+include::{snippets}/sensors/events/response-fields.adoc[]
+=== 임계값 목록
+include::{snippets}/sensors/thresholds/http-request.adoc[]
+include::{snippets}/sensors/thresholds/http-response.adoc[]
+include::{snippets}/sensors/thresholds/response-fields.adoc[]
+=== 공간 임계값 적용
+include::{snippets}/sensors/apply-threshold/http-request.adoc[]
+include::{snippets}/sensors/apply-threshold/request-fields.adoc[]
+include::{snippets}/sensors/apply-threshold/path-parameters.adoc[]
+include::{snippets}/sensors/apply-threshold/http-response.adoc[]
+include::{snippets}/sensors/apply-threshold/response-fields.adoc[]
+=== 공간별 시계열 조회
+include::{snippets}/sensors/space-series/http-request.adoc[]
+include::{snippets}/sensors/space-series/query-parameters.adoc[]
+include::{snippets}/sensors/space-series/http-response.adoc[]
+include::{snippets}/sensors/space-series/response-fields.adoc[]

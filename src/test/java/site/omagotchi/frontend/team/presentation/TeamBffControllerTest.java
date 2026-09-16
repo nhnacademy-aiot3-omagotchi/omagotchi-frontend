@@ -1,52 +1,44 @@
 package site.omagotchi.frontend.team.presentation;
 
-import jakarta.servlet.http.HttpServletRequest;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.http.MediaType;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import site.omagotchi.frontend.team.application.TeamBffService;
-import site.omagotchi.frontend.team.application.result.TeamDetailView;
-import site.omagotchi.frontend.team.application.result.TeamMemberCandidateView;
-import site.omagotchi.frontend.team.application.result.TeamMemberView;
-import site.omagotchi.frontend.team.application.result.TeamView;
-
-import java.time.OffsetDateTime;
-import java.util.List;
-import java.util.UUID;
-
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@ExtendWith(MockitoExtension.class)
-class TeamBffControllerTest {
+import jakarta.servlet.http.HttpServletRequest;
+import java.time.OffsetDateTime;
+import java.util.List;
+import java.util.UUID;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.web.servlet.MockMvc;
+import site.omagotchi.frontend.support.FrontendMvcTestSupport;
+import site.omagotchi.frontend.team.application.TeamBffService;
+import site.omagotchi.frontend.team.application.result.TeamDetailView;
+import site.omagotchi.frontend.team.application.result.TeamMemberCandidateView;
+import site.omagotchi.frontend.team.application.result.TeamMemberView;
+import site.omagotchi.frontend.team.application.result.TeamView;
 
-    private static final OffsetDateTime CREATED_AT =
-            OffsetDateTime.parse("2026-09-02T09:00:00+09:00");
+@WebMvcTest(TeamBffController.class)
+class TeamBffControllerTest extends FrontendMvcTestSupport {
 
-    @Mock
-    private TeamBffService teamBffService;
+    private static final OffsetDateTime CREATED_AT = OffsetDateTime.parse("2026-09-02T09:00:00+09:00");
 
+    @Autowired
     private MockMvc mockMvc;
 
-    @BeforeEach
-    void setUp() {
-        mockMvc = MockMvcBuilders.standaloneSetup(
-                new TeamBffController(teamBffService)
-        ).build();
-    }
+    @MockitoBean
+    private TeamBffService teamBffService;
 
     @Test
     @DisplayName("팀 생성 BFF는 201과 팀 공개 응답을 반환한다")
@@ -55,6 +47,8 @@ class TeamBffControllerTest {
                 .thenReturn(teamView());
 
         mockMvc.perform(post("/bff/v1/teams")
+                        .session(authenticatedSession())
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"cohortId\":3,\"name\":\"백엔드 팀\"}"))
                 .andExpect(status().isCreated())
@@ -69,7 +63,7 @@ class TeamBffControllerTest {
         when(teamBffService.getMyTeams(any(HttpServletRequest.class)))
                 .thenReturn(List.of(teamView()));
 
-        mockMvc.perform(get("/bff/v1/teams/me"))
+        mockMvc.perform(get("/bff/v1/teams/me").session(authenticatedSession()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].teamId").value(10))
                 .andExpect(jsonPath("$[0].userId").doesNotExist());
@@ -90,7 +84,7 @@ class TeamBffControllerTest {
                         List.of(new TeamMemberView(101L, "요청자", "MASTER", CREATED_AT))
                 ));
 
-        mockMvc.perform(get("/bff/v1/teams/10"))
+        mockMvc.perform(get("/bff/v1/teams/10").session(authenticatedSession()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.myMemberId").value(101))
                 .andExpect(jsonPath("$.myRole").value("MASTER"))
@@ -109,13 +103,13 @@ class TeamBffControllerTest {
                 targetUserId, "학생", "student@example.com", "AVAILABLE")));
 
         mockMvc.perform(get("/bff/v1/teams/10/member-candidates")
-                        .queryParam("query", "학생"))
+                        .queryParam("query", "학생")
+                        .session(authenticatedSession()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].userId").value(targetUserId.toString()))
                 .andExpect(jsonPath("$[0].status").value("AVAILABLE"));
 
-        verify(teamBffService).searchMemberCandidates(
-                eq(10L), eq("학생"), any(HttpServletRequest.class));
+        verify(teamBffService).searchMemberCandidates(eq(10L), eq("학생"), any(HttpServletRequest.class));
     }
 
     @Test
@@ -124,28 +118,30 @@ class TeamBffControllerTest {
         UUID targetUserId = UUID.randomUUID();
 
         mockMvc.perform(post("/bff/v1/teams/10/members")
+                        .session(authenticatedSession())
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"targetUserId\":\"" + targetUserId + "\"}"))
                 .andExpect(status().isCreated());
 
-        verify(teamBffService).addMember(
-                eq(10L), eq(targetUserId), any(HttpServletRequest.class));
+        verify(teamBffService).addMember(eq(10L), eq(targetUserId), any(HttpServletRequest.class));
     }
 
     @Test
     @DisplayName("팀원 제외 BFF는 memberId를 전달하고 204를 반환한다")
     void kicksMember() throws Exception {
-        mockMvc.perform(delete("/bff/v1/teams/10/members/102"))
+        mockMvc.perform(delete("/bff/v1/teams/10/members/102")
+                        .session(authenticatedSession())
+                        .with(csrf()))
                 .andExpect(status().isNoContent());
 
-        verify(teamBffService).kickMember(
-                eq(10L), eq(102L), any(HttpServletRequest.class));
+        verify(teamBffService).kickMember(eq(10L), eq(102L), any(HttpServletRequest.class));
     }
 
     @Test
     @DisplayName("팀 탈퇴 BFF는 204를 반환한다")
     void leavesTeam() throws Exception {
-        mockMvc.perform(post("/bff/v1/teams/10/leave"))
+        mockMvc.perform(post("/bff/v1/teams/10/leave").session(authenticatedSession()).with(csrf()))
                 .andExpect(status().isNoContent());
 
         verify(teamBffService).leave(eq(10L), any(HttpServletRequest.class));
@@ -154,17 +150,18 @@ class TeamBffControllerTest {
     @Test
     @DisplayName("마스터 위임 BFF는 memberId를 전달하고 204를 반환한다")
     void delegatesMaster() throws Exception {
-        mockMvc.perform(post("/bff/v1/teams/10/members/102/delegate"))
+        mockMvc.perform(post("/bff/v1/teams/10/members/102/delegate")
+                        .session(authenticatedSession())
+                        .with(csrf()))
                 .andExpect(status().isNoContent());
 
-        verify(teamBffService).delegate(
-                eq(10L), eq(102L), any(HttpServletRequest.class));
+        verify(teamBffService).delegate(eq(10L), eq(102L), any(HttpServletRequest.class));
     }
 
     @Test
     @DisplayName("팀 해체 BFF는 204를 반환한다")
     void disbandsTeam() throws Exception {
-        mockMvc.perform(delete("/bff/v1/teams/10"))
+        mockMvc.perform(delete("/bff/v1/teams/10").session(authenticatedSession()).with(csrf()))
                 .andExpect(status().isNoContent());
 
         verify(teamBffService).disband(eq(10L), any(HttpServletRequest.class));

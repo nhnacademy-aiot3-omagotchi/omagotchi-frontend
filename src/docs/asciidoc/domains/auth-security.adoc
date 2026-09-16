@@ -1,0 +1,94 @@
+== 인증과 브라우저 세션 보안
+
+이 문서는 Frontend가 제공하는 브라우저 폼 인증과 BFF 보안 경계를 설명합니다.
+아래 예시는 요청·응답 헤더와 상태 코드 중심으로 정리했으며, HTML 전체는 계약에 포함하지 않습니다.
+MockMvc 기반 문서 테스트에서는 실제 배포 환경의 Servlet 세션 쿠키 발급이 재현되지 않을 수 있으므로,
+쿠키가 없는 응답에 `Set-Cookie` 예시를 추가하지 않습니다.
+
+=== 폼 로그인
+
+`POST /login`은 `email`, `password`, `_csrf` 폼 필드를 받습니다.
+CSRF 값은 문서에서 고정 자리표시자로 표시합니다. 실제로 캡처된 세션 쿠키가 있는 경우에만 그 값을
+자리표시자로 정규화하며, 테스트 응답에 없는 쿠키 헤더를 문서에 추가하지 않습니다.
+
+==== 성공
+
+include::{snippets}/auth-security/login-success/http-request.adoc[]
+include::{snippets}/auth-security/login-success/http-response.adoc[]
+include::{snippets}/auth-security/login-success/form-parameters.adoc[]
+
+성공하면 인증 세션을 만들고 역할에 맞는 초기 화면으로 리디렉션합니다. 인증 결과와 Identity 토큰은
+문서 본문에 노출하지 않습니다.
+
+==== 잘못된 자격 증명
+
+include::{snippets}/auth-security/login-invalid-credentials/http-request.adoc[]
+include::{snippets}/auth-security/login-invalid-credentials/http-response.adoc[]
+include::{snippets}/auth-security/login-invalid-credentials/form-parameters.adoc[]
+
+Identity가 인증 정보를 거부하면 `/login?error=true`로 리디렉션합니다.
+
+==== 연동 서비스 오류
+
+include::{snippets}/auth-security/login-service-failure/http-request.adoc[]
+include::{snippets}/auth-security/login-service-failure/http-response.adoc[]
+include::{snippets}/auth-security/login-service-failure/form-parameters.adoc[]
+
+Identity 연동 오류는 Frontend의 오류 계약으로 변환합니다. Frontend 호출 자격 증명 거절과 연결 장애는 `503 Service Unavailable`, 예상하지 못한 응답 계약은 `502 Bad Gateway`를 반환합니다. 사용자 인증 정보가 잘못된 경우의 로그인 실패 리디렉션과 구분합니다.
+
+==== CSRF 누락
+
+include::{snippets}/auth-security/login-csrf-forbidden/http-request.adoc[]
+include::{snippets}/auth-security/login-csrf-forbidden/http-response.adoc[]
+include::{snippets}/auth-security/login-csrf-forbidden/form-parameters.adoc[]
+
+=== 로그아웃
+
+`POST /logout`은 CSRF 검증 후 Identity 토큰 폐기를 시도하고 로컬 세션을 정리합니다.
+
+==== 성공
+
+include::{snippets}/auth-security/logout-success/http-request.adoc[]
+include::{snippets}/auth-security/logout-success/http-response.adoc[]
+
+==== 하위 서비스 로그아웃 실패
+
+include::{snippets}/auth-security/logout-downstream-failure/http-request.adoc[]
+include::{snippets}/auth-security/logout-downstream-failure/http-response.adoc[]
+
+Identity 로그아웃 호출이 실패해도 로컬 세션은 계속 정리하며 `/login`으로 리디렉션합니다.
+
+=== BFF 공통 보안 오류
+
+`/bff/v1/**` 요청은 브라우저 세션 인증과 CSRF 정책을 적용합니다. `/bff/v1/example`은 실제 API가
+아니라 공통 보안 오류 응답을 설명하기 위한 테스트용 가상 경로입니다. 실제 API 목록에는 포함하지 않습니다.
+
+==== 미인증 401
+
+include::{snippets}/auth-security/bff-unauthenticated/http-request.adoc[]
+include::{snippets}/auth-security/bff-unauthenticated/http-response.adoc[]
+include::{snippets}/auth-security/bff-unauthenticated/response-fields.adoc[]
+
+==== CSRF 누락 403
+
+include::{snippets}/auth-security/bff-csrf-forbidden/http-request.adoc[]
+include::{snippets}/auth-security/bff-csrf-forbidden/http-response.adoc[]
+include::{snippets}/auth-security/bff-csrf-forbidden/response-fields.adoc[]
+
+==== 인증된 미등록 경로 404
+
+include::{snippets}/auth-security/bff-not-found/http-request.adoc[]
+include::{snippets}/auth-security/bff-not-found/http-response.adoc[]
+include::{snippets}/auth-security/bff-not-found/response-fields.adoc[]
+
+=== CSRF 토큰 조회
+
+==== `GET /bff/v1/csrf`
+
+인증된 브라우저 세션에서 이 엔드포인트를 호출하면 현재 세션에 연결된 CSRF 토큰을 반환합니다.
+응답의 `headerName` 값은 이후 상태 변경 요청의 헤더 이름으로 사용하고, `token` 값은 해당 헤더의 값으로
+보냅니다.
+
+include::{snippets}/auth-security/csrf-token/http-request.adoc[]
+include::{snippets}/auth-security/csrf-token/http-response.adoc[]
+include::{snippets}/auth-security/csrf-token/response-fields.adoc[]

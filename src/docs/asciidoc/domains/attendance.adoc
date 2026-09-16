@@ -1,0 +1,55 @@
+== 출석 BFF
+
+=== 출석 이력
+include::{snippets}/attendance-bff/history/http-request.adoc[]
+include::{snippets}/attendance-bff/history/http-response.adoc[]
+include::{snippets}/attendance-bff/history/query-parameters.adoc[]
+include::{snippets}/attendance-bff/history/response-fields.adoc[]
+=== 오늘 출석
+include::{snippets}/attendance-bff/today/http-request.adoc[]
+include::{snippets}/attendance-bff/today/http-response.adoc[]
+include::{snippets}/attendance-bff/today/response-fields.adoc[]
+=== 현재 체류
+include::{snippets}/attendance-bff/current-presence/http-request.adoc[]
+include::{snippets}/attendance-bff/current-presence/http-response.adoc[]
+include::{snippets}/attendance-bff/current-presence/response-fields.adoc[]
+=== 입실
+include::{snippets}/attendance-bff/check-in/http-request.adoc[]
+include::{snippets}/attendance-bff/check-in/http-response.adoc[]
+include::{snippets}/attendance-bff/check-in/response-fields.adoc[]
+=== 퇴실
+include::{snippets}/attendance-bff/check-out/http-request.adoc[]
+include::{snippets}/attendance-bff/check-out/http-response.adoc[]
+include::{snippets}/attendance-bff/check-out/response-fields.adoc[]
+=== 실습 공간 이동
+include::{snippets}/attendance-bff/move-lab/http-request.adoc[]
+include::{snippets}/attendance-bff/move-lab/http-response.adoc[]
+include::{snippets}/attendance-bff/move-lab/request-fields.adoc[]
+include::{snippets}/attendance-bff/move-lab/response-fields.adoc[]
+=== 학습 공간 이동
+include::{snippets}/attendance-bff/move-study/http-request.adoc[]
+include::{snippets}/attendance-bff/move-study/http-response.adoc[]
+include::{snippets}/attendance-bff/move-study/request-fields.adoc[]
+include::{snippets}/attendance-bff/move-study/response-fields.adoc[]
+=== 관리자 출석 정책 조회
+include::{snippets}/attendance-bff/admin-policy-get/http-request.adoc[]
+include::{snippets}/attendance-bff/admin-policy-get/http-response.adoc[]
+include::{snippets}/attendance-bff/admin-policy-get/path-parameters.adoc[]
+include::{snippets}/attendance-bff/admin-policy-get/response-fields.adoc[]
+=== 관리자 출석 정책 수정
+include::{snippets}/attendance-bff/admin-policy-put/http-request.adoc[]
+include::{snippets}/attendance-bff/admin-policy-put/http-response.adoc[]
+include::{snippets}/attendance-bff/admin-policy-put/path-parameters.adoc[]
+include::{snippets}/attendance-bff/admin-policy-put/request-fields.adoc[]
+include::{snippets}/attendance-bff/admin-policy-put/response-fields.adoc[]
+=== 관리자 출석 목록
+include::{snippets}/attendance-bff/admin-records/http-request.adoc[]
+include::{snippets}/attendance-bff/admin-records/http-response.adoc[]
+include::{snippets}/attendance-bff/admin-records/path-parameters.adoc[]
+include::{snippets}/attendance-bff/admin-records/query-parameters.adoc[]
+include::{snippets}/attendance-bff/admin-records/response-fields.adoc[]
+=== 관리자 출석 상태 변경
+include::{snippets}/attendance-bff/admin-status/http-request.adoc[]
+include::{snippets}/attendance-bff/admin-status/http-response.adoc[]
+include::{snippets}/attendance-bff/admin-status/path-parameters.adoc[]
+include::{snippets}/attendance-bff/admin-status/request-fields.adoc[]

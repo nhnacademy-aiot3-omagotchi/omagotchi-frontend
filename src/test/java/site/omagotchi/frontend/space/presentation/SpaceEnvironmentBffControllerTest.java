@@ -1,36 +1,32 @@
 package site.omagotchi.frontend.space.presentation;
 
-import jakarta.servlet.http.HttpServletRequest;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import site.omagotchi.frontend.space.application.SpaceEnvironmentBffService;
-import site.omagotchi.frontend.space.application.result.SpaceEnvironmentView;
-
-import java.time.Instant;
-import java.util.List;
-
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-class SpaceEnvironmentBffControllerTest {
+import jakarta.servlet.http.HttpServletRequest;
+import java.time.Instant;
+import java.util.List;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.web.servlet.MockMvc;
+import site.omagotchi.frontend.space.application.SpaceEnvironmentBffService;
+import site.omagotchi.frontend.space.application.result.SpaceEnvironmentView;
+import site.omagotchi.frontend.support.FrontendMvcTestSupport;
 
-    private SpaceEnvironmentBffService spaceEnvironmentBffService;
+@WebMvcTest(SpaceEnvironmentBffController.class)
+class SpaceEnvironmentBffControllerTest extends FrontendMvcTestSupport {
+
+    @Autowired
     private MockMvc mockMvc;
 
-    @BeforeEach
-    void setUp() {
-        spaceEnvironmentBffService = mock(SpaceEnvironmentBffService.class);
-        mockMvc = MockMvcBuilders
-                .standaloneSetup(new SpaceEnvironmentBffController(spaceEnvironmentBffService))
-                .build();
-    }
+    @MockitoBean
+    private SpaceEnvironmentBffService spaceEnvironmentBffService;
 
     @Test
     @DisplayName("내 기수 공간의 실내 환경을 공간 id와 함께 돌려준다")
@@ -39,7 +35,7 @@ class SpaceEnvironmentBffControllerTest {
                 .thenReturn(List.of(new SpaceEnvironmentView(
                         101L, 612.4, 23.4, 48.0, Instant.parse("2026-09-03T10:00:00Z"), 2)));
 
-        mockMvc.perform(get("/bff/v1/spaces/environment"))
+        mockMvc.perform(get("/bff/v1/spaces/environment").session(authenticatedSession()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].spaceId").value(101))
                 .andExpect(jsonPath("$[0].co2").value(612.4))
@@ -55,7 +51,7 @@ class SpaceEnvironmentBffControllerTest {
         when(spaceEnvironmentBffService.findMyCohortEnvironments(any(HttpServletRequest.class)))
                 .thenReturn(List.of(SpaceEnvironmentView.empty(102L)));
 
-        mockMvc.perform(get("/bff/v1/spaces/environment"))
+        mockMvc.perform(get("/bff/v1/spaces/environment").session(authenticatedSession()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].spaceId").value(102))
                 .andExpect(jsonPath("$[0].co2").doesNotExist())

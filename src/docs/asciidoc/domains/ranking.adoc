@@ -1,0 +1,41 @@
+== 학습 랭킹 BFF
+
+랭킹은 인증 세션에 저장된 승인 기수를 기준으로 조회합니다. 브라우저에서 기수 ID를 보내지 않으며,
+BFF가 세션 정보를 바탕으로 하위 Learning 요청의 `Authorization` 헤더와 기수 ID를 구성합니다.
+
+=== 오늘 순위
+
+==== `GET /bff/v1/study-rankings/today`
+
+include::{snippets}/ranking/today/http-request.adoc[]
+include::{snippets}/ranking/today/http-response.adoc[]
+include::{snippets}/ranking/today/query-parameters.adoc[]
+include::{snippets}/ranking/today/response-fields.adoc[]
+
+=== 일간 순위
+
+==== `GET /bff/v1/study-rankings/daily/{date}`
+
+include::{snippets}/ranking/daily/http-request.adoc[]
+include::{snippets}/ranking/daily/http-response.adoc[]
+include::{snippets}/ranking/daily/path-parameters.adoc[]
+include::{snippets}/ranking/daily/query-parameters.adoc[]
+include::{snippets}/ranking/daily/response-fields.adoc[]
+
+=== 주간 순위
+
+==== `GET /bff/v1/study-rankings/weekly/{week-start-date}`
+
+include::{snippets}/ranking/weekly/http-request.adoc[]
+include::{snippets}/ranking/weekly/http-response.adoc[]
+include::{snippets}/ranking/weekly/path-parameters.adoc[]
+include::{snippets}/ranking/weekly/response-fields.adoc[]
+
+=== 월간 순위
+
+==== `GET /bff/v1/study-rankings/monthly/{month}`
+
+include::{snippets}/ranking/monthly/http-request.adoc[]
+include::{snippets}/ranking/monthly/http-response.adoc[]
+include::{snippets}/ranking/monthly/path-parameters.adoc[]
+include::{snippets}/ranking/monthly/response-fields.adoc[]

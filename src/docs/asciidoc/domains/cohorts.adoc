@@ -1,0 +1,38 @@
+== 기수
+
+=== 내 접근 컨텍스트
+
+include::{snippets}/cohorts/my-access-context/http-request.adoc[]
+include::{snippets}/cohorts/my-access-context/http-response.adoc[]
+include::{snippets}/cohorts/my-access-context/response-fields.adoc[]
+
+=== 기수 목록
+
+include::{snippets}/cohorts/list/http-request.adoc[]
+include::{snippets}/cohorts/list/http-response.adoc[]
+include::{snippets}/cohorts/list/response-fields.adoc[]
+
+=== 기수 상세
+
+include::{snippets}/cohorts/detail/http-request.adoc[]
+include::{snippets}/cohorts/detail/path-parameters.adoc[]
+include::{snippets}/cohorts/detail/http-response.adoc[]
+include::{snippets}/cohorts/detail/response-fields.adoc[]
+
+=== 기수 참가 신청
+
+include::{snippets}/cohorts/apply/http-request.adoc[]
+include::{snippets}/cohorts/apply/request-fields.adoc[]
+include::{snippets}/cohorts/apply/http-response.adoc[]
+include::{snippets}/cohorts/apply/response-fields.adoc[]
+
+=== 내 참가 신청 목록
+
+include::{snippets}/cohorts/my-applications/http-request.adoc[]
+include::{snippets}/cohorts/my-applications/http-response.adoc[]
+include::{snippets}/cohorts/my-applications/response-fields.adoc[]
+
+=== 잘못된 기수 식별자
+
+include::{snippets}/cohorts/invalid-cohort-id/http-request.adoc[]
+include::{snippets}/cohorts/invalid-cohort-id/http-response.adoc[]
