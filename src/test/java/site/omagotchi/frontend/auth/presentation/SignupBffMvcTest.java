@@ -7,7 +7,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.springframework.restdocs.headers.HeaderDocumentation.headerWithName;
 import static org.springframework.restdocs.headers.HeaderDocumentation.responseHeaders;
-import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.document;
 import static org.springframework.restdocs.operation.preprocess.Preprocessors.preprocessRequest;
 import static org.springframework.restdocs.operation.preprocess.Preprocessors.preprocessResponse;
 import static org.springframework.restdocs.operation.preprocess.Preprocessors.prettyPrint;
@@ -21,6 +20,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static site.omagotchi.frontend.support.RestDocs.document;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -134,7 +134,7 @@ class SignupBffMvcTest {
                         jsonPath("$.expiresInSeconds").value(600))
                 .andDo(document(
                         "signup-reset/signup-email-otp",
-                        preprocessRequest(prettyPrint(), secretValues()),
+                        preprocessRequest(prettyPrint()),
                         preprocessResponse(prettyPrint(), normalizeIds()),
                         requestFields(
                                 fieldWithPath("email").description("인증 메일을 받을 이메일"),
@@ -181,7 +181,7 @@ class SignupBffMvcTest {
                         jsonPath("$.outcome").value("CREATED"))
                 .andDo(document(
                         "signup-reset/signup-created",
-                        preprocessRequest(prettyPrint(), secretValues()),
+                        preprocessRequest(prettyPrint()),
                         preprocessResponse(prettyPrint(), normalizeIds()),
                         requestFields(signupFields()),
                         responseHeaders(cacheControlHeader()),
@@ -222,7 +222,7 @@ class SignupBffMvcTest {
                         jsonPath("$.outcome").value("RECOVERED"))
                 .andDo(document(
                         "signup-reset/signup-recovered",
-                        preprocessRequest(prettyPrint(), secretValues()),
+                        preprocessRequest(prettyPrint()),
                         preprocessResponse(prettyPrint(), normalizeIds()),
                         requestFields(signupFields()),
                         responseHeaders(cacheControlHeader()),
@@ -349,7 +349,7 @@ class SignupBffMvcTest {
                         status().isBadRequest(), jsonPath("$.code").value("COMMON_INVALID_REQUEST"))
                 .andDo(document(
                         "signup-reset/signup-invalid-code",
-                        preprocessRequest(prettyPrint(), secretValues()),
+                        preprocessRequest(prettyPrint()),
                         preprocessResponse(prettyPrint(), normalizeIds()),
                         requestFields(signupFields()),
                         responseHeaders(cacheControlHeader()),
@@ -381,7 +381,7 @@ class SignupBffMvcTest {
                         jsonPath("$.code").value("EMAIL_VERIFICATION_INVALID_CHALLENGE"))
                 .andDo(document(
                         "signup-reset/signup-domain-error",
-                        preprocessRequest(prettyPrint(), secretValues()),
+                        preprocessRequest(prettyPrint()),
                         preprocessResponse(prettyPrint(), normalizeIds()),
                         requestFields(signupFields()),
                         responseHeaders(cacheControlHeader()),
@@ -415,7 +415,7 @@ class SignupBffMvcTest {
                         jsonPath("$.code").value("EMAIL_VERIFICATION_COOLDOWN_ACTIVE"))
                 .andDo(document(
                         "signup-reset/signup-cooldown",
-                        preprocessRequest(prettyPrint(), secretValues()),
+                        preprocessRequest(prettyPrint()),
                         preprocessResponse(prettyPrint(), normalizeIds()),
                         requestFields(
                                 fieldWithPath("email").description("인증 메일을 받을 이메일"),
@@ -438,13 +438,6 @@ class SignupBffMvcTest {
                 .as("%s meta content", name)
                 .isTrue();
         return matcher.group(1);
-    }
-
-    private static OperationPreprocessor secretValues() {
-        return replacePattern(
-                Pattern.compile(
-                        "(?:\\\"(?:password|newPassword|code|challengeId)\\\"\\s*:\\s*\\\")([^\\\"]+)"),
-                "[REDACTED]");
     }
 
     private static OperationPreprocessor normalizeIds() {

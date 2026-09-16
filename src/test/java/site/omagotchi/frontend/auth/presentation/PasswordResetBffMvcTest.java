@@ -7,7 +7,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.springframework.restdocs.headers.HeaderDocumentation.headerWithName;
 import static org.springframework.restdocs.headers.HeaderDocumentation.responseHeaders;
-import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.document;
 import static org.springframework.restdocs.operation.preprocess.Preprocessors.preprocessRequest;
 import static org.springframework.restdocs.operation.preprocess.Preprocessors.preprocessResponse;
 import static org.springframework.restdocs.operation.preprocess.Preprocessors.prettyPrint;
@@ -21,6 +20,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static site.omagotchi.frontend.support.RestDocs.document;
 
 import java.util.UUID;
 import java.util.regex.Pattern;
@@ -118,7 +118,7 @@ class PasswordResetBffMvcTest {
                         jsonPath("$.expiresInSeconds").value(300))
                 .andDo(document(
                         "signup-reset/password-reset-email-otp",
-                        preprocessRequest(prettyPrint(), secretValues()),
+                        preprocessRequest(prettyPrint()),
                         preprocessResponse(prettyPrint(), normalizeIds()),
                         requestFields(fieldWithPath("email").description("비밀번호를 재설정할 이메일")),
                         responseHeaders(cacheControlHeader()),
@@ -159,7 +159,7 @@ class PasswordResetBffMvcTest {
                         header().string(HttpHeaders.CACHE_CONTROL, "no-store"))
                 .andDo(document(
                         "signup-reset/password-reset",
-                        preprocessRequest(prettyPrint(), secretValues()),
+                        preprocessRequest(prettyPrint()),
                         preprocessResponse(prettyPrint(), normalizeIds()),
                         requestFields(
                                 fieldWithPath("email").description("비밀번호를 재설정할 이메일"),
@@ -214,7 +214,7 @@ class PasswordResetBffMvcTest {
                         status().isBadRequest(), jsonPath("$.code").value("COMMON_INVALID_REQUEST"))
                 .andDo(document(
                         "signup-reset/password-reset-invalid-code",
-                        preprocessRequest(prettyPrint(), secretValues()),
+                        preprocessRequest(prettyPrint()),
                         preprocessResponse(prettyPrint(), normalizeIds()),
                         requestFields(
                                 fieldWithPath("email").description("비밀번호를 재설정할 이메일"),
@@ -248,7 +248,7 @@ class PasswordResetBffMvcTest {
                         jsonPath("$.code").value("EMAIL_VERIFICATION_COOLDOWN_ACTIVE"))
                 .andDo(document(
                         "signup-reset/password-reset-cooldown",
-                        preprocessRequest(prettyPrint(), secretValues()),
+                        preprocessRequest(prettyPrint()),
                         preprocessResponse(prettyPrint(), normalizeIds()),
                         requestFields(fieldWithPath("email").description("비밀번호를 재설정할 이메일")),
                         responseHeaders(
@@ -284,7 +284,7 @@ class PasswordResetBffMvcTest {
                         jsonPath("$.code").value("AUTH_PASSWORD_RESET_INVALID"))
                 .andDo(document(
                         "signup-reset/password-reset-domain-error",
-                        preprocessRequest(prettyPrint(), secretValues()),
+                        preprocessRequest(prettyPrint()),
                         preprocessResponse(prettyPrint(), normalizeIds()),
                         requestFields(
                                 fieldWithPath("email").description("비밀번호를 재설정할 이메일"),
@@ -294,13 +294,6 @@ class PasswordResetBffMvcTest {
                                 fieldWithPath("code").description("이메일 인증번호 6자리")),
                         responseHeaders(cacheControlHeader()),
                         responseFields(errorFields())));
-    }
-
-    private static OperationPreprocessor secretValues() {
-        return replacePattern(
-                Pattern.compile(
-                        "(?:\\\"(?:password|newPassword|code|challengeId)\\\"\\s*:\\s*\\\")([^\\\"]+)"),
-                "[REDACTED]");
     }
 
     private static OperationPreprocessor normalizeIds() {

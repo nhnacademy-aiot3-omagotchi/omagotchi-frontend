@@ -11,7 +11,6 @@ import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
-import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.document;
 import static org.springframework.restdocs.operation.preprocess.Preprocessors.replacePattern;
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
 import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
@@ -27,6 +26,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
+import static site.omagotchi.frontend.support.RestDocs.document;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -140,10 +140,10 @@ class AuthenticationSecurityMvcTest {
 
         // When: Login Form 제출
         MvcResult result = mockMvc.perform(post("/login")
-                                .with(csrf())
-                                .session(anonymousSession)
-                                .param("email", "user@example.com")
-                                .param("password", "password-passphrase"))
+                        .with(csrf())
+                        .session(anonymousSession)
+                        .param("email", "user@example.com")
+                        .param("password", "password-passphrase"))
                         .andExpectAll(status().isFound(), redirectedUrl("/login?error=true"))
                         .andDo(document(
                                 "auth-security/login-invalid-credentials",
@@ -309,10 +309,10 @@ class AuthenticationSecurityMvcTest {
 
         // When: Login Form 제출
         MvcResult result = mockMvc.perform(post("/login")
-                                .with(csrf())
-                                .session(anonymousSession)
-                                .param("email", " user@example.com ")
-                                .param("password", "password-passphrase"))
+                        .with(csrf())
+                        .session(anonymousSession)
+                        .param("email", " user@example.com ")
+                        .param("password", "password-passphrase"))
                         .andExpectAll(status().isFound(), redirectedUrl("/authenticated-landing"))
                         .andDo(document(
                                 "auth-security/login-success",
@@ -383,7 +383,7 @@ class AuthenticationSecurityMvcTest {
     }
 
     @Test
-    @DisplayName("Login 연동 장애의 원래 HTTP 상태 유지")
+    @DisplayName("로그인 연동 장애 시 503 응답")
     void returnsServiceStatusForLoginFailure() throws Exception {
         // Given: Identity 접속 장애
         given(identityAuthClient.login("user@example.com", "password-passphrase"))
