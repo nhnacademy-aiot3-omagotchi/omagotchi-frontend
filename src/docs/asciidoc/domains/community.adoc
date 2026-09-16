@@ -1,0 +1,78 @@
+== 커뮤니티 BFF
+
+=== 사용자 게시판
+
+`/bff/v1/community/posts`는 세션에 저장된 승인 기수를 기준으로 조회 범위를 결정합니다.
+
+include::{snippets}/community/list-posts/http-request.adoc[]
+include::{snippets}/community/list-posts/query-parameters.adoc[]
+include::{snippets}/community/list-posts/http-response.adoc[]
+include::{snippets}/community/list-posts/response-fields.adoc[]
+
+include::{snippets}/community/get-post/http-response.adoc[]
+include::{snippets}/community/get-post/http-request.adoc[]
+include::{snippets}/community/get-post/path-parameters.adoc[]
+include::{snippets}/community/get-post/response-fields.adoc[]
+
+JSON 생성·수정 요청은 게시글 JSON을 받습니다. `multipart/form-data` 요청은 `post` JSON 파트와 선택 사항인 `attachments` 파일 파트를 받습니다.
+
+include::{snippets}/community/create-post/request-fields.adoc[]
+include::{snippets}/community/create-post/http-request.adoc[]
+include::{snippets}/community/create-post/http-response.adoc[]
+include::{snippets}/community/create-post/response-fields.adoc[]
+include::{snippets}/community/create-post-multipart/request-parts.adoc[]
+include::{snippets}/community/create-post-multipart/http-request.adoc[]
+include::{snippets}/community/create-post-multipart/http-response.adoc[]
+include::{snippets}/community/create-post-multipart/request-part-post-fields.adoc[]
+include::{snippets}/community/create-post-multipart/response-fields.adoc[]
+include::{snippets}/community/update-post/request-fields.adoc[]
+include::{snippets}/community/update-post/http-request.adoc[]
+include::{snippets}/community/update-post/http-response.adoc[]
+include::{snippets}/community/update-post/path-parameters.adoc[]
+include::{snippets}/community/update-post/response-fields.adoc[]
+include::{snippets}/community/update-post-multipart/request-parts.adoc[]
+include::{snippets}/community/update-post-multipart/http-request.adoc[]
+include::{snippets}/community/update-post-multipart/http-response.adoc[]
+include::{snippets}/community/update-post-multipart/path-parameters.adoc[]
+include::{snippets}/community/update-post-multipart/request-part-post-fields.adoc[]
+include::{snippets}/community/update-post-multipart/response-fields.adoc[]
+
+첨부 파일과 썸네일을 내려받을 때는 하위 서비스의 바이너리 응답에 포함된 `image/png` 형식과 바이트 본문을 그대로 전달합니다.
+
+include::{snippets}/community/download-attachment/http-response.adoc[]
+include::{snippets}/community/download-attachment/http-request.adoc[]
+include::{snippets}/community/download-attachment/path-parameters.adoc[]
+include::{snippets}/community/download-attachment/response-headers.adoc[]
+include::{snippets}/community/preview-attachment/http-response.adoc[]
+include::{snippets}/community/preview-attachment/http-request.adoc[]
+include::{snippets}/community/preview-attachment/path-parameters.adoc[]
+include::{snippets}/community/preview-attachment/response-headers.adoc[]
+
+삭제에 성공하면 `204 No Content`를 반환합니다.
+
+include::{snippets}/community/delete-attachment/http-response.adoc[]
+include::{snippets}/community/delete-attachment/http-request.adoc[]
+include::{snippets}/community/delete-attachment/path-parameters.adoc[]
+include::{snippets}/community/delete-post/http-response.adoc[]
+include::{snippets}/community/delete-post/http-request.adoc[]
+include::{snippets}/community/delete-post/path-parameters.adoc[]
+
+=== 관리자 게시판
+
+관리자 경로는 대상 `cohort-id`를 받으며, Learning 서비스에서 관리자의 소속과 권한을 확인합니다.
+
+include::{snippets}/community/admin-list-posts/http-request.adoc[]
+include::{snippets}/community/admin-list-posts/path-parameters.adoc[]
+include::{snippets}/community/admin-list-posts/query-parameters.adoc[]
+include::{snippets}/community/admin-list-posts/http-response.adoc[]
+include::{snippets}/community/admin-list-posts/response-fields.adoc[]
+include::{snippets}/community/admin-create-post/request-fields.adoc[]
+include::{snippets}/community/admin-create-post/http-request.adoc[]
+include::{snippets}/community/admin-create-post/path-parameters.adoc[]
+include::{snippets}/community/admin-create-post/http-response.adoc[]
+include::{snippets}/community/admin-create-post/response-fields.adoc[]
+include::{snippets}/community/admin-pin-post/path-parameters.adoc[]
+include::{snippets}/community/admin-pin-post/http-request.adoc[]
+include::{snippets}/community/admin-pin-post/http-response.adoc[]
+include::{snippets}/community/admin-pin-post/request-fields.adoc[]
+include::{snippets}/community/admin-pin-post/response-fields.adoc[]

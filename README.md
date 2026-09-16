@@ -22,6 +22,30 @@ cp .env.local.example .env.local
 SPRING_PROFILES_ACTIVE=local ./mvnw spring-boot:run
 ```
 
+REST Docs를 포함한 검증 빌드는 테스트를 생략하지 않고 실행한다.
+
+```bash
+./mvnw clean verify
+```
+
+빌드가 끝나면 `target/generated-docs/index.html`에서 HTML API 문서를 확인할 수 있다.
+생성 파일이 없거나 이전 결과를 제거하고 다시 만들려면 `./mvnw clean package`를 실행한다.
+HTML과 include 대상 파일은 존재하지만 IDE에서 경로가 unresolved로 보이면 Maven 프로젝트를 다시 불러오고 `{snippets}` AsciiDoc 속성이 `target/generated-snippets`를 가리키는지 확인한다. REST Docs 테스트가 먼저 `target/generated-snippets`를 생성한 뒤 도메인 문서의 include 경로를 확인한다.
+
+Controller HTTP 계약과 REST Docs는 `@WebMvcTest`로 검증한다. BFF 테스트의
+`FrontendMvcTestSupport`는 실제 보안 필터, 토큰 갱신 인터셉터, 세션 토큰 처리와
+공통 예외 처리를 연결하고 Identity 호출·토큰 갱신 서비스·오류 로깅 경계만 mock으로 둔다.
+각 테스트에서 대상 Controller를 지정하고, 필요한 서비스는 mock 또는 명시적으로 import한다.
+Spring이 제공하는 `MockMvc`를 주입받으며 테스트 안에서 다시 만들지 않는다.
+
+성공 요청은 인증 세션을 만들고 변경 요청에 `csrf()`를 명시한다. 무인증·CSRF 누락 테스트는
+그 조건을 그대로 유지한다. 인터셉터·예외 처리기 자체의 단위 테스트와 하류 HTTP 계약 테스트는
+별도로 유지한다. MVC slice는 하류 서비스의 실제 응답이나 전체 애플리케이션 연결까지
+보장하지 않으므로, JSON fixture는 하류 응답 DTO와 함께 관리한다.
+
+새 테스트의 어노테이션·줄바꿈·메서드 DisplayName·Given/When/Then 형식은
+[컨트롤러 테스트 작성 기준](docs/testing/controller-test-style.md)을 따른다.
+
 - 기본 화면: <http://localhost:8082/>
 - 상태 확인: <http://localhost:8082/actuator/health>
 - 포트 변경: `SERVER_PORT`

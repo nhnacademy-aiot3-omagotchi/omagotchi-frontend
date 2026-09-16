@@ -1,0 +1,81 @@
+== 팀 BFF
+
+팀 BFF는 인증된 브라우저 세션을 위한 팀 관리 API를 제공합니다. 하위 Learning 서비스에 전달하는 `Authorization` 헤더는
+브라우저 요청 계약에 포함하지 않습니다.
+
+=== 팀 생성
+
+==== `POST /bff/v1/teams`
+
+include::{snippets}/teams/create/http-request.adoc[]
+include::{snippets}/teams/create/http-response.adoc[]
+include::{snippets}/teams/create/request-fields.adoc[]
+include::{snippets}/teams/create/response-fields.adoc[]
+
+=== 내 팀 목록
+
+==== `GET /bff/v1/teams/me`
+
+include::{snippets}/teams/get-my-teams/http-request.adoc[]
+include::{snippets}/teams/get-my-teams/http-response.adoc[]
+include::{snippets}/teams/get-my-teams/response-fields.adoc[]
+
+=== 팀 상세
+
+==== `GET /bff/v1/teams/{teamId}`
+
+include::{snippets}/teams/get-team/http-request.adoc[]
+include::{snippets}/teams/get-team/http-response.adoc[]
+include::{snippets}/teams/get-team/path-parameters.adoc[]
+include::{snippets}/teams/get-team/response-fields.adoc[]
+
+=== 팀원 후보 검색
+
+==== `GET /bff/v1/teams/{teamId}/member-candidates`
+
+include::{snippets}/teams/search-member-candidates/http-request.adoc[]
+include::{snippets}/teams/search-member-candidates/http-response.adoc[]
+include::{snippets}/teams/search-member-candidates/path-parameters.adoc[]
+include::{snippets}/teams/search-member-candidates/query-parameters.adoc[]
+include::{snippets}/teams/search-member-candidates/response-fields.adoc[]
+
+=== 팀원 추가
+
+==== `POST /bff/v1/teams/{teamId}/members`
+
+include::{snippets}/teams/add-member/http-request.adoc[]
+include::{snippets}/teams/add-member/http-response.adoc[]
+include::{snippets}/teams/add-member/path-parameters.adoc[]
+include::{snippets}/teams/add-member/request-fields.adoc[]
+
+=== 팀원 제외
+
+==== `DELETE /bff/v1/teams/{teamId}/members/{memberId}`
+
+include::{snippets}/teams/kick-member/http-request.adoc[]
+include::{snippets}/teams/kick-member/http-response.adoc[]
+include::{snippets}/teams/kick-member/path-parameters.adoc[]
+
+=== 팀 탈퇴
+
+==== `POST /bff/v1/teams/{teamId}/leave`
+
+include::{snippets}/teams/leave/http-request.adoc[]
+include::{snippets}/teams/leave/http-response.adoc[]
+include::{snippets}/teams/leave/path-parameters.adoc[]
+
+=== 팀 마스터 위임
+
+==== `POST /bff/v1/teams/{teamId}/members/{memberId}/delegate`
+
+include::{snippets}/teams/delegate/http-request.adoc[]
+include::{snippets}/teams/delegate/http-response.adoc[]
+include::{snippets}/teams/delegate/path-parameters.adoc[]
+
+=== 팀 해체
+
+==== `DELETE /bff/v1/teams/{teamId}`
+
+include::{snippets}/teams/disband/http-request.adoc[]
+include::{snippets}/teams/disband/http-response.adoc[]
+include::{snippets}/teams/disband/path-parameters.adoc[]

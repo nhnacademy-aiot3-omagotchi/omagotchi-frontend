@@ -1,0 +1,57 @@
+== 게이미피케이션 BFF
+
+Frontend는 Learning 서비스의 게이미피케이션 응답을 브라우저 세션 기반 BFF를 통해 전달합니다. 응답 JSON은 Learning 서비스의 실제 `GameCharacterResponse`, `UserCharacterResponse`, `HomeResponse`, `DailyQuestResponse`, `GamificationProgressionResponse`, `StudyTimePredictionResponse` 필드를 따릅니다.
+
+=== 캐릭터 목록
+
+`GET /bff/v1/gamification/characters`
+
+include::{snippets}/gamification/characters/http-request.adoc[]
+include::{snippets}/gamification/characters/http-response.adoc[]
+include::{snippets}/gamification/characters/response-fields.adoc[]
+
+=== 대표 캐릭터 생성
+
+`POST /bff/v1/gamification/characters/representative`는 `gameCharacterId`, 2~12자의 `nickname`, 허용된 `colorId`를 Learning 서비스에 전달합니다.
+
+include::{snippets}/gamification/representative-character/http-request.adoc[]
+include::{snippets}/gamification/representative-character/request-fields.adoc[]
+include::{snippets}/gamification/representative-character/http-response.adoc[]
+include::{snippets}/gamification/representative-character/response-fields.adoc[]
+
+=== 게이미피케이션 홈
+
+`GET /bff/v1/gamification/home`
+
+include::{snippets}/gamification/home/http-request.adoc[]
+include::{snippets}/gamification/home/http-response.adoc[]
+include::{snippets}/gamification/home/response-fields.adoc[]
+
+=== 일일 퀘스트 조회 및 보상 수령
+
+`GET /bff/v1/gamification/quests/daily`는 사용자별 일일 퀘스트 목록을 반환합니다. `POST /bff/v1/gamification/quests/{user-daily-quest-id}/claim`의 경로 ID는 퀘스트 정의 ID가 아니라 사용자별 일일 퀘스트 인스턴스 ID입니다.
+
+include::{snippets}/gamification/daily-quests/http-request.adoc[]
+include::{snippets}/gamification/daily-quests/http-response.adoc[]
+include::{snippets}/gamification/daily-quests/response-fields.adoc[]
+include::{snippets}/gamification/claim-daily-quest/http-request.adoc[]
+include::{snippets}/gamification/claim-daily-quest/path-parameters.adoc[]
+include::{snippets}/gamification/claim-daily-quest/http-response.adoc[]
+include::{snippets}/gamification/claim-daily-quest/response-fields.adoc[]
+
+=== 학습 진행도
+
+`GET /bff/v1/gamification/progression`은 선택 사항인 ISO 날짜 `aggregationDate`를 받습니다. `cohortId`는 브라우저에서 받지 않고 세션에 저장된 승인 기수에서 가져와 Learning 요청에 추가합니다.
+
+include::{snippets}/gamification/progression/http-request.adoc[]
+include::{snippets}/gamification/progression/query-parameters.adoc[]
+include::{snippets}/gamification/progression/http-response.adoc[]
+include::{snippets}/gamification/progression/response-fields.adoc[]
+
+=== 학습 시간 예측
+
+`GET /bff/v1/gamification/predictions/study-time`은 브라우저에는 GET으로 제공하지만 Learning 서비스에는 상태를 변경하지 않는 POST 요청으로 전달합니다. 기수 ID는 세션에 저장된 승인 기수에서 결정합니다.
+
+include::{snippets}/gamification/study-time-prediction/http-request.adoc[]
+include::{snippets}/gamification/study-time-prediction/http-response.adoc[]
+include::{snippets}/gamification/study-time-prediction/response-fields.adoc[]

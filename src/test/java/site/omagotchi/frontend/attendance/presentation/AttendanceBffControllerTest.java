@@ -1,45 +1,38 @@
 package site.omagotchi.frontend.attendance.presentation;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import site.omagotchi.frontend.attendance.application.AttendanceBffService;
-import site.omagotchi.frontend.attendance.application.result.AttendancePageResult;
-import site.omagotchi.frontend.attendance.application.result.AttendanceRecordResult;
-import site.omagotchi.frontend.attendance.application.result.CurrentPresenceResult;
-import site.omagotchi.frontend.global.application.result.PageMetadata;
-
-import java.time.Instant;
-import java.time.LocalDate;
-import java.util.List;
-import java.util.Optional;
-
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@ExtendWith(MockitoExtension.class)
-class AttendanceBffControllerTest {
+import java.time.Instant;
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Optional;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.web.servlet.MockMvc;
+import site.omagotchi.frontend.attendance.application.AttendanceBffService;
+import site.omagotchi.frontend.attendance.application.result.AttendancePageResult;
+import site.omagotchi.frontend.attendance.application.result.AttendanceRecordResult;
+import site.omagotchi.frontend.attendance.application.result.CurrentPresenceResult;
+import site.omagotchi.frontend.global.application.result.PageMetadata;
+import site.omagotchi.frontend.support.FrontendMvcTestSupport;
 
-    @Mock
+@WebMvcTest(AttendanceBffController.class)
+class AttendanceBffControllerTest extends FrontendMvcTestSupport {
+
+    @MockitoBean
     private AttendanceBffService service;
 
+    @Autowired
     private MockMvc mockMvc;
-
-    @BeforeEach
-    void setUp() {
-        mockMvc = MockMvcBuilders.standaloneSetup(
-                new AttendanceBffController(service)
-        ).build();
-    }
 
     @Test
     @DisplayName("출결 Application 결과의 공통 items·page 응답 변환")
@@ -58,6 +51,7 @@ class AttendanceBffControllerTest {
 
         // When: 출결 이력 BFF 요청
         mockMvc.perform(get("/bff/v1/attendance/history")
+                        .session(authenticatedSession())
                         .param("from", "2026-08-01")
                         .param("to", "2026-08-21")
                         .param("page", "1")
@@ -70,8 +64,7 @@ class AttendanceBffControllerTest {
                         jsonPath("$.page.number").value(1),
                         jsonPath("$.page.size").value(10),
                         jsonPath("$.page.totalElements").value(13),
-                        jsonPath("$.page.totalPages").value(2)
-                );
+                        jsonPath("$.page.totalPages").value(2));
 
         verify(service).getHistory(
                 LocalDate.of(2026, 8, 1),
@@ -88,14 +81,15 @@ class AttendanceBffControllerTest {
         when(service.checkIn()).thenReturn(attendanceRecord());
 
         // When: 입실 BFF 요청
-        mockMvc.perform(post("/bff/v1/attendance/check-in"))
+        mockMvc.perform(post("/bff/v1/attendance/check-in")
+                        .session(authenticatedSession())
+                        .with(csrf()))
                 // Then: Presentation 응답 반환
                 .andExpectAll(
                         status().isOk(),
                         jsonPath("$.id").doesNotExist(),
                         jsonPath("$.attendanceDate").value("2026-08-20"),
-                        jsonPath("$.finalStatus").value("PRESENT")
-                );
+                        jsonPath("$.finalStatus").value("PRESENT"));
 
         verify(service).checkIn();
     }
@@ -104,20 +98,15 @@ class AttendanceBffControllerTest {
     @DisplayName("현재 위치 Application 결과의 Presentation 응답 변환")
     void returnsCurrentPresence() throws Exception {
         when(service.getCurrentPresence()).thenReturn(Optional.of(
-                new CurrentPresenceResult(
-                        301L,
-                        "PRESENT",
-                        Instant.parse("2026-09-02T01:00:00Z")
-                )
+                new CurrentPresenceResult(301L, "PRESENT", Instant.parse("2026-09-02T01:00:00Z"))
         ));
 
-        mockMvc.perform(get("/bff/v1/attendance/current-presence"))
+        mockMvc.perform(get("/bff/v1/attendance/current-presence").session(authenticatedSession()))
                 .andExpectAll(
                         status().isOk(),
                         jsonPath("$.spaceId").value(301),
                         jsonPath("$.state").value("PRESENT"),
-                        jsonPath("$.startedAt").value("2026-09-02T01:00:00Z")
-                );
+                        jsonPath("$.startedAt").value("2026-09-02T01:00:00Z"));
 
         verify(service).getCurrentPresence();
     }
@@ -127,7 +116,7 @@ class AttendanceBffControllerTest {
     void returnsNoContentWithoutCurrentPresence() throws Exception {
         when(service.getCurrentPresence()).thenReturn(Optional.empty());
 
-        mockMvc.perform(get("/bff/v1/attendance/current-presence"))
+        mockMvc.perform(get("/bff/v1/attendance/current-presence").session(authenticatedSession()))
                 .andExpect(status().isNoContent());
     }
 
@@ -137,12 +126,11 @@ class AttendanceBffControllerTest {
         when(service.moveStudySpace(301L)).thenReturn(301L);
 
         mockMvc.perform(post("/bff/v1/attendance/move-study")
+                        .session(authenticatedSession())
+                        .with(csrf())
                         .contentType("application/json")
                         .content("{\"spaceId\":301}"))
-                .andExpectAll(
-                        status().isOk(),
-                        jsonPath("$.spaceId").value(301)
-                );
+                .andExpectAll(status().isOk(), jsonPath("$.spaceId").value(301));
 
         verify(service).moveStudySpace(301L);
     }

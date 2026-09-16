@@ -1,0 +1,52 @@
+== 계정 설정 BFF
+
+=== 공통 계약
+
+인증에는 서버 세션과 `SESSION` 쿠키를 사용합니다. 문서에서는 세션 식별자를 `[SESSION_ID]`로 표시합니다.
+
+비밀번호 요청 예시의 `currentPassword`와 `newPassword` 값은 `[REDACTED]`로 표시합니다.
+
+모든 개인 계정 응답과 오류 응답은 `Cache-Control: no-store`를 반환합니다.
+
+=== 현재 계정 설정 조회
+
+`GET /bff/v1/users/me`는 현재 인증 계정의 공개 설정만 반환합니다.
+
+include::{snippets}/account-settings-get/http-request.adoc[]
+include::{snippets}/account-settings-get/http-response.adoc[]
+include::{snippets}/account-settings-get/request-cookies.adoc[]
+include::{snippets}/account-settings-get/response-fields.adoc[]
+
+=== 이름 변경
+
+`PATCH /bff/v1/users/me`는 필수 필드인 `name`만 받으며, 성공하면 본문 없이 `204 No Content`를 반환합니다.
+
+include::{snippets}/account-settings-name-patch/http-request.adoc[]
+include::{snippets}/account-settings-name-patch/http-response.adoc[]
+include::{snippets}/account-settings-name-patch/request-fields.adoc[]
+
+=== 비밀번호 변경
+
+`PATCH /bff/v1/users/me/password`는 `currentPassword`와 `newPassword`를 모두 필수로 받으며 성공 시 `204 No Content`를 반환합니다. 성공하면 현재 브라우저 세션을 폐기하고, 실패하면 세션을 유지합니다.
+
+include::{snippets}/account-settings-password-patch/http-request.adoc[]
+include::{snippets}/account-settings-password-patch/http-response.adoc[]
+include::{snippets}/account-settings-password-patch/request-fields.adoc[]
+include::{snippets}/account-settings-password-patch/response-headers.adoc[]
+
+현재 비밀번호가 틀리면 공통 오류 응답 형식으로 `400 Bad Request`를 반환합니다.
+
+include::{snippets}/account-settings-password-mismatch/http-request.adoc[]
+include::{snippets}/account-settings-password-mismatch/http-response.adoc[]
+include::{snippets}/account-settings-password-mismatch/response-headers.adoc[]
+include::{snippets}/account-settings-password-mismatch/response-fields.adoc[]
+
+=== 계정 탈퇴
+
+`DELETE /bff/v1/users/me`는 탈퇴 확인에 사용할 `currentPassword`를 필수로 받습니다. 성공하면 복구 기한을 반환하고 현재 브라우저 세션을 폐기합니다.
+
+include::{snippets}/account-settings-delete/http-request.adoc[]
+include::{snippets}/account-settings-delete/request-fields.adoc[]
+include::{snippets}/account-settings-delete/http-response.adoc[]
+include::{snippets}/account-settings-delete/response-fields.adoc[]
+include::{snippets}/account-settings-delete/response-headers.adoc[]
