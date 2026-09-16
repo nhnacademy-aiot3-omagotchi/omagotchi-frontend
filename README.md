@@ -28,6 +28,9 @@ REST Docs를 포함한 검증 빌드는 테스트를 생략하지 않고 실행�
 ./mvnw clean verify
 ```
 
+배포용 Docker 빌드는 테스트와 문서 생성을 생략하고 애플리케이션 JAR만 패키징합니다.
+REST Docs 생성과 누락 검증은 PR CI의 `verify`에서 수행합니다.
+
 빌드가 끝나면 `target/generated-docs/index.html`에서 HTML API 문서를 확인할 수 있다.
 생성 파일이 없거나 이전 결과를 제거하고 다시 만들려면 `./mvnw clean package`를 실행한다.
 HTML과 include 대상 파일은 존재하지만 IDE에서 경로가 unresolved로 보이면 Maven 프로젝트를 다시 불러오고 `{snippets}` AsciiDoc 속성이 `target/generated-snippets`를 가리키는지 확인한다. REST Docs 테스트가 먼저 `target/generated-snippets`를 생성한 뒤 도메인 문서의 include 경로를 확인한다.
