@@ -1,7 +1,6 @@
 == 관리자 공간
 
-이 절에서는 MockMvc를 단독으로 구성해 실제 `AdminSpaceBffController`를 호출하고 확인한 관리자 공간 BFF 계약을 안내합니다.
-인증 필터와 관리자 권한 정책은 이 테스트 범위에 포함하지 않습니다.
+관리자 역할에 따른 서비스 계층의 권한 판정은 모의 응답을 사용하므로 검증하지 않습니다.
 
 === 활성 점유 목록
 include::{snippets}/admin-spaces/active-occupancies/http-request.adoc[]

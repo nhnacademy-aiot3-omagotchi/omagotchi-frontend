@@ -171,7 +171,7 @@ class GamificationBffDocumentationTest extends FrontendRestDocsTestSupport {
                         "gamification/progression",
                         preprocessRequest(prettyPrint()),
                         preprocessResponse(prettyPrint()),
-                        queryParameters(parameterWithName("aggregationDate").description("선택적 집계 기준일 (ISO-8601 날짜)")),
+                        queryParameters(parameterWithName("aggregationDate").optional().description("선택적 집계 기준일 (ISO-8601 날짜)")),
                         responseFields(
                                 fieldWithPath("aggregationDate").description("집계 기준일"),
                                 fieldWithPath("studySeconds").description("집계일 학습 초"),

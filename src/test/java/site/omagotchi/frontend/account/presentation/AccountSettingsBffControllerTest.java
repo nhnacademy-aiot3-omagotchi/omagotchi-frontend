@@ -269,12 +269,12 @@ class AccountSettingsBffControllerTest extends FrontendMvcTestSupport {
 
         // When: 현재 사용자 계정 탈퇴 BFF 요청
         MvcResult result = mockMvc.perform(delete("/bff/v1/users/me")
-                                .with(csrf())
-                                .session(session)
-                                .cookie(new MockCookie("SESSION", "[SESSION_ID]"))
-                                .principal(authentication)
-                                .contentType("application/json")
-                                .content("{\"currentPassword\":\"current-password\"}"))
+                        .with(csrf())
+                        .session(session)
+                        .cookie(new MockCookie("SESSION", "[SESSION_ID]"))
+                        .principal(authentication)
+                        .contentType("application/json")
+                        .content("{\"currentPassword\":\"current-password\"}"))
                         .andExpectAll(
                                 status().isOk(),
                                 jsonPath("$.recoveryDeadline").value("2026-10-03T00:00:00Z"),

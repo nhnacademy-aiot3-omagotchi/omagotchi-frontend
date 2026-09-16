@@ -50,10 +50,10 @@ class AiBffDocumentationTest extends FrontendRestDocsTestSupport {
 
         // When: AI 채팅 SSE 요청을 실행하고 비동기 시작을 확인한다.
         MvcResult started = mockMvc.perform(get("/bff/v1/ai/chat")
-                                .queryParam("question", "학습 계획을 알려줘")
-                                .queryParam("model", "GEMINI")
-                                .cookie(new Cookie("SESSION", "session-placeholder"))
-                                .session(authenticatedSession()))
+                        .queryParam("question", "학습 계획을 알려줘")
+                        .queryParam("model", "GEMINI")
+                        .cookie(new Cookie("SESSION", "session-placeholder"))
+                        .session(authenticatedSession()))
                         .andExpect(request().asyncStarted())
                         .andDo(document(
                                 "ai/chat-request",

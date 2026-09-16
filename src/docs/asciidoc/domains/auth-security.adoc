@@ -34,7 +34,7 @@ include::{snippets}/auth-security/login-service-failure/http-request.adoc[]
 include::{snippets}/auth-security/login-service-failure/http-response.adoc[]
 include::{snippets}/auth-security/login-service-failure/form-parameters.adoc[]
 
-Identity 연동 중 장애가 발생하면 Frontend는 해당 HTTP 상태를 임의의 성공 응답이나 로그인 실패 리디렉션으로 바꾸지 않고 그대로 전달합니다.
+Identity 연동 오류는 Frontend의 오류 계약으로 변환합니다. Frontend 호출 자격 증명 거절과 연결 장애는 `503 Service Unavailable`, 예상하지 못한 응답 계약은 `502 Bad Gateway`를 반환합니다. 사용자 인증 정보가 잘못된 경우의 로그인 실패 리디렉션과 구분합니다.
 
 ==== CSRF 누락
 

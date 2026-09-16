@@ -4,7 +4,7 @@
 
 세션의 Access Token으로 Learning 서비스를 호출하고 AI 응답을 SSE로 전달합니다.
 테스트에서는 실제 `Flux<String>` 조각을 비동기 디스패치로 완료해 `text/event-stream` 응답과 한글 본문을 확인합니다.
-`SESSION` 쿠키는 자리표시자이며 실제 인증 쿠키 필터와 전체 보안 흐름은 테스트 범위에 포함하지 않습니다.
+`SESSION` 쿠키는 자리표시자입니다. 테스트는 인증 세션을 주입하고 공통 보안 필터를 거치지만, 브라우저의 실제 쿠키 발급과 세션 저장소 연동은 검증하지 않습니다.
 Learning 서비스 호출 실패와 스트림 종료 오류는 BFF의 공통 오류 처리에서 다룹니다.
 
 include::{snippets}/ai/chat-request/http-request.adoc[]

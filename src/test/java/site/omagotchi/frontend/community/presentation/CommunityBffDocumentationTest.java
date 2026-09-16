@@ -358,7 +358,7 @@ class CommunityBffDocumentationTest extends FrontendRestDocsTestSupport {
             return read(
                     "{\"items\":[{\"postId\":1,\"type\":\"QUESTION\",\"title\":\"질문\",\"authorUserId\":\"u\",\"authorNickname\":\"오마\",\"cohortId\":7,\"pinned\":false,\"createdAt\":\"2026-09-14T00:00:00Z\",\"updatedAt\":\"2026-09-14T00:00:00Z\",\"attachmentCount\":0,\"canManage\":true}],\"pinned\":null,\"page\":{\"number\":0,\"size\":20,\"totalElements\":1,\"totalPages\":1}}");
         return read(
-                "{\"postId\":1,\"type\":\"QUESTION\",\"title\":\"질문\",\"content\":\"내용\",\"authorUserId\":\"u\",\"authorNickname\":\"오마\",\"cohortId\":7,\"pinned\":false,\"createdAt\":\"2026-09-14T00:00:00Z\",\"updatedAt\":\"2026-09-14T00:00:00Z\",\"attachments\":[],\"canManage\":true}");
+                "{\"postId\":1,\"type\":\"QUESTION\",\"title\":\"질문\",\"content\":\"내용\",\"authorUserId\":\"u\",\"authorNickname\":\"오마\",\"cohortId\":7,\"pinned\":false,\"createdAt\":\"2026-09-14T00:00:00Z\",\"updatedAt\":\"2026-09-14T00:00:00Z\",\"attachments\":[{\"attachmentId\":9,\"originalFileName\":\"photo.png\",\"contentType\":\"image/png\",\"sizeBytes\":128,\"displayOrder\":0}],\"canManage\":true}");
     }
 
     private static Object adminPayload(HttpServletRequest r) {
@@ -407,6 +407,11 @@ class CommunityBffDocumentationTest extends FrontendRestDocsTestSupport {
             fieldWithPath("createdAt").description("생성 시각"),
             fieldWithPath("updatedAt").description("수정 시각"),
             fieldWithPath("attachments").description("첨부파일 목록"),
+            fieldWithPath("attachments[].attachmentId").description("첨부파일 ID"),
+            fieldWithPath("attachments[].originalFileName").description("원본 파일 이름"),
+            fieldWithPath("attachments[].contentType").description("파일 형식"),
+            fieldWithPath("attachments[].sizeBytes").description("파일 크기(바이트)"),
+            fieldWithPath("attachments[].displayOrder").description("표시 순서"),
             fieldWithPath("canManage").description("관리 가능 여부")
         };
     }

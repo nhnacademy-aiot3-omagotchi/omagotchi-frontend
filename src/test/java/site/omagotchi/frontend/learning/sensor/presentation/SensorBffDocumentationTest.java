@@ -25,6 +25,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.restdocs.payload.FieldDescriptor;
+import org.springframework.restdocs.payload.JsonFieldType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import site.omagotchi.frontend.learning.sensor.application.SensorAdminBffService;
@@ -72,7 +73,37 @@ class SensorBffDocumentationTest extends FrontendRestDocsTestSupport {
                         read(
                                 "{\"deviceEui\":\"24e124136d151547\",\"spaceId\":7,\"displayName\":\"CO2 센서\",\"model\":\"SCD40\",\"installationPoint\":\"창가\",\"expectedIntervalSeconds\":60,\"active\":false}"));
         given(service.getEvents(any(), any(), any(), any(), any(), any(), any()))
-                .willReturn(read("{\"content\":[],\"page\":1,\"size\":8,\"totalElements\":13,\"totalPages\":2}"));
+                .willReturn(read("""
+                                {
+                                  "content": [
+                                    {
+                                      "eventId": "019d2a48-80c0-4d6a-9a15-0b16d2dd74f2",
+                                      "type": "RULE_HIT",
+                                      "traceId": "trace-example",
+                                      "deviceEui": "24e124136d151547",
+                                      "displayName": "CO2 센서",
+                                      "location": "study-room-1",
+                                      "point": "co2",
+                                      "measurement": "co2",
+                                      "value": 1200.0,
+                                      "detail": "CO2 임계값 초과",
+                                      "measuredAt": "2026-09-14T00:00:00Z",
+                                      "receivedAt": "2026-09-14T00:00:01Z",
+                                      "action": "VENTILATE",
+                                      "actionLabel": "창문 개방 환기",
+                                      "actionStatus": "CONFIRMED",
+                                      "actionConfirmedAt": "2026-09-14T00:00:02Z",
+                                      "actionSimulated": true,
+                                      "actionError": null,
+                                      "notifiedAt": "2026-09-14T00:00:03Z"
+                                    }
+                                  ],
+                                  "page": 1,
+                                  "size": 8,
+                                  "totalElements": 13,
+                                  "totalPages": 2
+                                }
+                                """));
         given(service.getSpaceThresholds(any()))
                 .willReturn(
                         read(
@@ -150,6 +181,7 @@ class SensorBffDocumentationTest extends FrontendRestDocsTestSupport {
                 .andDo(document(
                         "sensors/claim-device",
                         pathParameters(parameterWithName("device-eui").description("센서 EUI")),
+                        requestFields(fieldWithPath("spaceId").description("공간 ID")),
                         responseFields(deviceFields(""))));
     }
 
@@ -160,13 +192,28 @@ class SensorBffDocumentationTest extends FrontendRestDocsTestSupport {
         // When & Then
         mockMvc.perform(put("/bff/v1/admin/sensors/devices/{device-eui}", "24e124136d151547")
                         .contentType("application/json")
-                        .content("{\"displayName\":\"CO2 센서\"}")
+                        .content(
+                                        "{\"spaceId\":7,\"displayName\":\"CO2 센서\",\"installationPoint\":\"창가\",\"expectedIntervalSeconds\":60,\"installedAt\":\"2026-09-14T00:00:00Z\"}")
                         .with(csrf())
                         .session(authenticatedSession()))
                 .andExpect(status().isOk())
                 .andDo(document(
                         "sensors/update-device",
                         pathParameters(parameterWithName("device-eui").description("센서 EUI")),
+                        requestFields(
+                                fieldWithPath("spaceId").description("공간 ID"),
+                                fieldWithPath("displayName")
+                                        .optional()
+                                        .description("표시 이름"),
+                                fieldWithPath("installationPoint")
+                                        .optional()
+                                        .description("설치 위치"),
+                                fieldWithPath("expectedIntervalSeconds")
+                                        .optional()
+                                        .description("수집 주기(초)"),
+                                fieldWithPath("installedAt")
+                                        .optional()
+                                        .description("설치 시각")),
                         responseFields(deviceFields(""))));
     }
 
@@ -186,6 +233,7 @@ class SensorBffDocumentationTest extends FrontendRestDocsTestSupport {
                 .andDo(document(
                         "sensors/update-active",
                         pathParameters(parameterWithName("device-eui").description("센서 EUI")),
+                        requestFields(fieldWithPath("active").description("활성 여부")),
                         responseFields(deviceFields(""))));
     }
 
@@ -203,16 +251,89 @@ class SensorBffDocumentationTest extends FrontendRestDocsTestSupport {
                 .andDo(document(
                         "sensors/events",
                         queryParameters(
-                                parameterWithName("type").description("이벤트 유형"),
+                                parameterWithName("type").optional().description("이벤트 유형"),
                                 parameterWithName("deviceEui")
                                         .description("센서 EUI")
                                         .optional(),
                                 parameterWithName("from").description("시작 시각").optional(),
                                 parameterWithName("to").description("종료 시각").optional(),
-                                parameterWithName("page").description("페이지"),
-                                parameterWithName("size").description("크기")),
+                                parameterWithName("page").optional().description("페이지"),
+                                parameterWithName("size").optional().description("크기")),
                         responseFields(
                                 fieldWithPath("content").description("이벤트 목록"),
+                                fieldWithPath("content[].eventId")
+                                        .type(JsonFieldType.STRING)
+                                        .description("이벤트 ID"),
+                                fieldWithPath("content[].type")
+                                        .type(JsonFieldType.STRING)
+                                        .description("이벤트 유형"),
+                                fieldWithPath("content[].traceId")
+                                        .type(JsonFieldType.STRING)
+                                        .optional()
+                                        .description("추적 ID"),
+                                fieldWithPath("content[].deviceEui")
+                                        .type(JsonFieldType.STRING)
+                                        .description("센서 EUI"),
+                                fieldWithPath("content[].displayName")
+                                        .type(JsonFieldType.STRING)
+                                        .optional()
+                                        .description("표시 이름"),
+                                fieldWithPath("content[].location")
+                                        .type(JsonFieldType.STRING)
+                                        .optional()
+                                        .description("공간 위치"),
+                                fieldWithPath("content[].point")
+                                        .type(JsonFieldType.STRING)
+                                        .optional()
+                                        .description("측정 지점"),
+                                fieldWithPath("content[].measurement")
+                                        .type(JsonFieldType.STRING)
+                                        .optional()
+                                        .description("측정 항목"),
+                                fieldWithPath("content[].value")
+                                        .type(JsonFieldType.NUMBER)
+                                        .optional()
+                                        .description("측정값"),
+                                fieldWithPath("content[].detail")
+                                        .type(JsonFieldType.STRING)
+                                        .optional()
+                                        .description("상세 내용"),
+                                fieldWithPath("content[].measuredAt")
+                                        .type(JsonFieldType.STRING)
+                                        .optional()
+                                        .description("측정 시각"),
+                                fieldWithPath("content[].receivedAt")
+                                        .type(JsonFieldType.STRING)
+                                        .optional()
+                                        .description("수신 시각"),
+                                fieldWithPath("content[].action")
+                                        .type(JsonFieldType.STRING)
+                                        .optional()
+                                        .description("제어 동작"),
+                                fieldWithPath("content[].actionLabel")
+                                        .type(JsonFieldType.STRING)
+                                        .optional()
+                                        .description("제어 동작 이름"),
+                                fieldWithPath("content[].actionStatus")
+                                        .type(JsonFieldType.STRING)
+                                        .optional()
+                                        .description("제어 결과"),
+                                fieldWithPath("content[].actionConfirmedAt")
+                                        .type(JsonFieldType.STRING)
+                                        .optional()
+                                        .description("제어 확인 시각"),
+                                fieldWithPath("content[].actionSimulated")
+                                        .type(JsonFieldType.BOOLEAN)
+                                        .optional()
+                                        .description("모의 제어 여부"),
+                                fieldWithPath("content[].actionError")
+                                        .type(JsonFieldType.STRING)
+                                        .optional()
+                                        .description("제어 오류"),
+                                fieldWithPath("content[].notifiedAt")
+                                        .type(JsonFieldType.STRING)
+                                        .optional()
+                                        .description("알림 시각"),
                                 fieldWithPath("page").description("페이지"),
                                 fieldWithPath("size").description("크기"),
                                 fieldWithPath("totalElements").description("전체 건수"),
@@ -239,7 +360,8 @@ class SensorBffDocumentationTest extends FrontendRestDocsTestSupport {
         // When & Then
         mockMvc.perform(patch("/bff/v1/admin/sensors/thresholds/{space-id}", 7)
                         .contentType("application/json")
-                        .content("{\"rules\":[]}")
+                        .content(
+                                "{\"rules\":[{\"metric\":\"co2\",\"operator\":\"GTE\",\"threshold\":1000.0},{\"metric\":\"temperature\",\"operator\":\"GTE\",\"threshold\":28.0},{\"metric\":\"humidity\",\"operator\":\"GTE\",\"threshold\":70.0}]}")
                         .with(csrf())
                         .session(authenticatedSession()))
                 .andExpectAll(
@@ -249,6 +371,11 @@ class SensorBffDocumentationTest extends FrontendRestDocsTestSupport {
                 .andDo(document(
                         "sensors/apply-threshold",
                         pathParameters(parameterWithName("space-id").description("공간 ID")),
+                        requestFields(
+                                fieldWithPath("rules").description("CO2·온도·습도 임계값 목록 (3개)"),
+                                fieldWithPath("rules[].metric").description("측정 항목"),
+                                fieldWithPath("rules[].operator").description("비교 연산자"),
+                                fieldWithPath("rules[].threshold").description("임계값")),
                         responseFields(
                                 fieldWithPath("spaceId").description("공간 ID"),
                                 fieldWithPath("deviceCount").description("대상 기기 수"),
